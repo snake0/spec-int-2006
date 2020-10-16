@@ -1,0 +1,1535 @@
+C  9 DEC 03 - TJD - HLFSPD,STVDD: USE 1E- DER INTS FOR MCSCF HESSIANS
+C  9 DEC 03 - OQ  - HLF,HLFSPD,HFD,HFDSPD,HFDFIJ,STVDD:
+C                   ADD ELECTRIC FIELD DERIVATIVES
+C 25 JUN 01 - MWS - ALTER COMMON BLOCK WFNOPT
+C 11 JAN 99 - MWS - STVDD: AVOID ECPHES ON CI GRADIENT RUNS
+C  1 DEC 98 - BMB - ADD CALLS TO ECP HESSIAN CODE
+C                 - MOVED VCLR AND DAWRIT OF 1E- HESSIAN TO MAIN DRIVER
+C 28 SEP 97 - MWS - CONVERT PARALLEL CALLS FROM TCGMSG TO DDI
+C 17 OCT 96 - MWS - STVDD: CHANGE PRINTOUT FOR CI GRADIENT RUNS
+C 13 JUN 96 - VAG - CHANGES TO INTRODUCE CITYP VARIABLE
+C 10 NOV 94 - MWS - REMOVE FTNCHEK WARNINGS
+C 10 AUG 94 - MWS - INCREASE NUMBER OF DAF RECORDS
+C  1 JUN 94 - MWS - HLFSPD,HFDSPD: CHANGE PARALLEL EXECUTION
+C 16 JUL 93 - TLW - HLFSPD,HFDSPD: MOVED NEXT VALUE TO OUTERMOST LOOP
+C  6 NOV 92 - TLW - PARALLELIZE
+C 12 MAR 92 - MWS - REDIMENSION TO 500 ATOMS
+C 10 JAN 92 - TLW - CHANGE REWINDS TO CALL SEQREW
+C  6 JAN 92 - TLW - MAKE WRITES PARALLEL;ADD COMMON PAR
+C 15 AUG 90 - TLW - ADD H7(7) TO COMMON HERMIT AND W7(7) TO COMMON
+C                   WERMIT.  ADD 7TH ELEMENT TO MIN AND MAX ARRAYS.
+C  7 AUG 90 - TLW - ADD CF AND CG TO COMMON NSHEL
+C 28 NOV 89 - MWS - CUT HSS1 INTO TWO SEPARATE FILES, HSS1A AND HSS1B
+C 29 MAR 89 - MWS - HLF,HFD,TVD: CLEAR UP STORAGE ALLOCATION
+C 23 MAR 89 - MWS - AVOID MOST WORK IF EXETYP=CHECK
+C 13 MAR 89 - MWS - NINE SHOULD BE SPELLED RNINE IN STVDIJ
+C 18 JAN 89 - MWS - ADAPT RHF ANALYTIC HESSIAN CODE FROM MICHEL'S HONDO7
+C*MODULE HSS1A   *DECK DERXYZ
+      SUBROUTINE DERXYZ(IPOWER)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION H(28),W(28),MIN(7),MAX(7)
+C
+      COMMON /HERMIT/ H1,H2(2),H3(3),H4(4),H5(5),H6(6),H7(7)
+      COMMON /WERMIT/ W1,W2(2),W3(3),W4(4),W5(5),W6(6),W7(7)
+      COMMON /XYZDER/ XINT,YINT,ZINT,T,X0,Y0,Z0,XI,YI,ZI,XJ,YJ,ZJ,
+     *                NI,NJ,CX,CY,CZ
+C
+      EQUIVALENCE (H(1),H1),(W(1),W1)
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+C
+      DATA MIN /1,2,4, 7,11,16,22/
+      DATA MAX /1,3,6,10,15,21,28/
+C
+C     ----- GAUSS-HERMITE QUADRATURE USING MINIMUM POINT FORMULA -----
+C     IPOWER=0,1,2 COMBINES MICHEL'S DERXYZ, HLFXYZ, AND HFDXYZ
+C
+      XINT = ZERO
+      YINT = ZERO
+      ZINT = ZERO
+      NPTS = (NI+NJ+IPOWER-2)/2+1
+      IMIN = MIN(NPTS)
+      IMAX = MAX(NPTS)
+      DO 340 I = IMIN,IMAX
+      DUM = H(I)*T
+      PTX = DUM+X0
+      PTY = DUM+Y0
+      PTZ = DUM+Z0
+      IF(IPOWER.EQ.0) THEN
+            PX = ONE
+            PY = ONE
+            PZ = ONE
+         END IF
+      IF(IPOWER.EQ.1) THEN
+            PX = PTX-CX
+            PY = PTY-CY
+            PZ = PTZ-CZ
+         END IF
+      IF(IPOWER.EQ.2) THEN
+            PX = (PTX-CX)**2
+            PY = (PTY-CY)**2
+            PZ = (PTZ-CZ)**2
+         END IF
+      AX = PTX-XI
+      AY = PTY-YI
+      AZ = PTZ-ZI
+      BX = PTX-XJ
+      BY = PTY-YJ
+      BZ = PTZ-ZJ
+      GO TO (180,160,140,120,100),NI
+  100 PX = PX*AX
+      PY = PY*AY
+      PZ = PZ*AZ
+  120 PX = PX*AX
+      PY = PY*AY
+      PZ = PZ*AZ
+  140 PX = PX*AX
+      PY = PY*AY
+      PZ = PZ*AZ
+  160 PX = PX*AX
+      PY = PY*AY
+      PZ = PZ*AZ
+  180 GO TO (320,300,280,260,240,220,200),NJ
+  200 PX = PX*BX
+      PY = PY*BY
+      PZ = PZ*BZ
+  220 PX = PX*BX
+      PY = PY*BY
+      PZ = PZ*BZ
+  240 PX = PX*BX
+      PY = PY*BY
+      PZ = PZ*BZ
+  260 PX = PX*BX
+      PY = PY*BY
+      PZ = PZ*BZ
+  280 PX = PX*BX
+      PY = PY*BY
+      PZ = PZ*BZ
+  300 PX = PX*BX
+      PY = PY*BY
+      PZ = PZ*BZ
+  320 CONTINUE
+      DUM=W(I)
+      XINT = XINT+DUM*PX
+      YINT = YINT+DUM*PY
+      ZINT = ZINT+DUM*PZ
+  340 CONTINUE
+      RETURN
+      END
+C*MODULE HSS1A   *DECK HLF
+      SUBROUTINE HLF(EXETYP,OUT,EG,EH,DAB,FD,FDD,BFDD,NATM,L2)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION EG(3*NATM),EH(9*(NATM*NATM+NATM)/2),DAB(L2),
+     *          FD(3*NATM*L2),FDD(*)
+C
+      LOGICAL OUT,BFDD
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+C     ----- CALCULATE -HLF- CONTRIBUTION -----
+C
+      IF(EXETYP.EQ.CHECK) RETURN
+      CALL HLFSPD(EG,EH,DAB,FD,FDD,BFDD,OUT)
+      RETURN
+      END
+C*MODULE HSS1A   *DECK HLFSPD
+      SUBROUTINE HLFSPD(EG,EH,DAB,FD,FDD,BFDD,OUT)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DOUBLE PRECISION MCSCF
+C
+      DIMENSION EG(3,*),EH(9,*),DAB(*),FD(*),FDD(9,(NAT*NAT+NAT)/2,*)
+      DIMENSION IJN(36),DFAC(36),DIJ(36),XIN(108),YIN(108),ZIN(108),
+     *          IX(10),IY(10),IZ(10),JX(10),JY(10),JZ(10),
+     *          PIJ(36),IJX(36),IJY(36),IJZ(36),W2(5),W4(5)
+C
+      LOGICAL BFDD,OUT
+      LOGICAL IANDJ,NORM,DOUBLE,DBUG,GOPARR,DSKWRK,MASWRK,NXT,
+     *        FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF,MCCI
+C
+      PARAMETER (MXGTOT=5000, MXSH=1000, MXATM=500)
+C
+      COMMON /HSSPAR/ FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /ROOT  / XX,U(9),W(9),NROOTS
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+      COMMON /XYZDER/ XINT,YINT,ZINT,T,X0,Y0,Z0,XI,YI,ZI,XJ,YJ,ZJ,
+     *                NI,NJ,CX,CY,CZ
+C
+      DATA PI212 /1.1283791670955D+00/
+      DATA SQRT3 /1.73205080756888D+00/
+      DATA RLN10 /2.30258D+00/
+      DATA JX / 0, 1, 0, 0, 2, 0, 0, 1, 1, 0/
+      DATA IX / 1, 4, 1, 1, 7, 1, 1, 4, 4, 1/
+      DATA JY / 0, 0, 1, 0, 0, 2, 0, 1, 0, 1/
+      DATA IY / 1, 1, 4, 1, 1, 7, 1, 4, 1, 4/
+      DATA JZ / 0, 0, 0, 1, 0, 0, 2, 0, 1, 1/
+      DATA IZ / 1, 1, 1, 4, 1, 1, 7, 1, 4, 4/
+      DATA ZERO,ONE,TWO,FOUR /0.0D+00,1.0D+00,2.0D+00,4.0D+00/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA MCSCF/8HMCSCF   /
+#else
+      CHARACTER*8 :: MCSCF_STR
+      EQUIVALENCE (MCSCF, MCSCF_STR)
+      DATA MCSCF_STR/"MCSCF   "/
+#endif
+C
+      DBUG=.FALSE. .AND. MASWRK
+      IF (OUT  .AND.  MASWRK) WRITE (IW,9008)
+      MCCI = SCFTYP.EQ.MCSCF
+      TOL = RLN10*ITOL
+      NORM = NORMF .NE. 1 .OR. NORMP .NE. 1
+      L2 = (NUM*NUM+NUM)/2
+C
+C   INITIALIZATION FOR PARALLEL
+C
+      NXT = IBTYP.EQ.1
+      IPCOUNT = ME - 1
+      NEXT = -1
+      MINE = -1
+C
+C     ----- I SHELL -----
+C
+      DO 600 II = 1,NSHELL
+C
+C           GO PARALLEL!
+C
+      IF (NXT .AND. GOPARR) THEN
+         MINE = MINE + 1
+         IF (MINE.GT.NEXT) CALL DDI_DLBNEXT(NEXT)
+         IF (NEXT.NE.MINE) GO TO 600
+      END IF
+C
+      IAT= KATOM(II)
+      XI = C(1,IAT)
+      YI = C(2,IAT)
+      ZI = C(3,IAT)
+      I1 = KSTART(II)
+      I2 = I1+KNG(II)-1
+      LIT = KTYPE(II)
+      MINI = KMIN(II)
+      MAXI = KMAX(II)
+      LOCI = KLOC(II)-MINI
+C
+C     ----- J SHELL -----
+C
+      DO 580 JJ = 1,II
+C
+C           GO PARALLEL!
+C
+      IF((.NOT.NXT) .AND. GOPARR) THEN
+         IPCOUNT = IPCOUNT + 1
+         IF(MOD(IPCOUNT,NPROC).NE.0) GO TO 580
+      END IF
+C
+      JAT= KATOM(JJ)
+      XJ = C(1,JAT)
+      YJ = C(2,JAT)
+      ZJ = C(3,JAT)
+      J1 = KSTART(JJ)
+      J2 = J1+KNG(JJ)-1
+      LJT = KTYPE(JJ)
+      MINJ = KMIN(JJ)
+      MAXJ = KMAX(JJ)
+      LOCJ = KLOC(JJ)-MINJ
+      IF(MFIRST) NROOTS = (LIT+LJT+1-2)/2 + 1
+      IF(MSECND) NROOTS = (LIT+LJT+2-2)/2 + 1
+      RR = (XI-XJ)**2+(YI-YJ)**2+(ZI-ZJ)**2
+      IANDJ = II .EQ. JJ
+C
+C     ----- PREPARE INDICES FOR PAIRS OF (I,J) FUNCTIONS
+C
+      IJ = 0
+      MAX = MAXJ
+      DO 120 I = MINI,MAXI
+      NX = IX(I)
+      NY = IY(I)
+      NZ = IZ(I)
+      IF (IANDJ) MAX = I
+      DO 120 J = MINJ,MAX
+      IJ = IJ+1
+      IJX(IJ) = NX+JX(J)
+      IJY(IJ) = NY+JY(J)
+      IJZ(IJ) = NZ+JZ(J)
+      IDUM = LOCI+I
+      IJN(IJ) = (IDUM*(IDUM-1))/2 + LOCJ+J
+      DFAC(IJ) = TWO
+      IF (IANDJ .AND. I .EQ. J) DFAC(IJ) = ONE
+  120 CONTINUE
+C
+C     ----- I PRIMITIVE
+C
+      JGMAX = J2
+      DO 520 IG = I1,I2
+      AI = EX(IG)
+      ARRI = AI*RR
+      AXI = AI*XI
+      AYI = AI*YI
+      AZI = AI*ZI
+      CSI = CS(IG)
+      CPI = CP(IG)
+      CDI = CD(IG)
+C
+C     ----- J PRIMITIVE
+C
+      IF (IANDJ) JGMAX = IG
+      DO 500 JG = J1,JGMAX
+      AJ = EX(JG)
+      AA = AI+AJ
+      AA1 = ONE/AA
+      DUM = AJ*ARRI*AA1
+      IF (DUM .GT. TOL) GO TO 500
+C
+      FAC = EXP(-DUM)
+      CSJ = CS(JG)
+      CPJ = CP(JG)
+      CDJ = CD(JG)
+      AX = (AXI+AJ*XJ)*AA1
+      AY = (AYI+AJ*YJ)*AA1
+      AZ = (AZI+AJ*ZJ)*AA1
+C
+C     ----- DENSITY FACTOR
+C
+      DOUBLE=IANDJ.AND.IG.NE.JG
+      MAX = MAXJ
+      NN = 0
+      DO 360 I = MINI,MAXI
+      GO TO (140,160,220,220,180,220,220,200,220,220),I
+  140 DUM1 = CSI*FAC
+      GO TO 220
+  160 DUM1 = CPI*FAC
+      GO TO 220
+  180 DUM1 = CDI*FAC
+      GO TO 220
+  200 IF (NORM) DUM1 = DUM1*SQRT3
+  220 IF (IANDJ) MAX = I
+      DO 360 J = MINJ,MAX
+      GO TO (240,280,340,340,300,340,340,320,340,340),J
+  240 DUM2 = DUM1*CSJ
+      IF ( .NOT. DOUBLE) GO TO 340
+      IF (I .GT. 1) GO TO 260
+      DUM2 = DUM2+DUM2
+      GO TO 340
+  260 DUM2 = DUM2+CSI*CPJ*FAC
+      GO TO 340
+  280 DUM2 = DUM1*CPJ
+      IF (DOUBLE) DUM2 = DUM2+DUM2
+      GO TO 340
+  300 DUM2 = DUM1*CDJ
+      IF (DOUBLE) DUM2 = DUM2+DUM2
+      GO TO 340
+  320 IF (NORM) DUM2 = DUM2*SQRT3
+  340 NN = NN+1
+      NDUM = IJN(NN)
+      PIJ(NN) = DUM2
+      DIJ(NN) = DUM2*DFAC(NN)*DAB(NDUM)
+  360 CONTINUE
+C
+C     ..... HELLMANN-FEYNMAN TERM .....
+C
+      DUM = PI212*AA1
+      DO 380 I = 1,IJ
+      PIJ(I) = PIJ(I)*DUM
+      DIJ(I) = DIJ(I)*DUM
+  380 CONTINUE
+      AAX = AA*AX
+      AAY = AA*AY
+      AAZ = AA*AZ
+      DO 480 IC = 1,NAT
+      ZNUC = -ZAN(IC)
+      MX   = 3 * L2 * (IC-1)
+      MY   = MX + L2
+      MZ   = MY + L2
+      CX   = C(1,IC)
+      CY   = C(2,IC)
+      CZ   = C(3,IC)
+      MC   = IC*(IC+1)/2
+      XX   = AA*((AX-CX)**2+(AY-CY)**2+(AZ-CZ)**2)
+      IF(NROOTS .LE. 3) CALL RT123
+      IF(NROOTS .EQ. 4) CALL ROOT4
+      MM = 0
+      DO 420 K = 1,NROOTS
+         U2 = AA*U(K)
+         U4 = U2*U2
+         WW = W(K)*ZNUC
+         W2(K) = TWO *WW*U2
+         W4(K) = FOUR*WW*U4
+         TT = ONE/(AA+U2)
+         T  =  SQRT(TT)
+         X0 = (AAX+U2*CX)*TT
+         Y0 = (AAY+U2*CY)*TT
+         Z0 = (AAZ+U2*CZ)*TT
+         IN = -3+MM
+         DO 400 I = 1,LIT
+         IN = IN+3
+         NI = I
+         DO 400 J = 1,LJT
+         JN = IN+J
+         NJ = J
+         CALL DERXYZ(0)
+         XIN(JN   ) = XINT
+         YIN(JN   ) = YINT
+         ZIN(JN   ) = ZINT
+         CALL DERXYZ(1)
+         XIN(JN+36) = XINT
+         YIN(JN+36) = YINT
+         ZIN(JN+36) = ZINT
+         IF(MSECND) THEN
+            CALL DERXYZ(2)
+            XIN(JN+72) = XINT
+            YIN(JN+72) = YINT
+            ZIN(JN+72) = ZINT
+         END IF
+  400    CONTINUE
+         MM = MM+9
+  420 CONTINUE
+C
+      DO 460 I = 1,IJ
+      NN    = IJN(I)
+      NX    = IJX(I)
+      NY    = IJY(I)
+      NZ    = IJZ(I)
+      DUMX  = ZERO
+      DUMY  = ZERO
+      DUMZ  = ZERO
+      DUMXX = ZERO
+      DUMYY = ZERO
+      DUMZZ = ZERO
+      DUMXY = ZERO
+      DUMXZ = ZERO
+      DUMYZ = ZERO
+      MM    = 0
+      DO 440 K = 1,NROOTS
+      DUMX  = DUMX +XIN(NX+MM+36)*YIN(NY+MM   )*ZIN(NZ+MM   )*W2(K)
+      DUMY  = DUMY +XIN(NX+MM   )*YIN(NY+MM+36)*ZIN(NZ+MM   )*W2(K)
+      DUMZ  = DUMZ +XIN(NX+MM   )*YIN(NY+MM   )*ZIN(NZ+MM+36)*W2(K)
+      IF(MSECND) THEN
+      DUMXX = DUMXX-XIN(NX+MM   )*YIN(NY+MM   )*ZIN(NZ+MM   )*W2(K)
+     1             +XIN(NX+MM+72)*YIN(NY+MM   )*ZIN(NZ+MM   )*W4(K)
+      DUMYY = DUMYY-XIN(NX+MM   )*YIN(NY+MM   )*ZIN(NZ+MM   )*W2(K)
+     1             +XIN(NX+MM   )*YIN(NY+MM+72)*ZIN(NZ+MM   )*W4(K)
+      DUMZZ = DUMZZ-XIN(NX+MM   )*YIN(NY+MM   )*ZIN(NZ+MM   )*W2(K)
+     1             +XIN(NX+MM   )*YIN(NY+MM   )*ZIN(NZ+MM+72)*W4(K)
+      DUMXY = DUMXY+XIN(NX+MM+36)*YIN(NY+MM+36)*ZIN(NZ+MM   )*W4(K)
+      DUMXZ = DUMXZ+XIN(NX+MM+36)*YIN(NY+MM   )*ZIN(NZ+MM+36)*W4(K)
+      DUMYZ = DUMYZ+XIN(NX+MM   )*YIN(NY+MM+36)*ZIN(NZ+MM+36)*W4(K)
+      END IF
+      MM  = MM+9
+  440 CONTINUE
+      DUM = DIJ(I)
+      PUM = PIJ(I)
+      IF(MFIRST) THEN
+         EG(1,IC) = EG(1,IC) + DUM * DUMX
+         EG(2,IC) = EG(2,IC) + DUM * DUMY
+         EG(3,IC) = EG(3,IC) + DUM * DUMZ
+      END IF
+      IF(MSECND) THEN
+         EH(1,MC) = EH(1,MC) + DUM * DUMXX
+         EH(2,MC) = EH(2,MC) + DUM * DUMXY
+         EH(3,MC) = EH(3,MC) + DUM * DUMXZ
+         EH(4,MC) = EH(4,MC) + DUM * DUMXY
+         EH(5,MC) = EH(5,MC) + DUM * DUMYY
+         EH(6,MC) = EH(6,MC) + DUM * DUMYZ
+         EH(7,MC) = EH(7,MC) + DUM * DUMXZ
+         EH(8,MC) = EH(8,MC) + DUM * DUMYZ
+         EH(9,MC) = EH(9,MC) + DUM * DUMZZ
+C
+         IF(BFDD) THEN
+            FDD(1,MC,NN)=FDD(1,MC,NN)+PUM * DUMXX
+            FDD(2,MC,NN)=FDD(2,MC,NN)+PUM * DUMXY
+            FDD(3,MC,NN)=FDD(3,MC,NN)+PUM * DUMXZ
+            FDD(4,MC,NN)=FDD(4,MC,NN)+PUM * DUMXY
+            FDD(5,MC,NN)=FDD(5,MC,NN)+PUM * DUMYY
+            FDD(6,MC,NN)=FDD(6,MC,NN)+PUM * DUMYZ
+            FDD(7,MC,NN)=FDD(7,MC,NN)+PUM * DUMXZ
+            FDD(8,MC,NN)=FDD(8,MC,NN)+PUM * DUMYZ
+            FDD(9,MC,NN)=FDD(9,MC,NN)+PUM * DUMZZ
+         ENDIF
+      END IF
+      IF(MCCI  .OR.  MCPHF) THEN
+         FD(MX+NN) = FD(MX+NN) + PUM * DUMX
+         FD(MY+NN) = FD(MY+NN) + PUM * DUMY
+         FD(MZ+NN) = FD(MZ+NN) + PUM * DUMZ
+      END IF
+  460 CONTINUE
+  480 CONTINUE
+  500 CONTINUE
+  520 CONTINUE
+C
+C     ----- END OF *PRIMITIVE* LOOPS -----
+C
+      IF(DBUG) WRITE(IW,9088) II,JJ
+      IF(DBUG) CALL HSSPRT(NAT,EG,EH)
+  580 CONTINUE
+  600 CONTINUE
+C
+C     ----- END OF *SHELL* LOOPS -----
+C
+      IF (GOPARR.AND.NXT) CALL DDI_DLBRESET
+C
+C     ----- PRINTING SECTION ----
+C
+      IF(OUT) THEN
+         NEGH=3*NAT+9*(NAT*(NAT+1))/2
+         IF(GOPARR) CALL DDI_GSUMF(1621,EG,NEGH)
+         IF(MASWRK) THEN
+            WRITE(IW,9048)
+            CALL HSSPRT(NAT,EG,EH)
+         END IF
+         IF(GOPARR) CALL DSCAL(NEGH,ONE/NPROC,EG,1)
+C
+         IF(MCCI .OR. MCPHF) THEN
+            NFD = 3 * NAT * L2
+            IF(GOPARR) CALL DDI_GSUMF(1622,FD,NFD)
+            IF(MASWRK) WRITE(IW,9058)
+            DO 620 IC=1,NAT
+               IF(MASWRK) WRITE(IW,9068) IC
+               MX=3*L2*(IC-1)+1
+               MY=MX+L2
+               MZ=MY+L2
+               CALL PRTRI(FD(MX),NUM)
+               CALL PRTRI(FD(MY),NUM)
+               CALL PRTRI(FD(MZ),NUM)
+  620       CONTINUE
+            IF(GOPARR) CALL DSCAL(NFD,ONE/NPROC,FD,1)
+         END IF
+      END IF
+      RETURN
+C
+ 9008 FORMAT(/,10X,21("-"),/,10X,"HELLMANN-FEYNMAN TERM",
+     1       /,10X,21(1H-))
+ 9048 FORMAT(/1X,'GRADIENT AND HESSIAN AFTER -HLFSPD-')
+ 9058 FORMAT(/1X,'FOCK DERIVATIVES AFTER -HLFSPD-')
+ 9068 FORMAT(/1X,'CONTRIBUTION TO FOCK DERIVATIVE MATRIX, ATOM = ',I5)
+ 9088 FORMAT(' SHELLS II,JJ = ',2I5)
+      END
+C*MODULE HSS1A   *DECK HFD
+      SUBROUTINE HFD(EXETYP,OUT,EG,EH,DAB,NATM,L2,FDD,BFDD)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION EG(3*NATM),EH(9*(NATM*NATM+NATM)/2),DAB(L2),FDD(*)
+C
+      LOGICAL OUT,BFDD
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK     /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "  /
+#endif
+C
+      IF(EXETYP.EQ.CHECK) RETURN
+C
+C     ----- GET THE DERIVATIVES -----
+C
+      CALL HFDSPD(EG,EH,DAB,OUT,FDD,BFDD)
+      RETURN
+      END
+C*MODULE HSS1A   *DECK HFDFIJ
+      SUBROUTINE HFDFIJ(GF,DF,NGF,DAB,FOEX,FOEY,FOEZ)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION GF(NGF),DF(3),DAB(*),FOEX(36),FOEY(36),FOEZ(36)
+C
+      LOGICAL NONORM
+C
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /SHLOED/ LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     *                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     *                NIJ,IJD,KLD,IJ,KL
+C
+      DATA ZERO,SQRT3 /0.0D+00,1.73205080756888D+00/
+      DATA TWO /2.0D+00/
+C
+      NONORM=NORMF.EQ.1.AND.NORMP.EQ.1
+C
+C     ----- CALCULATION OF FIRST AND SECOND DERIVATIVES USING -----
+C     ----- TWO ELECTRON INTEGRALS                            -----
+C
+      IJFOE=1
+      DX  = ZERO
+      DY  = ZERO
+      DZ  = ZERO
+      DO 4100 J = MINJ,MAXJ
+      JN = LOCJ + J
+      NF = 13*(J-MINJ) + 1
+      DO 4000 I = MINI,MAXI
+      IN = LOCI + I
+      IF(JN .GT. IN) GO TO 200
+      IJN = IN*(IN-1)/2 + JN
+      GO TO 210
+  200 IJN = JN*(JN-1)/2 + IN
+  210 DENSTY = TWO * DAB(IJN)
+      GO TO (300,310,320,330,340,350,360,370,380,390),I
+  300 X =            GF(NF+ 1)
+      Y =            GF(NF+ 2)
+      Z =            GF(NF+ 3)
+      GO TO 400
+  310 X =            GF(NF+ 4)+GF(NF   )
+      Y =            GF(NF+ 7)
+      Z =            GF(NF+ 8)
+      GO TO 400
+  320 X =            GF(NF+ 7)
+      Y =            GF(NF+ 5)+GF(NF   )
+      Z =            GF(NF+ 9)
+      GO TO 400
+  330 X =            GF(NF+ 8)
+      Y =            GF(NF+ 9)
+      Z =            GF(NF+ 6)+GF(NF   )
+      GO TO 400
+  340 X =            GF(NF+ 3)+GF(NF   )+GF(NF   )
+      Y =            GF(NF+ 6)
+      Z =            GF(NF+ 7)
+      GO TO 400
+  350 X =            GF(NF+ 8)
+      Y =            GF(NF+ 4)+GF(NF+ 1)+GF(NF+ 1)
+      Z =            GF(NF+ 9)
+      GO TO 400
+  360 X =            GF(NF+10)
+      Y =            GF(NF+11)
+      Z =            GF(NF+ 5)+GF(NF+ 2)+GF(NF+ 2)
+      GO TO 400
+  370 X =            GF(NF+ 6)+GF(NF+ 1)
+      Y =            GF(NF+ 8)+GF(NF   )
+      Z =            GF(NF+12)
+      GO TO 395
+  380 X =            GF(NF+ 7)+GF(NF+ 2)
+      Y =            GF(NF+12)
+      Z =            GF(NF+10)+GF(NF   )
+      GO TO 395
+  390 X =            GF(NF+12)
+      Y =            GF(NF+ 9)+GF(NF+ 2)
+      Z =            GF(NF+11)+GF(NF+ 1)
+  395 IF(NONORM) GO TO 400
+      X =            X*SQRT3
+      Y =            Y*SQRT3
+      Z =            Z*SQRT3
+  400 CONTINUE
+      DX  =   DX +   X*DENSTY
+      DY  =   DY +   Y*DENSTY
+      DZ  =   DZ +   Z*DENSTY
+      FOEX(IJFOE) = X
+      FOEY(IJFOE) = Y
+      FOEZ(IJFOE) = Z
+      IJFOE=IJFOE+1
+ 4000 CONTINUE
+ 4100 CONTINUE
+      DF(1) = DX
+      DF(2) = DY
+      DF(3) = DZ
+      RETURN
+      END
+C*MODULE HSS1A   *DECK HFDSPD
+      SUBROUTINE HFDSPD(EG,EH,DAB,OUT,FDD,BFDD)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION EG(3,*),EH(9,*),DAB(*),FDD(*)
+      DIMENSION DIJ10(78),GIJ10X(78),GIJ10Y(78),GIJ10Z(78),
+     *          XIN(128),YIN(128),ZIN(128),DF(3),W2(4),FOE(36,9)
+C
+      LOGICAL OUT,BFDD
+      LOGICAL DBUG,GOPARR,DSKWRK,MASWRK,NXT
+C
+      PARAMETER (MXGTOT=5000, MXSH=1000, MXGSH=30, MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /INFOED/ GA(MXGSH),CSA(MXGSH),CPA(MXGSH),CDA(MXGSH),
+     1                GB(MXGSH),CSB(MXGSH),CPB(MXGSH),CDB(MXGSH),
+     2                GC(MXGSH),CSC(MXGSH),CPC(MXGSH),CDC(MXGSH),
+     3                GD(MXGSH),CSD(MXGSH),CPD(MXGSH),CDD(MXGSH),
+     4                XA,YA,ZA,XB,YB,ZB,RR,XC,YC,ZC,XD,YD,ZD,RRC,
+     5                NGA,NGB,NGC,NGD
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /ROOT  / XX,U(9),W(9),NROOTS
+      COMMON /SHLOED/ LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     1                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     2                NIJ,IJD,KLD,IJ,KL
+      COMMON /XYZDER/ XINT,YINT,ZINT,T,X0,Y0,Z0,XI,YI,ZI,XJ,YJ,ZJ,
+     *                NI,NJ,CX,CY,CZ
+      COMMON /DIJOED/ NADIJ1( 78),NADIJ2(169),NADIJ3(132)
+      COMMON /IJXOED/ NPIJX1( 78),NPIJX2(169),NPIJX3(132)
+      COMMON /IJYOED/ NPIJY1( 78),NPIJY2(169),NPIJY3(132)
+      COMMON /IJZOED/ NPIJZ1( 78),NPIJZ2(169),NPIJZ3(132)
+C
+      DATA PI212 /1.1283791670955D+00/
+      DATA ZERO,ONE,TWO /0.0D+00,1.0D+00,2.0D+00/
+      DATA RLN10 /2.30258D+00/
+      DATA NFDIJ1 / 78/
+C
+      DBUG=.FALSE. .AND. MASWRK
+      IF(OUT  .AND.  MASWRK) WRITE(IW,9008)
+      NRD = 1
+      TOL = RLN10*ITOL
+C
+      CALL STVJDD
+C
+C   INITIALIZATION FOR PARALLEL
+C
+      NXT = IBTYP.EQ.1
+      IPCOUNT = ME - 1
+      NEXT = -1
+      MINE = -1
+C
+C     ----- I SHELL -----
+C
+      DO 600 II = 1,NSHELL
+C
+C           GO PARALLEL!
+C
+      IF (NXT .AND. GOPARR) THEN
+         MINE = MINE + 1
+         IF (MINE.GT.NEXT) CALL DDI_DLBNEXT(NEXT)
+         IF (NEXT.NE.MINE) GO TO 600
+      END IF
+C
+      IAT= KATOM(II)
+      XI = C(1,IAT)
+      YI = C(2,IAT)
+      ZI = C(3,IAT)
+      XA = XI
+      YA = YI
+      ZA = ZI
+      I1 = KSTART(II)
+      I2 = I1+KNG(II)-1
+      LIT = KTYPE(II) + NRD
+      MINI = KMIN(II)
+      MAXI = KMAX(II)
+      LOCI = KLOC(II)-MINI
+      NGA = 0
+      DO 10 I = I1,I2
+      NGA = NGA + 1
+      GA( NGA) = EX(I)
+      CSA(NGA) = CS(I)
+      CPA(NGA) = CP(I)
+      CDA(NGA) = CD(I)
+   10 CONTINUE
+C
+C     ----- J SHELL -----
+C
+      DO 580 JJ = 1,NSHELL
+C
+C         GO PARALLEL!
+C
+      IF ((.NOT.NXT) .AND. GOPARR) THEN
+         IPCOUNT = IPCOUNT + 1
+         IF (MOD(IPCOUNT,NPROC).NE.0) GO TO 580
+      END IF
+C
+      JAT= KATOM(JJ)
+      XJ = C(1,JAT)
+      YJ = C(2,JAT)
+      ZJ = C(3,JAT)
+      XB = XJ
+      YB = YJ
+      ZB = ZJ
+      J1 = KSTART(JJ)
+      J2 = J1+KNG(JJ)-1
+      LJT = KTYPE(JJ)
+      MINJ = KMIN(JJ)
+      MAXJ = KMAX(JJ)
+      LOCJ = KLOC(JJ)-MINJ
+      NGB = 0
+      DO 20 J = J1,J2
+      NGB = NGB + 1
+      GB( NGB) = EX(J)
+      CSB(NGB) = CS(J)
+      CPB(NGB) = CP(J)
+      CDB(NGB) = CD(J)
+   20 CONTINUE
+      NROOTS = (LIT+LJT+1-2)/2 + 1
+      RR = (XI-XJ)**2+(YI-YJ)**2+(ZI-ZJ)**2
+C
+C     ----- PREPARE INDICES FOR PAIRS OF (I,J) FUNCTIONS
+C
+      CALL STVIDX(1)
+C
+C     ----- DO LOOP OF NATOM -----
+C
+      DO 540 IC = 1,NAT
+      ZNUC = -ZAN(IC)
+      CX   =  C(1,IC)
+      CY   =  C(2,IC)
+      CZ   =  C(3,IC)
+      DO 25 I = 1,NFDIJ1
+      GIJ10X(I) = ZERO
+      GIJ10Y(I) = ZERO
+   25 GIJ10Z(I) = ZERO
+C
+C     ----- I PRIMITIVE
+C
+      IIG = 0
+      DO 520 IG = I1,I2
+      IIG = IIG + 1
+      AI = EX(IG)
+      ARRI = AI*RR
+      AXI = AI*XI
+      AYI = AI*YI
+      AZI = AI*ZI
+C
+C     ----- J PRIMITIVE
+C
+      JJG = 0
+      DO 500 JG = J1,J2
+      JJG = JJG + 1
+      AJ = EX(JG)
+      AA = AI+AJ
+      AA1 = ONE/AA
+      DUM = AJ*ARRI*AA1
+      IF (DUM .GT. TOL) GO TO 500
+      AX = (AXI+AJ*XJ)*AA1
+      AY = (AYI+AJ*YJ)*AA1
+      AZ = (AZI+AJ*ZJ)*AA1
+C
+C     ----- DENSITY FACTOR
+C
+      CALL STVDIJ(1,IIG,JJG,NIJ10,NIJ11,NIJ20,
+     1            DIJ10,XIN,XIN,XIN,XIN,XIN,
+     2            NFDIJ1,NFDIJ1,NFDIJ1)
+C
+C     ----- COUPLING TERM OF DERIVATIVES OF SHELL AND HAMILTONIAN ----
+C
+      DUM = PI212*AA1
+      DO 30 I = 1,NIJ10
+   30 DIJ10(I) = DIJ10(I) * DUM
+      AAX = AA*AX
+      AAY = AA*AY
+      AAZ = AA*AZ
+      XX = AA*((AX-CX)**2+(AY-CY)**2+(AZ-CZ)**2)
+      IF(NROOTS .LE. 3) CALL RT123
+      IF(NROOTS .EQ. 4) CALL ROOT4
+      MM = 0
+      DO 420 K = 1,NROOTS
+      U2 = AA*U(K)
+      WW = W(K)*ZNUC
+      W2(K) = TWO*WW*U2
+      TT = ONE/(AA+U2)
+      T  =  SQRT(TT)
+      X0 = (AAX+U2*CX)*TT
+      Y0 = (AAY+U2*CY)*TT
+      Z0 = (AAZ+U2*CZ)*TT
+      IN = -4+MM
+      DO 400 I = 1,LIT
+      IN = IN+4
+      NI = I
+      DO 400 J = 1,LJT
+      JN = IN+J
+      NJ = J
+      CALL DERXYZ(0)
+      XIN(JN) = XINT
+      YIN(JN) = YINT
+      ZIN(JN) = ZINT
+      CALL DERXYZ(1)
+      XIN(JN+64) = XINT
+      YIN(JN+64) = YINT
+      ZIN(JN+64) = ZINT
+  400 CONTINUE
+  420 MM = MM+16
+      DO  40 I = 1,NIJ10
+      N     = NADIJ1(I)
+      NX    = NPIJX1(I)
+      NY    = NPIJY1(I)
+      NZ    = NPIJZ1(I)
+      DUM   = DIJ10 (I)
+      DUMX  = ZERO
+      DUMY  = ZERO
+      DUMZ  = ZERO
+      MM    = 0
+      DO 41 K = 1,NROOTS
+      DUMX  = DUMX +XIN(NX+MM+64)*YIN(NY+MM   )*ZIN(NZ+MM   )*W2(K)
+      DUMY  = DUMY +XIN(NX+MM   )*YIN(NY+MM+64)*ZIN(NZ+MM   )*W2(K)
+      DUMZ  = DUMZ +XIN(NX+MM   )*YIN(NY+MM   )*ZIN(NZ+MM+64)*W2(K)
+   41 MM  = MM+16
+      GIJ10X(N) = GIJ10X(N) + DUM * DUMX
+      GIJ10Y(N) = GIJ10Y(N) + DUM * DUMY
+      GIJ10Z(N) = GIJ10Z(N) + DUM * DUMZ
+   40 CONTINUE
+  500 CONTINUE
+  520 CONTINUE
+C
+C     ----- END OF *PRIMITIVE* LOOPS -----
+C
+      IF(IAT-IC) 700,710,720
+  700 FAC = ONE
+      NN  = IC *(IC -1)/2 + IAT
+      GO TO 730
+  710 FAC = TWO
+      NN  = IC *(IC -1)/2 + IAT
+      GO TO 730
+  720 FAC = ONE
+      NN  = IAT*(IAT-1)/2 + IC
+  730 IF(IC .LT. IAT) GO TO 740
+C
+C     ----- TRANSFORMATION OF INTEGRALS TO ATOMIC ORBITALS -----
+C
+      CALL HFDFIJ(GIJ10X,DF,NFDIJ1,DAB,FOE(1,1),FOE(1,2),FOE(1,3))
+      EH(1,NN) = EH(1,NN) + FAC * DF(1)
+      EH(2,NN) = EH(2,NN) + FAC * DF(2)
+      EH(3,NN) = EH(3,NN) + FAC * DF(3)
+      CALL HFDFIJ(GIJ10Y,DF,NFDIJ1,DAB,FOE(1,4),FOE(1,5),FOE(1,6))
+      EH(4,NN) = EH(4,NN) + FAC * DF(1)
+      EH(5,NN) = EH(5,NN) + FAC * DF(2)
+      EH(6,NN) = EH(6,NN) + FAC * DF(3)
+      CALL HFDFIJ(GIJ10Z,DF,NFDIJ1,DAB,FOE(1,7),FOE(1,8),FOE(1,9))
+      EH(7,NN) = EH(7,NN) + FAC * DF(1)
+      EH(8,NN) = EH(8,NN) + FAC * DF(2)
+      EH(9,NN) = EH(9,NN) + FAC * DF(3)
+      GO TO 539
+  740 CALL HFDFIJ(GIJ10X,DF,NFDIJ1,DAB,FOE(1,1),FOE(1,4),FOE(1,7))
+      EH(1,NN) = EH(1,NN) + FAC * DF(1)
+      EH(4,NN) = EH(4,NN) + FAC * DF(2)
+      EH(7,NN) = EH(7,NN) + FAC * DF(3)
+      CALL HFDFIJ(GIJ10Y,DF,NFDIJ1,DAB,FOE(1,2),FOE(1,5),FOE(1,8))
+      EH(2,NN) = EH(2,NN) + FAC * DF(1)
+      EH(5,NN) = EH(5,NN) + FAC * DF(2)
+      EH(8,NN) = EH(8,NN) + FAC * DF(3)
+      CALL HFDFIJ(GIJ10Z,DF,NFDIJ1,DAB,FOE(1,3),FOE(1,6),FOE(1,9))
+      EH(3,NN) = EH(3,NN) + FAC * DF(1)
+      EH(6,NN) = EH(6,NN) + FAC * DF(2)
+      EH(9,NN) = EH(9,NN) + FAC * DF(3)
+  539 CONTINUE
+      IF(BFDD) CALL ADDFOE(FDD,IAT,IC,FOE,FAC,TWO)
+  540 CONTINUE
+C
+C     ----- END OF *SHELL* LOOPS -----
+C
+      IF(DBUG) WRITE(IW,9028) II,JJ
+      IF(DBUG) CALL HSSPRT(NAT,EG,EH)
+  580 CONTINUE
+  600 CONTINUE
+C
+      IF (GOPARR.AND.NXT) CALL DDI_DLBRESET
+C
+      IF(OUT) THEN
+         NEGH=3*NAT+9*(NAT*(NAT+1))/2
+         IF(GOPARR) CALL DDI_GSUMF(1623,EG,NEGH)
+         IF(MASWRK) THEN
+            WRITE(IW,9048)
+            CALL HSSPRT(NAT,EG,EH)
+         END IF
+         IF(GOPARR) CALL DSCAL(NEGH,ONE/NPROC,EG,1)
+      END IF
+C
+      RETURN
+ 9008 FORMAT(/,10X,32("-"),/,10X,"HELLMANN-FEYNMAN DERIVATIVE TERM",
+     1       /,10X,32(1H-))
+ 9028 FORMAT(' SHELLS II,JJ = ',2I5)
+ 9048 FORMAT(/1X,'GRADIENT AND HESSIAN AFTER -LFDSPD-')
+      END
+C*MODULE HSS1A   *DECK HSSPRT
+      SUBROUTINE HSSPRT(NAT,EG,EH)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      DIMENSION EG(3,NAT),EH(9,*)
+C
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /HSSPAR/ FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      IF(.NOT.MASWRK) RETURN
+C
+      IF (MFIRST) CALL EGOUT(EG,NAT)
+C
+      IF(MSECND) THEN
+         N = 0
+         DO 50 IATOM = 1,NAT
+            DO 40 JATOM = 1,IATOM
+               N = N + 1
+               WRITE(IW,110) IATOM,JATOM,EH(1,N),EH(2,N),EH(3,N)
+               WRITE(IW,120)             EH(4,N),EH(5,N),EH(6,N)
+               WRITE(IW,130)             EH(7,N),EH(8,N),EH(9,N)
+   40       CONTINUE
+   50    CONTINUE
+      END IF
+      RETURN
+C
+  110 FORMAT(" ",5X,'ATOM(', 2I3,')  EH  :     D2/DX2  =',E18.10,
+     1           5X,'D2/DYDX =',E18.10,5X,'D2/DZDX =',E18.10)
+  120 FORMAT(" ",29X,                         'D2/DXDY =',E18.10,
+     1           5X,'D2/DY2  =',E18.10,5X,'D2/DZDY =',E18.10)
+  130 FORMAT(" ",29X,                         'D2/DXDZ =',E18.10,
+     1           5X,'D2/DYDZ =',E18.10,5X,'D2/DZ2  =',E18.10)
+      END
+C*MODULE HSS1A   *DECK STVDD
+      SUBROUTINE STVDD
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DOUBLE PRECISION MCSCF
+C
+      LOGICAL OUT,GOPARR,DSKWRK,MASWRK
+      LOGICAL FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF,MCCI,BSFDD
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /FMCOM / X(1)
+      COMMON /HSSPAR/ FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+      COMMON /INTOPT/ ISCHWZ,IECP,NECP,IEFLD
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RESTAR/ TIMLIM,NREST,NREC,INTLOC,IST,JST,KST,LST
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DBUGME/8HHSS1    /, GUGA/8HGUGA    /
+#else
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      CHARACTER*8 :: GUGA_STR
+      EQUIVALENCE (GUGA, GUGA_STR)
+      DATA DBUGME_STR/"HSS1    "/, GUGA_STR/"GUGA    "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA MCSCF/8HMCSCF   /
+#else
+      CHARACTER*8 :: MCSCF_STR
+      EQUIVALENCE (MCSCF, MCSCF_STR)
+      DATA MCSCF_STR/"MCSCF   "/
+#endif
+C
+C     ------ MAIN DRIVER FOR 1E- HESSIAN INTEGRAL CONTRIBUTIONS -----
+C
+      IF(NREST.GT.3) RETURN
+      OUT = EXETYP.EQ.DBUGME
+      NFT18=18
+      MCCI = SCFTYP.EQ.MCSCF
+      BSFDD = IGETOLI(2).NE.0
+C
+      IF (MASWRK  .AND.  NPRINT.NE.-5) THEN
+         IF(CITYP.NE.GUGA) THEN
+            WRITE(IW,9000)
+         ELSE
+            WRITE(IW,9010)
+         END IF
+      END IF
+C
+C     ----- SET UP MEMORY -----
+C
+      NXYZ2 = 9*(NAT*NAT+NAT)/2
+      L2 = (NUM*NUM+NUM)/2
+      CALL VALFM(LOADFM)
+      CALL GOTFM(NGOTMX)
+C
+      LEG  = LOADFM + 1
+      LEH  = LEG    + 3*NAT
+      LDA  = LEH    + 9*(NAT*NAT+NAT)/2
+      LDB  = LDA    + L2
+      LFD  = LDB    + L2
+      LAST = LFD    + 3*NAT*L2
+      NEED=LAST-LOADFM-1
+      IF(.NOT.MCPHF  .AND.  .NOT.MCCI) LAST=LFD
+C
+      IF(NEED.GT.NGOTMX) THEN
+         IF (MASWRK) WRITE(IW,*) 'IN STVDD, NEED,NGOT=',NEED,NGOTMX
+         CALL ABRT
+      END IF
+      CALL GETFM(NEED)
+C
+C     ----- INITIALIZE -EG-,-EH-,-FD- TO ZERO -----
+C
+      NEGH=3*NAT + 9*((NAT*NAT+NAT)/2)
+      CALL VCLR(X(LEG),1,NEGH)
+      IF(MCPHF  .OR.  MCCI) THEN
+         NFD=3*NAT*L2
+         CALL VCLR(X(LFD),1,NFD)
+      END IF
+C
+C     ----- GET TOTAL DENSITY MATRIX -----
+C     WILL BE USED BY ECPHES, HLF, HFD, AND TVD
+C
+      IF(EXETYP.NE.CHECK) CALL DENDD1(X(LDA),X(LDB),L2)
+C
+C     ----- EFFECTIVE CORE POTENTIAL MODIFICATIONS -----
+C
+      IF(SECND  .AND.  IECP.GT.0) THEN
+        CALL ECPHES(EXETYP,OUT,X(LEG),X(LEH),X(LDA),X(LFD))
+      END IF
+C
+C     ----- HELLMANN-FEYNMAN FORCE -----
+C
+      IF(BSFDD) THEN 
+        CALL NEW(LFDD,NXYZ2*L2)
+        CALL VCLR(X(LFDD),1,NXYZ2*L2)
+      END IF
+      CALL HLF(EXETYP,OUT,X(LEG),X(LEH),X(LDA),
+     *         X(LFD),X(LFDD),BSFDD,NAT,L2)
+C
+C     ----- COUPLING TERM OF DERIVATIVES OF SHELL AND POTENTIAL -----
+C
+      IF(MSECND) THEN
+         CALL HFD(EXETYP,OUT,X(LEG),X(LEH),X(LDA),NAT,L2,X(LFDD),BSFDD)
+      END IF
+C
+C     ----- INTEGRAL FORCE (1E-CONTRIBUTION) -----
+C
+      CALL TVD(EXETYP,NFT18,OUT,X(LEG),X(LEH),X(LDA),
+     *         X(LFD),X(LFDD),BSFDD,NAT,L2)
+      IF(BSFDD) THEN
+        CALL SYMFDD(X(LFDD),NUM,NAT,L2)
+        CALL SVGFDD(X(LFDD),NXYZ2,NAT,L2)
+        CALL TDXDELETE(LFDD,NXYZ2*L2)
+      END IF
+C
+C     ----- DENSITY FORCE -----
+C     NOTE: SHESS CALLED BY SD PERFORMS THE REQUIRED GLOBAL SUM
+C     OF THE ONE ELECTRON GRADIENT AND HESSIAN CONTRIBUTIONS
+C
+      IF(BSFDD) THEN 
+        CALL NEW(LSDD,NXYZ2*L2)
+        CALL VCLR(X(LSDD),1,NXYZ2*L2)
+      END IF
+      CALL SD(EXETYP,OUT,X(LEG),X(LEH),X(LDA),X(LSDD),BSFDD,NAT,L2)
+      IF(BSFDD) THEN
+        CALL SVGSDD(X(LSDD),NXYZ2,NAT,L2)
+        CALL TDXDELETE(LSDD,NXYZ2*L2)
+      END IF
+C
+C         SAVE THE COMPLETED 1E- GRADIENT AND HESSIAN
+C
+      NEGH=3*NAT + 9*(NAT*NAT+NAT)/2
+      CALL DAWRIT(IDAF,IODA,X(LEG),NEGH,67,0)
+C
+      CALL RETFM(NEED)
+      IF (MASWRK) THEN
+         IF(CITYP.NE.GUGA) THEN
+            WRITE (IW,9080)
+         ELSE
+            IF(MCCI) THEN
+               WRITE (IW,9085)
+            ELSE
+               WRITE (IW,9090)
+            END IF
+         END IF
+      END IF
+      CALL TIMIT(1)
+      RETURN
+C
+ 9000 FORMAT(/5X,45("-")/
+     *        5X,'1ST AND 2ND INTEGRAL DERIVATIVE CONTRIBUTIONS'/
+     *        5X,45(1H-))
+ 9010 FORMAT(/5X,46("-")/
+     *        5X,'ONE ELECTRON INTEGRAL DERIVATIVE CONTRIBUTIONS'/
+     *        5X,46(1H-))
+ 9080 FORMAT(1X,'...... END OF 1-ELECTRON GRAD+HESS+FOCKDER ......')
+ 9085 FORMAT(1X,'...... END OF 1-ELECTRON GRAD+HESS+LAG.DER ......')
+ 9090 FORMAT(1X,'...... END OF 1-ELECTRON GRAD+FOCKDER ......')
+      END
+C*MODULE HSS1A   *DECK STVDIJ
+      SUBROUTINE STVDIJ(NOPT,NGX,NGY,NXY10,NXY11,NXY20,
+     *                  DXY10,DXY11,DXY20,FFT10,FFT11,FFT20,
+     *                  NXY1,NXY2,NXY3)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL NORM
+      LOGICAL FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+C
+      DIMENSION DXY10(NXY1),DXY11(NXY2),DXY20(NXY3),
+     *          FFT10(NXY1),FFT11(NXY2),FFT20(NXY3)
+C
+      PARAMETER (MXGSH=30)
+C
+      COMMON /HSSPAR/ FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /INFOED/ GA(MXGSH),CSA(MXGSH),CPA(MXGSH),CDA(MXGSH),
+     *                GB(MXGSH),CSB(MXGSH),CPB(MXGSH),CDB(MXGSH),
+     *                GC(MXGSH),CSC(MXGSH),CPC(MXGSH),CDC(MXGSH),
+     *                GD(MXGSH),CSD(MXGSH),CPD(MXGSH),CDD(MXGSH),
+     *                XI,YI,ZI,XJ,YJ,ZJ,RRI,XK,YK,ZK,XL,YL,ZL,RRK,
+     *                NGA,NGB,NGC,NGD
+      COMMON /JDDSTV/ NFORB(4),NSORB(4),NFTABL(13,4),NSTABL(22,4),
+     *                LFTABL(20,2),LSTABL(35,2)
+      COMMON /SHLOED/ LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     *                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     *                NIJ,IJD,KLD,IJ,KL
+C
+      DATA SQRT3 /1.73205080756888D+00/
+      DATA THREE,FIVE,SEVEN,RNINE /3.0D+00,5.0D+00,7.0D+00,9.0D+00/
+C
+C     ----- COEFFICIENTS FOR II, JJ SHELLS -----
+C
+      NORM=NORMF.NE.1.OR.NORMP.NE.1
+      MINX=MINI
+      MINY=MINJ
+      MAXX=MAXI
+      MAXY=MAXJ
+      NTYPX=(MAXX-MINX+1)/2+1
+      NTYPY=(MAXY-MINY+1)/2+1
+      AX=GA(NGX)
+      AY=GB(NGY)
+      AX2=2.0D+00*AX
+      AX4=AX2*AX2
+      AY2=2.0D+00*AY
+      GO TO (101,102,103,104),NTYPX
+C
+C     ----- -S'-, -S''- -----
+C
+  101 CSX = CSA(NGX)
+      CPXF= AX2*CSX
+      CSXS=-AX2*CSX
+      CDXS= AX4*CSX
+      GO TO 150
+C
+C     ----- -P'-, -P''- -----
+C
+  102 CPX = CPA(NGX)
+      CSXF=-CPX
+      CDXF= AX2*CPX
+      CPXS=-AX2*CPX
+      CFXS= AX4*CPX
+      GO TO 150
+C
+C     ----- -SP'-, -SP''- -----
+C
+  103 CSX = CSA(NGX)
+      CPX = CPA(NGX)
+      CPXF= AX2*CSX
+      CSXF=-CPX
+      CDXF= AX2*CPX
+      CSXS=-AX2*CSX
+      CDXS= AX4*CSX
+      CPXS=-AX2*CPX
+      CFXS= AX4*CPX
+      GO TO 150
+C
+C     ----- -D'- -----
+C
+  104 CDX = CDA(NGX)
+      CPXF=-CDX
+      CFXF= AX2*CDX
+      CSXS= CDX
+      CDXS=-AX2*CDX
+      CGXS= AX4*CDX
+  150 CONTINUE
+      GO TO (151,152,153,154),NTYPY
+C
+C     ----- -S'-, -S''- -----
+C
+  151 CSY = CSB(NGY)
+      CPYF= AY2*CSY
+      GO TO 180
+C
+C     ----- -P'-, -P''- -----
+C
+  152 CPY = CPB(NGY)
+      CSYF=-CPY
+      CDYF= AY2*CPY
+      GO TO 180
+C
+C     ----- -SP'-, -SP''- -----
+C
+  153 CSY = CSB(NGY)
+      CPY = CPB(NGY)
+      CPYF= AY2*CSY
+      CSYF=-CPY
+      CDYF= AY2*CPY
+      GO TO 180
+C
+C     ----- -D'- -----
+C
+  154 CDY = CDB(NGY)
+      CPYF=-CDY
+      CFYF= AY2*CDY
+  180 CONTINUE
+      A =  EXP(-AX*AY*RRI/(AX+AY))
+      N10=0
+      N20=0
+C
+C     ----- ( II' / JJ ) , ( II'' / JJ ) -----
+C
+      DO 10 JN0=MINY,MAXY
+      GO TO (301,302,310,310,303,310,310,304,310,310),JN0
+  301 D=A*CSY
+      T=THREE
+      GO TO 310
+  302 D=A*CPY
+      T=FIVE
+      GO TO 310
+  303 D=A*CDY
+      T=SEVEN
+      GO TO 310
+  304 IF(NORM) D=D*SQRT3
+C
+  310 IF(.NOT.MFIRST .AND. NOPT .EQ. 0) GO TO 340
+      MXX=NFORB(NTYPX)
+      DO 30 IN1=1,MXX
+      NORBX=NFTABL(IN1,NTYPX)
+      GO TO (321,322,330,330,323,330,330,330,330,330,
+     1       324,330,330,330,330,330,330,330,330,330),NORBX
+  321 F=D*CSXF
+      GO TO 330
+  322 F=D*CPXF
+      GO TO 330
+  323 F=D*CDXF
+      GO TO 330
+  324 F=D*CFXF
+  330 N10=N10+1
+      DXY10(N10)=F
+      FFT10(N10)=T
+   30 CONTINUE
+C
+  340 IF(.NOT.MSECND .OR . NOPT .NE. 0) GO TO 10
+      MXX=NSORB(NTYPX)
+      DO 40 IN2=1,MXX
+      NORBX=NSTABL(IN2,NTYPX)
+      GO TO (341,342,350,350,343,350,350,350,350,350,
+     1       344,350,350,350,350,350,350,350,350,350,
+     2       345,350,350,350,350,350,350,350,350,350,
+     3       350,350,350,350,350),NORBX
+  341 F=D*CSXS
+      GO TO 350
+  342 F=D*CPXS
+      GO TO 350
+  343 F=D*CDXS
+      GO TO 350
+  344 F=D*CFXS
+      GO TO 350
+  345 F=D*CGXS
+  350 N20=N20+1
+      DXY20(N20)=F
+      FFT20(N20)=T
+   40 CONTINUE
+   10 CONTINUE
+      NXY10=N10
+      NXY20=N20
+C
+C     ----- ( II' / JJ' ) -----
+C
+      IF(.NOT.MSECND .OR . NOPT .NE. 0) GO TO 920
+      MXY=NFORB(NTYPY)
+      MXX=NFORB(NTYPX)
+      N11=0
+      DO 80 JN1=1,MXY
+      NORBY=NFTABL(JN1,NTYPY)
+      GO TO (801,802,810,810,803,810,810,810,810,810,
+     1       804,810,810,810,810,810,810,810,810,810),NORBY
+  801 D=A*CSYF
+      T=THREE
+      GO TO 810
+  802 D=A*CPYF
+      T=FIVE
+      GO TO 810
+  803 D=A*CDYF
+      T=SEVEN
+      GO TO 810
+  804 D=A*CFYF
+      T=RNINE
+  810 CONTINUE
+C
+      DO 90 IN1=1,MXX
+      NORBX=NFTABL(IN1,NTYPX)
+      GO TO (851,852,860,860,853,860,860,860,860,860,
+     1       854,860,860,860,860,860,860,860,860,860),NORBX
+  851 F=D*CSXF
+      GO TO 860
+  852 F=D*CPXF
+      GO TO 860
+  853 F=D*CDXF
+      GO TO 860
+  854 F=D*CFXF
+  860 N11=N11+1
+      DXY11(N11)=F
+      FFT11(N11)=T
+   90 CONTINUE
+   80 CONTINUE
+      NXY11=N11
+  920 CONTINUE
+      RETURN
+      END
+C*MODULE HSS1A   *DECK STVIDX
+      SUBROUTINE STVIDX(NOPT)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+C
+      DIMENSION NPWRX(35),NPWRY(35),NPWRZ(35)
+C
+      COMMON /HSSPAR/ FIRST,SECND,CPHF,BOTH,MFIRST,MSECND,MCPHF
+      COMMON /SHLOED/ LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     *                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     *                NIJ,IJD,KLD,IJ,KL
+      COMMON /DIJOED/ NADIJ1( 78),NADIJ2(169),NADIJ3(132)
+      COMMON /IJXOED/ NPIJX1( 78),NPIJX2(169),NPIJX3(132)
+      COMMON /IJYOED/ NPIJY1( 78),NPIJY2(169),NPIJY3(132)
+      COMMON /IJZOED/ NPIJZ1( 78),NPIJZ2(169),NPIJZ3(132)
+      COMMON /JDDSTV/ NFORB(4),NSORB(4),NFTABL(13,4),NSTABL(22,4),
+     *                LFTABL(20,2),LSTABL(35,2)
+C
+      DATA NPWRX/  0, 1, 0, 0, 2, 0, 0, 1, 1, 0, 3, 0, 0,
+     1             2, 2, 1, 0, 1, 0, 1, 4, 0, 0, 3, 3, 1,
+     2             0, 1, 0, 2, 2, 0, 2, 1, 1/
+      DATA NPWRY/  0, 0, 1, 0, 0, 2, 0, 1, 0, 1, 0, 3, 0,
+     1             1, 0, 2, 2, 0, 1, 1, 0, 4, 0, 1, 0, 3,
+     2             3, 0, 1, 2, 0, 2, 1, 2, 1/
+      DATA NPWRZ/  0, 0, 0, 1, 0, 0, 2, 0, 1, 1, 0, 0, 3,
+     1             0, 1, 0, 1, 2, 2, 1, 0, 0, 4, 0, 1, 0,
+     2             1, 3, 3, 0, 2, 2, 1, 1, 2/
+C
+C     ----- GENERATION OF INDICES FOR ADDRESS CALCULATION -----
+C     -----     AND POWER INDEX OF XINT, YINT AND ZINT    -----
+C
+      NI0=MAXI-MINI+1
+      NJ0=MAXJ-MINJ+1
+      NTYPI=NI0/2+1
+      NTYPJ=NJ0/2+1
+      LTYPI=NTYPI/4+1
+      LTYPJ=NTYPJ/4+1
+      NI1=NFORB(NTYPI)
+      NJ1=NFORB(NTYPJ)
+      NI2=NSORB(NTYPI)
+      N4 = 4
+      N1 = 1
+C
+C     ----- INTEGRAL TYPE IS (I'J) -----
+C
+      IF(.NOT.MFIRST .AND. NOPT .EQ. 0) GO TO 202
+      NIJ=13
+      N=0
+      DO 10 JN=1,NJ0
+      NORBJ=MINJ+JN-1
+      JX= N1 *NPWRX(NORBJ) + 1
+      JY= N1 *NPWRY(NORBJ) + 1
+      JZ= N1 *NPWRZ(NORBJ) + 1
+      NJP=NIJ*(JN-1)
+      DO 10 IN=1,NI1
+      NORBI=NFTABL(IN,NTYPI)
+      INN=LFTABL(NORBI,LTYPI)
+      N=N+1
+      NPIJX1(N)= N4 *NPWRX(NORBI)+JX
+      NPIJY1(N)= N4 *NPWRY(NORBI)+JY
+      NPIJZ1(N)= N4 *NPWRZ(NORBI)+JZ
+      NADIJ1(N)=NJP+INN
+   10 CONTINUE
+C
+C      ----- INTEGRAL TYPE IS (I''J) -----
+C
+  202 IF(.NOT.MSECND .OR. NOPT .NE. 0) GO TO 214
+      NIJ=22
+      N=0
+      DO 40 JN=1,NJ0
+      NORBJ=MINJ+JN-1
+      JX= N1 *NPWRX(NORBJ) + 1
+      JY= N1 *NPWRY(NORBJ) + 1
+      JZ= N1 *NPWRZ(NORBJ) + 1
+      NJP=NIJ*(JN-1)
+      DO 40 IN=1,NI2
+      NORBI=NSTABL(IN,NTYPI)
+      INN=LSTABL(NORBI,LTYPI)
+      N=N+1
+      NPIJX3(N)= N4 *NPWRX(NORBI)+JX
+      NPIJY3(N)= N4 *NPWRY(NORBI)+JY
+      NPIJZ3(N)= N4 *NPWRZ(NORBI)+JZ
+      NADIJ3(N)=NJP+INN
+   40 CONTINUE
+C
+C     ----- INTEGRAL TYPE (I'J') -----
+C
+      NIJ=13
+      N=0
+      DO 70 JN=1,NJ1
+      NORBJ=NFTABL(JN,NTYPJ)
+      JNN=LFTABL(NORBJ,LTYPJ)
+      JX= N1 *NPWRX(NORBJ) + 1
+      JY= N1 *NPWRY(NORBJ) + 1
+      JZ= N1 *NPWRZ(NORBJ) + 1
+      NJP=NIJ*(JNN-1)
+      DO 70 IN=1,NI1
+      NORBI=NFTABL(IN,NTYPI)
+      INN=LFTABL(NORBI,LTYPI)
+      N=N+1
+      NPIJX2(N)= N4 *NPWRX(NORBI)+JX
+      NPIJY2(N)= N4 *NPWRY(NORBI)+JY
+      NPIJZ2(N)= N4 *NPWRZ(NORBI)+JZ
+      NADIJ2(N)=NJP+INN
+   70 CONTINUE
+  214 CONTINUE
+      RETURN
+      END
+C*MODULE HSS1A   *DECK STVJDD
+      SUBROUTINE STVJDD
+C
+      DIMENSION     NFORB(4),NSORB(4),NFTABL(13,4),NSTABL(22,4),
+     *              LFTABL(20,2),LSTABL(35,2)
+C
+      COMMON /JDDSTV/ MFORB(4),MSORB(4),MFTABL(13,4),MSTABL(22,4),
+     *                KFTABL(20,2),KSTABL(35,2)
+C
+      DATA NFORB,NSORB/ 3, 7,10,13, 7,13,20,22/
+      DATA NFTABL/ 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     1             1, 5, 6, 7, 8, 9,10, 0, 0, 0, 0, 0, 0,
+     1             1, 2, 3, 4, 5, 6, 7, 8, 9,10, 0, 0, 0,
+     3             2, 3, 4,11,12,13,14,15,16,17,18,19,20/
+      DATA NSTABL/ 1, 5, 6, 7, 8, 9,10,                  15*0,
+     1             2, 3, 4,11,12,13,14,15,16,17,18,19,20, 9*0,
+     2             1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,
+     3            14,15,16,17,18,19,20,                   2*0,
+     4             1, 5, 6, 7, 8, 9,10,21,22,23,24,25,26,
+     5            27,28,29,30,31,32,33,34,35/
+      DATA LFTABL/ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,10*0,
+     1             0, 1, 2, 3, 6*0,
+     2             4, 5, 6, 7, 8, 9,10,11,12,13/
+      DATA LSTABL/ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,
+     1            16,17,18,19,20,                              15*0,
+     2             1, 0, 0, 0, 2, 3, 4, 5, 6, 7,               10*0,
+     3             8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22/
+C
+      DO 10 I=1,4
+      MFORB(I)=NFORB(I)
+   10 MSORB(I)=NSORB(I)
+      DO 40 J=1,4
+      DO 20 I=1,13
+   20 MFTABL(I,J)=NFTABL(I,J)
+      DO 30 I=1,22
+   30 MSTABL(I,J)=NSTABL(I,J)
+   40 CONTINUE
+      DO 70 J=1,2
+      DO 50 I=1,20
+   50 KFTABL(I,J)=LFTABL(I,J)
+      DO 60 I=1,35
+   60 KSTABL(I,J)=LSTABL(I,J)
+   70 CONTINUE
+      RETURN
+      END

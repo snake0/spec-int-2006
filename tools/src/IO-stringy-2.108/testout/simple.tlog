@@ -1,0 +1,33 @@
+1..6
+
+1: (Is 'A' string-equal to 'B'?)
+1:   A: "Hi there!\nTres cool, no?\n"
+1:   B: "Hi there!\nTres cool, no?\n"
+1: ok 1
+
+2: (Is 'A' string-equal to 'B'?)
+2:   A: "Hi there!\n"
+2:   B: "Hi there!\n"
+2: ok 2
+
+3: (Is 'A' string-equal to 'B'?)
+3:   A: "Hi there!\nTres cool, no?\n"
+3:   B: "Hi there!\nTres cool, no?\n"
+3: ok 3
+
+4: (Is 'A' string-equal to 'B'?)
+4:   A: "Hi there!\n"
+4:   B: "Hi there!\n"
+4: ok 4
+
+5: (Is 'A' string-equal to 'B'?)
+5:   A: "Hi there!\nTres cool, no?\n"
+5:   B: "Hi there!\nTres cool, no?\n"
+5: ok 5
+
+6: (Is 'A' string-equal to 'B'?)
+6:   A: "Hi there!\n"
+6:   B: "Hi there!\n"
+6: ok 6
+
+# END

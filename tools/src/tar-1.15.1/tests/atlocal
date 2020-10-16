@@ -1,0 +1,6 @@
+# tests/atlocal.  Generated from atlocal.in by configure.                                     -*- shell-script -*-
+# Configurable variable values for tar test suite.
+# Copyright (C) 2004 Free Software Foundation, Inc.
+
+PATH=/var/services/homes/spparmar/spec2006/tools/src/tar-1.15.1/tests:/var/services/homes/spparmar/spec2006/tools/src/tar-1.15.1/src:$top_srcdir:$srcdir:$PATH
+

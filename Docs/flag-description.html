@@ -1,0 +1,1195 @@
+<!DOCTYPE html
+      PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- A nice wide window is recommended when editing this document .............................................................. -->
+
+<head>
+<meta name="revision" content="$Id: flag-description.html 4761 2006-08-03 19:24:24Z john $" />
+<title>Flag Description Files SPEC CPU2006</title>
+
+<link rel="STYLESHEET" href="css/cpu2006docs.css" type="text/css" />
+
+<style type="text/css">
+.bold {font-weight: bold} 
+.center { text-align: center; }
+</style>
+
+</head>
+<body>
+
+
+<div class="center">
+<h1>CPU2006 Flag Description Format</h1>
+<h4>Last updated: 20 Mar 2006 11:17am jh/cds</h4>
+
+<p><strong>ABSTRACT</strong><br />
+This document describes the CPU2006 flags description file format.</p>
+</div>
+
+<hr />
+<p>(To check for possible updates to this document, please see
+<a href="http://www.spec.org/cpu2006/">http://www.spec.org/cpu2006/</a>)</p>
+
+<h3>Overview</h3>
+<p>Selecting one of the following will take you to the detailed table of contents
+for that section:</p>
+<p class="contentsl2">   <a href="#Dtoc_purp">Purpose                     </a></p>
+<p class="contentsl2">1. <a href="#Dtoc_1"   >Flag Description Sources    </a></p>
+<p class="contentsl2">2. <a href="#Dtoc_2"   >Flag Description Format     </a></p>
+<p class="contentsl2">3. <a href="#Dtoc_3"   >Flag Description Attributes </a></p>
+
+<h3>Detailed Contents</h3>
+   <p class="contentsl1" id="Dtoc_purp"><a href="#purpose">Purpose</a></p>
+
+   <p class="contentsl1" id="Dtoc_1"><a  href="#section1"  >1 </a> Flag Description Sources and Reporting</p>
+   <p class="contentsl2"><a              href="#section1.1">1.1</a> Sources</p>
+   <p class="contentsl3"><a              href="#section1.1.1">1.1.1</a> Suite-wide flags file</p>
+   <p class="contentsl3"><a              href="#section1.1.2">1.1.2</a> Per-benchmark flags files</p>
+   <p class="contentsl3"><a              href="#section1.1.3">1.1.3</a> User flags file</p>
+   <p class="contentsl2"><a              href="#section1.2">1.2</a> Reporting</p>
+   <p class="contentsl3"><a              href="#section1.2.1">1.2.1</a> Flags dump</p>
+   <p class="contentsl3"><a              href="#section1.2.2">1.2.2</a> Per-result flags report</p>
+   <p class="contentsl3"><a              href="#section1.2.3">1.2.3</a> Effect on other outputs</p>
+
+   <p class="contentsl1" id="Dtoc_2"><a  href="#section2"    >2 </a> Flag Description Format</p>
+   <p class="contentsl2"><a              href="#section2.1"  >2.1</a> Enclosing tags</p>
+   <p class="contentsl2"><a              href="#section2.2"  >2.2</a> HTML comments are supported</p>
+   <p class="contentsl2"><a              href="#section2.3"  >2.3</a> Informational elements</p>
+   <p class="contentsl3"><a              href="#section2.3.1">2.3.1</a> Regarding embedded HTML</p>
+   <p class="contentsl3"><a              href="#section2.3.2">2.3.2</a> Suggested file name</p>
+   <p class="contentsl3"><a              href="#section2.3.3">2.3.3</a> Page title</p>
+   <p class="contentsl3"><a              href="#section2.3.4">2.3.4</a> Style sheet</p>
+   <p class="contentsl3"><a              href="#section2.3.5">2.3.5</a> Header (top level)</p>
+   <p class="contentsl3"><a              href="#section2.3.6">2.3.6</a> Headers for each class</p>
+   <p class="contentsl3"><a              href="#section2.3.7">2.3.7</a> Platform settings </p>
+   <p class="contentsl2"><a              href="#section2.4"  >2.4</a> Individual flag description</p>
+
+   <p class="contentsl1" id="Dtoc_3"><a  href="#section3"    >3 </a> Flag Description Elements and Attributes</p>
+   <p class="contentsl2"><a              href="#section3.1"  >3.1</a> Flag name</p>
+   <p class="contentsl2"><a              href="#section3.2"  >3.2</a> Flag class</p>
+   <p class="contentsl3"><a              href="#section3.2.1">3.2.1</a> "mandatory" class</p>
+   <p class="contentsl3"><a              href="#section3.2.2">3.2.2</a> "forbidden" class</p>
+   <p class="contentsl3"><a              href="#section3.2.3">3.2.3</a> "portability" class</p>
+   <p class="contentsl3"><a              href="#section3.2.4">3.2.4</a> "optimization" class</p>
+   <p class="contentsl3"><a              href="#section3.2.5">3.2.5</a> "compiler" class</p>
+   <p class="contentsl3"><a              href="#section3.2.6">3.2.6</a> "other" class</p>
+   <p class="contentsl3"><a              href="#section3.2.7">3.2.7</a> "unknown" class</p>
+   <p class="contentsl2"><a              href="#section3.3"  >3.3</a> Regular expression</p>
+   <p class="contentsl3"><a              href="#section3.3.1">3.3.1</a> Default regular expression (the common case)</p>
+   <p class="contentsl3"><a              href="#section3.3.2">3.3.2</a> Full Perl regular expressions may be used</p>
+   <p class="contentsl3"><a              href="#section3.3.3">3.3.3</a> Substituting captured text</p>
+   <p class="contentsl3"><a              href="#section3.3.4">3.3.4</a> When <span class="ttnobr">\b</span> won't work</p>
+   <p class="contentsl3"><a              href="#section3.3.5">3.3.5</a> Regular expression references</p>
+   <p class="contentsl2"><a              href="#section3.4"  >3.4</a> Descriptive text</p>
+   <p class="contentsl2"><a              href="#section3.5"  >3.5</a> Referencing other flags</p>
+   <p class="contentsl3"><a              href="#section3.5.1">3.5.1</a> "flag" attribute (reference by name)</p>
+   <p class="contentsl4"><a              href="#section3.5.1.1">3.5.1.1</a> "flagtext" attribute (providing parameters)</p>
+   <p class="contentsl3"><a              href="#section3.5.2">3.5.2</a> "text" attribute (reference by inserting text)</p>
+   <p class="contentsl4"><a              href="#section3.5.2.1">3.5.2.1</a>Splitters</p>
+   <p class="contentsl2"><a              href="#section3.6"  >3.6</a> List of compilers</p>
+   <p class="contentsl2"><a              href="#section3.7"  >3.7</a> Example flag text</p>
+   <p class="contentsl2"><a              href="#section3.8"  >3.8</a> Example replacements</p>
+   <p class="contentsl2"><a              href="#section3.9"  >3.9</a> Controlling flag display</p>
+   <p class="contentsl2"><a              href="#section3.10" >3.10</a> Other attributes</p>
+
+   <p class="contentsl1"><a              href="#section4" >4 </a> Other elements</p>
+   <p class="contentsl1"><a              href="#section5" >5 </a> Precedence</p>
+
+<hr />
+<h2 id="purpose">Purpose</h2>
+
+
+<p>SPEC CPU2006 provides benchmarks in source code form, which are compiled under control of SPEC's toolset.  Compilation
+flags (such as <span class="ttnobr">-O5</span> or <span class="ttnobr">-unroll</span>) are detected and reported by the
+tools, with the help of flag description files.  A flag description file provides information such as:</p>
+<ul>
+<li>Whether a flag is to be considered under SPEC's rules for "Portability"</li>
+<li>Whether a flag is allowed at all, or is "Forbidden"</li>
+<li>How to describe a flag in reports (e.g. "<i>the <span class="ttnobr">-unroll</span> flag allows loop bodies to be
+duplicated</i>") </li>
+<li>How to recognize a flag.  Is it spelled "<span class="ttnobr">-unroll 4</span>", or is it "<span
+class="ttnobr">/unroll=4</span>"?  Or how about "<span class="ttnobr">-unroll:{inner=4,outer=4,tuplesmax=31K}</span>" with
+each of the three subsections considered as optional?</li>
+</ul>
+
+<p>Flag description files are XML-based.  This document covers the format of a flags description file and the valid values
+for the various attributes.</p>
+
+<p>This document assumes that you have at least some familiarity with creating HTML documents (via writing HTML, that is, not
+by having something else generate HTML on your behalf).  Familiarity with XML is not essential, although you might find it
+useful to understand some of the basic concepts of XML.  The definitive source for knowledge of XML is <a
+href="http://www.w3.org/">www.w3.org</a>, but if you're looking for an introduction, you might do better to try your favorite
+search engine with the phrase "XML introduction".</p>
+
+<hr />
+<h2 id="section1">1. Flag Description Sources and Reporting</h2>
+
+<h3 id="section1.1">1.1 Sources</h3>
+<p>Flag descriptions come from three sources: the benchmark tools (Suite-wide flags file), the benchmarks (Per-benchmark flags
+files), and the tester (User flags files).  The formats of all files are identical; they differ primarily in what may appear
+in each.</p>
+
+
+<h4 id="section1.1.1">1.1.1 Suite-wide flags file </h4>
+<p>The suite-wide flags file contains flags that are applied to all compilations and are in general not switchable (the
+"mandatory" class; flag classes will be explained more fully later).  Flags listed in this file are not typically reported.
+It is supplied by SPEC as <span class="ttnobr">$SPEC/benchspec/flags_mandatory.xml</span>. </p>
+
+<p>If SPEC should need to update the suite-wide flags file, it will be posted at the SPEC web site.  You can update your local
+copy using <a href="runspec.html#newflags">runspec --update_flags</a>.</p>
+
+<h4 id="section1.1.2">1.1.2 Per-benchmark flags files</h4>
+<p>The per-benchmark flags files describe optional portability flags and flags that are applied by default (such as those in
+<span class="tt">$SPEC/benchspec/CPU2006/nnn.benchmark/Spec/object.pm $bench_flags</span>).  Per-benchmark flags files are
+supplied by SPEC as <span class="tt">$SPEC/benchspec/CPU2006/nnn.benchmark/Spec/flags.xml</span>.  
+</p>
+
+<p>If SPEC should need to update the per-benchmark flags files, they will be posted at the SPEC web site.  You can update
+your local copies using <a href="runspec.html#newflags">runspec --update_flags</a>.</p>
+
+<h4 id="section1.1.3">1.1.3 User flags file</h4>
+<p>The user's flag description file describes compilation flags used by the tester.  The user's flag description file may be
+named in the config file (by the <span class="ttnobr">flagsurl</span> variable) or on the runspec command line using the
+<span class="ttnobr">--flagsurl</span> switch.  The file's location may be specified as either a path on the local file
+system or as a <span class="ttnobr">file://</span>, <span class="ttnobr">ftp://</span>, or <span
+class="ttnobr">http://</span> URL.  HTTPS is not supported.</p>  
+
+<p>User flag descriptions are saved within the raw result file so that the result may be reformatted without requiring access
+to the flags file.  The stored flag descriptions can be updated: if you use <span class="ttnobr">runspec --rawformat
+--flagsurl=newflags.xml</span> the new flag descriptions will override any stored in the raw result file.  The flag
+descriptions stored in the raw file will be removed if the result is formatted with the 'noflags' pseudo-flags file (<span
+class="ttnobr">--flagsurl noflags</span>).</p>
+
+<h3 id="section1.2">1.2 Reporting</h3>
+
+<p>Flag description files are used directly in two reports, and have an effect on several other kinds of reports.</p>
+
+<h4 id="section1.2.1">1.2.1 Flags dump</h4>
+
+<p>A "<i>flags dump</i>" can be generated by <span class="ttnobr">flag_dump</span> (see <a
+href="utility.html#flag_dump">utility.html</a>).  A flags dump is an HTML version of all the flags from an XML flags
+description file.</p>
+
+<h4 id="section1.2.2">1.2.2 Per-result flags report</h4>
+
+<p>A "<i>per-result flags report</i>", such as <span class="ttnobr">CINT2006.030.flags.html</span>, is generated by <span
+class="ttnobr">runspec --output_format flags</span> (see <a href="runspec.html#out">runspec.html</a>).  A per-result flags
+report includes descriptions only for the flags that were used in that particular test.</p>
+
+<p>Per-result flags reports can be regenerated using <a href="runspec.html#rawformat">runspec --rawformat</a>.  This feature
+can come in very handy if you need to update your user flags file after you have completed your measurement run.  For
+example, if a flag changes its meaning with a new compiler version, or you find that you have committed tyopgraphical errors
+that cause flags to unexpectedly be reported as "unknown", <span class="ttnobr">runspec --rawformat</span> can easily be rerun as
+needed.  You can also regenerate reports after using <a href="runspec.html#newflags">runspec --update_flags</a>.</p>  
+
+<h4 id="section1.2.3">1.2.3 Effect on other outputs</h4>
+
+<p>In addition, various other result reports draw on the flags description files in order to correctly classify flags.  For
+example, if run #30 uses benchmarks compiled with <span class="ttnobr">OPTIMIZE=-unroll=4</span>, then each of <span
+class="ttnobr">CINT2006.030.html</span>, <span class="ttnobr">CINT2006.030.txt</span>,  <span
+class="ttnobr">CINT2006.030.pdf</span>, and <span class="ttnobr">CINT2006.030.ps</span> will mention that <span
+class="ttnobr">-unroll=4</span> was used as an optimization flag.</p>
+
+
+<hr />
+<h2 id="section2">2. Flag Description Format</h2>
+
+<p>As you read this description, you may find it useful to refer to the examples included with the kit:
+(<span class="ttnobr">$SPEC/Docs/flags-simple.xml</span> and/or <span class="ttnobr">$SPEC/Docs/flags-advanced.xml</span>).  It will probably be best if you look
+at them as plain text, rather than in a browser, since browsers will attempt to interpret their contents.</p>
+
+<h3 id="section2.1">2.1 Enclosing tags</h3>
+<p>A flags description file is an XML 1.0 file that conforms to the
+SPEC CPU flags description DTD.  The first
+lines of the flags file <span class="bold">must</span> be</p>
+
+<p class="codeexample" style="white-space: pre">
+&lt;xml version="1.0"?&gt;
+&lt;!DOCTYPE flagsdescription
+   SYSTEM "http://www.spec.org/dtd/cpuflags1.dtd"
+>
+&lt;flagsdescription&gt;
+</p>
+
+<p>As you might expect, the file MUST end with a line that is simply</p>
+
+<p class="codeexample">
+&lt;/flagsdescription&gt;
+</p>
+
+<h3 id="section2.2">2.2 HTML comments are supported</h3>
+<p>Standard HTML-style comments are supported.  It is suggested that you use
+comments near the top of the file to describe its purpose, the system to
+which it applies, etc.  These comments must <span class="bold">NOT</span>
+come before the DOCTYPE declaration.</p>
+
+<h3 id="section2.3">2.3 Informational elements</h3>
+
+<p>A few elements are available for providing text outside of the context of individual flags.  If these elements appear,
+they must appear in the following order:
+<a href="#section2.3.2">filename</a>,
+<a href="#section2.3.3">title</a>,
+<a href="#section2.3.4">style</a>,
+<a href="#section2.3.5">header</a>,
+<a href="#section2.3.7">platform_settings</a>.  Only the title is mandatory.</p>
+
+<h4 id="section2.3.1">2.3.1 Regarding embedded HTML</h4>
+
+<p>A flags description file is an XML document.  Flag descriptions commonly include HTML.
+However, embedding HTML within XML poses a challenge, because XML parsers are
+promised that ampersand (&amp;) and left angle bracket (&lt;) do not appear unless used as XML markup. The solution is to
+hide embedded HTML by enclosing it within <span class="ttnobr">CDATA</span> sections.  (Alternatively, individual
+brackets could be escaped one at a time, but this is not recommended.)</p>
+
+<p>A <span class="ttnobr">CDATA</span> section begins with '<span class="ttnobr">&lt;![CDATA[</span>' and ends with
+'<span class="ttnobr">]]&gt;</span>'.  Any text between the start and end tags will not be touched by the XML parser.
+Of course, the CDATA end tag may not appear unescaped in the enclosed text.</p>
+
+<p>For example:</p>
+
+<pre class="codeexample">
+&lt;header&gt;&lt;![CDATA[
+&lt;p&gt;This is an &lt;i&gt;ACME Corporation&lt;/i&gt; flags description.&lt;/p&gt;
+&lt;p&gt;Please read it.&lt;/p&gt;
+]]&gt;&lt;/header&gt;
+</pre>
+
+<p>CPU2006 reports are compliant with the <a href="http://www.w3.org/TR/xhtml1/">XHTML 1.0 Strict</a> standard.  Care should
+be taken that any HTML markup used does not cause reports to become invalid or not well-formed.</p>
+
+<p>There is an <a href="http://validator.w3.org/">on-line validator</a> which may be used to check those elements.  Because
+the flag descriptions for a per-result flags report have the same markup as in the flag dump, validating the flags dump (as
+generated by <a href="utility.html#flag_dump">flag_dump</a>) will ensure that per-result flags reports are also valid.</p>
+
+<p>For convenience, flag descriptions that do not include any HTML will have <span
+class="ttnobr">&lt;p&gt;...&lt;/p&gt;</span> added to them.  For example:</p>
+
+<pre class="codeexample">
+&lt;flag name="F-fstrength-reduce" class="optimization"&gt;
+      &lt;![CDATA[
+      &lt;p&gt;Perform the optimizations of loop strength reduction and elimination of
+      iteration variables.&lt;/p&gt;
+      ]]&gt;
+&lt;/flag&gt;
+</pre>
+<p>could also be said as:</p>
+<pre class="codeexample">
+&lt;flag name="F-fstrength-reduce" class="optimization"&gt;
+      Perform the optimizations of loop strength reduction and elimination of
+      iteration variables.
+&lt;/flag&gt;
+</pre>
+
+<p>Automatic addition of <span class="ttnobr">&lt;p&gt;...&lt;/p&gt;</span> is the only HTML that gets added automatically;
+otherwise, you're on your own for writing valid HTML.  If you do write any of your own HTML, <span
+class="ttnobr">&lt;p&gt;...&lt;/p&gt;</span>  is <b>not</b> added, because the paragraph tags might interfere with whatever
+else you had set out to do.  In fact, if you include any left or right angle brackets (whether for HTML or just because you'd
+like to say that "3 &gt; 2", the automatic addition of <span class="ttnobr">&lt;p&gt;...&lt;/p&gt;</span> does <b>not</b>
+occur. </p> 
+
+
+<h4 id="section2.3.2">2.3.2 Suggested file name</h4>
+
+<p>There may be times when the flag file may move around without a filename, such as when it is enclosed in a raw result
+file.</p>
+
+<p>In order to be able to save those files with "nice" names, the <span
+class="ttnobr">&lt;filename&gt;...&lt;/filename&gt;</span> element may be used to suggest the base of a file name.</p>
+
+<p>For example:</p>
+
+<pre class="codeexample">
+&lt;!-- I would like the filename to begin with "ACME-flags-file" --&gt;
+&lt;filename&gt;ACME-flags-file&lt;/filename&gt;
+</pre>
+
+<p>There is no guarantee that all tools which might save a copy of the flags file will use the contents of this element.
+Thus its status as a "suggestion".</p>
+
+<h4 id="section2.3.3">2.3.3 Page title</h4>
+
+<p>Using the <span class="ttnobr">&lt;title&gt;...&lt;/title&gt;</span> element, you can define text which will be used to
+form the HTML page title for a flags dump (commonly seen as the window title for the browser).  This text is also used as the
+initial header on the page.</p>
+
+<p>The <span class="ttnobr">&lt;title&gt;</span> element is not used for results reporting; it is only used when dumping the
+flags to an HTML file.</p>
+
+<p>Because it is used in the page title, this element <span class="bold">must not</span> contain any HTML markup.</p>
+
+<p>For example:</p>
+
+<pre class="codeexample">
+&lt;title&gt;SPEC CPU2006 Flag Description for 400.perlbench&lt;/title&gt;
+</pre>
+
+<h4 id="section2.3.4">2.3.4 Style sheet</h4>
+
+<p>SPEC CPU2006 reports use structural HTML with presentation controlled by CSS.  Most discrete elements are identified by a
+class or an ID (or both) so that they can be styled with a great degree of control.  There is a <a
+href="css/cpu2006result.css">common style sheet</a>, as well as style sheets containing tweaks for <a
+href="css/cpu2006screen.css">screen output</a> and for <a href="css/cpu2006print.css">print output</a>.  They contain code to
+handle everything that the tools output by default.</p>
+
+<p>If you'd like to define some classes for use in your own markup, or if you'd like to override some of the default CSS, you
+may do so by using the <span class="ttnobr">&lt;style&gt;...&lt;/style&gt;</span> element.  Doing so will affect both
+per-result flags reports and the flags dump.</p>
+
+<p>As mentioned above, because the flag description file is parsed as XML, some things in the CSS (such as left angle
+brackets) must be escaped.  It is easiest to just enclose all of the CSS in a CDATA section.</p>
+
+<p>For example:</p>
+
+<pre class="codeexample">
+&lt;style&gt;&lt;![CDATA[
+body { background: red; }
+]]&gt;&lt;/style&gt;
+</pre>
+
+<h4 id="section2.3.5">2.3.5 Header (top level)</h4>
+
+<p>Within a <span class="ttnobr">&lt;header&gt;...&lt;/header&gt;</span> element you can provide some HTML which will be
+part of the flags dump.</p>
+
+<p>The contents of this section will be inserted verbatim into the flags dump after the top-level header and before the start
+of the flag descriptions.  If it is non-empty, it <span class="bold">must</span> be well-formed and valid XHTML 1.0.  If in
+doubt, <a href="http://validator.w3.org/">validate it</a>.</p>
+
+<p>For example:</p>
+
+<pre class="codeexample">
+&lt;header&gt;&lt;![CDATA[
+&lt;p&gt;This is a flags description.&lt;/p&gt;
+&lt;p&gt;Please read it.&lt;/p&gt;
+]]&gt;&lt;/header&gt;
+</pre>
+
+<p>The <span class="ttnobr">header</span> sections in the user flag description file only appears in the flags dump
+(as generated by the <a href="utility.html#flag_dump">flag_dump</a> utility); it does not appear in a per-result
+flags report.  </p>
+
+<h4 id="section2.3.6">2.3.6 Headers for each class </h4>
+
+<p>It is possible to provide some HTML which will appear in a flags dump at the top of each class section, before the flags
+in that section.  This text is also specified with the <a href="#section2.3.5">header</a> element; the only difference is
+that a "class" attribute is added.</p>
+
+<p>For example, for general notes about optimization flags, use something like this:</p>
+
+<pre class="codeexample">
+&lt;header class="optimization"&gt;&lt;![CDATA[
+&lt;p&gt;Some suboptions either enable or disable a feature.&lt;/p&gt;
+
+&lt;p&gt;Suboption values and their effects:&lt;/p&gt;
+&lt;ul&gt;
+ &lt;li&gt;1, on, true - enable the feature&lt;/li&gt;
+ &lt;li&gt;0, off, false - disable the feature&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;These values are not case sensitive.&lt;/p&gt;
+&lt;/p&gt;
+]]&gt;&lt;/header&gt;
+</pre>
+
+<h4 id="section2.3.7">2.3.7 Platform settings</h4>
+
+<p>The <span class="ttnobr">&lt;platform_settings&gt;...&lt;/platform_settings&gt;...</span> element may be used to describe
+system tunables or other performance-relevant items that are not compilation flags and are therefore invisible to the SPEC
+tools.  Items commonly covered here may include (but are certainly not limited to) methods for disabling hardware,
+environment variable settings, and descriptions of <span class="ttnobr">submit</span> commands.</p>
+
+<p>The platform settings element is inserted verbatim at the end of both the flags dump and the per-result flag report.  For
+example:</p>
+
+<pre class="codeexample">
+&lt;platform_settings&gt;&lt;![CDATA[
+
+&lt;p&gt;One or more system tunables may also be used.  If so, they are 
+mentioned under "Operating System Notes", and are defined below:&lt;/p&gt;
+
+   &lt;ul&gt;
+   &lt;li&gt;HEAPMAX:  /etc/system parameter, sets the heap  size in kilobytes&lt;/li&gt;
+   &lt;li&gt;STACKMAX: /etc/system parameter, sets the stack size in kilobytes&lt;/li&gt;
+   &lt;/ul&gt;
+
+]]&gt;&lt;/platform_settings&gt;
+</pre>
+
+
+<h3 id="section2.4">2.4 Individual flag description</h3>
+
+<p>The description of each individual flag is enclosed in <span class="ttnobr">&lt;flag&gt;...&lt;/flag&gt;</span> tags.
+Because the format of the XML can be validated (and because the parser is inflexible), some items must be specified as
+attributes within the opening <span class="ttnobr">&lt;flag ... &gt;</span> tag, and others must be standalone elements
+inside the <span class="ttnobr">flag</span> element.  The text of the flag description itself is the text within the <span
+class="ttnobr">flag</span> section; it is not called out by any special element or attribute name.</p>
+
+<p>Because of these restrictions, there is effectively only one proper place for each item.  Here's an example that contains
+every option:</p>
+
+<pre class="codeexample">
+&lt;flag name="F-Ox" class="optimization" regexp="-O(\d+)\b" compilers="cc,c++"&gt;
+    &lt;example&gt;-O3&lt;/example&gt;
+    &lt;ex_replacement&gt;3&lt;/ex_replacement&gt;
+    &lt;![CDATA[
+&lt;!-- Because this comment appears within the CDATA section, it will also
+appear in the HTML output. --&gt;
+&lt;p&gt;-O$1 enables optimization at level $1.&lt;/p&gt;
+    ]]&gt;
+    &lt;include flag="F-Qunroll" /&gt;
+    &lt;include text="F-inline=$1" /&gt;
+    &lt;display enable="1" /&gt;
+&lt;/flag&gt;
+</pre>
+
+<p>Because whitespace is largely ignored (except within quoted and CDATA
+sections), the above can be rendered in a much more readable fashion:</p>
+
+<pre class="codeexample">
+&lt;flag name="F-Ox"
+      class="optimization"
+      regexp="-O(\d+)\b"
+      compilers="cc,c++"
+      &gt;
+
+    &lt;example&gt;
+    -O3
+    &lt;/example&gt;
+
+    &lt;include flag="F-Qunroll" /&gt;
+    &lt;include text="F-inline=$1" /&gt;
+    &lt;display enable="1" /&gt;
+    &lt;ex_replacement&gt;3&lt;/ex_replacement&gt;
+
+    &lt;![CDATA[
+&lt;!-- Because this comment appears within the CDATA section, it will also
+appear in the HTML output. --&gt;
+&lt;p&gt;-O$1 enables optimization at level $1.&lt;/p&gt;
+    ]]&gt;
+
+&lt;/flag&gt;
+</pre>
+
+<p>All of the options are fully explained in the sections below.</p>
+
+<hr />
+
+<h2 id="section3">3. Flag Description Elements and Attributes</h2>
+<p>A flag description has three mandatory and several optional items.</p>
+
+<h3 id="section3.1">3.1 Flag name (mandatory)</h3>
+<p>Each flag must have a <span class="ttnobr">name</span> attribute.  This is a simple way to refer to the flag or group of
+flags that are described.  It may appear in some human-readable outputs (if alternative <a href="#section3.7">example
+text</a> is not supplied), and is also used to construct link anchors.  It <span class="bold">must</span> be unique.  If it
+is not, a validating parser will reject it.  Because it is used to construct anchors, there are some restrictions on its
+composition.</p>
+
+<p>The full specification is spelled out in the "Name" production (#5) in <a
+href="http://www.w3.org/TR/2000/REC-xml-20001006#sec-common-syn">XML 1.0 section 2.3</a>.  Basically, a name must begin with
+a letter, a colon, or an underscore.  After that, it may be composed of letters, digits, periods, hyphens ('-'), underscores,
+or colons.</p>
+
+<p>One problem with these restrictions is evident when attempting to use the name to construct a <a
+href="#section3.3.1">default regexp</a> for a flag.  Very few flags begin with a letter, underscore, or colon.  See the <a
+href="#section3.3.1">regexp</a> section for a rundown of the naming conventions that can be used to get around those
+restrictions.</p>
+
+<p>Names are also used for an important relationship:
+The tools allow you to relate flags (such as <span class="ttnobr">-g</span>) to specific compilers (such as <span
+class="ttnobr">/opt/strawberry/f95</span>).  You can relate more than one flag with identical spelling (for the human) to differing
+compilers; for example <span class="ttnobr">/opt/strawberry/cc</span> might also have its own <span class="ttnobr">-g</span>
+switch with its own meaning.  This is all kept straight by putting compilers into their own <a
+href="#section3.2.5">class</a> and then allowing individual flags to reference them using a compiler <a
+href="#section3.6">attribute</a>.  For example:</p>
+<pre>
+   &lt;flag name="g_cc"            regexp="-g" 
+         class="optimization" 
+         compilers="strawberrycc"&gt;
+   Enables debugging.  Does not disable optimization.
+   &lt;/flag&gt;
+
+   &lt;flag name="g_f95"           regexp="-g" 
+         class="optimization" 
+         compilers="strawberryf95"&gt;
+   Enables debugging.  Disables optimization.
+   &lt;/flag&gt;
+
+   &lt;flag name="strawberrycc" 
+         class="compiler" 
+         regexp="/opt/strawberry/cc" &gt;
+   C compiler 
+   &lt;/flag&gt;
+
+   &lt;flag name="strawberryf95" 
+         class="compiler" 
+         regexp="/opt/strawberry/f95" &gt;
+   Fortran 95 compiler
+   &lt;/flag&gt;
+</pre>
+<p>Notice above the use of the compiler names to link them to their switches.</p>
+
+
+
+<h3 id="section3.2">3.2 Flag class (mandatory)</h3>
+
+<p>Each flag must also have a <span class="ttnobr">class</span> attribute, which determines how the flag is reported.  There
+are 7 possible classes.</p>
+
+<h4 id="section3.2.1">3.2.1 "mandatory" class</h4>
+
+<p>These are flags that are supplied by SPEC for every compilation.  With a few exceptions, they are not overridable.
+Flags in the "mandatory" class are not listed on per-result flags reports, but they do appear in the dump of the suite-wide
+flags file, <span class="ttnobr">$SPEC/benchspec/flags_mandatory.xml</span>.</p>
+
+<h4 id="section3.2.2">3.2.2 "forbidden" class</h4>
+<p>These are flags that may not be used.  If "forbidden" flags are present, that does not prevent you from doing a run; but
+such flags will be prominently displayed in red on the result pages and in the per-result flags file.</p>
+
+<h4 id="section3.2.3">3.2.3 "portability" class</h4>
+<p>Flags in this class are candidates for consideration as portability as defined in the CPU2006 run rules <a
+href="runrules.html#rule_2.1.5">section 2.1.5</a>.  For example, the flags description file for <span
+class="ttnobr">465.tonto</span> classifies <span class="ttnobr">-DLANGUAGE_FORTRAN_90</span> as portability; if your system
+needs it, your config file might say:</p>
+
+<pre>   465.tonto=default:
+   PORTABILITY = -DLANGUAGE_FORTRAN_90
+</pre>
+
+<p>and the reports of your runs will mention the use of <span class="ttnobr">-DLANGUAGE_FORTRAN_90</span> in the Portability
+Flags section.  But note that the appearance of a flag in the "portability" class in a flag description file is not alone
+enough to meet rule 2.1.5; the tested platform must actually need the flag.  </p>
+
+<p>Portability flags are required to appear in configuration variables that contain the string <span
+class="ttnobr">PORTABILITY</span>; if you use a flag from the portability class in a configuration variable such as <span
+class="ttnobr">OPTIMIZATION</span>, <span class="ttnobr">COPTIMIZATION</span>, etc, this will be flagged as a
+error.</p>
+
+<h4 id="section3.2.4">3.2.4 "optimization" class</h4>
+<p>Flags in this class are considered to be "optimization" flags.  If any flags in this class are used in a configuration
+variable that are intended for portability flags, such as <span class="ttnobr">PORTABILITY</span>, <span
+class="ttnobr">CXXPORTABILITY</span>, etc, this will be noted in the results.</p>
+
+<h4 id="section3.2.5">3.2.5 "compiler" class</h4>
+<p>This class is used <strong>only</strong> to match the invocation strings for compilers (remember, the full text of the
+command line is parsed).  Items in this class will be displayed on the per-result flags report.  Additionally, during
+subsequent matches on a particular benchmark binary, the presence of flags in this class are remembered.  It is this special
+memory that enables flags to be selectively matched based on the <a href="#section3.6">compilers</a> attribute.</p>
+
+<h4 id="section3.2.6">3.2.6 "other" class</h4>
+<p>This class is used for flags and other things that are neither optimization nor portability.  These include flags that
+specify locations to the compiler, flags that change the compiler's verbosity, etc.  Items in this class will be displayed on
+the per-result flags report.</p>
+
+<h4 id="section3.2.7">3.2.7 "unknown" class</h4>
+<p>This class is used internally in the tools.  Flags in this class will
+always be listed in the "unknown flags" section on the per-result flag
+report.  This should not be used in a flags description file; after all, if
+it's listed there, it isn't unknown, is it?</p>
+
+<h3 id="section3.3">3.3 Regular expression (mandatory, but defaulted)</h3>
+
+<p>Each flag must have a <span class="ttnobr">regexp</span> attribute, which is a Perl-style regular expression that can
+be used to pick the flag out of a string of characters.  This requirement may seem daunting, but for many flags, a
+carefully-chosen <a href="#section3.1">name</a> will yield a default regexp that will work.  </p>
+
+<p>If you've not seen regular expressions before, suggestions for reading may be found <a href="#section3.3.5">below</a>.</p>
+
+<h4 id="section3.3.1">3.3.1 Default regular expression (the common case)</h4>
+
+<p>Commonly, a regular expression can be generated by default from the flag name, especially if flag names are chosen with
+knowledge of both the <a href="#section3.1"><span class="ttnobr">XML name rules</span></a> and knowledge of the defaults
+described in this section. </p>
+
+<p>As noted in the <a href="#section3.1"><span class="ttnobr">name</span></a> section, there are some restrictions that
+make it nearly impossible to construct an XML name that is exactly the same as the flag text itself.  This is primarily
+because most flags begin with a hyphen ("<span class="ttnobr">-</span>") or a forward slash ("<span
+class="ttnobr">/</span>").  Hypens may not be the first character in an XML name, and forward slashes are not allowed at all.
+Because of that, there are some standard transformations that the tools will do in order to construct a default regular
+expression from a flag name.  The following steps will be performed in the order listed:</p>
+
+<ol>
+
+   <li><p>If a flag name begins with the string "<span class="ttnobr">F-</span>", the "<span class="tt">F</span>" will be
+   stripped, and the remainder used as the basis for the default regexp.  Thus a flag named "<span
+   class="ttnobr">F-fast</span>" will generate a default regexp that matches "<span class="ttnobr">-fast</span>".  This
+   takes care of a common case for Unix systems.  </p></li>
+
+   <li><p>If a flag name begins with the string "<span class="ttnobr">f-</span>", the "<span class="tt">f-</span>" will be
+   stripped, and "<span class="ttnobr">[-/]</span>" will be prepended to it.  In addition, the regexp will have "<span
+   class="ttnobr">(?i)</span>" added to the beginning to cause it to match in a case-insensitive fashion.  Thus a flag
+   named "<span class="ttnobr">f-optimize</span>" will generate a default regexp that will match any of 
+   "<span class="ttnobr">/OPTIMIZE</span>",
+   "<span class="ttnobr">-OPTIMIZE</span>",
+   "<span class="ttnobr">-Optimize</span>", or
+   "<span class="ttnobr">/OpTiMiZe</span>".
+   This takes care of a common case for Windows systems.</p></li>
+
+  <li><p>The default composition of a <a href="#section3.1"><span class="ttnobr">name</span></a> does not allow it to
+  contain an equals ("<span class="ttnobr">=</span>") symbol; since this is common in many flags, the next decision is made
+  based on whether or not a colon is present, as a standin for equals.</p>
+
+   <ol style="list-style:lower-alpha">
+
+      <li><p>If the string contains a colon  ("<span class="tt">:</span>")  then the <span class="bold">first</span> (and
+      only the first) occurence of a colon will be converted to an equal symbol.  Thus a flag named "<span
+      class="ttnobr">F-DBYTEORDER:1234</span>" will match "<span class="ttnobr">-DBYTEORDER=1234</span>".  </p></li>
+
+      <li><p>If the string does not contain a colon, then the default regexp value will have</p> 
+<pre>           (?:=\S*)?
+</pre> 
+
+      <p>appended to it.  In this pattern, "<span class="tt">=</span>" matches an equals sign - that is, it is not a pattern
+      metacharacter, unlike all the rest of this regular expression.  The "<span class="ttnobr">\S*</span>" says that a
+      string of non-blank characters is optional.  The "<span class="ttnobr">(?:pattern)</span>" notation groups the pattern
+      inside the parentheses so that the "<span class="ttnobr">?</span>" operator that immediately follows the closing
+      parentheses applies to it, thus allowing 0 or 1 instances of the whole thing.</p> 
+
+      <p>The overall effect of "<span class="ttnobr">(?:=\S*)?</span>" is thus to optionally match an equals sign and a value
+      that does not contain whitespace.  This should be sufficient to catch most forms of basic definition: a flag named
+      "<span class="ttnobr">F-DFOO</span>" will catch use of "<span class="ttnobr">-DFOO</span>", "<span
+      class="ttnobr">-DFOO=</span>", and "<span class="ttnobr">-DFOO=bar</span>". </p></li>
+
+   </ol></li>
+
+   <li><p>Finally, we will keep the default regular expression from matching longer flags that have the above as the first
+   part of the string.  For example, we do not want "<span class="ttnobr">-DSPEC_CPU_SOLARIS</span>" to match "<span
+   class="ttnobr">-DSPEC_CPU_SOLARIS_SPARC</span>" (since that would leave "<span class="ttnobr">_SPARC</span>" alone
+   and unknown).  Usually, "<span class="ttnobr">\b</span>" (match a word boundary) is added to the end.  But if the
+   flag does not end with an alphanumeric, then "<span class="ttnobr">(?=\s|$)</span>" will be appended to the regexp,
+   which says to accept either white space or end of string. (You'll find more about this way of recognizing the end of a
+   switch in <a href="#section3.3.4">section 3.3.4</a>, below.)</p> 
+
+  </li>
+
+</ol>
+
+<p>Note that if this sequence of transformations does not yield an acceptable regular expression, it will be necessary to
+provide one explicitly via the regexp attribute.  Some hints for doing so are given in the next few sections.</p>
+
+<p>Some cases in which the default regular expression is not sufficient:</p>
+
+<ul>
+
+<li> The flag marker is a forward slash, but is not allowed to be a dash; <span class="bold">or</span> it is neither.</li>
+
+<li> There is <span class="bold">no</span> flag marker, as when matching the name of a library that is linked directly (that
+is, not via <span class="ttnobr">-l</span>).</li>
+</ul>
+
+<h4 id="section3.3.2">3.3.2 Full Perl regular expressions may be used</h4>
+
+<p>When the text of a flag is not constant, a more complex regular
+expression must be used.  In that case, nearly any of the full range of
+Perl regular expression features may be used: backreferences, negative and
+positive look-ahead and look-behind assertions, minimal matching, etc.  The
+only features that may not be used are ones marked "experimental" in the
+Perl documentation or ones which involve evaluating Perl code inside the
+regular expression.</p>
+
+<h4 id="section3.3.3">3.3.3 Substituting captured text</h4>
+
+<p>Captured backreferences may be substituted into the
+<a href="#section3.4">flag description text</a>
+and
+<a href="#section3.5">included flags</a>
+.  For example, in the following (inadequate) flag description:</p>
+
+<pre class="codeexample">
+&lt;flag name="xO"
+      class="optimization"
+      regexp="-xO([0-9]+)\b"&gt;
+This flag enables optimization at level $1.
+&lt;/flag&gt;
+</pre>
+
+<p>The regexp would match any flag which consisted of the characters "<span class="ttnobr">-xO</span>" followed by one or
+more digits.  The digits are "captured" by the parentheses that surround <span class="ttnobr">[0-9]+</span> and made
+available to the text.  So for a flag like "<span class="ttnobr">-xO5</span>", the text produced in the flag report would
+read</p>
+
+<p class="example">This flag enables optimization at level 5.</p>
+
+<p>This feature allows complex flags (such as a flag that causes the compiler to pass a bunch of flags directly to the
+linker) to be compactly described.  There's no reason you couldn't simply list each variation separately; in cases where
+there are only two or three possibilities, that may be preferable.  But if you want to get fancy, you can.</p>
+
+<p>To insert a literal dollar sign into replacement text, prefix it with a
+backslash ("<span class="ttnobr">\</span>", as in
+<span class="ttnobr">\$VMSDirName</span>).  To insert a literal
+backslash, prefix it with another backslash.</p>
+
+<h4 id="section3.3.4">3.3.4 When <span class="ttnobr">\b</span> won't work</h4>
+<p>If your flag ends with a non-alphanumeric character, <span class="ttnobr">\b</span> is
+<strong>not</strong> the correct way to end it.  The reason is that
+<span class="ttnobr">\b</span> is a zero-width assertion that matches the boundary between a
+"word" (alphanumeric) character and a non-"word" character.  For most
+flags, <span class="ttnobr">\b</span> is just the thing, since both whitespace and the end of
+the string are considered by Perl to be "non-word" characters.</p>
+
+<p>But what about when you have a flag that does not end in an alphanumeric character?  Say you have a flag that will appear
+on the compilation command line as '<span class="ttnobr">-fpsafe-</span>'.  You can't use <span class="ttnobr">\b</span>
+because the last character in that flag is a dash.  It's time for the "zero-width positive lookahead assertion", that is,
+<span class="ttnobr">(?=pattern)</span>, with pattern set to match either whitespace or end of string:</p>
+
+<pre class="codeexample">(?=\s|$)</pre> 
+
+<p>So for the example above, the full regexp would be</p>
+
+<pre class="codeexample">-fpsafe-(?=\s|$)</pre> 
+
+<p>That will ensure that your flag description matches
+<strong>only</strong> the string '-fpsafe-' and not something like
+'-fpsafe-all'.</p>
+
+<p>In fact, you could safely replace all occurrences of <span class="ttnobr">\b</span> with the
+construct above.  But <span class="ttnobr">\b</span> is more concise and looks a
+<strong>lot</strong> less confusing, so we'll use that wherever we can.</p>
+
+<h4 id="section3.3.5">3.3.5 Regular expression references</h4>
+
+<p>You can learn about Perl's regular expression capabilities by typing any of these three commands:</p>
+<pre>   specperldoc perlretut
+   specperldoc perlrequick
+   specperldoc perlre</pre>  
+<p>You'll find the same information on many systems by typing "<span class="ttnobr">man perl</span>", or you can try <a
+href="http://perldoc.perl.org/perl.html">http://perldoc.perl.org/perl.html</a>.  Jeffrey Friedl has also written a book
+called <span style="text-decoration:underline">Mastering Regular Expressions</span> which you might find helpful.</p> 
+
+<h3 id="section3.4">3.4 Descriptive text (mandatory)</h3>
+
+<p>With one exception, all flags must have descriptive text.  After all,
+the whole point of this exercise is to locate <strong>and</strong> describe
+the flags being used.  This text is what's contained in the <span
+class="ttnobr">&lt;flag...&gt;</span> element, so there's no special
+attribute or element name for it.</p>
+
+<p>The only time a description may be omitted is in the case of
+non-displayed flags.  Those flags must <strong>not</strong> have
+descriptive text.  See the <a href="#section3.9">controlling display</a>
+section for more information.</p>
+
+<h3 id="section3.5">3.5 Referencing other flags (optional)</h3>
+
+<p>If the use of a flag implies the use or setting of another flag or flags,
+that may be noted.  To do this, use the empty tag
+<span class="ttnobr">&lt;include /&gt;</span>
+. This tag has two attributes and can be used multiple times to reference
+more than one flag.</p>
+
+<h4 id="section3.5.1">3.5.1 "flag" attribute (reference by name)</h4>
+
+<p>This attribute allows you to implicitly include other flags by <a href="#section3.1">name</a>.  This attribute may only
+appear once per <span class="ttnobr">&lt;include /&gt;</span> tag and must contain the name of only one flag.  Included
+flags appear in per-result flags reports if they come from user flag description files.  Flags that come from SPEC's own
+distribution (<a href="#section1.1.1">Suite-wide flags file</a> or <a href="#section1.1.2">Per-benchmark flags files</a>) 
+are linked to descriptions posted at SPEC's web site.  For example:</p>
+
+<pre class="codeexample">
+&lt;flag name="F-DSPEC_CPU_X64"
+      class="portability"&gt;
+&lt;include flag="SPEC_CPU_LITTLEENDIAN" /&gt;
+&lt;include flag="MYSWAP" /&gt;
+&lt;include flag="NEED_VA_COPY" /&gt;
+&lt;include flag="SPEC_CPU_NO_NV_PRESERVES_UV" /&gt;
+This macro indicates that the benchmark is being built on an x64 (AMD64-compatible)
+system.
+&lt;/flag&gt;
+</pre>
+
+<p>If
+<span class="ttnobr">-DSPEC_CPU_X64</span>
+is used either explicitly or as the result of the use of another flag, it
+also implies that the flags named
+<span class="ttnobr">SPEC_CPU_LITTLEENDIAN</span>,
+<span class="ttnobr">MYSWAP</span>,
+<span class="ttnobr">NEED_VA_COPY</span>, and
+<span class="ttnobr">SPEC_CPU_NO_NV_PRESERVES_UV</span>
+are also used.</p>
+
+<p>Note that flags included in this way, because they are referred to by
+<a href="#section3.1">name</a>, must also be described.  If an attempt is made to
+include a flag that is not described, runspec will abort.  A validating XML
+parser would also be able to detect this problem.</p>
+
+<h5 id="section3.5.1.1">3.5.1.1 "flagtext" attribute (providing parameters)</h5>
+
+<p>For flags which are implicitly included by name, this attribute allows you
+to specify the forms that those flags would have taken were they specified
+directly.  Without this attribute, there are two possibly undesireable actions
+that the tools take:</p>
+<ol>
+ <li>The included flag's <a href="#section3.7">example</a> text is used as the
+      text of the link.</li>
+ <li>When the description of the implicitly included flag is output, any
+      backreferences are substituted with the contents of the
+      <a href="#section3.8">ex_replacements</a> array.</li>
+</ol>
+
+<p>Obviously, if the included flag has only one form (such as
+<span class="ttnobr">-fast</span>) for which the example is correct,
+and the description contains no backreferences to be substituted, then this
+attribute is unnecessary.  This is the common case.</p>
+
+<p>However, for flags that take values or have backreferences in their
+descriptive text, this attribute is very useful.  Consider the following flag
+description:</p>
+
+<pre class="codeexample">
+&lt;flag name="xtarget"
+      class="optimization"
+      regexp="-xtarget=\S+\b"&gt;
+&lt;example&gt;-xtarget=tb9000, -xtarget=native&lt;/example>
+&lt;![CDATA[
+    &lt;p&gt;This flag is a convenience option which is used to set various system-
+    specific scheduler parameters.  The following values are valid:&lt;/p&gt;
+       &lt;ul&gt;
+        &lt;li&gt;tb1: Set parameters suitable for the TurboBlaster 1 processor&lt;/li&gt;
+        &lt;li&gt;tb2: Set parameters suitable for the TurboBlaster 2 processor&lt;/li&gt;
+        &lt;li&gt;tb9000: Set parameters suitable for TurboBlaster 9000 processor.&lt;/li&gt;
+        &lt;li&gt;native: Set parameters for the current processor.&lt;/li&gt;
+       &lt;/ul&gt;
+]]&gt;
+&lt;/flag&gt; 
+</pre>
+
+<p>Let's say there's another flag (<span class="ttnobr">-unrolltb2</span>) that automatically sets <span
+class="ttnobr">-xtarget=tb2</span>, like this:</p>
+
+<pre class="codeexample">
+&lt;flag name="F-unrolltb2" class="optimization"&gt;
+&lt;include flag="xtarget" /&gt;
+Unroll optimally for Turboblaster 2.  Also sets xtarget for the TurboBlaster 2.
+&lt;/flag&gt;
+</pre>
+
+<p>Using <span class="ttnobr">-unrolltb2</span> would result in a description that would look something like this:</p>
+
+<div style="border: 1px solid gray; margin: .8em 10%; ">
+<ul>
+<li>-unrolltb2</li>
+<li>
+ <ul class="flagDesc">
+  <li class="descText">
+      <p>Unroll optimally for Turboblaster 2.  Also sets xtarget for the TurboBlaster 2.</p>
+  </li>
+  <li class="flagDescInc">Includes
+   <ul class="flagTOC">
+    <li><a href="#user_xtarget">-xtarget=tb9000, -xtarget=native</a></li>
+   </ul>
+  </li>
+ </ul>
+<p style="margin:0em .8em; line-height:8px;">.
+<br />. 
+<br />.
+</p> </li>
+<li id="user_xtarget">-xtarget=tb9000, -xtarget=native</li>
+<li>
+ <ul class="flagDesc">
+  <li class="descText">
+    <p>This flag is a convenience option which is used to set various system-
+    specific scheduler parameters.  The following values are valid:</p>
+    <ul>
+     <li>tb1: Set parameters suitable for the TurboBlaster 2 processor</li>
+     <li>tb2: Set parameters suitable for the TurboBlaster 2 processor</li>
+     <li>tb9000: Set parameters suitable for TurboBlaster 9000 processor.</li>
+     <li>native: Set parameters for the current processor.</li>
+    </ul>
+   </li>
+  </ul>
+</li>
+</ul>
+</div>
+
+
+<p>Not very accurate, is it?  The two sections might be separated by substantial space (as indicated by the three dots
+above), so when readers get to the second description they might not recall exactly what form of 
+<span class="ttnobr">-xtarget</span> is in use today, and the description will be of limited value.</p>
+
+<p>However, using the <span class="ttnobr">flagtext</span> attribute,
+as in</p>
+
+<pre class="codeexample">&lt;include flag="xtarget" flagtext="-xtarget=tb2" /&gt;</pre>
+
+<p>would result in a description that looks more like</p>
+
+<div style="border: 1px solid gray; margin: .8em 10%; ">
+<ul>
+<li>-unrolltb2</li>
+<li>
+ <ul class="flagDesc">
+  <li class="descText">
+      <p>Unroll optimally for Turboblaster 2.  Also sets xtarget for the TurboBlaster 2.</p>
+  </li>
+  <li class="flagDescInc">Includes
+   <ul class="flagTOC">
+    <li><a href="#user_xtarget2">-xtarget=tb2</a></li>
+   </ul>
+  </li>
+ </ul>
+<p style="margin:0em .8em; line-height:8px;">.
+<br />. 
+<br />. </p></li>
+<li id="user_xtarget2">-xtarget=tb2</li>
+<li>
+ <ul class="flagDesc">
+  <li class="descText">
+    <p>This flag is a convenience option which is used to set various system-
+    specific scheduler parameters.  The following values are valid:</p>
+    <ul>
+     <li>tb1: Set parameters suitable for the TurboBlaster 2 processor</li>
+     <li>tb2: Set parameters suitable for the TurboBlaster 2 processor</li>
+     <li>tb9000: Set parameters suitable for TurboBlaster 9000 processor.</li>
+     <li>native: Set parameters for the current processor.</li>
+    </ul>
+   </li>
+  </ul>
+</li>
+</ul>
+</div>
+
+
+<p>As you can see above, it's clear from both the text used for the link
+as well as the name of the described flag that
+<span class="ttnobr">-xtarget=tb2</span> is the flag that is actually included.</p>
+
+<h4 id="section3.5.2">3.5.2 "text" attribute (reference by inserting text)</h4>
+
+<p>This attribute allows you to add the
+<span class="bold">text</span>
+of flags back into the flags list that is being processed.  The text listed
+is subject to backreference substitution.  For example:</p>
+
+<pre class="codeexample">
+&lt;flag name="fast"
+      class="optimization"
+      regexp="-fast(32|64)\b"&gt;
+&lt;include text="-g$1" /&gt;
+This switch is not for going slowly.
+&lt;/flag&gt;
+</pre>
+
+<p>With this flag description,
+<span class="ttnobr">-fast32</span> or
+<span class="ttnobr">-fast64</span>
+cause either
+<span class="ttnobr">-g32</span> or
+<span class="ttnobr">-g64</span>
+to be put back into the list of flags to be parsed.  The inclusions will go
+back into the same variable from which they came.</p>
+
+<p>Since they're parsed as regular flags, the new flags need to be described.  If they are not, the per-result flags report
+will put them in the "unknown" flag section. </p> 
+
+<h5 id="section3.5.2.1">3.5.2.1 Splitters</h5>
+
+<p>Flag insertion by text is a powerful feature that allows complex multi-switch flags to be decomposed and parsed as if they
+were several individual flags.</p>
+
+<p>For example, given the PathScale-style multi-switch flag <span class="ttnobr">-OPT:Ofast:ro=3:fast_sqrt</span>, the
+following flag description would break it up into its constituent parts:</p>
+
+<pre class="codeexample">
+&lt;flag name="F-OPT:all"
+      class="optimization"
+      regexp="-OPT:([^:\s]+):(.+)\b"&gt;
+&lt;include text="-OPT:$1" /&gt;
+&lt;include text="-OPT:$2" /&gt;
+&lt;display enable="0" /&gt;
+&lt;/flag&gt;
+</pre>
+
+<p>The regular expression matches <span class="ttnobr">-OPT:</span> followed by some text that does not contain a colon or
+white space (which is captured), followed by a colon and other text (which is also captured).  Both instances of saved text
+are reinserted into the flags variable prepended by "<span class="ttnobr">-OPT:</span>".  In other words, it effectively
+causes the original long string </p>
+<pre class="codeexample">-OPT:Ofast:ro=3:fast_sqrt</pre> 
+<p>to be replaced by </p>
+<pre class="codeexample">-OPT:Ofast -OPT:ro=3:fast_sqrt</pre> 
+<p>and then (as it iterates again) by </p>
+<pre class="codeexample">-OPT:Ofast -OPT:ro=3 -OPT:fast_sqrt</pre>
+
+<p>All that's left is to describe each individual flag.  So the complete form of the above example would be something
+like:</p>
+
+<pre class="codeexample">
+&lt;!-- Splitter for -OPT flags --&gt;
+&lt;flag name="F-OPT:all"
+      class="optimization"
+      regexp="-OPT:([^:\s]+):(.+)\b"&gt;
+&lt;include text="-OPT:$1" /&gt;
+&lt;include text="-OPT:$2" /&gt;
+&lt;display enable="0" /&gt;
+&lt;/flag&gt;
+
+&lt;flag name="F-OPT:Ofast"
+      class="optimization"
+      regexp="-OPT:Ofast\b"&gt;
+-OPT:Ofast tells the compiler to turn on Every Known Optimization mode.
+&lt;/flag&gt;
+
+&lt;flag name="F-OPT:ro"
+      class="optimization"
+      regexp="-OPT:ro=(\d+)"&gt;
+Specifies the level of acceptable departure from source language
+floating-point, round-off, and overflow semantics. [...]
+&lt;/flag&gt;
+
+&lt;flag name="F-OPT:fast_sqrt"
+      class="optimization"
+      regexp="-OPT:Ofast_sqrt\b"&gt;
+Replaces calls to the accurate but slow square root implementation
+with calls to fast_sqrt, which is only accurate to within 37 ulp.
+&lt;/flag&gt;
+</pre>
+
+<h3 id="section3.6">3.6 List of compilers (optional)</h3>
+
+<p>The
+<span class="ttnobr">compilers</span>
+attribute will allow you to specify that a particular flag only applies to
+a particular set of compilers.  The value for this attribute is a
+comma-separated list of flag
+<span class="ttnobr"><a href="#section3.1">name</a></span>s.  The flags
+referenced must be in the <a href="#section3.2.5">compiler</a> class.</p>
+
+<h3 id="section3.7">3.7 Example flag text (optional, but defaulted)</h3>
+
+<p>The
+<span class="ttnobr">example</span>
+attribute allows the specification of text other than the
+<span class="ttnobr">name</span>
+attribute to be used for display, as in the report formats and the HTML flag
+dump.  Note that unlike
+<span class="ttnobr">name</span>,
+<span class="ttnobr">example</span>
+does not need to be unique.  For example, if two compilers have the same
+flag text with different meanings, 
+<span class="ttnobr">example</span>
+can be set identically for both:</p>
+
+<pre class="codeexample">
+&lt;flag name="cc-Ox"
+      class="optimization"
+      regexp="-O(\d+)\b"
+      compilers="cc"&gt;
+&lt;example&gt;-O1 through -O4&lt;/example&gt;
+&lt;![CDATA[
+&lt;p&gt;This flag enables optimization at level &lt;i&gt;x&lt;/i&gt;.  Explanation of levels is as
+follows:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt; Basic, kindergarten-level optimization.&lt;/li&gt;
+  &lt;li&gt; Good optimization.  You should use this unless it breaks your program.&lt;/li&gt;
+  &lt;li&gt; The best optimization that we know how to do, except ZZZ.&lt;/li&gt;
+  &lt;li&gt; Like #3, but adds ZZZ.&lt;/li&gt;
+&lt;/ol&gt;
+]]&gt;
+&lt;/flag&gt;
+
+&lt;flag name="f90-Ox"
+      class="optimization"
+      regexp="-O(\d+)\b"
+      compilers="f90"&gt;
+&lt;example&gt;-O1 through -O4&lt;/example&gt;
+&lt;![CDATA[
+&lt;p&gt;This flag enables optimization at level &lt;i&gt;x&lt;/i&gt;.  Explanation of levels is as
+follows:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt; Basic, kindergarten-level optimization.&lt;/li&gt;
+  &lt;li&gt; Good optimization.  You should use this unless it breaks your program.&lt;/li&gt;
+  &lt;li&gt; The best optimization that we know how to do.&lt;/li&gt;
+  &lt;li&gt; Like #3, but works even when column 72 is overpunched.&lt;/li&gt;
+&lt;/ol&gt;
+]]&gt;
+&lt;/flag&gt;
+</pre>
+
+<p>If no example flag text is given, the flag name will be used for display.  If the flag name begins with 'F' 
+or 'f', it will be removed; if the flag name begins with 'D', a hyphen will be added at the foront; and if it 
+contains a ":", the first such will be changed to an equals sign.  (These changes roughly parallel the changes 
+that are made for generation of default regular expressions.)</p>
+
+<h3 id="section3.8">3.8 Example replacements (optional)</h3>
+
+<p>The <span class="ttnobr">ex_replacement</span> attribute allows you to specify replacements for $1, $2, etc in the
+descriptive text.  These would normally come from text captured by the regexp during flag matching; when the regexp is not
+being used for matching (as when doing a flags dump), these replacements will be used.</p>
+<p>This attribute may be specified multiple times.</p>
+
+<p>For example:</p>
+<pre class="codeexample">
+&lt;flag name="cc-Ox"
+      class="optimization"
+      regexp="-O(\d+)\b"
+      compilers="cc"&gt;
+&lt;example&gt;-Ox&lt;/example&gt;
+&lt;ex_replacement&gt;1 - 5&lt;/ex_replacement&gt;
+This flag enables optimization at level $1.
+&lt;/flag&gt;
+
+&lt;flag name="f90-Ox"
+      class="optimization"
+      regexp="-O(\d+)\b"
+      compilers="f90"&gt;
+&lt;example&gt;-Ox&lt;/example&gt;
+&lt;ex_replacement&gt;1 - 5&lt;/ex_replacement&gt;
+This flag enables optimization at level $1.
+&lt;/flag&gt;
+</pre>
+
+<h3 id="section3.9">3.9 Controlling display</h3>
+
+<p>Flag descriptions that serve only to "split" multiple-option flags into
+smaller, more matchable chunks generally won't have any descriptive text
+(since they perform a function other than describing a flag).  These
+special "splitter" flags do not necessarily need to show up in the flag
+report; in that case, display can be disabled by use of the
+<span class="ttnobr">display</span> element and its single attribute
+<span class="ttnobr">enable</span>.</p>
+
+<p>Note that disabling display of a particular flag description is only
+allowed if the flag in question contains no descriptive text and
+<span class="bold">ONLY</span> includes other flags by
+<a href="#section3.5.2">textual insertion</a>.  For example:</p>
+
+<pre class="codeexample">
+&lt;!-- Splitter for -OPT flags --&gt;
+&lt;flag name="F-OPT:all"
+      class="optimization"
+      regexp="-OPT:([^:\s]+):(.+)\b"&gt;
+&lt;include text="-OPT:$1" /&gt;
+&lt;include text="-OPT:$2" /&gt;
+&lt;display enable="0" /&gt;
+&lt;/flag&gt;
+</pre>
+
+<p>See <a href="#section3.5.2">section 3.5.2</a> for an explanation of
+how this description works.</p>
+
+<p>This rule is ignored when generating a flags dump.</p>
+
+<p>The rule is also ignored when results are formatted for review, with the runspec <a href="runspec.html#review">--review</a>
+switch.</p>
+
+<h3 id="section3.10">3.10 Other attributes</h3>
+
+<p>Inclusion of other attributes (whether intentionally or by typo) will be
+flagged as an error and cause the flag description file being read to be
+ignored.</p>
+
+<h2 id="section4">4 Other Elements</h2>
+
+<p>Inclusion of other elements (whether intentionally or by typo) will be
+flagged as an error and cause the flag description file being read to be
+ignored.</p>
+
+
+<h2 id="section5">5 Precedence</h2>
+<p>Flags in each file are processed in the order in which they appear; there is no explicit precedence mechanism.  If a
+description matches more than 100 times when processing flags for a single benchmark, that description will be disabled, a
+warning emitted, and processing will continue.</p>
+
+
+</body>
+</html>

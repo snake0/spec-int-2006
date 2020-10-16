@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>416.gamess: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>416.gamess<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>416.gamess</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Gordon Research Group</p>
+
+<p>Department of Chemistry</p>
+
+<p>Iowa State University</p>
+
+<p>Ames, IA 50011</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Quantum chemical computations</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>A wide range of quantum chemical computations are possible using
+GAMESS. For a very detailed description, see INTRO.TXT. The
+benchmark 416.gamess does the following computations for the
+reference workload:</p>
+
+<ul>
+<li>Self-consistent field (SCF) computation (type: Restricted Hartree-Fock) of cytosine molecule using the
+direct SCF method</li>
+
+<li>SCF computation (type: Restricted open-shell Hartee-Fock) of water and cu2+ using the direct
+SCF method</li>
+
+<li>SCF computation (type: Multi-configuration Self-consisted field) of triazolium ion using the
+direct SCF method</li>
+</ul>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>For a detailed description of input files, see INPUT.TXT</p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>See INTRO.TXT and PROG.TXT</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>Fortran</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>Uses the following features that are either non-standard or
+deleted in Fortran 95:</p>
+
+<ul>
+<li>Equivalence of objects of character type with non-character
+types: The original source makes use of Hollerith constants to load
+numeric variables. Hollerith constants are deleted from the
+Fortran 95 standard, although it is supported by most commercial
+Fortran 95 compilers. To improve portability, SPEC has made source
+changes to workaround the use of Hollerith constants. This is
+trigerred by the switch '-DSPEC_CPU_NO_HOLLERITH', which is set by
+default. With this switch, an alternate source is activated, where
+character strings are equivalenced with numeric variables, avoiding
+the use of Holleriths. Unfortunately, equivalencing variables of
+character type with non-character types is also non-standard in
+Fortran 95, although it works as expected for most compiler
+implementations.</li>
+
+<li>Some formal and actual arguments of subroutines do not have the same
+data type.</li>
+
+<li>Some arrays are accessed past the end of the defined array size. This will, however, not cause memory access faults. This happens in the subroutine ALDECI in aldeci.F. An array-bound checker program may return errors due to this standard violation.</li>
+
+<li>The argument array sizes defined in some subroutines do not match the size of the actual argument passed. This standard violation may cause an array-bound checker program to return errors. This occurs in some subroutines in trans.F, scflib.F and nameio.F</li>
+</ul>
+
+<p>The benchmark 416.gamess source is generated from the original
+GAMESS by using the 'SEQ' (sequential) directive. So, 416.gamess
+can only be used for a sequential run and not a parallel run.</p>
+
+<hr />
+
+<h2>References</h2>
+
+<p>GAMESS project webpage:
+<a href="http://www.msg.ameslab.gov/GAMESS/GAMESS.html">
+http://www.msg.ameslab.gov/GAMESS/GAMESS.html</a></p>
+
+<p>Introductory Books:</p>
+
+<ul>
+<li>"Ab Initio Molecular Orbital Theory", W.J.Hehre, L.Radom,
+J.A.Pople, P.v.R.Schleyer, Wiley and Sons, New York, 1986</li>
+
+<li>"Modern Quantum Chemistry", A.Szabo, N.S.Ostlund McGraw-Hill,
+1989</li>
+
+<li>"Introduction to Computational Chemistry", F.Jensen Wiley and
+Sons, Chichester, 1999</li>
+
+<li>"Introduction to Quantum Mechanics in Chemistry", M.A.Ratner,
+G.C.Schatz, Prentice Hall, 2000</li>
+</ul>
+
+<p>Computational References:</p>
+
+<ul>
+<li>GAMESS, M.W.Schmidt, K.K.Baldridge, J.A.Boatz, S.T.Elbert,
+M.S.Gordon, J.J.Jensen, S.Koseki, N.Matsunaga, K.A.Nguyen, S.Su,
+T.L.Windus, M.Dupuis, J.A.Montgomery J.Comput.Chem. 14, 1347-1363
+(1993)</li>
+</ul>
+
+<p>For more references, please see REFS.TXT</p>
+
+<hr />
+
+<p>Last updated: 7 March 2006</p>
+</body>
+</html>

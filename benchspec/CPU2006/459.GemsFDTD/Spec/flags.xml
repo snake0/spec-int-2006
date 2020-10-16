@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags1.dtd">
+
+<!-- This file defines flags that appear in the sources for 459.GemsFDTD.
+
+  Copyright (C) 2005-2006 Standard Performance Evaluation Corporation
+
+  $Revision: 3869 $
+  $Date: 2006-02-24 10:01:32 -0500 (Fri, 24 Feb 2006) $
+-->
+<flagsdescription>
+
+<!-- Normal flags file should suggest a name for themselves -->
+<filename>459.GemsFDTD.flags</filename>
+
+<title>459.GemsFDTD Flags</title>
+
+<header>
+<![CDATA[
+<p>These are flags that appear in the benchmark sources, categorized as to
+whether they are portability candidates, mandatory, or forbidden.
+</p>
+]]>
+</header>
+
+<flag name="DSPEC_CPU" class="mandatory">
+SPEC_CPU is turned on by the SPEC framework. It is not allowed 
+to undefine this macro.  In 459.GemsFDTD, it prevents the 
+OpenMP directives from being visible to the compiler (for SPEC 
+CPU, automatic parallelization is acceptable, but not 
+directive-based parallelization).
+</flag>
+
+<flag name="USPEC_CPU" class="forbidden">
+SPEC_CPU is turned on by the SPEC framework. It is not allowed 
+to undefine this macro.  In 459.GemsFDTD, it prevents the 
+OpenMP directives from being visible to the compiler (for SPEC 
+CPU, automatic parallelization is acceptable, but not 
+directive-based parallelization).
+</flag>
+
+</flagsdescription>

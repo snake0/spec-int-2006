@@ -1,0 +1,107 @@
+SPEC CPU2000 Benchmark Description File
+=======================================
+
+Benchmark Name: 
+--------------
+
+zeusmp_blast
+
+
+Benchmark Authors: 
+-----------------
+
+Michael Norman
+Department of Physics
+University of California, San Diego
+San Diego
+California
+USA
+
+mnorman@cosmos.ucsd.edu
+
+
+Benchmark Program General Category: 
+----------------------------------
+
+Physics / Magnetohydrodynamics
+
+
+Benchmark Description:
+---------------------
+
+ZEUS-MP is a computational fluid dynamics code developed at the Laboratory for Computational Astrophysics (NCSA, University of Illinois at Urbana-Champaign) for the simulation of astrophysical phenomena. ZEUS-MP is developed based on ZEUS-3D and parallelized using the MPI message-passing library. ZEUS-MP solves problems in three spatial dimensions with a wide variety of boundary conditions. A source-code preprocessor allows the user to customize the ZEUS-MP algorithm for the desired physics, geometry, and output.
+
+ZEUS-MP solves the equations of ideal (non-resistive), non-relativistic, hydrodynamics and magnetohydrodynamics, including externally applied gravitational fields and self-gravity. The gas can be adiabatic or isothermal, and the thermal pressure is isotropic. Boundary conditions may be specified as reflecting, periodic, inflow, or outflow.
+
+The three benchmark files (zeusmp_blast) are obtained by running ZEUS-MP on a single Origin 2000 processor.  The physical problem is a 3D blastwave simulated with the present of a uniform magnetic field along the x-direction. A 64x64x64 Cartesian grid is used and the boundaries are "outflow."
+
+A more detailed description of the program and its application can be found in the ZEUS-MP web site http://zeus.ncsa.uiuc.edu:8080/lca_intro_zeusmp.html and the references therein.
+
+
+Input Description: 
+-----------------
+
+The input file zmp_inp contains many parameters from which the
+problem is built, among them:
+
+   mpitop    The spatial arrangement of processors.
+   rescon    Restart control which is irrelevant in this test.
+   pcon      Problem control with the limits on number of steps (nlim)
+             system time (tlim) and CPU time (cpulim).
+   hycon     Physical constants related to the hydrodynamical problem
+   iib ~ okb Boundary conditions at the 6 boundaries.
+   ggen1~3   Grid information.
+   grvcon    Gravitation control which is irrelevant in this test.
+   radcon    Radiation control which is irrelevant in this test.
+   radexp    Radiative diffusion control which is irrelevant in this test.
+   eqos      Information on Equation of State.
+   pgen      Problem generator control information.  In this test, it is a
+             spherical blastwave with radius r=0.2 and located at the origin.
+             The ambient density d0=1 and the ambient pressure is 0.6.  The
+             initial blastwave has density 100 times and pressure of 1 million
+             times of the surrounding.  B-field is in the x-direction (b10=140).
+   gcon      Moving grid control which is irrelevant in this test.
+   iocon     I/O control.  Physical information of the blastwave test will ouput
+             at the end of the run.
+
+To compile the code, copy the zmp_inp from one of the three benchmark file directories to /exe.  Then go to /src and type "make -f Makefile compile".  The executable (zeusmp.x) will be located at /exe.  Just type "zeusmp.x" and the executable will read in parameters in zmp_inp.  Output file is tsl000aa located in /exe.
+
+
+Output Description: 
+------------------
+
+Benchmark informations are output on screen if the code runs interactively or to a log file if the run is submitted as a batch job.  It includes information about number of timesteps, CPU time, system time, wall-clock time, and number of zone-cycles of the run.
+
+The file "tsl000aa" contains information about the physical information of the blastwave at the beginning and the end of the run.  This file is used to make sure the run is correct by comparing to the file inside the corresponding benchmark directories.
+
+There are three benchmark directories: zeusmp_5 (for test), zeusmp_10 (for train), and zeusmp_25 (for ref) in this package.  The benchmark information file (zeusmp_blast) is included for reference.
+
+
+Programming Language: 
+--------------------
+
+The main code is written in Fortran 77, with the change that (as in all of SPEC's Fortran benchmarks)
+the type
+	DOUBLE PRECISION
+has been replaced by
+	REAL*8	,
+thus making the size of the relevant floating-point data uniform
+across systems - an important consideration for fair benchmarking.
+While the type REAL*8 is not part of the strict FORTRAN77 or Fortran90  
+standards, it is a common language extension recognized by
+all Fortran compilers the SPEC CPU subcomittee has used in its tests.
+
+There are a few C routines.
+
+
+Known portability issues: 
+------------------------
+
+This version of ZEUS-MP has been tested on:
+1) Origin 2000 (IRIX 6.5)
+2) IA-32 and IA-64 Linux Cluster (Red Hat Linux release 6.2)
+3) Compaq Alphaserver ES40 and ES45 nodes (Tru64 UNIX V5.1A)
+
+The Makefile comes with this package is for IRIX 6.5.  For other operating systems, the Makefile needs to be modified.
+
+

@@ -1,0 +1,860 @@
+C  9 DEC 03 - MWS - SYNCH COMMON BLOCK RUNOPT
+C  6 SEP 01 - MWS - ADD DUMMY ARGUMENTS TO NAMEIO CALL
+C 12 NOV 98 - GDF - CHANGE BIT PACKING TO ISHIFT
+C  6 JAN 98 - MWS - CHANGE CALL TO RACLOS
+C 17 OCT 96 - MWS - FIX OUT OF MEMORY FORMATION OF LAGRANGIAN
+C 13 JUN 96 - MWS - USE RDDRT TO READ HEADER OF DRT FILE
+C 10 NOV 94 - MWS - REMOVE SOME FTNCHEK WARNINGS
+C 10 AUG 94 - MWS - INCREASE NUMBER OF DAF RECORDS
+C  9 AUG 94 - MWS - LGRCAN,LGRRD: USE DOUBLE LABEL PACKING
+C 12 MAR 92 - MWS - REDIMENSION TO 500 ATOMS
+C 11 JAN 92 - TLW - CILGRN,LGRNG1: MAKE READS PARALLEL
+C 10 JAN 92 - TLW - CHANGE REWINDS TO CALL SEQREW
+C  7 JAN 92 - TLW - MAKE WRITES PARALLEL; ADD COMMON PAR
+C  7 OCT 91 - MWS - CHANGE UNIX BYTE UNPACKING
+C  3 JUN 90 - JAM - CHANGE VAX BYTE PACKING TO FULL 8 BITS
+C 26 SEP 89 - MWS - ADD NFT13,NFT14 TO /CIFILS/
+C 30 APR 89 - MWS - ALWAYS PRINT LAGRANGIAN (UNLESS NPRINT=-5)
+C 28 MAR 89 - MWS - CILGRN: EXETYP=CHECK NOW CALLS RAOPEN
+C 14 NOV 87 - STE - IMPLEMENT EXETYP
+C  6 AUG 87 - MWS - INCLUDE ETA VERSION
+C 19 JUL 87 - MWS - RENAME $LAGRAN VARIABLE NOCORE TO NOMEM (STE)
+C  3 NOV 86 - STE - CLARIFY VARIABLE USAGE, USE PARAMETER
+C                   REMOVE NAV AND NAV20 FROM USE
+C  9 JUL 86 - JAB - ADD BIT PACKING/UNPACKING FOR CRAY, CELERITY
+C  7 JUL 86 - MWS - SANITIZE FLOATING POINT CONSTANTS
+C  7 NOV 85 - STE - ADD SOME BLAS, USE GENERIC ABS,MAX,MIN,SQRT
+C                   LGRCAN: DON'T SKELETONIZE DASORT
+C 30 MAY 85 - MWS - ADD NPRINT TO RAOPEN CALL
+C 15 MAR 85 - MWS - USE RASIZE TO GET LDAR
+C 17 NOV 83 - STE - FPS UNPACKING IN LGRCAN,LGRRD
+C  5 NOV 83 - STE - DELETE CALL DARTRN FROM CILGRN
+C 21 OCT 82 - MWS - ADD DUMMY ARGUMENTS TO NAMEIO CALLS
+C  3 OCT 82 - MWS - CONVERT FOR IBM
+C
+C*MODULE LAGRAN  *DECK CILGRN
+      SUBROUTINE CILGRN(NPRINT)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DOUBLE PRECISION LAGRAN
+      LOGICAL PACK2E,SOME,GOPARR,DSKWRK,MASWRK
+C
+      PARAMETER (NNAM=4)
+C
+      DIMENSION QNAM(NNAM),KQNAM(NNAM)
+C
+      COMMON /CIFILS/ NFT11,NFT12,NFT13,NFT14,NFT15,NFT16,IDAF20,NEMEMX
+      COMMON /FMCOM / X(1)
+      COMMON /INTFIL/ NINTMX,NHEX,NTUPL,PACK2E,INTG76
+      COMMON /IOFILE/ IR,IW,IP,IJKO,IJKT,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PCKLAB/ LABSIZ
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /, DEBUG/8HDEBUG   /, DBUGME/8HLAGRAN  /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      DATA CHECK_STR/"CHECK   "/, DEBUG_STR/"DEBUG   "/, 
+     * DBUGME_STR/"LAGRAN  "/
+#endif
+C
+C     ----- SET UP NAMELIST SIMULATION -----
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA LAGRAN/8HLAGRAN  /
+#else
+      CHARACTER*8 :: LAGRAN_STR
+      EQUIVALENCE (LAGRAN, LAGRAN_STR)
+      DATA LAGRAN_STR/"LAGRAN  "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA QNAM/8HNDAR    ,8HLDAR    ,8HNWORD   ,8HNOMEM   /
+#else
+      CHARACTER*8 :: QNAM_STR(NNAM)
+      EQUIVALENCE (QNAM, QNAM_STR)
+      DATA QNAM_STR/"NDAR    ","LDAR    ","NWORD   ","NOMEM   "/
+#endif
+      DATA KQNAM/1,1,1,1/
+C
+C     ----- FORM CI LAGRANGIAN MATRIX -----
+C
+      SOME = NPRINT.NE.-5 .AND. MASWRK
+      IF(EXETYP.EQ.DEBUG  .OR.  EXETYP.EQ.DBUGME) SOME = MASWRK
+      IF(SOME) WRITE(IW,9000)
+C
+C     ----- READ NAMELIST $LAGRAN -----
+C
+      NDAR  = 4000
+      LDAR  = NINTMX
+      NWORD = 0
+      NOMEM = 0
+C
+      JRET = 0
+      CALL NAMEIO(IR,JRET,LAGRAN,NNAM,QNAM,KQNAM,
+     *            NDAR,LDAR,NWORD,NOMEM,
+     *    0,0,0,0,0,  0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0,
+     *    0,0,0,0,0,  0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0,
+     *    0,0,0,0,0,  0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0)
+      IF(JRET.GT.1) THEN
+         IF (MASWRK) WRITE(IW,9010)
+         CALL ABRT
+      END IF
+      IF(SOME) WRITE(IW,9020) NWORD,NDAR,NOMEM,LDAR
+C
+C     ----- GET FAST MEMORY -----
+C
+      CALL VALFM(LOADFM)
+      CALL GOTFM(NGOT)
+      IF(NWORD.GT.0) NGOT = MIN(NGOT,NWORD)
+C
+C     ----- READ IN -DRT- DATA -----
+C
+      CALL SEQREW(NFT11)
+      CALL RDDRT(NORBMX,NORBS,NSYM,NROWS,NWKS,LEVFRM,NEMEMX,
+     *           NREFS,IEXCT,NFOCI,INTACT,NCORBS)
+      CALL SEQREW(NFT11)
+C
+      M1 = NORBS
+      M2 = (M1*M1+M1)/2
+      L1 = NORBS
+      L2 = (L1*L1+L1)/2
+C
+C     ----- FORM 2E-CONTRIBUTION TO LAGRANGIAN MATRIX -----
+C     FIRST, SET UP IN MEMORY FORMATION POINTERS.
+C
+      LEPS   = LOADFM + 1
+      LXIJKL = LEPS   + M1*L1
+      LGIJKL = LXIJKL + M2*M2
+      LIA    = LGIJKL + L2*L2
+      LWRK   = LIA    + M1
+      LXX    = LWRK   + L2
+      LIX    = LXX    + NINTMX
+      LAST   = LIX    + NINTMX
+      NEED = LAST - LOADFM - 1
+C
+      IF(SOME) WRITE(IW,9100) NEED,NGOT
+      IF(NEED.GT.NGOT) GO TO 140
+      IF(NOMEM.EQ.1)   GO TO 140
+C
+C     ----- IN MEMORY FORMATION -----
+C     LAGRANGIAN MATRIX        AT  X(LEPS)
+C     ORDERED INTEGRALS        AT  X(LXIJKL)
+C     ORDERED 2 BODY DENSITY   AT  X(LGIJKL)
+C     PAIR INDEX -IA-          AT  X(LIA)
+C     TEMPORARY STORAGE        AT  X(LWRK)
+C     BUFFER                   AT  X(LXX)
+C     INDEX BUFFER             AT  X(LIX)
+C
+      IF(SOME) WRITE(IW,9110)
+      CALL GETFM(NEED)
+      IF(EXETYP .EQ. CHECK) GO TO 180
+C
+C         READ INTEGRALS INTO MEMORY
+C
+      NFTI = IJKT
+      CALL SEQREW(NFTI)
+      IF (MASWRK) READ (NFTI)
+      CALL LGRRD(NFTI,M1,M2,NINTMX,X(LXIJKL),X(LXX),X(LIX),X(LIA))
+C
+C         READ TWO BODY DENSITY INTO MEMORY
+C
+      NFTI = NFT15
+      CALL SEQREW(NFTI)
+      CALL LGRRD(NFTI,L1,L2,NINTMX,X(LGIJKL),X(LXX),X(LIX),X(LIA))
+C
+C         ASSEMBLE THE LAGRANGIAN
+C
+      CALL LGRCOR(X(LEPS),X(LXIJKL),X(LGIJKL),X(LWRK),M1,M2,L1,L2)
+      CALL RETFM(NEED)
+      GO TO 400
+C
+C     ----- OUT OF MEMORY FORMATION -----
+C
+  140 CONTINUE
+      IF(SOME) WRITE(IW,9200)
+C
+      DUM = LDAR
+      DUM = SQRT(DUM)
+      LWIDTH = INT(DUM)
+      MUST = M1*L1 + M1 + NDAR + (NINTMX+NINTMX*LABSIZ)
+      IF(MUST.GT.NGOT) THEN
+         MORE = L2+MUST-NGOT
+         IF (MASWRK) WRITE(IW,9220) MORE
+         CALL ABRT
+      END IF
+      NAVAIL = NGOT-MUST
+      NROWMX = NAVAIL/L2
+      IF(NROWMX.EQ.0) THEN
+         IF(MASWRK) WRITE(IW,9220) L2
+         CALL ABRT
+      END IF
+      MSTRIP = 1
+  160 CONTINUE
+         MSTRIP = MSTRIP+1
+         NROW = NROWMX/MSTRIP
+      IF(NROW.GT.LWIDTH) GO TO 160
+C
+      MXSTRP = MSTRIP-1
+      LWIDTH = NROW
+      NXSTRP = (M2-1)/LWIDTH+1
+      NGSTRP = (L2-1)/LWIDTH+1
+      LAREA  = LWIDTH**2
+      NXSQUR = NXSTRP**2
+      NGSQUR = NGSTRP**2
+      NSQUAR = NXSQUR+NGSQUR
+      IF(NXSTRP .LT. MXSTRP) MXSTRP = NXSTRP
+C
+      IF(NSQUAR.GT.NDAR) THEN
+         IF (MASWRK) WRITE(IW,9230) NGOT,NDAR,LDAR,LWIDTH,NXSTRP,
+     *                              MXSTRP,NGSTRP,NSQUAR,LAREA
+         CALL ABRT
+      END IF
+C
+      LEPS   = LOADFM + 1
+      LIA    = LEPS   + M1*L1
+      LXX    = LIA    + M1
+      LIX    = LXX    + NINTMX
+      LXIJKL = LIX    + NINTMX
+      LGIJKL = LXIJKL + LAREA*NXSTRP*MXSTRP
+      LIODA  = LGIJKL + LAREA*NGSTRP
+      LAST   = LIODA  + NSQUAR
+      NEED = LAST - LOADFM - 1
+      IF(SOME) WRITE(IW,9210) NDAR,LDAR,NGOT,NSQUAR,LAREA,NEED,
+     *                        LWIDTH,NXSTRP,MXSTRP,NGSTRP
+      CALL GETFM(NEED)
+C
+C     ----- OPEN DIRECT ACCESS FILE -IDAF20- -----
+C
+      NDAF20 = NSQUAR
+      LDAR20 = LAREA
+      CALL RAOPEN(IDAF20,X(LIODA),0,NDAF20,LDAR20,NPRINT)
+      IF(EXETYP .EQ. CHECK) GO TO 180
+C
+C     ----- WRITE INTEGRALS IN SQUARE-CANONICAL ORDER ON -IDAF20-
+C
+      NFTI = IJKT
+      NSQUR0 = 0
+      CALL LGRCAN(IW,IDAF20,X(LIODA),LDAR20,NFTI,X(LXX),X(LIX),
+     *            X(LIA),X(LXIJKL),NSQUR0,LWIDTH,NXSTRP,M1)
+C
+C     ----- WRITE DM2 IN SQUARE-CANONICAL ORDER ON -IDAF20-
+C
+      NFTI = NFT15
+      NSQUR0 = NXSQUR
+      CALL LGRCAN(IW,IDAF20,X(LIODA),LDAR20,NFTI,X(LXX),X(LIX),
+     *            X(LIA),X(LGIJKL),NSQUR0,LWIDTH,NGSTRP,L1)
+C
+C     ----- FORM LAGRANGIAN MATRIX -----
+C
+      CALL LGRNG2(IDAF20,X(LIODA),LDAR20,NSQUR0,
+     *            X(LEPS),X(LXIJKL),X(LGIJKL),
+     *            M1,L1,L2,LWIDTH,NXSTRP,MXSTRP,NGSTRP)
+C
+C     ----- CLOSE -IDAF20- -----
+C
+  180 CONTINUE
+      CALL RACLOS(IDAF20,'DELETE')
+      CALL RETFM(NEED)
+C
+C     ----- FORM 1E-CONTRIBUTION TO LAGRANGIAN MATRIX -----
+C     NOTE THAT 2E- CONTRIBUTIONS MUST BE ALREADY AT -LEPS-
+C
+  400 CONTINUE
+      LEPS = LOADFM + 1
+      LXIJ = LEPS   + M1*L1
+      LGIJ = LXIJ   + M2
+      LIA  = LGIJ   + L2
+      LAST = LIA    + M1
+      NEED = LAST - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      IF(EXETYP.EQ.CHECK) THEN
+         CALL VCLR(X(LEPS),1,M1*L1)
+      ELSE
+         CALL LGRNG1(IJKT,NFT15,X(LEPS),X(LXIJ),X(LGIJ),X(LIA),
+     *               M1,M2,L1,L2)
+      END IF
+C
+C     ----- OUTPUT OF COMPLETED LAGRANGIAN -----
+C
+      IF(NPRINT.GT.0  .AND.  MASWRK) CALL LGROUT(X(LEPS),M1,L1)
+      CALL DAWRIT(IDAF,IODA,X(LEPS),L1*L1,36,0)
+      CALL RETFM(NEED)
+C
+      IF (MASWRK) WRITE(IW,9300)
+      CALL TIMIT(1)
+      RETURN
+C
+ 9000 FORMAT(/10X,30("-")/10X,"CI LAGRANGIAN MATRIX FORMATION"/
+     *        10X,30(1H-))
+ 9010 FORMAT(1X,'NAMELIST $LAGRAN SYNTAX ERROR FOUND. STOP.')
+ 9020 FORMAT(/5X,'INPUT TO CONTROL LAGRANGIAN FORMATION:'/
+     *        5X,'NWORD=',I10,'  NDAR=',I8/
+     *        5X,'NOMEM=',I10,'  LDAR=',I8)
+ 9100 FORMAT(/I10,' WORDS NEEDED (',I10,' AVAILABLE) TO FORM'
+     *      ,' CI LAGRANGIAN IN MEMORY')
+ 9110 FORMAT(10X,'CHOOSING IN MEMORY FORMATION...')
+ 9200 FORMAT(10X,'CHOOSING OUT OF MEMORY FORMATION...')
+ 9210 FORMAT(1X,'GIVEN NDAR, LDAR, NWORD     = ',3I10/
+     *       1X,'USED  NDAR, LDAR, NWORD     = ',3I10/
+     *       1X,'LWIDTH,NXSTRP,MXSTRP,NGSTRP = ',4I10)
+ 9220 FORMAT(1X,'NEED MORE MEMORY. INCREASE BY AT LEAST',I10,' WORDS')
+ 9230 FORMAT(1X,'NEED MORE DISK SPACE -NDAR- AND/OR MEMORY -NWORD-'/
+     *       1X,'GIVEN NGOT,NDAR,LDAR =',3I10/
+     *       1X,'CALCULATED LWIDTH,NXSTRP,MXSTRP,NGSTRP,NSQUAR,LAREA=',
+     *          6I5)
+ 9300 FORMAT(' ...... END OF CI LAGRANGIAN MATRIX FORMATION ......')
+      END
+C*MODULE LAGRAN  *DECK LGRCAN
+      SUBROUTINE LGRCAN(IW,IDAF,IODA,LDAR,NFTI,X,IX,IA,OX,
+     +                  NSQUR0,LWIDTH,NSTRIP,L1)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL PACK2E,GOPARR,DSKWRK,MASWRK
+C
+      COMMON /INTFIL/ NINTMX,NHEX,NTUPL,PACK2E,INTG76
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PCKLAB/ LABSIZ
+C
+      DIMENSION X(*),IX(*),IA(*),OX(LWIDTH,*),IODA(*)
+C
+C     ----- CREATE SQUARE CANONICAL INTEGRAL AND DM2 LISTS -----
+C     THIS IS CALLED TWICE, TO PUT BOTH LISTS INTO FILE -IDAF-,
+C     WITH -NSQUR0- AS THE OFFSET TO THE DM2 LIST.
+C     NOTE THAT THE DM2 INPUT FILE IS IN THE USUAL CANONICAL ORDER,
+C     AND CAN BE PROCESSED IN A SINGLE READ OF THE INPUT FILE.
+C     THE INTEGRALS HAVE REVERSED INDICES, AND ARE NOT IN TRIANGULAR
+C     CANONICAL ORDER, SO WE READ THE INPUT FILE ONCE FOR EVERY STRIP.
+C
+      DO 100 I = 1,L1
+         IA(I) = (I*I-I)/2
+  100 CONTINUE
+C
+      LSTRIP = LWIDTH*LWIDTH*NSTRIP
+      CALL VCLR(OX,1,LSTRIP)
+      ISTRIP = 1
+      IROW = 0
+      NZERI=0
+      NZERO=0
+      NTOTO=0
+C
+C         LOOP OVER EACH READ THROUGH THE INPUT FILE.
+C         INTEGRAL FILE CONTAINS TRANSFORMED 1E- MATRIX ON MASTER NODE.
+C
+  200 CONTINUE
+      CALL SEQREW(NFTI)
+      IF(NSQUR0.EQ.0  .AND.  MASWRK) READ(NFTI)
+C
+C         LOOP OVER EACH READING EACH BUFFER FROM THE FILE.
+C
+  210 CONTINUE
+      CALL PREAD(NFTI,X,IX,NX,NINTMX)
+      IF(NX.EQ.0) GO TO 400
+      MX = ABS(NX)
+      IF(MX.GT.NINTMX) CALL ABRT
+C
+C         LOOP OVER EACH VALUE WITHIN THE BUFFER
+C
+      M = 0
+  220 CONTINUE
+      M = M+1
+C
+C        IF ALL VALUES IN THIS BUFFER ARE PROCESSED, READ THE NEXT.
+C        IF IT IS THE LAST BUFFER, PROCESS THE COMPLETED FINAL STRIP.
+C
+      IF(M.GT.MX) THEN
+         IF(NX.GT.0) GO TO 210
+         GO TO 400
+      END IF
+C
+C        PROCESS THE VALUE
+C
+                       NPACK = M
+                       IF (LABSIZ .EQ. 2) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL1 = IX( 2*NPACK - 1 )
+                         LABEL2 = IX( 2*NPACK     )
+                         IPACK = ISHFT( LABEL1, -16 )
+                         JPACK = IAND( LABEL1, 65535 )
+                         KPACK = ISHFT( LABEL2, -16 )
+                         LPACK = IAND( LABEL2, 65535 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -48 )
+                         JPACK = IAND( ISHFT( LABEL, -32 ), 65535 )
+                         KPACK = IAND( ISHFT( LABEL, -16 ), 65535 )
+                         LPACK = IAND( LABEL, 65535 )
+#endif
+                       ELSE IF (LABSIZ .EQ. 1) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -24 )
+                         JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                         KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                         LPACK = IAND( LABEL, 255 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         IF ( MOD(NPACK,2) .EQ. 0 ) THEN
+                           LABEL = IX( NPACK/2 )
+                           IPACK = IAND( ISHFT( LABEL, -24 ), 255 )
+                           JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                           LPACK = IAND( LABEL, 255 )
+                         ELSE
+                           LABEL = IX( (NPACK/2)+1 )
+                           IPACK = ISHFT( LABEL, -56 )
+                           JPACK = IAND( ISHFT( LABEL, -48 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL, -40 ), 255 )
+                           LPACK = IAND( ISHFT( LABEL, -32 ), 255 )
+                         END IF
+#endif
+                       END IF
+                       I1 = IPACK
+                       I2 = JPACK
+                       I3 = KPACK
+                       I4 = LPACK
+C
+C        TRANSFORMED INTEGRALS ASSUMED IN REVERSED INDEX ORDER,
+C        ORDERED DM2 ASSUMED IN NORMAL TRIANGULAR CANONICAL ORDER.
+C
+      IF(NSQUR0.EQ.0) THEN
+         KL = IA(I1)+I2
+         IJ = IA(I3)+I4
+         IJSTRP = (IJ-1)/LWIDTH+1
+         IF(IJSTRP.NE.ISTRIP) GO TO 220
+      ELSE
+         IJ = IA(I1)+I2
+         KL = IA(I3)+I4
+         IJSTRP = (IJ-1)/LWIDTH+1
+         IF(IJSTRP.GT.ISTRIP) GO TO 400
+      END IF
+C
+C        THE VALUE BELONGS TO THE CURRENT STRIP -ISTRIP-
+C
+  300 CONTINUE
+      OX(IJ-IROW,KL) = X(M)
+      NZERI=NZERI+1
+      GO TO 220
+C
+C     ----- A FULL STRIP -ISTRIP- HAS BEEN READ IN -----
+C
+  400 CONTINUE
+      DO 420 I = 2,LWIDTH
+         CALL DCOPY(I,OX(I,IROW+1),LWIDTH,OX(1,IROW+I),1)
+  420 CONTINUE
+C
+      JCOL = 1
+      DO 480 JSTRIP = 1,ISTRIP
+         IJSQUR = (ISTRIP-1)*NSTRIP+JSTRIP+NSQUR0
+         CALL LGRCNT(OX(1,JCOL),LDAR,NZERO)
+         NTOTO = NTOTO+LDAR
+         CALL RAWRIT(IDAF,IODA,OX(1,JCOL),LDAR,IJSQUR,0)
+         IF(JSTRIP.NE.ISTRIP) THEN
+            DO 460 I = 2,LWIDTH
+               CALL DSWAP(I,OX(I,JCOL),LWIDTH,OX(1,JCOL+I-1),1)
+  460       CONTINUE
+            JISQUR = (JSTRIP-1)*NSTRIP+ISTRIP+NSQUR0
+            CALL LGRCNT(OX(1,JCOL),LDAR,NZERO)
+            NTOTO = NTOTO+LDAR
+            CALL RAWRIT(IDAF,IODA,OX(1,JCOL),LDAR,JISQUR,0)
+         END IF
+         JCOL = JCOL+LWIDTH
+  480 CONTINUE
+C
+      CALL VCLR(OX,1,LSTRIP)
+      ISTRIP = ISTRIP+1
+      IROW = IROW+LWIDTH
+C
+      IF(ISTRIP.LE.NSTRIP) THEN
+         IF(NSQUR0.EQ.0) THEN
+            GO TO 200
+         ELSE
+            GO TO 300
+         END IF
+      END IF
+C
+      IF(NSQUR0.EQ.0) THEN
+         IF(MASWRK) WRITE(IW,9010) 'TRANSFORMED INTEGRALS',
+     *                             NZERI,NFTI,NZERO,NTOTO,IDAF
+      ELSE
+         IF(MASWRK) WRITE(IW,9010) 'TWO PARTICLE DENSITY MATRIX',
+     *                             NZERI,NFTI,NZERO,NTOTO,IDAF
+      END IF
+      RETURN
+C
+ 9010 FORMAT(1X,'STATISTICS FOR PROCESSING THE ',A,':'/
+     *   1X,I10,' NONZERO INPUT VALUES ON TRIANGULAR CANONICAL FILE',I3/
+     *   1X,I10,' NONZERO OUTPUT VALUES, OF'/
+     *   1X,I10,' TOTAL OUTPUT VALUES ON SQUARE CANONICAL FILE',I3)
+      END
+C*MODULE LAGRAN  *DECK LGRCNT
+      SUBROUTINE LGRCNT(A,N,NZERO)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DIMENSION A(N)
+      PARAMETER (ZERO=0.0D+00)
+C          RUNNING COUNT OF NON-ZERO VALUES IN ARRAY -A-
+      DO 100 I=1,N
+         IF(A(I).NE.ZERO) NZERO=NZERO+1
+  100 CONTINUE
+      RETURN
+      END
+C*MODULE LAGRAN  *DECK LGRCOR
+      SUBROUTINE LGRCOR(E,XIJKL,GIJKL,T,M1,M2,L1,L2)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL AANDB,AANDC,AANDD,BANDC,BANDD,CANDD
+C
+      DIMENSION E(M1,L1),XIJKL(M2,*),GIJKL(L2,*),T(L2)
+C
+      CALL VCLR(E,1,M1*L1)
+C
+C     ----- XG(A,B,C,D) = SUM OVER K,L OF X(A,B,K,L) * G(C,D,K,L)
+C
+      DO 170 IJ = 1,L2
+         KL = 1
+         DO 160 K = 2,L1
+            DO 150 L = 1,K-1
+               KL = KL + 1
+               GIJKL(KL,IJ) = GIJKL(KL,IJ)+GIJKL(KL,IJ)
+  150       CONTINUE
+            KL = KL + 1
+  160    CONTINUE
+  170 CONTINUE
+C
+      IJX = 0
+      DO 250 IX = 1,M1
+         JXLIM = MIN(IX,L1)
+         DO 240 JX = 1,JXLIM
+            IJX = IJX + 1
+            DO 200 IJG = 1,L2
+               T(IJG) = DDOT(L2,XIJKL(1,IJX),1,GIJKL(1,IJG),1)
+  200       CONTINUE
+            CALL DCOPY(L2,T,1,XIJKL(1,IJX),1)
+  240    CONTINUE
+         IJX = IJX + IX-JXLIM
+  250 CONTINUE
+C
+C     ----- E(A,B) = SUM OVER J OF XG(A,J,C,J)
+C
+      IJX = 0
+      DO 320 IX = 1,M1
+         JXLIM = MIN(IX,L1)
+         DO 300 JX = 1,JXLIM
+            AANDB = IX .EQ. JX
+            IJX = IJX + 1
+            IJG = 0
+            DO 280 IG = 1,L1
+               AANDC = IX .EQ. IG
+               BANDC = JX .EQ. IG
+               DO 260 JG = 1,IG
+                  AANDD = IX .EQ. JG
+                  BANDD = JX .EQ. JG
+                  CANDD = IG .EQ. JG
+                  IJG = IJG + 1
+                  VAL = XIJKL(IJG,IJX)
+                  IF(BANDD) E(IX,IG) = E(IX,IG)+VAL
+                  IF(BANDC .AND. .NOT. CANDD) E(IX,JG) = E(IX,JG)+VAL
+                  IF(AANDD .AND. .NOT. AANDB) E(JX,IG) = E(JX,IG)+VAL
+                  IF(AANDC .AND. .NOT. CANDD .AND. .NOT. AANDB)
+     *               E(JX,JG) = E(JX,JG) + VAL
+  260          CONTINUE
+  280       CONTINUE
+  300    CONTINUE
+         IJX = IJX + IX-JXLIM
+  320 CONTINUE
+      RETURN
+      END
+C*MODULE LAGRAN  *DECK LGRNG1
+      SUBROUTINE LGRNG1(NFTI,NFTD,E,X,G,IA,M1,M2,L1,L2)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      DIMENSION E(M1,L1),X(M2),G(L2),IA(M1)
+C
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      PARAMETER (ZERO=0.0D+00)
+C
+C     ----- ADD ONE ELECTRON CONTRIBUTIONS TO THE LAGRANGIAN -----
+C     READ MO BASIS ONE ELECTRON INTEGRALS AND FIRST ORDER DENSITY
+C
+      CALL SEQREW(NFTI)
+      IF (MASWRK) THEN
+         READ (NFTI) X
+         READ (NFTD) G
+      END IF
+      CALL SEQREW(NFTI)
+      CALL SEQREW(NFTD)
+      IF(.NOT.MASWRK) RETURN
+C
+      DO 100 I = 1,M1
+  100 IA(I) = (I*I-I)/2
+C
+      DO 160 I = 1,M1
+         DO 140 J = 1,L1
+            DUM = ZERO
+            DO 120 K = 1,L1
+               IK = IA(MAX(I,K)) + MIN(I,K)
+               KJ = IA(MAX(K,J)) + MIN(K,J)
+               DUM = DUM+X(IK)*G(KJ)
+  120       CONTINUE
+            E(I,J) = E(I,J)+DUM
+  140    CONTINUE
+  160 CONTINUE
+      RETURN
+      END
+C*MODULE LAGRAN  *DECK LGRNG2
+      SUBROUTINE LGRNG2(IDAF,IODA,LDAR,NSQUR0,
+     +                  E,X,G,M1,L1,L2,LWIDTH,NXSTRP,MXSTRP,NGSTRP)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL AANDB,AANDC,AANDD,BANDC,BANDD,CANDD
+C
+      DIMENSION E(M1,L1),X(*),G(*)
+C
+C     ----- FORM TWO ELECTRON CONTRIBUTIONS TO THE LAGRANGIAN -----
+C     INTEGRALS AND DENSITY MATRIX EXIST IN SQUARE CANONICAL ORDER
+C     ON THE RANDOM ACCESS DISK FILE -IDAF-
+C
+      CALL VCLR(E,1,M1*L1)
+C
+      IG = 0
+      JG = 0
+      NPASSX = (NXSTRP-1)/MXSTRP+1
+      IX0 = 1
+      JX0 = 0
+      MSQURX = 0
+C
+      DO 420 IPASSX = 1,NPASSX
+      MSTRP1 = (IPASSX-1)*MXSTRP+1
+      MSTRP2 = (IPASSX-1)*MXSTRP+MXSTRP
+      IF(MSTRP2 .GT. NXSTRP) MSTRP2 = NXSTRP
+C
+C     ----- READ 2E-INTEGRALS -----
+C
+      LOCX = 1
+      DO 140 MSTRPX = MSTRP1,MSTRP2
+         DO 120 ISTRPX = 1,NGSTRP
+            MSQURX = MSQURX+1
+            CALL RAREAD(IDAF,IODA,X(LOCX),LDAR,MSQURX,0)
+            LOCX = LOCX+LDAR
+  120    CONTINUE
+         MSQURX = MSQURX+(NXSTRP-NGSTRP)
+  140 CONTINUE
+C
+C     ----- MULTIPLY X(IX,JX,K,L) BY 2 IF K.NE.L -----
+C
+      IX = IX0
+      JX = JX0
+      DO 200 MSTRPX = MSTRP1,MSTRP2
+         IJKLX0 = (MSTRPX-MSTRP1)*(LDAR*NGSTRP)
+         DO 200 IROWX = 1,LWIDTH
+            JX = JX+1
+            IF(JX .LE. IX) GO TO 160
+            JX = 1
+            IX = IX+1
+            IF(IX .GT. M1) GO TO 220
+  160       CONTINUE
+            IF(JX .GT. MIN(IX,L1)) GO TO 200
+            IJKLX = IROWX+IJKLX0
+            DO 180 K = 1,L1
+               DO 180 L = 1,K
+                  IF(K .EQ. L) GO TO 180
+                  X(IJKLX) = X(IJKLX)+X(IJKLX)
+  180       IJKLX = IJKLX+LWIDTH
+  200 CONTINUE
+C
+C     ----- READ -DM2- -----
+C
+  220 CONTINUE
+      IG0 = 1
+      JG0 = 0
+      MSQURG = NSQUR0
+      DO 400 MSTRPG = 1,NGSTRP
+      LOCG = 1
+      DO 240 ISTRPG = 1,NGSTRP
+         MSQURG = MSQURG+1
+         CALL RAREAD(IDAF,IODA,G(LOCG),LDAR,MSQURG,0)
+         LOCG = LOCG+LDAR
+  240 CONTINUE
+C
+C     XG(IX,JX,IG,JG) = SUM OVER K,L OF X(IX,JX,K,L)*G(IG,JG,K,L)
+C
+      IX = IX0
+      JX = JX0
+      DO 360 MSTRPX = MSTRP1,MSTRP2
+      IJKLX0 = (MSTRPX-MSTRP1)*(LDAR*NGSTRP)
+      DO 360 IROWX = 1,LWIDTH
+      JX = JX+1
+      IF(JX .LE. IX) GO TO 260
+      JX = 1
+      IX = IX+1
+      IF(IX .GT. M1) GO TO 380
+  260 CONTINUE
+      IF(JX .GT. MIN(IX,L1)) GO TO 360
+      AANDB = IX .EQ. JX
+C
+      IG = IG0
+      JG = JG0
+      DO 320 IROWG = 1,LWIDTH
+      JG = JG+1
+      IF(JG .LE. IG) GO TO 280
+      JG = 1
+      IG = IG+1
+      IF(IG .GT. L1) GO TO 340
+  280 CONTINUE
+      AANDC = IX .EQ. IG
+      AANDD = IX .EQ. JG
+      BANDC = JX .EQ. IG
+      BANDD = JX .EQ. JG
+      CANDD = IG .EQ. JG
+C
+      IF( .NOT. BANDD .AND. .NOT. BANDC .AND. .NOT. AANDD .AND. .NOT.
+     +     AANDC) GO TO 320
+C
+      VAL = DDOT(L2,X(IROWX+IJKLX0),LWIDTH,G(IROWG),LWIDTH)
+C
+C     E(IX,IG) = SUM OVER J OF XG(IX,J,IG,J)
+C
+C     ----- ADD CONTRIBUTION OF XG(IX,JX,IG,JG) TO -E- -----
+C
+      IF(BANDD) E(IX,IG) = E(IX,IG)+VAL
+      IF(BANDC .AND. .NOT. CANDD) E(IX,JG) = E(IX,JG)+VAL
+      IF(AANDD .AND. .NOT. AANDB) E(JX,IG) = E(JX,IG)+VAL
+      IF(AANDC .AND. .NOT. CANDD .AND. .NOT. AANDB) E(JX,JG) = E(JX,JG)
+     +     +VAL
+  320 CONTINUE
+  340 CONTINUE
+  360 CONTINUE
+  380 CONTINUE
+      IG0 = IG
+      JG0 = JG
+  400 CONTINUE
+      IX0 = IX
+      JX0 = JX
+  420 CONTINUE
+      RETURN
+      END
+C*MODULE LAGRAN  *DECK LGROUT
+      SUBROUTINE LGROUT(E,M,N)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION E(M,N)
+C
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+C
+C     ----- PRINT OUT LAGRANGIAN MATRIX -----
+C
+      IMAX = 0
+  100 IMIN = IMAX+1
+      IMAX = IMAX + 8
+      IF(IMAX .GT. N) IMAX = N
+      WRITE (IW,9008)
+      DO 120 J = 1,M
+         WRITE (IW,9028) J,(E(J,I),I = IMIN,IMAX)
+  120 CONTINUE
+      IF(IMAX .LT. N) GO TO 100
+      RETURN
+C
+ 9008 FORMAT(/)
+ 9028 FORMAT(I5,8F15.10)
+      END
+C*MODULE LAGRAN  *DECK LGRRD
+      SUBROUTINE LGRRD(NFTI,L1,L2,NINTMX,OX,X,IX,IA)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION OX(L2,L2),X(NINTMX),IX(NINTMX),IA(L1)
+C
+      COMMON /PCKLAB/ LABSIZ
+C
+C        FORM SQUARE CANONICAL LIST (E.G. DM2 OR INTEGRALS), IN MEMORY
+C
+      DO 100 I = 1,L1
+         IA(I) = (I*I-I)/2
+  100 CONTINUE
+C
+      CALL VCLR(OX,1,L2*L2)
+C
+C     ----- READ IN VALUES FROM -NFTI- -----
+C
+      NX = 0
+  200 CONTINUE
+      CALL PREAD(NFTI,X,IX,NX,NINTMX)
+      IF(NX.EQ.0) GO TO 300
+      MX = ABS(NX)
+      IF(MX .GT. NINTMX) CALL ABRT
+      DO 210 M = 1,MX
+C
+                       NPACK = M
+                       IF (LABSIZ .EQ. 2) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL1 = IX( 2*NPACK - 1 )
+                         LABEL2 = IX( 2*NPACK     )
+                         IPACK = ISHFT( LABEL1, -16 )
+                         JPACK = IAND( LABEL1, 65535 )
+                         KPACK = ISHFT( LABEL2, -16 )
+                         LPACK = IAND( LABEL2, 65535 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -48 )
+                         JPACK = IAND( ISHFT( LABEL, -32 ), 65535 )
+                         KPACK = IAND( ISHFT( LABEL, -16 ), 65535 )
+                         LPACK = IAND( LABEL, 65535 )
+#endif
+                       ELSE IF (LABSIZ .EQ. 1) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -24 )
+                         JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                         KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                         LPACK = IAND( LABEL, 255 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         IF ( MOD(NPACK,2) .EQ. 0 ) THEN
+                           LABEL = IX( NPACK/2 )
+                           IPACK = IAND( ISHFT( LABEL, -24 ), 255 )
+                           JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                           LPACK = IAND( LABEL, 255 )
+                         ELSE
+                           LABEL = IX( (NPACK/2)+1 )
+                           IPACK = ISHFT( LABEL, -56 )
+                           JPACK = IAND( ISHFT( LABEL, -48 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL, -40 ), 255 )
+                           LPACK = IAND( ISHFT( LABEL, -32 ), 255 )
+                         END IF
+#endif
+                       END IF
+                       I = IPACK
+                       J = JPACK
+                       K = KPACK
+                       L = LPACK
+C
+         VAL = X(M)
+C
+         IJ = IA(I)+J
+         KL = IA(K)+L
+         OX(IJ,KL) = VAL
+         OX(KL,IJ) = VAL
+  210 CONTINUE
+      IF(NX.GT.0) GO TO 200
+C
+  300 CONTINUE
+      RETURN
+      END

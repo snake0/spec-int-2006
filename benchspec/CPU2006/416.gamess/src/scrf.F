@@ -1,0 +1,1220 @@
+C  9 DEC 03 - OQ  - DIPDER: COMPUTE 0TH, 1ST, AND 2ND DERIVATIVES
+C  6 SEP 01 - MWS - ADD DUMMY ARGUMENTS TO NAMEIO CALL
+C 25 JUN 01 - MWS - ALTER COMMON BLOCK WFNOPT
+C 26 OCT 00 - MWS - INTRODUCE MXAO PARAMETER
+C 27 FEB 98 - MWS - ZRFINP: BOMB SCRF FOR CI, MP2, OR SEMIEMPIRICAL
+C 28 SEP 97 - MWS - CONVERT PARALLEL CALLS FROM TCGMSG TO DDI
+C 18 MAR 97 - MWS - ZRFINP: TURN OFF SCRF IF ZERO DIELECTRIC IS INPUT
+C 18 DEC 96 - JHJ - DIPDER: ADDED 2 ARGUMENTS TO CALL, NEW OPTION
+C 12 NOV 96 - MWS - ZRFINP: ENSURE IZRF IS INITIALIZED
+C 30 OCT 96 - SPW - RCNFLD: CHANGES FOR MCSCF RUNS
+C 13 JUN 96 - VAG - ADD VARIABLE FOR CI TYPE TO SCFOPT COMMON
+C  3 JAN 96 - MWS - RCNFLD: CHANGE SIGN TO USE POSITIVE DIPOLE INTS,
+C                   DELETE THE ZRFINT ROUTINE
+C 31 MAY 95 - MWS - DIPDER: USE DERCHK ROUTINE
+C 24 MAY 95 - MWS - DIPDER: ADD GLOBAL SUM FOR DIPDM CALLS
+C  6 APR 95 - MWS - ZRFINT: REMOVE AMPERSAND CONTINUATION
+C 27 MAR 95 - SPW - USE DIPDER ROUTINE FROM HONDO,
+C                   PASS CENTER ARGS TO FLDXYZ
+C 29 DEC 94 - TLW - CHANGE ZRFDER TO DIPDER AND MAKE MORE GENERAL
+C 11 NOV 94 - MWS - REMOVE FTNCHEK WARNINGS
+C 10 AUG 94 - MWS - INCREASE NUMBER OF DAF RECORDS
+C 15 APR 94 - MWS - RCNFLD: ADD DEBUGGING STATEMENTS
+C  5 APR 94 - SPW - MOVE SCRF RELATED CODE TO NEW MODULE
+C  9 DEC 93 - MWS - ZRFINT: CHANGE DIPOLE DAF RECORD NOS.
+C  6 AUG 93 - MWS - DNUCP: SWITCH TO USING ATORQ IN /FGRAD/
+C  5 AUG 93 - MWS - ZRFDER: PARALLEL CODE ADDED, CALL CHANGED
+C  8 MAR 93 - JHJ - ADD SELF CONSISTENT REACTION FIELD CODE
+C
+C*MODULE SCRF    *DECK ACALC
+      SUBROUTINE ACALC(RADIUS)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C        SOMEDAY THIS MAY CALCULATE BY A MORE REALISTIC FORMULA
+      RADIUS = 2.0D+00
+      RETURN
+      END
+C*MODULE SCRF    *DECK DNUCZ
+      SUBROUTINE DNUCZ(EG3)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXATM=500)
+C
+      DIMENSION EG3(3,*)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /ZRFPAR/ GZRF,FIND(3),GNUCF,EBORN,DIELEC,IZRF,ICALC
+C
+C     NUCLEAR CONTRIBUTION TO ZRF GRADIENT
+C
+      DO 200 LAT=1,NAT
+         DO 100 LC=1,3
+            EG3(LC,LAT) = EG3(LC,LAT) + FIND(LC)*ZAN(LAT)
+ 100     CONTINUE
+ 200  CONTINUE
+      RETURN
+      END
+C*MODULE SCRF    *DECK FLDXYZ
+      SUBROUTINE FLDXYZ(XC,YC,ZC)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION H(21),W(21),MIN(6),MAX(6)
+      COMMON /STV   / XINT,YINT,ZINT,T,X0,Y0,Z0,XI,YI,ZI,XJ,YJ,ZJ,NI,NJ
+      COMMON /XYZFLD/ XINTX,YINTY,ZINTZ
+      COMMON /HERMIT/ H1,H2(2),H3(3),H4(4),H5(5),H6(6),H7(7)
+      COMMON /WERMIT/ W1,W2(2),W3(3),W4(4),W5(5),W6(6),W7(7)
+      EQUIVALENCE (H(1),H1),(W(1),W1)
+      DATA MIN /1,2,4,7,11,16/
+      DATA MAX /1,3,6,10,15,21/
+      DATA ZERO /0.0D+00/
+C
+C     ----- GAUSS-HERMITE QUADRATURE USING MINIMUM POINT FORMULA -----
+C
+      XINT=ZERO
+      YINT=ZERO
+      ZINT=ZERO
+      XINTX=ZERO
+      YINTY=ZERO
+      ZINTZ=ZERO
+      NPTS=(NI+NJ-2+1)/2+1
+      IMIN=MIN(NPTS)
+      IMAX=MAX(NPTS)
+      DO 13 I=IMIN,IMAX
+      DUM=W(I)
+      PX=DUM
+      PY=DUM
+      PZ=DUM
+      DUM=H(I)/T
+      PTX=DUM+X0
+      PTY=DUM+Y0
+      PTZ=DUM+Z0
+      AX=PTX-XI
+      AY=PTY-YI
+      AZ=PTZ-ZI
+      BX=PTX-XJ
+      BY=PTY-YJ
+      BZ=PTZ-ZJ
+      GO TO (5,4,3,2,1),NI
+    1 PX=PX*AX
+      PY=PY*AY
+      PZ=PZ*AZ
+    2 PX=PX*AX
+      PY=PY*AY
+      PZ=PZ*AZ
+    3 PX=PX*AX
+      PY=PY*AY
+      PZ=PZ*AZ
+    4 PX=PX*AX
+      PY=PY*AY
+      PZ=PZ*AZ
+    5 GO TO (12,11,10,9,8,7,6),NJ
+    6 PX=PX*BX
+      PY=PY*BY
+      PZ=PZ*BZ
+    7 PX=PX*BX
+      PY=PY*BY
+      PZ=PZ*BZ
+    8 PX=PX*BX
+      PY=PY*BY
+      PZ=PZ*BZ
+    9 PX=PX*BX
+      PY=PY*BY
+      PZ=PZ*BZ
+   10 PX=PX*BX
+      PY=PY*BY
+      PZ=PZ*BZ
+   11 PX=PX*BX
+      PY=PY*BY
+      PZ=PZ*BZ
+   12 CONTINUE
+      XINT=XINT+PX
+      YINT=YINT+PY
+      ZINT=ZINT+PZ
+      XINTX=XINTX+PX*(PTX-XC)
+      YINTY=YINTY+PY*(PTY-YC)
+      ZINTZ=ZINTZ+PZ*(PTZ-ZC)
+   13 CONTINUE
+      RETURN
+      END
+C*MODULE SCRF    *DECK RCNFLD
+      SUBROUTINE RCNFLD(H1,FA,FB,DENTOT,DIP,ODIP,
+     *                  XDIN,YDIN,ZDIN,L2,L1,MCITER)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXATM=500, MXRT=100)
+C
+      LOGICAL OUT,DIRSCF,FDIFF,GOPARR,MASWRK,DSKWRK,MINMEM
+C
+      DIMENSION H1(L2),FA(L2),FB(L2),DENTOT(L2),
+     *          DIP(L2),ODIP(L2),XDIN(L2),YDIN(L2),ZDIN(L2)
+      DIMENSION PNZRF(3)
+C
+      COMMON /CONV  / ACURCY,ENUCR,AJUNK(3),DIFF,ITER,ICALCP,ICBET
+      COMMON /ENRGYS/ ENUCRMC,EELCT,ETOT,SZ,SZZ,ECORE,ESCF,EERD,E1,E2,
+     *                VEN,VEE,EPOT,EKIN,ESTATE(MXRT),STATN
+      COMMON /INDDIP/ TMUX,TMUY,TMUZ,TMUXD,TMUYD,TMUZD,MINMEM
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /OPTSCF/ DIRSCF,FDIFF
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+      COMMON /ZRFPAR/ GZRF,FIND(3),GNUCF,EBORN,DIELEC,IZRF,ICALC
+C
+      SAVE EN0,PNZRF
+C
+      PARAMETER (PT5=0.5D+00, DEBYE=2.541766D+00)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DEBUG  /8HDEBUG   /,SCRF/8HSCRF    /
+#else
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      CHARACTER*8 :: SCRF_STR
+      EQUIVALENCE (SCRF, SCRF_STR)
+      DATA DEBUG_STR/"DEBUG   "/,SCRF_STR/"SCRF    "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RHF,GVB/8HRHF     ,8HGVB     /
+#else
+      CHARACTER*8 :: GVB_STR
+      EQUIVALENCE (GVB, GVB_STR)
+      CHARACTER*8 :: RHF_STR
+      EQUIVALENCE (RHF, RHF_STR)
+      DATA RHF_STR,GVB_STR/"RHF     ","GVB     "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RMC/8HMCSCF   /
+#else
+      CHARACTER*8 :: RMC_STR
+      EQUIVALENCE (RMC, RMC_STR)
+      DATA RMC_STR/"MCSCF   "/
+#endif
+C
+C     ----- INDUCE A REACTION FIELD USING CURRENT TOTAL DENSITY -----
+C
+      OUT = (EXETYP.EQ.DEBUG  .OR.  EXETYP.EQ.SCRF)  .AND.  MASWRK
+      IF(OUT) WRITE(IW,9010) GNUCF,GZRF
+C
+C     ----- NUCLEAR CONTRIBUTION TO MOLECULAR DIPOLE FIELD -----
+C         GVB ITERATIONS START AT 1, RHF,UHF,ROHF AT 0!
+C         -EN0- IS USUAL TERM, -ENZ- IS ZERNER NUCLEAR TERM
+C
+      IFIRST = 0
+      IF(SCFTYP.NE.GVB) IFIRST=1
+      IF(SCFTYP.EQ.RMC) THEN
+         IFIRST=2
+         ITER=MCITER
+      END IF
+C
+      IF(ITER.EQ.IFIRST) THEN
+         EN0=ENUCR
+         PNZRF(1)=0.0D+00
+         PNZRF(2)=0.0D+00
+         PNZRF(3)=0.0D+00
+         DO 200 J = 1,NAT
+            DO 100 K = 1,3
+               PNZRF(K)=PNZRF(K)+ZAN(J)*C(K,J)
+  100       CONTINUE
+  200    CONTINUE
+      END IF
+C
+C     ----- ELECTRIC FIELD AT THE POINT -----
+C
+      PEX=-TRACEP(DENTOT,XDIN,L1)*GNUCF
+      PEY=-TRACEP(DENTOT,YDIN,L1)*GNUCF
+      PEZ=-TRACEP(DENTOT,ZDIN,L1)*GNUCF
+C
+      PNX=PNZRF(1)
+      PNY=PNZRF(2)
+      PNZ=PNZRF(3)
+C
+      PFX=PEX+PNX
+      PFY=PEY+PNY
+      PFZ=PEZ+PNZ
+C
+      IF(OUT) WRITE(IW,9020) PEX,PEY,PEZ,PNX,PNY,PNZ
+C
+      PMUX=GZRF*PFX
+      PMUY=GZRF*PFY
+      PMUZ=GZRF*PFZ
+C
+      TMUX=-PMUX
+      TMUY=-PMUY
+      TMUZ=-PMUZ
+C
+      TMUXD=TMUX*DEBYE
+      TMUYD=TMUY*DEBYE
+      TMUZD=TMUZ*DEBYE
+C
+C     ----- NUCLEAR ENERGY MODIFICATION -----
+C     DON'T FORGET BORN'S CHARGE TERM (NONZERO FOR IONS)
+C     USE OF THE 1/2 IN THE ELECTRONIC TERM IMPLIES ZERNER'S "METHOD A"
+C
+      EMUN = (PMUX*PNX + PMUY*PNY + PMUZ*PNZ)
+      EMUE = (PMUX*PFX + PMUY*PFY + PMUZ*PFZ)*PT5
+      ENUCR = EN0 + EBORN - EMUN + EMUE
+      ENUCRMC = ENUCR
+      IF(OUT) WRITE(IW,9030) EN0,EBORN,EMUN,EMUE,ENUCR
+C
+C     ----- SAVE INDUCED DIPOLES FOR GRADIENT COMPUTATION -----
+C
+      FIND(1) = -PMUX
+      FIND(2) = -PMUY
+      FIND(3) = -PMUZ
+      IF(OUT) WRITE(IW,9040) FIND
+C
+C     ----- PREPARE POLARIZED ENVIRONMENT FOR NEXT SCF ITERATION -----
+C
+C     ----- CALCULATE PERTURBATION DUE TO INDUCED DIPOLE -----
+C
+      IF (DIRSCF .AND. FDIFF .AND. SCFTYP .NE. GVB) THEN
+         DO 1 I=1,L2
+            DIP(I)= GNUCF*(PMUX*XDIN(I)+PMUY*YDIN(I)+PMUZ*ZDIN(I))
+ 1       CONTINUE
+         IF(OUT) THEN
+            WRITE(IW,*) 'SCRF PERTURBATION'
+            CALL PRTRI(DIP,L1)
+         END IF
+C
+C     --- IF REGULAR SCF PERTURBATION ADDED TO H1 AS IT IS CALCULTD ---
+C
+      ELSE
+         DO 2 I=1,L2
+            H1(I)=H1(I)+GNUCF*(PMUX*XDIN(I)+PMUY*YDIN(I)+PMUZ*ZDIN(I))
+ 2       CONTINUE
+         IF(OUT) THEN
+            WRITE(IW,*) 'H1 WITH SCRF PERTURBATION ADDED'
+            CALL PRTRI(H1,L1)
+         END IF
+      END IF
+C
+C     ----- ADD DIFFERENCE IN PERTURBATION WHEN DIRSCF AND FDIFF -----
+C
+      IF(SCFTYP .EQ. RHF) THEN
+         IF(DIRSCF  .AND.  FDIFF) THEN
+            IF(ITER.EQ.1) CALL VCLR(ODIP,1,L2)
+            CALL VADD(H1,1,DIP,1,H1,1,L2)
+            CALL VSUB(ODIP,1,DIP,1,ODIP,1,L2)
+            CALL VADD(FA,1,ODIP,1,FA,1,L2)
+            CALL DCOPY(L2,DIP,1,ODIP,1)
+         END IF
+      ELSE
+         IF(DIRSCF  .AND.  FDIFF .AND. SCFTYP .NE. GVB) THEN
+            IF(ITER .EQ. 1)CALL VCLR(ODIP,1,L2)
+            CALL VADD(H1,1,DIP,1,H1,1,L2)
+            CALL VSUB(ODIP,1,DIP,1,ODIP,1,L2)
+            CALL VADD(FA,1,ODIP,1,FA,1,L2)
+            CALL VADD(FB,1,ODIP,1,FB,1,L2)
+            CALL DCOPY(L2,DIP,1,ODIP,1)
+         END IF
+      END IF
+C
+C     --- FOR MINMEM AND GVB H1+PERTURBATION MUST BE WRITTEN TO DAF ---
+C
+      IF (MINMEM .OR. SCFTYP .EQ. GVB .OR. SCFTYP .EQ. RMC) THEN
+         CALL DAWRIT(IDAF,IODA,H1,L2,11,0)
+      END IF
+      RETURN
+C
+ 9010 FORMAT(1X,'------- RCNFLD: GNUCF=',F20.10,'  GZRF=',F20.10)
+ 9020 FORMAT(1X,'CONTRIBUTIONS TO MOLECULAR DIPOLE FIELD'/
+     *       1X,'ELECTRONIC=',3F20.10/1X,'   NUCLEAR=',3F20.10)
+ 9030 FORMAT(1X,'SCRF ENERGY ADDITIVE CONSTANTS:'/
+     *       1X,'             NUCLEAR ENERGY=',F20.10/
+     *       1X,'       BORN MONOPOLE ENERGY=',F20.10/
+     *       1X,'   NUCLEAR SOLVATION ENERGY=',F20.10/
+     *       1X,'ELECTRONIC SOLVATION ENERGY=',F20.10/
+     *       1X,'    TOTAL ADDITIVE CONSTANT=',F20.10)
+ 9040 FORMAT(1X,'INDUCED DIPOLES=',3F20.10)
+      END
+C*MODULE SCRF    *DECK DIPDER
+      SUBROUTINE DIPDER(DM,DM2,DM3,DDINT,L2,HF,NORB,NFLD,NXYZ,CALTYP)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL DBG,NORM,GOPARR,MASWRK,DSKWRK,NXT
+      LOGICAL BFLD(3),BZERO,BFIRST,BSECOND
+C
+      DIMENSION DM(L2),DM2(L2),DM3(L2),DDINT(9,NAT),
+     *          HF(NFLD,NXYZ,NORB,NORB)
+      DIMENSION FLD(3),DFLD(3,3),DDFLD(3,3,3),SDFLD(3,3,3),
+     *          DIJ(225),DIJ2(225),DIJ3(225),
+     *          IJX(35),IJY(35),IJZ(35),
+     *          XS(6,6),YS(6,6),ZS(6,6),XX(6,6),YY(6,6),ZZ(6,6),
+     *          DXSDI(6,6),DYSDI(6,6),DZSDI(6,6),
+     *          DXSDJ(6,6),DYSDJ(6,6),DZSDJ(6,6),
+     *          DXSDIDI(6,6),DYSDIDI(6,6),DZSDIDI(6,6),
+     *          DXSDIDJ(6,6),DYSDIDJ(6,6),DZSDIDJ(6,6),
+     *          DXXDI(6,6),DYYDI(6,6),DZZDI(6,6),
+     *          DXXDJ(6,6),DYYDJ(6,6),DZZDJ(6,6),
+     *          DXXDIDI(6,6),DYYDIDI(6,6),DZZDIDI(6,6),
+     *          DXXDIDJ(6,6),DYYDIDJ(6,6),DZZDIDJ(6,6)
+C
+      PARAMETER (MXSH=1000, MXGTOT=5000, MXATM=500, MXAO=2047)
+C
+      COMMON /GRAD  / DE(3,MXATM)
+      COMMON /IJPAIR/ IA(MXAO)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /STV   / XINT,YINT,ZINT,T,X0,Y0,Z0,XI,YI,ZI,XJ,
+     *                YJ,ZJ,NI,NJ
+      COMMON /XYZFLD/ XINTX,YINTY,ZINTZ
+      COMMON /ZRFPAR/ GZRF,FIND(3),GNUCF,EBORN,DIELEC,IZRF,ICALC
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+      PARAMETER (HALF=0.5D+00)
+      PARAMETER (RLN10=2.30258D+00)
+      PARAMETER (SQRT3=1.73205080756888D+00)
+      PARAMETER (SQRT5=2.23606797749979D+00)
+      PARAMETER (SQRT7=2.64575131106459D+00)
+C
+      DATA IJX    / 1, 2, 1, 1, 3, 1, 1, 2, 2, 1,
+     1              4, 1, 1, 3, 3, 2, 1, 2, 1, 2,
+     2              5, 1, 1, 4, 4, 2, 1, 2, 1, 3,
+     3              3, 1, 3, 2, 2/
+      DATA IJY    / 1, 1, 2, 1, 1, 3, 1, 2, 1, 2,
+     1              1, 4, 1, 2, 1, 3, 3, 1, 2, 2,
+     2              1, 5, 1, 2, 1, 4, 4, 1, 2, 3,
+     3              1, 3, 2, 3, 2/
+      DATA IJZ    / 1, 1, 1, 2, 1, 1, 3, 1, 2, 2,
+     1              1, 1, 4, 1, 2, 1, 2, 3, 3, 2,
+     2              1, 1, 5, 1, 2, 1, 2, 4, 4, 1,
+     3              3, 3, 2, 2, 3/
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DEBUG/8HDEBUG   /, DBUGME/8HDIPDER  /, GRD1/8HGRD1    /
+#else
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      CHARACTER*8 :: GRD1_STR
+      EQUIVALENCE (GRD1, GRD1_STR)
+      DATA DEBUG_STR/"DEBUG   "/, DBUGME_STR/"DIPDER  "/, 
+     *     GRD1_STR/"GRD1    "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DIPDM/8HDIPDM   /, EFIELD/8HEFIELD  /, ZRF/8HZRF     /
+#else
+      CHARACTER*8 :: DIPDM_STR
+      EQUIVALENCE (DIPDM, DIPDM_STR)
+      CHARACTER*8 :: EFIELD_STR
+      EQUIVALENCE (EFIELD, EFIELD_STR)
+      CHARACTER*8 :: ZRF_STR
+      EQUIVALENCE (ZRF, ZRF_STR)
+      DATA DIPDM_STR/"DIPDM   "/, EFIELD_STR/"EFIELD  "/, 
+     *     ZRF_STR/"ZRF     "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DPAULI/8HDPAULI  /
+#else
+      CHARACTER*8 :: DPAULI_STR
+      EQUIVALENCE (DPAULI, DPAULI_STR)
+      DATA DPAULI_STR/"DPAULI  "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DIPINT  /8HDIPINT  /
+#else
+      CHARACTER*8 :: DIPINT_STR
+      EQUIVALENCE (DIPINT, DIPINT_STR)
+      DATA DIPINT_STR/"DIPINT  "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DIPDINT /8HDIPDINT /
+#else
+      CHARACTER*8 :: DIPDINT_STR
+      EQUIVALENCE (DIPDINT, DIPDINT_STR)
+      DATA DIPDINT_STR/"DIPDINT "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DIPD2INT/8HDIPD2INT/
+#else
+      CHARACTER*8 :: DIPD2INT_STR
+      EQUIVALENCE (DIPD2INT, DIPD2INT_STR)
+      DATA DIPD2INT_STR/"DIPD2INT"/
+#endif
+C
+C        ----- DIPOLE DERIVATIVE INTEGRALS -----
+C     USED FOR CALTYP=ZRF    (GRADIENT IN ZERNER REACTION FIELD)
+C     USED FOR CALTYP=EFIELD (GRADIENT IN PRESENCE OF APPLIED FIELD)
+C     USED FOR CALTYP=DIPDM  (FORMING DIPOLE DERIVATIVE MATRIX)
+C
+C     THIS ROUTINE IS PROGRAMMED ONLY FOR FIRST DERIVATIVE INTEGRALS,
+C     BUT MAY BE CALLED DURING A ANALYTIC HESSIAN RUN WHICH ONLY NEEDS
+C     FIRST DERIVATIVE OF DIPOLE TO GIVE THE IR INTENSITIES
+C
+C     THREE NEW TYPES OF CALTYP HAVE BEEN INTRODUCED FOR THE EXTENDED 
+C     TDHF PACKAGE :
+C       - DIPINT   : COMPUTE THE DIPOLE INTEGRALS
+C       - DIPDINT  : COMPUTE FIRST DERIVATIVE WRT CARTESIAN COORDINATES
+C       - DIPD2INT : COMPUTE SECOND DERIVATIVE WRT CARTESIAN COORDINATES
+C     NOTE : DIPINT HAS BEEN INTRODUCED, SO THAT ITS DEFINITION IS
+C            COHERENT WITH ITS SUCCESSIVE DERIVATIVES.
+C
+C     MEANING OF THE ARGUMENTS :
+C       - HF   : RESULT
+C       - NORB : NUMBER OF AO ORBITALS
+C       - NXYZ : NUMBER OF GEOMETRICAL DEFORMATION
+C       - NFLD : NUMBER OF CONSIDERED ELECTRIC FIELD DIRECTION
+C     A CHECK OF THE VALUES OF THE NXYZ AND NFLD ARGS IS PERFORMED.
+C
+      BZERO   = CALTYP.EQ.DIPINT
+      BFIRST  = CALTYP.EQ.DIPDINT
+      BSECOND = CALTYP.EQ.DIPD2INT
+      IF(BZERO .OR. BFIRST .OR. BSECOND) THEN
+#if defined(SPEC_CPU)
+C Initialize BFLD(*) to eliminate warnings
+         BFLD(1)=.TRUE.
+         BFLD(2)=.TRUE.
+         BFLD(3)=.TRUE.
+#endif
+         CALL CHECKFIELDS(BFLD(1),BFLD(2),BFLD(3))
+         CALL VCLR(HF,1,NORB*NORB*NXYZ*NFLD)
+C
+C     DO SOME CHECKS
+C
+         IFLD=0
+         DO IIFLD=1,3
+            IF(BFLD(IIFLD)) IFLD=IFLD+1
+         END DO
+         IF(IFLD.NE.NFLD) THEN
+            IF(MASWRK) WRITE(IW,9010) NFLD,IFLD
+            CALL ABRT
+         END IF
+         IF(BZERO) IXYZ=1
+         IF(BFIRST) IXYZ=3*NAT
+         IF(BSECOND) IXYZ=9*((NAT*NAT+NAT)/2)
+         IF(NXYZ.NE.IXYZ) THEN
+            IF(MASWRK) WRITE(IW,9020) NXYZ,IXYZ
+            CALL ABRT
+         END IF    
+      ELSE
+         BFLD(1)=.TRUE.
+         BFLD(2)=.TRUE.
+         BFLD(3)=.TRUE.
+         CALL DERCHK(MAXDER)
+         IF(MAXDER.EQ.0) RETURN
+      END IF
+C
+      DBG = (EXETYP.EQ.DEBUG  .OR.  EXETYP.EQ.DBUGME  .OR.
+     *       EXETYP.EQ.GRD1   .OR.  NPRINT.EQ.-3)  .AND.  MASWRK
+      IF(DBG) WRITE(IW,9991) CALTYP
+C
+      TOL = RLN10*ITOL
+      NORM = NORMF .NE. 1 .OR. NORMP .NE. 1
+C
+C     ---- PROPERTY ORIGIN DEPENDS ON CALCULATION TYPE ----
+C
+      IF (CALTYP.EQ.DIPDM    .OR.   CALTYP.EQ.DPAULI   .OR.
+     *    BZERO .OR. BFIRST .OR. BSECOND) THEN
+         CALL CALCOM(XC,YC,ZC)
+      ELSE
+         XC=ZERO
+         YC=ZERO
+         ZC=ZERO
+      END IF
+C
+C     ---- NUCLEAR CONTRIBUTION TO DIPOLE DERIVATIVE MATRIX ----
+C
+      IF (CALTYP.EQ.DIPDM) THEN
+         CALL VCLR(DDINT,1,9*NAT)
+         IF(MASWRK) THEN
+            DO 4 L=1,9,4
+               DO 5 N=1,NAT
+                  DDINT(L,N)=DDINT(L,N) + ZAN(N)
+    5          CONTINUE
+    4       CONTINUE
+         END IF
+      END IF
+C
+C     EXTERNAL DIPOLE FIELD INTEGRALS.
+C
+      XMU = -FIND(1)
+      YMU = -FIND(2)
+      ZMU = -FIND(3)
+C
+C     ----- CALCULATE FIELD DERIVATIVES -----
+C
+      IF(BSECOND) THEN
+         NDER=2
+      ELSE IF(BZERO) THEN
+         NDER=0
+      ELSE
+         NDER=1
+      END IF
+C
+C     INITIALIZATION FOR PARALLEL
+C
+      NXT = IBTYP.EQ.1
+      IPCOUNT = ME - 1
+      NEXT = -1
+      MINE = -1
+C
+C     ----- ISHELL -----
+C
+      DO 9000 II=1,NSHELL
+C
+C           GO PARALLEL!
+C
+      IF(NXT .AND. GOPARR) THEN
+         MINE = MINE + 1
+         IF(MINE.GT.NEXT) CALL DDI_DLBNEXT(NEXT)
+         IF(NEXT.NE.MINE) GO TO 9000
+      END IF
+C
+      I=KATOM(II)
+      XI=C(1,I)
+      YI=C(2,I)
+      ZI=C(3,I)
+      I1=KSTART(II)
+      I2=I1+KNG(II)-1
+      LIT=KTYPE(II)+1
+      MINI=KMIN(II)
+      MAXI=KMAX(II)
+      LOCI=KLOC(II)-MINI
+C
+      LITDER=LIT+NDER
+      IAT=I
+C
+C     ----- JSHELL -----
+C
+      DO 8000 JJ=1,NSHELL
+C
+C           GO PARALLEL!
+C
+      IF((.NOT.NXT) .AND. GOPARR) THEN
+         IPCOUNT = IPCOUNT + 1
+         IF(MOD(IPCOUNT,NPROC).NE.0) GO TO 8000
+      END IF
+C
+      J=KATOM(JJ)
+      XJ=C(1,J)
+      YJ=C(2,J)
+      ZJ=C(3,J)
+      J1=KSTART(JJ)
+      J2=J1+KNG(JJ)-1
+      LJT=KTYPE(JJ)
+      MINJ=KMIN(JJ)
+      MAXJ=KMAX(JJ)
+      LOCJ=KLOC(JJ)-MINJ
+      LJTDER = LJT+NDER-1
+      IF(LJTDER.LE.LJT) LJTDER=LJT
+      JAT = J
+      RR=(XI-XJ)**2+(YI-YJ)**2+(ZI-ZJ)**2
+C
+C     ----- I PRIMITIVE -----
+C
+      DO 7000 IG=I1,I2
+      AI=EX(IG)
+      ARRI=AI*RR
+      AXI=AI*XI
+      AYI=AI*YI
+      AZI=AI*ZI
+      DUM=AI+AI
+      CSI=CS(IG)
+      CPI=CP(IG)
+      CDI=CD(IG)
+      CFI=CF(IG)
+      CGI=CG(IG)
+C
+C     ----- J PRIMITIVE -----
+C
+      DO 6000 JG=J1,J2
+      AJ=EX(JG)
+      AA =AI+AJ
+      AA1=ONE/AA
+      DUM=AJ*ARRI*AA1
+      IF(DUM.GT.TOL) GO TO 6000
+      FAC= EXP(-DUM)
+      CSJ=CS(JG)
+      CPJ=CP(JG)
+      CDJ=CD(JG)
+      CFJ=CF(JG)
+      CGJ=CG(JG)
+      AX=(AXI+AJ*XJ)*AA1
+      AY=(AYI+AJ*YJ)*AA1
+      AZ=(AZI+AJ*ZJ)*AA1
+C
+C     ----- DENSITY FACTOR -----
+C
+      IJ=0
+      DO 360 I=MINI,MAXI
+      GO TO (110,120,220,220,130,220,220,140,220,220,
+     1       150,220,220,160,220,220,220,220,220,170,
+     2       180,220,220,190,220,220,220,220,220,200,
+     3       220,220,210,220,220),I
+  110 DUM1=CSI*FAC
+      GO TO 220
+  120 DUM1=CPI*FAC
+      GO TO 220
+  130 DUM1=CDI*FAC
+      GO TO 220
+  140 IF(NORM) DUM1=DUM1*SQRT3
+      GO TO 220
+  150 DUM1=CFI*FAC
+      GO TO 220
+  160 IF(NORM) DUM1=DUM1*SQRT5
+      GO TO 220
+  170 IF(NORM) DUM1=DUM1*SQRT3
+      GO TO 220
+  180 DUM1=CGI*FAC
+      GO TO 220
+  190 IF(NORM) DUM1=DUM1*SQRT7
+      GO TO 220
+  200 IF(NORM) DUM1=DUM1*SQRT5/SQRT3
+      GO TO 220
+  210 IF(NORM) DUM1=DUM1*SQRT3
+  220 CONTINUE
+C
+      DO 360 J=MINJ,MAXJ
+      GO TO (230,250,350,350,260,350,350,270,350,350,
+     1       280,350,350,290,350,350,350,350,350,300,
+     2       310,350,350,320,350,350,350,350,350,330,
+     3       350,350,340,350,350),J
+  230 DUM2=DUM1*CSJ
+      GO TO 350
+  250 DUM2=DUM1*CPJ
+      GO TO 350
+  260 DUM2=DUM1*CDJ
+      GO TO 350
+  270 IF(NORM) DUM2=DUM2*SQRT3
+      GO TO 350
+  280 DUM2=DUM1*CFJ
+      GO TO 350
+  290 IF(NORM) DUM2=DUM2*SQRT5
+      GO TO 350
+  300 IF(NORM) DUM2=DUM2*SQRT3
+      GO TO 350
+  310 DUM2=DUM1*CGJ
+      GO TO 350
+  320 IF(NORM) DUM2=DUM2*SQRT7
+      GO TO 350
+  330 IF(NORM) DUM2=DUM2*SQRT5/SQRT3
+      GO TO 350
+  340 IF(NORM) DUM2=DUM2*SQRT3
+  350 CONTINUE
+C
+      IF (BZERO .OR. BFIRST .OR. BSECOND) THEN
+         DEN=ONE
+      ELSE
+         NN=IA(MAX(LOCI+I,LOCJ+J)) + MIN(LOCI+I,LOCJ+J)
+         DEN=DM(NN)
+         DEN=DEN+DEN
+      END IF
+C
+      IJ=IJ+1
+      DIJ(IJ)=DUM2*DEN
+      IF (CALTYP.EQ.DPAULI) THEN
+         DEN2 = DM2(NN)
+         DEN2 = DEN2 + DEN2
+         DIJ2(IJ) = DUM2*DEN2
+         DEN3 = DM3(NN)
+         DEN3 = DEN3 + DEN3
+         DIJ3(IJ) = DUM2*DEN3
+      END IF
+  360 CONTINUE
+C
+C     ----- -FLD- DERIVATIVES -----
+C
+      T = SQRT(AA)
+      T1=ONE/T
+      X0=AX
+      Y0=AY
+      Z0=AZ
+C
+      DO 370 J=1,LJTDER
+      NJ=J
+      DO 370 I=1,LITDER
+      NI=I
+      CALL FLDXYZ(XC,YC,ZC)
+      XS(I,J)=XINT*T1
+      YS(I,J)=YINT*T1
+      ZS(I,J)=ZINT*T1
+      XX(I,J)=XINTX*T1
+      YY(I,J)=YINTY*T1
+      ZZ(I,J)=ZINTZ*T1
+  370 CONTINUE
+C
+      IF(NDER.EQ.0) THEN
+         CONTINUE
+      ELSE IF(NDER.EQ.1) THEN
+         CALL DERIOLI(DXSDI,DYSDI,DZSDI,XS,YS,ZS,LIT,LJT,AI)
+         CALL DERIOLI(DXXDI,DYYDI,DZZDI,XX,YY,ZZ,LIT,LJT,AI)
+      ELSE IF(NDER.EQ.2) THEN
+         CALL DERIOLI(DXSDI,DYSDI,DZSDI,XS,YS,ZS,LIT+1,LJT+1,AI)
+         CALL DERJOLI(DXSDJ,DYSDJ,DZSDJ,XS,YS,ZS,LIT,LJT,AJ)
+         CALL DERIOLI(DXSDIDI,DYSDIDI,DZSDIDI,
+     *                DXSDI,DYSDI,DZSDI,LIT,LJT,AI)
+         CALL DERJOLI(DXSDIDJ,DYSDIDJ,DZSDIDJ,
+     *                DXSDI,DYSDI,DZSDI,LIT,LJT,AJ)
+C
+         CALL DERIOLI(DXXDI,DYYDI,DZZDI,XX,YY,ZZ,LIT+1,LJT+1,AI)
+         CALL DERJOLI(DXXDJ,DYYDJ,DZZDJ,XX,YY,ZZ,LIT,LJT,AJ)
+         CALL DERIOLI(DXXDIDI,DYYDIDI,DZZDIDI,
+     *                DXXDI,DYYDI,DZZDI,LIT,LJT,AI)
+         CALL DERJOLI(DXXDIDJ,DYYDIDJ,DZZDIDJ,
+     *                DXXDI,DYYDI,DZZDI,LIT,LJT,AJ)
+      ELSE
+         IF(MASWRK) WRITE(IW,*) 'DIPDER: DEAD END NO.1'
+         CALL ABRT
+      END IF
+C
+      IJ=0
+      DO 390 I=MINI,MAXI
+      IX=IJX(I)
+      IY=IJY(I)
+      IZ=IJZ(I)
+      DO 380 J=MINJ,MAXJ
+      JX=IJX(J)
+      JY=IJY(J)
+      JZ=IJZ(J)
+C
+C     FIRST AND SECOND DERIVATIVE OF THE DIPOLE MOMENT MATRIX
+C
+      IF(BFLD(1)) THEN
+         IF(NDER.EQ.0) THEN
+            FLD(1)=      XX(IX,JX)*   YS(IY,JY)*   ZS(IZ,JZ)
+         ELSE IF(NDER.EQ.1) THEN
+            DFLD(1,1)=DXXDI(IX,JX)*   YS(IY,JY)*   ZS(IZ,JZ)
+            DFLD(2,1)=   XX(IX,JX)*DYSDI(IY,JY)*   ZS(IZ,JZ)
+            DFLD(3,1)=   XX(IX,JX)*   YS(IY,JY)*DZSDI(IZ,JZ)
+         ELSE IF(NDER.EQ.2) THEN
+            SDFLD(1,1,1)=DXXDIDI(IX,JX)*YS(IY,JY)*ZS(IZ,JZ)
+            SDFLD(2,1,1)=DXXDI(IX,JX)*DYSDI(IY,JY)*ZS(IZ,JZ)
+            SDFLD(3,1,1)=DXXDI(IX,JX)*YS(IY,JY)*DZSDI(IZ,JZ)
+            SDFLD(1,2,1)=SDFLD(2,1,1)
+            SDFLD(2,2,1)=XX(IX,JX)*DYSDIDI(IY,JY)*ZS(IZ,JZ)
+            SDFLD(3,2,1)=XX(IX,JX)*DYSDI(IY,JY)*DZSDI(IZ,JZ)
+            SDFLD(1,3,1)=SDFLD(3,1,1)
+            SDFLD(2,3,1)=SDFLD(3,2,1)
+            SDFLD(3,3,1)=XX(IX,JX)*YS(IY,JY)*DZSDIDI(IZ,JZ)
+C
+            DDFLD(1,1,1)=DXXDIDJ(IX,JX)*YS(IY,JY)*ZS(IZ,JZ)
+            DDFLD(2,1,1)=DXXDJ(IX,JX)*DYSDI(IY,JY)*ZS(IZ,JZ)
+            DDFLD(3,1,1)=DXXDJ(IX,JX)*YS(IY,JY)*DZSDI(IZ,JZ)
+            DDFLD(1,2,1)=DXXDI(IX,JX)*DYSDJ(IY,JY)*ZS(IZ,JZ)
+            DDFLD(2,2,1)=XX(IX,JX)*DYSDIDJ(IY,JY)*ZS(IZ,JZ)
+            DDFLD(3,2,1)=XX(IX,JX)*DYSDJ(IY,JY)*DZSDI(IZ,JZ)
+            DDFLD(1,3,1)=DXXDI(IX,JX)*YS(IY,JY)*DZSDJ(IZ,JZ)
+            DDFLD(2,3,1)=XX(IX,JX)*DYSDI(IY,JY)*DZSDJ(IZ,JZ)
+            DDFLD(3,3,1)=XX(IX,JX)*YS(IY,JY)*DZSDIDJ(IZ,JZ)
+         ELSE
+            IF(MASWRK) WRITE(IW,*) 'DIPDER: DEAD END NO.2'
+            CALL ABRT
+         END IF
+      END IF
+C
+      IF(BFLD(2)) THEN
+         IF(NDER.EQ.0) THEN
+            FLD(2)=      XS(IX,JX)*   YY(IY,JY)*   ZS(IZ,JZ)
+         ELSE IF(NDER.EQ.1) THEN
+            DFLD(1,2)=DXSDI(IX,JX)*   YY(IY,JY)*   ZS(IZ,JZ)
+            DFLD(2,2)=   XS(IX,JX)*DYYDI(IY,JY)*   ZS(IZ,JZ)
+            DFLD(3,2)=   XS(IX,JX)*   YY(IY,JY)*DZSDI(IZ,JZ)
+         ELSE IF(NDER.EQ.2) THEN  
+            SDFLD(1,1,2)=DXSDIDI(IX,JX)*YY(IY,JY)*ZS(IZ,JZ)
+            SDFLD(2,1,2)=DXSDI(IX,JX)*DYYDI(IY,JY)*ZS(IZ,JZ)
+            SDFLD(3,1,2)=DXSDI(IX,JX)*YY(IY,JY)*DZSDI(IZ,JZ)
+            SDFLD(1,2,2)=SDFLD(2,1,2)
+            SDFLD(2,2,2)=XS(IX,JX)*DYYDIDI(IY,JY)*ZS(IZ,JZ)
+            SDFLD(3,2,2)=XS(IX,JX)*DYYDI(IY,JY)*DZSDI(IZ,JZ)
+            SDFLD(1,3,2)=SDFLD(3,1,2)
+            SDFLD(2,3,2)=SDFLD(3,2,2)
+            SDFLD(3,3,2)=XS(IX,JX)*YY(IY,JY)*DZSDIDI(IZ,JZ)
+C
+            DDFLD(1,1,2)=DXSDIDJ(IX,JX)*YY(IY,JY)*ZS(IZ,JZ)
+            DDFLD(2,1,2)=DXSDJ(IX,JX)*DYYDI(IY,JY)*ZS(IZ,JZ)
+            DDFLD(3,1,2)=DXSDJ(IX,JX)*YY(IY,JY)*DZSDI(IZ,JZ)
+            DDFLD(1,2,2)=DXSDI(IX,JX)*DYYDJ(IY,JY)*ZS(IZ,JZ)
+            DDFLD(2,2,2)=XS(IX,JX)*DYYDIDJ(IY,JY)*ZS(IZ,JZ)
+            DDFLD(3,2,2)=XS(IX,JX)*DYYDJ(IY,JY)*DZSDI(IZ,JZ)
+            DDFLD(1,3,2)=DXSDI(IX,JX)*YY(IY,JY)*DZSDJ(IZ,JZ)
+            DDFLD(2,3,2)=XS(IX,JX)*DYYDI(IY,JY)*DZSDJ(IZ,JZ)
+            DDFLD(3,3,2)=XS(IX,JX)*YY(IY,JY)*DZSDIDJ(IZ,JZ)
+         ELSE
+            IF(MASWRK) WRITE(IW,*) 'DIPDER: DEAD END NO.3'
+            CALL ABRT
+         END IF
+      END IF
+C
+      IF(BFLD(3)) THEN
+         IF(NDER.EQ.0) THEN
+            FLD(3)=      XS(IX,JX)*   YS(IY,JY)*   ZZ(IZ,JZ)
+         ELSE IF(NDER.EQ.1) THEN
+            DFLD(1,3)=DXSDI(IX,JX)*   YS(IY,JY)*   ZZ(IZ,JZ)
+            DFLD(2,3)=   XS(IX,JX)*DYSDI(IY,JY)*   ZZ(IZ,JZ)
+            DFLD(3,3)=   XS(IX,JX)*   YS(IY,JY)*DZZDI(IZ,JZ)
+         ELSE IF(NDER.EQ.2) THEN
+            SDFLD(1,1,3)=DXSDIDI(IX,JX)*YS(IY,JY)*ZZ(IZ,JZ)
+            SDFLD(2,1,3)=DXSDI(IX,JX)*DYSDI(IY,JY)*ZZ(IZ,JZ)
+            SDFLD(3,1,3)=DXSDI(IX,JX)*YS(IY,JY)*DZZDI(IZ,JZ)
+            SDFLD(1,2,3)=SDFLD(2,1,3)
+            SDFLD(2,2,3)=XS(IX,JX)*DYSDIDI(IY,JY)*ZZ(IZ,JZ)
+            SDFLD(3,2,3)=XS(IX,JX)*DYSDI(IY,JY)*DZZDI(IZ,JZ)
+            SDFLD(1,3,3)=SDFLD(3,1,3)
+            SDFLD(2,3,3)=SDFLD(3,2,3)
+            SDFLD(3,3,3)=XS(IX,JX)*YS(IY,JY)*DZZDIDI(IZ,JZ)
+C
+            DDFLD(1,1,3)=DXSDIDJ(IX,JX)*YS(IY,JY)*ZZ(IZ,JZ)
+            DDFLD(2,1,3)=DXSDJ(IX,JX)*DYSDI(IY,JY)*ZZ(IZ,JZ)
+            DDFLD(3,1,3)=DXSDJ(IX,JX)*YS(IY,JY)*DZZDI(IZ,JZ)
+            DDFLD(1,2,3)=DXSDI(IX,JX)*DYSDJ(IY,JY)*ZZ(IZ,JZ)
+            DDFLD(2,2,3)=XS(IX,JX)*DYSDIDJ(IY,JY)*ZZ(IZ,JZ)
+            DDFLD(3,2,3)=XS(IX,JX)*DYSDJ(IY,JY)*DZZDI(IZ,JZ)
+            DDFLD(1,3,3)=DXSDI(IX,JX)*YS(IY,JY)*DZZDJ(IZ,JZ)
+            DDFLD(2,3,3)=XS(IX,JX)*DYSDI(IY,JY)*DZZDJ(IZ,JZ)
+            DDFLD(3,3,3)=XS(IX,JX)*YS(IY,JY)*DZZDIDJ(IZ,JZ)
+         ELSE 
+            IF(MASWRK) WRITE(IW,*) 'DIPDER: DEAD END NO.4'
+            CALL ABRT
+         END IF
+      END IF
+C
+      IJ=IJ+1
+C
+      IF (CALTYP.EQ.DIPDM) THEN
+         DDINT(1,IAT)=DDINT(1,IAT) - DIJ(IJ)*DFLD(1,1)
+         DDINT(2,IAT)=DDINT(2,IAT) - DIJ(IJ)*DFLD(1,2)
+         DDINT(3,IAT)=DDINT(3,IAT) - DIJ(IJ)*DFLD(1,3)
+         DDINT(4,IAT)=DDINT(4,IAT) - DIJ(IJ)*DFLD(2,1)
+         DDINT(5,IAT)=DDINT(5,IAT) - DIJ(IJ)*DFLD(2,2)
+         DDINT(6,IAT)=DDINT(6,IAT) - DIJ(IJ)*DFLD(2,3)
+         DDINT(7,IAT)=DDINT(7,IAT) - DIJ(IJ)*DFLD(3,1)
+         DDINT(8,IAT)=DDINT(8,IAT) - DIJ(IJ)*DFLD(3,2)
+         DDINT(9,IAT)=DDINT(9,IAT) - DIJ(IJ)*DFLD(3,3)
+      ELSE IF (BZERO) THEN
+         KI=LOCI+I
+         KJ=LOCJ+J
+         IFLD=0
+         DO IIFLD=1,3
+            IF(BFLD(IIFLD)) THEN
+               IFLD=IFLD+1
+               HF(IFLD,1,KI,KJ)=HF(IFLD,1,KI,KJ)+DIJ(IJ)*FLD(IIFLD)
+            END IF
+         END DO
+      ELSE IF (BFIRST) THEN
+         KI=LOCI+I
+         KJ=LOCJ+J
+         K=IAT*3-2
+         IFLD=0
+         DO IIFLD=1,3
+            IF(BFLD(IIFLD)) THEN
+               IFLD=IFLD+1
+               HF(IFLD,K+0,KI,KJ)=HF(IFLD,K+0,KI,KJ)
+     *                             +DIJ(IJ)*DFLD(1,IIFLD)
+               HF(IFLD,K+1,KI,KJ)=HF(IFLD,K+1,KI,KJ)
+     *                             +DIJ(IJ)*DFLD(2,IIFLD)
+               HF(IFLD,K+2,KI,KJ)=HF(IFLD,K+2,KI,KJ)
+     *                             +DIJ(IJ)*DFLD(3,IIFLD)
+            END IF
+         ENDDO
+      ELSE IF (BSECOND) THEN
+         DUMMY=DIJ(IJ)
+C
+         KI=LOCI+I
+         KJ=LOCJ+J
+         IATOM=IAT-1
+         JATOM=JAT-1
+C
+         MC = (IATOM*IATOM+IATOM)/2+IATOM
+         MC = MC * 9
+         IFLD=0
+         DO IIFLD=1,3
+            IF(BFLD(IIFLD)) THEN
+               IFLD=IFLD+1
+               HF(IFLD,MC+1,KI,KJ)=HF(IFLD,MC+1,KI,KJ)
+     *                             + DUMMY*SDFLD(1,1,IIFLD)
+               HF(IFLD,MC+2,KI,KJ)=HF(IFLD,MC+2,KI,KJ)
+     *                             + DUMMY*SDFLD(1,2,IIFLD)
+               HF(IFLD,MC+3,KI,KJ)=HF(IFLD,MC+3,KI,KJ)
+     *                             + DUMMY*SDFLD(1,3,IIFLD)
+               HF(IFLD,MC+4,KI,KJ)=HF(IFLD,MC+4,KI,KJ)
+     *                             + DUMMY*SDFLD(2,1,IIFLD)
+               HF(IFLD,MC+5,KI,KJ)=HF(IFLD,MC+5,KI,KJ)
+     *                             + DUMMY*SDFLD(2,2,IIFLD)
+               HF(IFLD,MC+6,KI,KJ)=HF(IFLD,MC+6,KI,KJ)
+     *                             + DUMMY*SDFLD(2,3,IIFLD)
+               HF(IFLD,MC+7,KI,KJ)=HF(IFLD,MC+7,KI,KJ)
+     *                             + DUMMY*SDFLD(3,1,IIFLD)
+               HF(IFLD,MC+8,KI,KJ)=HF(IFLD,MC+8,KI,KJ)
+     *                             + DUMMY*SDFLD(3,2,IIFLD)
+               HF(IFLD,MC+9,KI,KJ)=HF(IFLD,MC+9,KI,KJ)
+     *                             + DUMMY*SDFLD(3,3,IIFLD)
+            END IF
+         END DO
+         IF(IATOM.NE.JATOM) DUMMY=DUMMY*HALF
+C
+         IF(IATOM.GT.JATOM) THEN
+            MC = (IATOM*IATOM+IATOM)/2+JATOM
+            MC = MC * 9
+            IFLD=0
+            DO IIFLD=1,3
+               IF(BFLD(IIFLD)) THEN
+                  IFLD=IFLD+1
+                  HF(IFLD,MC+1,KI,KJ)=HF(IFLD,MC+1,KI,KJ)
+     *                                + DUMMY*DDFLD(1,1,IIFLD)
+                  HF(IFLD,MC+2,KI,KJ)=HF(IFLD,MC+2,KI,KJ)
+     *                                + DUMMY*DDFLD(1,2,IIFLD)
+                  HF(IFLD,MC+3,KI,KJ)=HF(IFLD,MC+3,KI,KJ)
+     *                                + DUMMY*DDFLD(1,3,IIFLD)
+                  HF(IFLD,MC+4,KI,KJ)=HF(IFLD,MC+4,KI,KJ)
+     *                                + DUMMY*DDFLD(2,1,IIFLD)
+                  HF(IFLD,MC+5,KI,KJ)=HF(IFLD,MC+5,KI,KJ)
+     *                                + DUMMY*DDFLD(2,2,IIFLD)
+                  HF(IFLD,MC+6,KI,KJ)=HF(IFLD,MC+6,KI,KJ)
+     *                                + DUMMY*DDFLD(2,3,IIFLD)
+                  HF(IFLD,MC+7,KI,KJ)=HF(IFLD,MC+7,KI,KJ)
+     *                                + DUMMY*DDFLD(3,1,IIFLD)
+                  HF(IFLD,MC+8,KI,KJ)=HF(IFLD,MC+8,KI,KJ)
+     *                                + DUMMY*DDFLD(3,2,IIFLD)
+                  HF(IFLD,MC+9,KI,KJ)=HF(IFLD,MC+9,KI,KJ)
+     *                                + DUMMY*DDFLD(3,3,IIFLD)
+               END IF	
+            END DO
+         ELSE
+            MC = (JATOM*JATOM+JATOM)/2+IATOM
+            MC = MC * 9
+            IFLD=0
+            DO IIFLD=1,3
+               IF(BFLD(IIFLD)) THEN
+                  IFLD=IFLD+1
+                  HF(IFLD,MC+1,KI,KJ)=HF(IFLD,MC+1,KI,KJ)
+     *                                + DUMMY*DDFLD(1,1,IIFLD)
+                  HF(IFLD,MC+2,KI,KJ)=HF(IFLD,MC+2,KI,KJ)
+     *                                + DUMMY*DDFLD(2,1,IIFLD)
+                  HF(IFLD,MC+3,KI,KJ)=HF(IFLD,MC+3,KI,KJ)
+     *                                + DUMMY*DDFLD(3,1,IIFLD)
+                  HF(IFLD,MC+4,KI,KJ)=HF(IFLD,MC+4,KI,KJ)
+     *                                + DUMMY*DDFLD(1,2,IIFLD)
+                  HF(IFLD,MC+5,KI,KJ)=HF(IFLD,MC+5,KI,KJ)
+     *                                + DUMMY*DDFLD(2,2,IIFLD)
+                  HF(IFLD,MC+6,KI,KJ)=HF(IFLD,MC+6,KI,KJ)
+     *                                + DUMMY*DDFLD(3,2,IIFLD)
+                  HF(IFLD,MC+7,KI,KJ)=HF(IFLD,MC+7,KI,KJ)
+     *                                + DUMMY*DDFLD(1,3,IIFLD)
+                  HF(IFLD,MC+8,KI,KJ)=HF(IFLD,MC+8,KI,KJ)
+     *                                + DUMMY*DDFLD(2,3,IIFLD)
+                  HF(IFLD,MC+9,KI,KJ)=HF(IFLD,MC+9,KI,KJ)
+     *                                + DUMMY*DDFLD(3,3,IIFLD)
+               END IF
+            END DO
+         END IF
+      ELSE IF (CALTYP.EQ.DPAULI) THEN
+           DE(1,IAT)=DE(1,IAT)+(  DIJ(IJ)*DFLD(1,1)
+     *                          +DIJ2(IJ)*DFLD(1,2)
+     *                          +DIJ3(IJ)*DFLD(1,3))
+           DE(2,IAT)=DE(2,IAT)+(  DIJ(IJ)*DFLD(2,1)
+     *                          +DIJ2(IJ)*DFLD(2,2)
+     *                          +DIJ3(IJ)*DFLD(2,3))
+           DE(3,IAT)=DE(3,IAT)+(  DIJ(IJ)*DFLD(3,1)
+     *                          +DIJ2(IJ)*DFLD(3,2)
+     *                          +DIJ3(IJ)*DFLD(3,3))
+      ELSE
+         DE(1,IAT)=DE(1,IAT)-DIJ(IJ)*(-DFLD(1,1)*XMU
+     *                                -DFLD(1,2)*YMU
+     *                                -DFLD(1,3)*ZMU)*GNUCF
+         DE(2,IAT)=DE(2,IAT)-DIJ(IJ)*(-DFLD(2,1)*XMU
+     *                                -DFLD(2,2)*YMU
+     *                                -DFLD(2,3)*ZMU)*GNUCF
+         DE(3,IAT)=DE(3,IAT)-DIJ(IJ)*(-DFLD(3,1)*XMU
+     *                                -DFLD(3,2)*YMU
+     *                                -DFLD(3,3)*ZMU)*GNUCF
+      END IF
+  380 CONTINUE
+  390 CONTINUE
+C
+C     ----- END LOOPS OVER PRIMITVES AND SHELLS -----
+C
+ 6000 CONTINUE
+ 7000 CONTINUE
+ 8000 CONTINUE
+ 9000 CONTINUE
+C
+C         PARALLEL RUNS COMPUTING GRADIENT WILL DO A SINGLE
+C         GLOBAL SUM LATER TO GET ALL CONTRIBUTIONS TO -DE-
+C
+      IF(GOPARR) THEN
+         IF(NXT) CALL DDI_DLBRESET
+         IF(CALTYP.EQ.DIPDM) CALL DDI_GSUMF(1620,DDINT,9*NAT)
+      END IF
+C
+      IF(DBG.AND.(CALTYP.EQ.EFIELD  .OR.  CALTYP.EQ.ZRF)) THEN
+         IF(GOPARR) CALL DDI_GSUMF(1505,DE,3*NAT)
+         IF(MASWRK) WRITE(IW,9992) CALTYP
+         CALL EGOUT(DE,NAT)
+         IF(GOPARR) CALL DSCAL(3*NAT,ONE/NPROC,DE,1)
+      END IF
+C
+      IF(DBG.AND.(CALTYP.EQ.DIPDM)) THEN
+         IF(MASWRK) WRITE(IW,9993)
+         CALL DDMOUT(DDINT,3*NAT)
+      END IF
+C
+      IF(BFIRST.OR.BSECOND) THEN
+         DO J=1,NORB
+            DO I=1,J
+               DO IXYZ=1,NXYZ
+                  DO IFLD=1,NFLD
+                     DUMMY = (HF(IFLD,IXYZ,I,J) + HF(IFLD,IXYZ,J,I))
+                     HF(IFLD,IXYZ,I,J) = DUMMY
+                     HF(IFLD,IXYZ,J,I) = DUMMY
+                  END DO
+               END DO
+            END DO
+         END DO
+      END IF
+      RETURN
+C
+ 9991 FORMAT(1X,'--- ENTERED DIPDER, CALTYP=',A8)
+ 9992 FORMAT(/10X,38("-")/10X,A8,' CONTRIBUTIONS',
+     *        ' TO THE GRADIENT'/10X,38(1H-))
+ 9993 FORMAT(1X,'NUCLEAR AND AO DERIVATIVE INTEGRAL CONTRIBUTIONS',
+     *        ' TO THE DIPOLE DERIVATIVE TENSOR')
+ 9010 FORMAT(1X,'ERROR IN DIPDER : VALUE OF NFLD ARG (',I4,
+     *          ') DIFFERS FROM COMPUTED ONE (',I4,')')
+ 9020 FORMAT(1X,'ERROR IN DIPDER : VALUE OF NXYZ ARG (',I4,
+     *          ') DIFFERS FROM COMPUTED ONE (',I4,')')
+      END
+C*MODULE SCRF    *DECK ZRFINP
+      SUBROUTINE ZRFINP
+C
+      IMPLICIT DOUBLE PRECISION (A-H, O-Z)
+C
+      LOGICAL GOPARR,MASWRK,DSKWRK
+C
+      PARAMETER (ZERO=0.00D+00, MXATM=500)
+      PARAMETER (ONE=1.00D+00, TWO=2.00D+00)
+      PARAMETER (NNAM=3, UNIT=0.52917724924D+00)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+      COMMON /ZRFPAR/ GZRF,FIND(3),GNUCF,EBORN,DIELEC,IZRF,ICALC
+C
+      DIMENSION QNAM(NNAM),KQNAM(NNAM)
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA GNAM /8HSCRF    /
+#else
+      CHARACTER*8 :: GNAM_STR
+      EQUIVALENCE (GNAM, GNAM_STR)
+      DATA GNAM_STR/"SCRF    "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA QNAM /8HG       ,8HDIELEC  ,8HRADIUS  /
+#else
+      CHARACTER*8 :: QNAM_STR(NNAM)
+      EQUIVALENCE (QNAM, QNAM_STR)
+      DATA QNAM_STR/"G       ","DIELEC  ","RADIUS  "/
+#endif
+      DATA KQNAM /3,3,3/
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA NONE,RNONE/4HNONE,8HNONE    /
+#else
+      CHARACTER*8 :: RNONE_STR
+      EQUIVALENCE (RNONE, RNONE_STR)
+      CHARACTER*4 :: NONE_STR
+      EQUIVALENCE (NONE, NONE_STR)
+      DATA NONE_STR,RNONE_STR/"NONE","NONE    "/
+#endif
+C
+C         ESTABLISH A DEFAULT WHICH IS TO SKIP SCRF COMPUTATION
+C
+      IZRF = 0
+C
+      GZRF = ZERO
+      DIELEC = ZERO
+      RADIUS = ZERO
+      ICALC = 0
+C
+C           READ $SCRF INPUT
+C
+      JRET = 0
+      CALL NAMEIO(IR,JRET,GNAM,NNAM,QNAM,KQNAM,
+     *            GZRF,DIELEC,RADIUS,
+     *            0,
+     *  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,
+     *  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,
+     *  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0)
+C
+C        DETECTION OF THE $SCRF GROUP ENABLES THE SCRF COMPUTATION
+C
+      IF(JRET.EQ.1) THEN
+         RETURN
+      ELSE
+         IZRF = 1
+      END IF
+C
+      IF(JRET.EQ.2) THEN
+        IF (MASWRK) WRITE(IW,9028)
+        CALL ABRT
+      END IF
+C
+C        TURN OFF SCRF IF GROUP WAS READ, BUT DIELECTRIC IS ZERO
+C
+      IF(DIELEC.LE.ZERO  .AND.  GZRF.LE.ZERO) THEN
+         IZRF = 0
+         RETURN
+      END IF
+C
+C        ITS TOO EARLY IN THE RUN TO TEST ON ANALYTIC HESSIAN...
+C
+      NERR=0
+      IF(CITYP.NE.RNONE) NERR=NERR+1
+      IF(MPLEVL.GT.0)    NERR=NERR+1
+      IF(MPCTYP.NE.NONE) NERR=NERR+1
+C
+      IF(NERR.GT.0) THEN
+         IF(MASWRK) WRITE(IW,9070)
+         CALL ABRT
+      END IF
+C
+      IF(IZRF.NE.0) THEN
+        GNUCF = NE+ICH
+        GNUCF = GNUCF/NE
+        IF(GZRF.EQ.ZERO) THEN
+          IF(RADIUS.EQ.ZERO) THEN
+            ICALC= 1
+            CALL ACALC(RADIUS)
+          END IF
+          RADIUS = RADIUS/UNIT
+          GZRF=TWO*(DIELEC-ONE)/((TWO*DIELEC+ONE)*RADIUS**3)
+          EBORN=(1-DIELEC)*ICH**2/(TWO*DIELEC*RADIUS)
+        ELSE
+          EBORN=ZERO
+          IF (MASWRK) WRITE(IW,9048)
+        END IF
+      END IF
+C
+C  PRINT $SCRF OPTIONS
+C
+      IF (MASWRK) WRITE(IW,9058) GZRF,DIELEC,RADIUS*UNIT
+C
+C INITIALIZE CARRY OVER INDUCED MOMENT FOR OPTIMIZATIONS.
+C
+      FIND(1)=ZERO
+      FIND(2)=ZERO
+      FIND(3)=ZERO
+      RETURN
+C
+ 9028 FORMAT(1X,'ERROR IN $SCRF INPUT')
+ 9048 FORMAT(1X,'WARNING - BORN ENERGY CAN NOT BE COMPUTED FROM G')
+ 9058 FORMAT(/5X,'$SCRF OPTIONS'/5X,12("-")/
+     *  5X,7HG     =,F8.3,5X,7HDIELEC=,F8.2,5X,7HRADIUS=,F8.2)
+ 9070 FORMAT(1X,'*** ERROR *** SCRF COMPUTATIONS ARE NOT POSSIBLE FOR'/
+     *       6X,'MP2 RUNS'/6X,'CI RUNS'/6X,'SEMI-EMPIRICAL RUNS, OR'/
+     *       6X,'ANALYTIC HESSIAN RUNS.')
+      END

@@ -1,0 +1,35 @@
+#
+# Makefile for pm_stub performance monitor module for specinvoke
+# Copyright (C) 2003 Standard Performance Evaluation Corporation
+#
+# $Id: Makefile.in 2348 2005-02-04 03:00:06Z cloyce $
+
+# @configure_input@
+
+
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+bindir      = @bindir@
+
+CC=@CC@
+OPTIMIZE=@OPTIMIZE@
+DEFS=@DEFS@ -DPERFMON
+CPPFLAGS=@CPPFLAGS@ -I.. -I.
+CFLAGS=@CFLAGS@ $(CPPFLAGS) $(DEFS) $(OPTIMIZE) $(EXTRA_CFLAGS)
+LIBS=@LIBS@ $(EXTRA_LIBS)
+LDFLAGS=@LDFLAGS@ $(EXTRA_LDFLAGS)
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+PERL=@PERL@
+
+all: pmfuncs.o
+
+pmfuncs.o: pmfuncs.c specinvoke_pm.h
+
+clean:
+	rm -f core *.o
+
+distclean: clean
+	rm -rf Makefile

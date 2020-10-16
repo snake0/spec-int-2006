@@ -1,0 +1,422 @@
+#!/bin/bash
+#
+# cleanuptree - clean up working directory in preparation for a kit
+# No support is provided for this script.
+#
+# Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+#  All Rights Reserved
+#
+# $Id: cleanuptree 4748 2006-08-02 18:50:51Z cloyce $
+#
+
+if [ -z "$SPEC" ]; then
+    echo "SPEC variable is not set!";
+    exit 1;
+fi
+
+# Settings to tweak
+suite=CPU2006
+treeowner=cloyce
+treegroup=cpudevel
+
+# Don't tweak these
+lcsuite=`echo $suite | tr /A-Z/ /a-z/`
+novc='( ( -name CVS -o -name .svn ) -prune ) -o'
+
+# Figure out if xargs knows -r or not
+t=`echo foo | xargs -r echo 2>&1`
+if [ "x$t" = "xfoo" ]; then
+  XARGSR=-r
+else
+  XARGSR=
+fi
+
+echo Removing installation stuff...
+
+# Remove tools installations
+  
+(cd $SPEC; . ./shrc; relocate --undo) # Remove the relocation information
+
+# These are almost certainly present:
+for i in bzip2 gzip invoke invoke_pm make md5sum perl tar perldoc; do
+    rm -f $SPEC/bin/spec$i
+done
+if [ -f $SPEC/SUMS.tools ]; then
+    (cd $SPEC; grep /bin SUMS.tools | awk '{print $4}' | xargs $XARGSR rm -f)
+fi
+rm -f $SPEC/bin/packagename
+rm -f $SPEC/SUMS.tools
+rm -rf $SPEC/bin/lib
+
+# Make sure that we have version files for all benchmarks
+echo Checking for benchmark version files, exe and run directories...
+for i in $SPEC/benchspec/*/*; do
+  if [ -d $i ]; then
+    if [ ! -f $i/version.txt -a `basename $i` != "CVS" -a `basename $i` != ".svn" ]; then
+      echo No version file in $i
+      exit 1
+    fi
+    for j in run exe; do 
+      if [ -d $i/$j ]; then
+        echo Removing $i/$j
+        rm -rf $i/$j
+      fi
+    done
+  fi
+done
+
+# Make sure that there are no CRLFs in the sources
+echo Looking for the evil CRLF in source files
+CRLFfound=0
+for i in $SPEC/benchspec/*/*/src; do
+  find $i $novc \( -type f \! -name '*.tar' -print \) | \
+    xargs perl -MFile::Basename -ne 'if (!$reported{$ARGV} && m/\015/o) { print "CRLF found in $ARGV\n"; $reported{$ARGV} = 1; $found = 1; } END { exit $found; }'
+  if [ $? -ne 0 ]; then
+    echo CRLF sources in $(basename $(dirname $i))
+    CRLFfound=1
+  fi
+done
+if [ $CRLFfound -ne 0 ]; then
+  exit 1
+fi
+
+# Remove tools build leftovers
+(cd $SPEC/tools/src; SKIPALL=1 DOCLEAN=1 CLEANONLY=1 ./buildtools)
+rm -rf $SPEC/tools/output
+
+# Remove run and exe directories
+rm -rf $SPEC/benchspec/*/*/run $SPEC/benchspec/*/*/exe
+
+# Clean out the results directory
+if [ -d $SPEC/result ]; then
+  find $SPEC/result $novc \( -type f -print \) | egrep -v '(basebar|peakbar|invalid)\.gif$' | xargs $XARGSR rm -f
+else
+  mkdir $SPEC/result
+fi
+
+# Make sure rawformat exists and is current, because we can't just symlink it
+echo Fixing up rawformat and configpp
+rm -f $SPEC/bin/rawformat $SPEC/bin/configpp
+cp $SPEC/bin/runspec $SPEC/bin/rawformat
+cp $SPEC/bin/runspec $SPEC/bin/configpp
+chmod 755 $SPEC/bin/rawformat $SPEC/bin/configpp
+
+# Check for long file names
+echo Checking for long file names
+find . $novc -print | perl -ne 'next if m{/(?:\.svn|CVS)/?}o; chomp; s/^\.\///o; $l=length($_); if ($l > 99) { print "$l: $_\n"; $long++; } END { if ($long) { print "$long long files found\n"; exit 1; } }'
+
+# Refresh all the src.alts
+for i in $SPEC/benchspec/*/*/src/src.alt/*; do
+  if [ "x$i" != "x$SPEC/benchspec/*/*/src/src.alt/*" ]; then
+    if [ `basename $i` != 'CVS' -a `basename $i` != '.svn ' ]; then
+      # Ignore CVS and Subversion directories
+      bmark=$(basename $(dirname $(dirname $(dirname $i))))
+      srcalt=$(basename $i)
+      echo Generating $srcalt src.alt for $bmark
+      perl -I$SPEC/bin $SPEC/bin/makesrcalt $bmark $srcalt --notarball
+    fi
+  fi
+done
+
+# HTMLize all the benchmark flag descriptions
+rm -f $SPEC/Docs.txt/*
+for i in $SPEC/benchspec/flag*.xml $SPEC/benchspec/*/*/Spec/flags.xml; do
+  if [ "x$i" != "x$SPEC/benchspec/*/*/Spec/flags.xml" ]; then
+      if echo $i | grep Spec/flags.xml >/dev/null 2>&1; then
+        # Benchmark flags file; goes in the benchmark docs dir
+        docsdir=$(dirname $(dirname $i))/Docs
+      else
+        # Suite flags file; goes in $SPEC/Docs/flags
+        docsdir=$(dirname $(dirname $i))/Docs/flags
+      fi
+      flagfile=$(basename $i .xml)
+      [ -d $docsdir ] || mkdir $docsdir
+      echo Generating flags file for $(basename $(dirname $docsdir))
+      (
+       cd $docsdir
+       rm -f ${flagfile}.html*
+       if [ `basename $i` = 'flags.xml' ]; then
+         perl -I$SPEC/bin $SPEC/bin/flag_dump --source=$(basename $(dirname $(dirname $i))) $i >/dev/null
+       else
+         perl -I$SPEC/bin $SPEC/bin/flag_dump --source=suite $i >/dev/null
+       fi
+      )
+  fi
+done
+
+# Don't forget the example flag description files
+for i in $SPEC/Docs/flags/flags*.xml; do
+  if [ "x$i" != "x$SPEC/Docs/flags/flags*.xml" ]; then
+      echo Dumping $(basename $i) to HTML
+      (
+       cd $(dirname $i)
+       rm -f $(basename $i .xml).html*
+       perl -I$SPEC/bin $SPEC/bin/flag_dump $i >/dev/null
+      )
+  fi
+done
+
+# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# XXX Benchset generation will need to be changed for multiple suite dirs
+# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+SUITEVER=`cat $SPEC/version.txt | sed 's/\(^[0-9.]*\).*/\1/'`
+ISRC=`grep "^Version $SUITEVER -" $SPEC/Revisions | grep -i release.candidate`
+if [ $SUITEVER -gt 8 -a "x$ISRC" = "x" ]; then
+  echo Making the \"changed\" benchset
+  cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/changed/g' > $SPEC/benchspec/$suite/changed.bset
+  for i in $( grep -l $SUITEVER $SPEC/benchspec/$suite/*/version.txt); do
+          echo "   "$(basename $(dirname $i)) >> $SPEC/benchspec/$suite/changed.bset
+  done
+  cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/changed.bset
+else
+  rm -f $SPEC/benchspec/$suite/changed.bset >/dev/null 2>&1
+fi
+
+# Make lists of all the benchmarks by language
+echo Sifting the benchmarks by language...
+benchlang_re="\$benchlang[ 	]*=[ 	]*[\'\"]"
+C_benchmarks=''
+CXX_benchmarks=''
+Clike_benchmarks=''
+F77_benchmarks=''
+F_benchmarks=''
+Flike_benchmarks=''
+# The odd pattern below is to make sure that CINT comes before CFP but still
+# works properly for non-CPU suites.
+for k in $SPEC/benchspec/$suite/[A-Z]{{I,F},{A..E},G,H,{J..Z}}*bset ; do
+  for j in $( grep '^[	 ]*[0-9][0-9][0-9]\.' $k 2> /dev/null); do
+    if grep "${benchlang_re}C[^X]" $SPEC/benchspec/$suite/$j/Spec/object.pm > /dev/null; then
+      if ! echo $C_benchmarks | grep $j > /dev/null; then
+        C_benchmarks="$C_benchmarks $j"
+      fi
+      if ! echo $Clike_benchmarks | grep $j > /dev/null; then
+        Clike_benchmarks="$Clike_benchmarks $j"
+      fi
+    elif grep "${benchlang_re}CXX" $SPEC/benchspec/$suite/$j/Spec/object.pm > /dev/null; then
+      if ! echo $CXX_benchmarks | grep $j > /dev/null; then
+        CXX_benchmarks="$CXX_benchmarks $j"
+      fi
+      if ! echo $Clike_benchmarks | grep $j > /dev/null; then
+        Clike_benchmarks="$Clike_benchmarks $j"
+      fi
+    elif grep "${benchlang_re}F77" $SPEC/benchspec/$suite/$j/Spec/object.pm > /dev/null; then
+      if ! echo $F77_benchmarks | grep $j > /dev/null; then
+        F77_benchmarks="$F77_benchmarks $j"
+      fi
+      if ! echo $Flike_benchmarks | grep $j > /dev/null; then
+        Flike_benchmarks="$Flike_benchmarks $j"
+      fi
+    elif grep "${benchlang_re}F[^7]" $SPEC/benchspec/$suite/$j/Spec/object.pm > /dev/null; then
+      if ! echo $F_benchmarks | grep $j > /dev/null; then
+        F_benchmarks="$F_benchmarks $j"
+      fi
+      if ! echo $Flike_benchmarks | grep $j > /dev/null; then
+        Flike_benchmarks="$Flike_benchmarks $j"
+      fi
+    fi
+  done
+done
+
+# Now do the language-specific bsets: all_c, all_cpp, all_except_fortran,
+# all_fortran, all_f77, all_f9x, all_except_f9x, all_except_cpp,
+# all_except_f77, all_except_c
+
+echo -n Making per-language benchsets...
+# all_c
+echo -n all_c...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_c/g' > $SPEC/benchspec/$suite/all_c.bset
+for i in $C_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_c.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_c.bset
+# all_cpp
+echo -n all_cpp...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_cpp/g' > $SPEC/benchspec/$suite/all_cpp.bset
+for i in $CXX_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_cpp.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_cpp.bset
+# all_except_fortran
+echo -n all_except_fortran...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_except_fortran/g' > $SPEC/benchspec/$suite/all_except_fortran.bset
+for i in $Clike_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_except_fortran.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_except_fortran.bset
+# all_fortran
+echo -n all_fortran...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_fortran/g' > $SPEC/benchspec/$suite/all_fortran.bset
+for i in $Flike_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_fortran.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_fortran.bset
+# all_f77
+echo -n all_f77...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_f77/g' > $SPEC/benchspec/$suite/all_f77.bset
+for i in $F77_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_f77.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_f77.bset
+# all_f9x
+echo -n all_f9x...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_f9x/g' > $SPEC/benchspec/$suite/all_f9x.bset
+for i in $F_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_f9x.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_f9x.bset
+# all_except_f9x
+echo -n all_except_f9x...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_except_f9x/g' > $SPEC/benchspec/$suite/all_except_f9x.bset
+for i in $F77_benchmarks $Clike_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_except_f9x.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_except_f9x.bset
+# all_except_f77
+echo -n all_except_f77...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_except_f77/g' > $SPEC/benchspec/$suite/all_except_f77.bset
+for i in $F_benchmarks $Clike_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_except_f77.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_except_f77.bset
+# all_except_cpp
+echo -n all_except_cpp...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_except_cpp/g' > $SPEC/benchspec/$suite/all_except_cpp.bset
+for i in $Flike_benchmarks $C_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_except_cpp.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_except_cpp.bset
+# all_except_c
+echo -n all_except_c...
+cat $SPEC/bin/scripts.misc/bset_header | sed 's/XXXBSETNAMEXXX/all_except_c/g' > $SPEC/benchspec/$suite/all_except_c.bset
+for i in $Flike_benchmarks $CXX_benchmarks; do
+  echo "   $i"
+done >> $SPEC/benchspec/$suite/all_except_c.bset
+cat $SPEC/bin/scripts.misc/bset_footer >> $SPEC/benchspec/$suite/all_except_c.bset
+echo
+
+# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# XXX Benchset generation will need to be changed for multiple suite dirs
+# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+# Textualize whatever docs there are
+echo Text conversion for docs
+for i in $SPEC/Docs/*; do
+  # Skip this for directories and config, text, CSS, and DTD files
+  if [ ! -d $i ] && ! echo $i | egrep '\.(cfg|txt|css|dtd|sh|pl)$' >/dev/null 2>&1; then
+    # Strip the extension
+    txtfile=`echo $i | sed 's/\.[^.]*$//'`
+    # If the file doesn't exist without an extension, the file's name
+    # is the full name _with_ extension
+    if [ "x$txtfile" != "x" -a ! -f $txtfile -a $i != ${txtfile}.html ]; then
+      txtfile=$i
+    fi
+    if [ -f ${txtfile}.html -a $i != $txtfile ]; then
+      echo ...`basename $i` '(HTML)'
+      # Put the generated files in $SPEC/Docs.txt
+      txtfile=$SPEC/Docs.txt/`basename $txtfile`
+      cat > $txtfile  <<EONOTE
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+EONOTE
+      links -dump $i >> $txtfile
+    elif [ ! -f ${txtfile}.html ]; then
+      # Put the generated files in $SPEC/Docs.txt
+      txtfile=$SPEC/Docs.txt/`basename $txtfile`
+      echo ...`basename $i` '(text)'
+      # Just do the textification
+      cp $i $txtfile
+    fi
+    perl -ne 'tr/\012\015//d; print "$_\r\n";' $txtfile > ${txtfile}.txt
+  fi
+done
+
+# And some scattered files
+for i in $SPEC/LICENSE $SPEC/README $SPEC/original.src/{GPL.v?,Artistic,zlib*copyright,README,bzip2*license,expat*license,netcdf*license}
+do
+   rm -f $i.txt
+   perl -ne 'tr/\012\015//d; print "$_\r\n";' $i > $i.txt
+done
+
+echo Nuking bad files
+find $SPEC $novc \( -name 'core' -o -name 'Makefile.spec' -o -name '.*.swp' -o -name '*~' -o -name '.*svn*tmp' -o -name 'svn*.tmp' -o -name '*.flc' -o -name '*.cfg.20*' -o -name .DS_Store \) -print | xargs $XARGSR rm -f
+
+if false; then
+# This is a waste of time, both for the packager and the user.
+echo Compressing the tools sources
+docomp=1
+if [ -f $SPEC/tools/tools_src.tar.bz2 ]; then
+  docomp=`find $SPEC/tools/src $novc \( -newer $SPEC/tools/tools_src.tar.bz2 -print \) | wc -l`
+fi
+if [ $docomp -eq 0 ]; then
+  echo Tarball is up-to-date... skipping
+else
+  spectar --force-local -cf - -C $SPEC/tools --exclude=.svn --totals src | specbzip2 -9v > $SPEC/tools/tools_src.tar.bz2
+fi
+
+echo Compressing data files larger than 10MB
+perl $SPEC/bin/scripts.misc/compress_data $SPEC 10
+fi
+
+if false; then
+# We don't need to do this for CPU2006
+echo Compressing build logs
+for i in `find $SPEC/tools/src/buildtools.log -name '*.buildlog.txt' -print`; do
+  cat $i | bzip2 -9 > ${i}.bz2
+done
+fi
+
+# Do this now, _before_ doing the time-consuming manifest generation
+echo Checking for uncomitted changes
+$SPEC/bin/scripts.misc/checkupdates
+
+# Generate the manifest
+if [ "x$1" != "xno_manifest" ]; then
+    echo Making the MANIFEST file
+    $SPEC/bin/scripts.misc/genmanifest.sh
+fi
+
+echo Setting permissions
+chown -R $treeowner $SPEC >/dev/null 2>&1 || :  # Okay if it fails
+chgrp -R $treegroup $SPEC >/dev/null 2>&1 || :  # Okay if it fails
+chmod -R ug+rw,o+r,o-w $SPEC            # Not okay if it fails
+find $SPEC -type d -print | xargs chmod a+x
+chmod 1777 $SPEC/config
+
+echo Making web-updatable flags files in ../src/webflags
+(
+ rm -rf ../src/webflags
+ mkdir -p ../src/webflags
+ cd ../src/webflags
+ perl $SPEC/bin/scripts.misc/dowebmd5
+ cp $SPEC/Docs/images/*.png .
+ chown -R $treeowner . >/dev/null 2>&1 || :  # Okay if it fails
+ chgrp -R $treegroup . >/dev/null 2>&1 || :  # Okay if it fails
+)
+
+echo
+echo Done.  Do not forget to clean up the config directory if necessary.
+echo
+echo Also do not forget to update the version file on the public website!
+echo
+echo Also do not forget to copy the flags files to auto/${SUITE}/flags on the
+echo public website.
+echo
+

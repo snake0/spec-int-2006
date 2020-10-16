@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>410.bwaves: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>410.bwaves<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>410.bwaves</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Dr. Mark Kremenetsky, &lt;mdk &#x5b;at&#x5d; sgi.com&gt;<br />
+Silicon Graphics, Inc<br />
+1500 Crittenden Lane<br />
+Mountain View, CA 94043, USA</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Computational Fluid Dynamics</p>
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>410.bwaves numerically simulates blast waves in three dimensional
+transonic transient laminar viscous flow.  </p>
+
+<p>The initial configuration
+of the blast waves problem consists of a high pressure and density region
+at the center of a cubic cell of a periodic lattice, with low pressure
+and density elsewhere. Periodic boundary conditions are applied to the
+array of cubic cells forming an infinite network.  Initially, the high
+pressure volume begins to expand in the radial direction as 
+classical shock waves.  At the same time, the expansion waves move to
+fill the void at the center of the cubic cell. When the expanding flow
+reaches the boundaries, it collides with its periodic images from
+other cells, thus creating a complex structure of interfering
+nonlinear waves.  These processes create a nonlinear damped periodic
+system with energy being dissipated in time. Finally, the system will
+come to an equilibrium and steady state.</p>
+
+<p>The algorithm implemented is an unfactored solver for the
+implicit solution of the compressible Navier-Stokes equations using the Bi-CGstab
+algorithm, which solves systems of non-symmetric linear equations
+iteratively.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p> The input file describes the grid size, flow parameters, initial
+boundary condition and number of time steps. The three data sets,
+test, train and ref, differ only in grid size and number of time
+steps. </p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>The transient nature of the flow and iterative solver makes bwaves
+a difficult problem to validate. In SPEC CPU2006 this has been
+addressed by comparing three different outputs. These are:</p>
+
+<ul>
+<li>The L2 norm of dq(l.i.j.k) vector after final time step</li>
+
+<li>The residual for convergence after each time step</li>
+
+<li>The cumulative sum of iterations for convergence for every time step</li>
+</ul>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>Fortran 77</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>none</p>
+<hr />
+
+<h2>References</h2>
+
+<hr />
+
+<p>Last updated: 27 June 2006</p>
+</body>
+</html>

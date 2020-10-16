@@ -1,0 +1,95 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:560: checking for a BSD compatible install
+configure:613: checking whether build environment is sane
+configure:670: checking whether make sets ${MAKE}
+configure:716: checking for working aclocal
+configure:729: checking for working autoconf
+configure:742: checking for working automake
+configure:755: checking for working autoheader
+configure:768: checking for working makeinfo
+configure:790: checking for gcc
+configure:903: checking whether the C compiler (gcc   -L/var/services/homes/spparmar/spec2006/tools/output/lib  ) works
+configure:919: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:945: checking whether the C compiler (gcc   -L/var/services/homes/spparmar/spec2006/tools/output/lib  ) is a cross-compiler
+configure:950: checking whether we are using GNU C
+configure:959: gcc -E conftest.c
+configure:978: checking whether gcc accepts -g
+configure:1010: checking how to run the C preprocessor
+configure:1031: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1101: checking for a BSD compatible install
+configure:1156: checking for ranlib
+configure:1184: checking for AIX
+configure:1210: checking for ar
+configure:1246: checking for strip
+configure:1288: checking for limits.h
+configure:1298: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1288: checking for string.h
+configure:1298: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1288: checking for stdlib.h
+configure:1298: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1288: checking for unistd.h
+configure:1298: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1288: checking for ctype.h
+configure:1298: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1325: checking whether stat file-mode macros are broken
+configure:1381: checking for ANSI C header files
+configure:1394: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1461: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure: In function 'main':
+configure:1456:67: warning: incompatible implicit declaration of built-in function 'exit' [enabled by default]
+configure:1489: checking for gcc option to accept ANSI C
+configure:1542: gcc  -c   -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1568: checking for function prototypes
+configure:1728: checking whether byte ordering is bigendian
+configure:1746: gcc -c   -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1761: gcc -c   -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure: In function 'main':
+configure:1756:2: error: unknown type name 'not'
+configure:1756:10: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'endian'
+configure: failed program was:
+#line 1750 "configure"
+#include "confdefs.h"
+#include <sys/types.h>
+#include <sys/param.h>
+int main() {
+
+#if BYTE_ORDER != BIG_ENDIAN
+ not big endian
+#endif
+; return 0; }
+configure:1818: checking for working const
+configure:1872: gcc -c   -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1893: checking size of long long
+configure:1912: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure: In function 'main':
+configure:1907:3: warning: format '%d' expects argument of type 'int', but argument 3 has type 'long unsigned int' [-Wformat]
+configure:1933: checking for size_t
+configure:1967: checking for strerror in -lcposix
+configure:1986: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c -lcposix    1>&5
+/usr/bin/ld.bfd.real: cannot find -lcposix
+collect2: error: ld returned 1 exit status
+configure: failed program was:
+#line 1975 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char strerror();
+
+int main() {
+strerror()
+; return 0; }
+configure:2010: checking for strchr
+configure:2038: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:2022:6: warning: conflicting types for built-in function 'strchr' [enabled by default]
+configure:2010: checking for strerror
+configure:2038: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:2063: checking for vprintf
+configure:2091: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:2075:6: warning: conflicting types for built-in function 'vprintf' [enabled by default]
+configure:2169: checking for error_at_line
+configure:2181: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:2202: checking for getline
+configure:2230: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5

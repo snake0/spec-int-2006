@@ -1,0 +1,807 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription
+   SYSTEM "http://www.spec.org/dtd/cpuflags1.dtd"
+>
+
+<flagsdescription>
+<!--
+   <filename>example-medium-cfg-flags.xml</filename>
+-->
+   <title>SPEC CPU2006 Flag Descriptions for QLogic PathScale Compiler Suite</title>
+
+   <style>
+      <![CDATA[
+         body { background: white; }
+      ]]>
+   </style>
+	
+<!-- HEADERs -->
+
+   <header>
+      <![CDATA[
+         <p><h3>Compilers: QLogic PathScale Compiler Suite</h3></p>
+         <hr />
+      ]]>
+   </header>
+
+   <header class="compiler">
+    <![CDATA[
+       <p>HEADER for COMPILER</p>
+    ]]>
+ </header>
+	
+   <header class="portability">
+      <![CDATA[
+         <p>HEADER for PORTABILITY</p>
+      ]]>
+   </header>
+
+   <header class="optimization">
+      <![CDATA[
+         <p>HEADER for OPTIMIZATION</p>
+      ]]>
+   </header>
+	
+    <header class="other">
+      <![CDATA[
+         <p>HEADER for OTHER</p>
+      ]]>
+   </header>
+	
+<!-- /HEADERs -->
+
+<!-- OPTIMIZATION -->
+
+	   <flag name="F-O_n" class="optimization" regexp="-O[0-3]\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-O3</example>
+	      <![CDATA[
+	         <p>Specify the basic level of optimization desired.<br>
+	         The options can be one of the following:</p>
+	
+	            <p style="text-indent: -25px; margin-left: 25px">
+	               0&nbsp;&nbsp;&nbsp; Turn off all optimizations.</p>
+	
+	            <p style="text-indent: -25px; margin-left: 25px">
+	               1&nbsp;&nbsp;&nbsp; Turn on local optimizations that
+	               can be done quickly.</p>
+	
+	            <p style="text-indent: -25px; margin-left: 25px">
+	               2&nbsp;&nbsp;&nbsp; Turn on extensive optimization.
+	               This is the default.<br>
+	               The optimizations at this level are generally conservative,
+	               in the sense that they are virtually always beneficial,
+	               provide improvements commensurate to the compile time
+	               spent to achieve them, and avoid changes which affect
+	               such things as floating point accuracy.</p>
+	
+	            <p style="text-indent: -25px; margin-left: 25px">
+	               3&nbsp;&nbsp;&nbsp; Turn on aggressive optimization.<br>
+	               The optimizations at this level are distinguished from -O2
+	               by their aggressiveness, generally seeking highest-quality
+	               generated code even if it requires extensive compile time.
+	               They may include optimizations that are generally beneficial
+	               but may hurt performance.<br>
+	               This includes but is not limited to turning on the
+	               Loop Nest Optimizer, -LNO:opt=1, and setting
+	               -OPT:ro=1:IEEE_arith=2:Olimit=9000:reorg_common=ON.</p>
+	
+	            <p style="text-indent: -25px; margin-left: 25px">
+	               s&nbsp;&nbsp;&nbsp; Specify that code size is to be given
+	               priority in tradeoffs with execution time.</p>
+	
+	         If no value is specified, 2 is assumed.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-Ofast" class="optimization" regexp="-Ofast\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-Ofast</example>
+	      <![CDATA[
+	         <p>Equivalent to -O3 -ipa -OPT:Ofast -fno-math-errno -ffast-math.<br>
+	         Use optimizations selected to maximize performance.
+	         Although the optimizations are generally safe, they may affect
+	         floating point accuracy due to rearrangement of computations.</p>
+	         <p>NOTE: -Ofast enables -ipa (inter-procedural analysis),
+	         which places limitations on how libraries and .o files are built.</p>
+	      ]]>
+	      <include flag="F-O_n" />
+	      <include flag="F-ipa" />
+	      <include flag="F-OPT:Ofast" />
+	      <include flag="F-fno-math-errno" />
+	      <include flag="F-ffast-math" />
+	      <display enable="1" />
+	   </flag>
+	
+	   <flag name="F-fb_create" class="optimization"
+	         regexp="-fb_create fbdata" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-fb_create fbdata</example>
+	      <![CDATA[
+	         <p>-fb_create &lt;path&gt;<br>
+	         Used to specify that an instrumented executable program is to be
+	         generated. Such an executable is suitable for producing feedback
+	         data files with the specified prefix for use in feedback-directed
+	         optimization (FDO).
+	         The commonly used prefix is "fbdata".<br>
+	         This is OFF by default.</p>
+	         <p>During the training run, the instrumented executable produces information regarding execution paths and data values, but
+	         does not generate information by using hardware performance counters. </p>
+	      ]]>
+ 	   </flag>
+	
+	   <flag name="F-fb_opt" class="optimization"
+	         regexp="-fb_opt fbdata" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-fb_opt fbdata</example>
+	      <![CDATA[
+	         <p>-fb_opt &lt;prefix for feedback data files&gt;<br>
+	         Used to specify feedback-directed optimization (FDO) by extracting
+	         feedback data from files with the specified prefix, which were
+	         previously generated using -fb-create.
+	         The commonly used prefix is "fbdata".
+	         The same optimization flags should be used
+	         for both the -fb-create and fb_opt compile steps.
+	         Feedback data files created from executables compiled
+	         with different optimization flags may give checksum errors.<br>
+	         FDO is OFF by default.</p>
+	         <p>During the -fb_opt compilation phase, information regarding execution paths and data values are
+	         used to improve the information available to the optimizer.  FDO enables some optimizations which
+	         are only performed when the feedback data file is available.  The safety of optimizations performed under FDO is
+	         consistent with the level of safety implied by the other optimization flags (outside of fb_create and
+	         fb_opt) specified on the compile and link lines.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-m32" class="optimization" regexp="-m32\b"
+	         compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-m32</example>
+	      <![CDATA[
+	         <p>Compile for 32-bit ABI, also known as x86 or IA32.</p>
+	      ]]>
+	   </flag>
+	   
+	   <flag name="F-march" class="optimization"
+            regexp="-march=(opteron|athlon64|athlon64fx|em64t|pentium4|xeon|anyx86|auto)">
+          <![CDATA[
+            <p>Compiler will optimize code for selected platform.  auto means to optimize
+                  for the platform on which the compiler is running, as
+                  determined by reading /proc/cpuinfo.  anyx86 means a generic 32-bit x86
+                  processor without SSE2 support.</p>
+          ]]>
+       </flag>
+	
+	   <flag name="F-fexceptions" class="optimization"
+	         regexp="-f(no-|)exceptions" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-fno-exceptions</example>
+	      <![CDATA[
+	         <p>(For C++ only) -fexceptions enables exception handling.
+	         This is the default.
+	         -fno-exceptions disables exception handling.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-ffast-math" class="optimization"
+	         regexp="-f(no-|)fast-math" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-ffast-math</example>
+	      <![CDATA[
+	         <p>-ffast-math improves FP speed by relaxing ANSI & IEEE rules.
+	         -fno-fast-math tells the compiler to conform to ANSI and IEEE
+	         math rules at the expense of speed. -ffast- math implies 
+	         -OPT:IEEE_arithmetic=2 -fno-math-errno.   -fno-fast-math
+	         implies -OPT:IEEE_arithmetic=1 -fmath-errno.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-fno-math-errno" class="optimization" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-fno-math-errno</example>
+	      <![CDATA[
+	         <p>Do not set ERRNO after calling math functions that are executed
+	         with a single instruction, e.g. sqrt. A program that relies on IEEE
+	         exceptions for math error handling may want to use this flag for speed
+	         while maintaining IEEE arithmetic compatibility. This is implied by
+	         -Ofast. The default is -fmath-errno.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-ipa" class="optimization" 
+	         regexp="-ipa" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-ipa</example>
+	      <![CDATA[
+	         <p>Invoke inter-procedural analysis (IPA). Specifying this option is
+	         identical to specifying -IPA or -IPA:.
+	         Default settings for the individual IPA suboptions are used.</p>
+	      ]]>
+	   </flag>
+	
+	   <!-- Splitter for the flag groups      -->
+	   <!-- -CG:, -IPA:, -LNO:, -OPT:, -WOPT: -->
+	
+	   <flag name="F-splitting:all" class="optimization"
+	         regexp="-(CG|IPA|LNO|OPT|WOPT):([^:\s]+):(.+)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <include text="-$1:$2" />
+	      <include text="-$1:$3" />
+	      <display enable="0" />
+	   </flag>
+	
+	   <!-- Sub-flags of the -CG: group -->
+	
+	   <flag name="F-CG:cflow" class="optimization"
+	         regexp="-CG:cflow=(on|off|0|1)" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-CG:cflow</example>
+	      <![CDATA[
+	         <p>The Code Generation option group -CG: controls the optimizations
+	         and transformations of the instruction-level code generator.</p>
+	
+	         <p>-CG:flow : OFF disables control flow optimization in the code
+	         generation. Default is ON.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-CG:gcm" class="optimization"
+	         regexp="-CG:gcm=(on|off|0|1)" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-CG:gcm</example>
+	      <![CDATA[
+	         <p>-CG:gcm : Specifying OFF disables the instruction-level
+	         global code motion optimization phase. The default is ON.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-CG:load_exe" class="optimization"
+	         regexp="-CG:load_exe=\d+" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-CG:load_exe</example>
+	      <![CDATA[
+	         <p>-CG:load_exe=N : Specify the threshold for subsuming a memory load
+	         operation into the operand of an arithmetic instruction.
+	         The value of 0 turns off this subsumption optimization.
+	         If N is 1, this subsumption is performed only when the result of
+	         the load has only one use.
+	         This subsumption is not performed if the number of times the result
+	         of the load is used exceeds the value N, a non-negative integer.<br>
+	         If the ABI is 64-bit and the language is Fortran, the default for N
+	         is 2, otherwise the default is 1.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-CG:local_fwd_sched" class="optimization"
+	         regexp="-CG:local_fwd_sched=(on|off|0|1)" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-CG:local_fwd_sched</example>
+	      <![CDATA[
+	         <p>-CG:local_fwd_sched : Change the instruction scheduling algorithm
+	         to work forward instead of backward for the instructions
+	         in each basic block.
+	         The default is OFF for 64-bit ABI, and ON for 32-bit ABI.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-CG:movnti" class="optimization"
+	         regexp="-CG:movnti=\d+" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-CG:movnti</example>
+	      <![CDATA[
+	         <p>-CG:movnti=N : Convert ordinary stores to non-temporal stores 
+	         when writing memory blocks  of  size  larger than  N  KB.  When  N 
+	         is set to 0, this transformation is avoided. 
+	         The default value is 120 (KB).</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-CG:prefetch" class="optimization"
+             regexp="-CG:prefetch=(on|off|0|1)">
+	      <example>-CG:prefetch</example>
+	      <![CDATA[
+	         <p>-CG:prefetch : Suppress  any generation of prefetch instructions in the code 
+	         generator.  The default is ON.</p>
+	      ]]>
+	   </flag>
+
+	
+	   <!-- Sub-flags of the -IPA: group -->
+	
+	   <flag name="F-IPA:callee_limit" class="optimization"
+	         regexp="-IPA:callee_limit=\d+" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-IPA:callee_limit</example>
+	      <![CDATA[
+	         <p>The inter-procedural analyzer option group -IPA: controls
+	         application of inter-procedural analysis and optimization.</p>
+	
+	         <p>-IPA:callee_limit=N : Functions whose size exceeds this limit
+	         will never be automatically inlined by the compiler.
+	         The default is 500.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-IPA:linear" class="optimization"
+	         regexp="-IPA:linear=(on|off|0|1)" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-IPA:linear</example>
+	      <![CDATA[
+	         <p>-IPA:linear : Controls conversion of a multi-dimensional array
+	         to a single dimensional (linear) array that covers the same block
+	         of memory. When inlining Fortran subroutines, IPA tries to map
+	         formal array parameters to the shape of the actual parameter.
+	         In the case that it cannot map the parameter, it linearizes
+	         the array reference. By default, IPA will not inline such callsites
+	         because they may cause performance problems.
+	         The default is OFF.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-IPA:plimit" class="optimization"
+	         regexp="-IPA:plimit=\d+" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-IPA:plimit</example>
+	      <![CDATA[
+	         <p>-IPA:plimit=N : This option stops inlining into a specific
+	         subprogram once it reaches size N in the intermediate representation.
+	         Default is 2500.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-IPA:pu_reorder" class="optimization"
+	         regexp="-IPA:pu_reorder=[0-2]" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-IPA:pu_reorder</example>
+	      <![CDATA[
+	         <p>-IPA:pu_reorder=N : Control re-ordering the layout of program units
+	         based on their invocation patterns in feedback compilation to minimize
+	         instruction cache misses.
+	         This option is ignored unless under feedback compilation.</p>
+	
+	         <p style="text-indent: -25px; margin-left: 25px">
+	            0&nbsp;&nbsp;&nbsp; Disable procedure reordering.
+	            This is the default for non-C++ programs.</p>
+	
+	         <p style="text-indent: -25px; margin-left: 25px">
+	            1&nbsp;&nbsp;&nbsp; Reorder based on the frequency
+	            in which different procedures are invoked.
+	            This is the default for C++ programs.</p>
+	
+	         <p style="text-indent: -25px; margin-left: 25px">
+	            2&nbsp;&nbsp;&nbsp; Reorder based on caller-callee
+	            relationship.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-IPA:space" class="optimization"
+	         regexp="-IPA:space=\d+" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-IPA:space</example>
+	      <![CDATA[
+	         <p>-IPA:space=N : Inline until a program expansion of N % is reached.
+	         For example, -IPA:space=20 limits code expansion due to inlining
+	         to approximately 20 %. Default is no limit.</p>
+	      ]]>
+	   </flag>
+	
+	   <!-- Sub-flags of the -LNO group -->
+	
+	   <flag name="F-LNO:blocking" class="optimization"
+	         regexp="-LNO:blocking=(on|off|0|1)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:blocking</example>
+	      <![CDATA[
+	         <p>Specify options and transformations performed on loop nests
+	         by the Loop Nest Optimizer (LNO). The -LNO options are enabled only
+	         if -O3 is also specified on the pathf95 command line.</p>
+	
+	         <p>-LNO:blocking : Enable or disable the cache blocking transformation.
+	         The default is ON.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:full_unroll" class="optimization"
+	         regexp="-LNO:(full_unroll|fu)=\d+\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:full_unroll</example>
+	      <![CDATA[
+	         <p>-LNO:full_unroll,fu=N : Fully unroll loops with trip_count <= N
+	         inside LNO. N can be any integer between 0 and 100.
+	         The default value for N is 5. Setting this flag to 0 disables
+	         full unrolling of small trip count loops inside LNO.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:full_unroll_outer" class="optimization"
+	         regexp="-LNO:full_unroll_outer=(on|off|0|1)\b">
+	      <example>-LNO:full_unroll_outer</example>
+	      <![CDATA[
+	         <p>-LNO:full_unroll_outer=(on|off|0|1) : Control  the  full unrolling of loops with 
+	         known trip count that do not contain a loop
+	        and are not contained in a loop. The conditions implied by both the  full_unroll  and
+	        the  full_unroll_size options must be satisfied for the loop to be fully unrolled. The
+	        default is OFF.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:full_unroll_size" class="optimization"
+	         regexp="-LNO:full_unroll_size=\d+\b">
+	      <example>-LNO:full_unroll_size</example>
+	      <![CDATA[
+	         <p>-LNO:full_unroll_size=N : Fully  unroll  loops  with  unrolled  loop  
+	         size <= N inside LNO. N can be any integer
+	        between 0 and 10000. The conditions implied by the full_unroll  option  must  also  be
+	        satisfied for the loop to be fully unrolled. The default value for N is 2000.</p>
+	      ]]>
+	   </flag>
+
+	   <flag name="F-LNO:fusion" class="optimization"
+	         regexp="-LNO:fusion=[0-2]\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:fusion</example>
+	      <![CDATA[
+	         <p>-LNO:fusion=N : Perform loop fusion. N can be one of the following:<br>
+	         0 = Loop fusion is off<br>
+	         1 = Perform conservative loop fusion<br>
+	         2 = Perform aggressive loop fusion<br>
+	         The default is 1.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:ignore_feedback" class="optimization"
+	         regexp="-LNO:ignore_feedback=(on|off|0|1)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:ignore_feedback</example>
+	      <![CDATA[
+        	 <p>-LNO:ignore_feedback=(on|off|0|1) : If the flag is ON then feedback information
+	         from the loop annotations will be ignored in LNO transformations.
+	         The default is OFF.</p>
+	      ]]>
+	   </flag>
+
+	   <flag name="F-LNO:interchange" class="optimization"
+	         regexp="-LNO:interchange=(on|off|0|1)\b">
+	      <example>-LNO:interchange</example>
+	      <![CDATA[
+	         <p>-LNO:interchange=(on|off|0|1) : Disable the loop interchange transformation in the 
+	         loop nest optimizer. Default is ON.
+	         </p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:minvariant" class="optimization"
+	         regexp="-LNO:minvariant=(on|off|0|1)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:minvariant</example>
+	      <![CDATA[
+	         <p>Enable or disable moving loop-invariant expressions out 
+	         of loops. The default is ON.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:ou_prod_max" class="optimization"
+	         regexp="-LNO:ou_prod_max=\d+\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:ou_prod_max</example>
+	      <![CDATA[
+	         <p>-LNO:ou_prod_max=N : This option indicates that the product
+	         of unrolling of the various outer loops in a given loop nest
+	         is not to exceed N, where N is a positive integer.
+	         The default is 16.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:prefetch_ahead" class="optimization"
+	         regexp="-LNO:prefetch_ahead=\d+\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:prefetch_ahead</example>
+	      <![CDATA[
+	         <p>-LNO:prefetch_ahead=N : Prefetch N cache line(s) ahead.
+	         The default is 2.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-LNO:prefetch" class="optimization"
+	         regexp="-LNO:prefetch=[0-3]\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:prefetch</example>
+	      <![CDATA[
+	         <p>-LNO:prefetch=(0|1|2|3) : This option specifies
+	         the level of prefetching.</p>
+	
+	         <p>0 = Prefetch disabled.</p>
+	
+	         <p>1 = Prefetch is done only for arrays that are always referenced
+	         in each iteration of a loop.</p>
+	
+	         <p>2 = Prefetch is done without the above restriction.
+	         This is the default.</p>
+	
+	         <p> 3 = Most aggressive.</p>
+	          ]]>
+	   </flag>
+	
+	<flag name="F-LNO:sclrze" class="optimization"
+	      regexp="-LNO:sclrze=(on|off)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	   <example>-LNO:sclrze</example>
+	   <![CDATA[
+	      <p>Turn ON or OFF the optimization that replaces an array by a 
+	      scalar variable. The default is ON.</p>
+	   ]]>
+	</flag>
+	
+	
+	
+	   <flag name="F-LNO:simd" class="optimization"
+	         regexp="-LNO:simd=[0-2]\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-LNO:simd</example>
+	      <![CDATA[
+	         <p>-LNO:simd=(0|1|2) : This option enables or disables
+	         inner loop vectorization.</p>
+	
+	         <p>0 = Turn off the vectorizer.</p>
+	
+	         <p>1 = (Default) Vectorize only if the compiler can determine that
+	         there is no undesirable performance impact due to sub-optimal
+	         alignment. Vectorize only if vectorization does not introduce
+	         accuracy problems with floating-point operations.</p>
+	
+	         <p>2 = Vectorize without any constraints (most aggressive).</p>
+	      ]]>
+	   </flag>
+	
+	   <!-- Individual subflags of the -OPT: class -->
+	
+	   <flag name="F-OPT:alias" class="optimization"
+	         regexp="-OPT:alias=(typed|restrict|disjoint)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-OPT:alias</example>
+	      <![CDATA[
+	         <p>The -OPT: option group controls miscellaneous optimizations.
+	         These options override defaults based on the main
+	         optimization level.</p>
+	
+	         <p>-OPT:alias=&lt;name&gt;<br>
+	         Specify the pointer aliasing model
+	         to be used. By specifying one or more of the following for &lt;name&gt;,
+	         the compiler is able to make assumptions throughout the compilation:</p>
+	
+	         <p style="text-indent: -25px; margin-left: 25px">
+	         typed<br>
+	            Assume that the code adheres to the ANSI/ISO C standard
+	            which states that two pointers of different types cannot point
+	            to the same location in  memory.
+	            This is ON by default when -OPT:Ofast is specified.</p>
+	
+	         <p style="text-indent: -25px; margin-left: 25px">
+	         restrict<br>
+	            Specify that distinct pointers are assumed to point to distinct,
+	            non-overlapping objects. This is OFF by default.</p>
+	
+	         <p style="text-indent: -25px; margin-left: 25px">
+	         disjoint<br>
+	            Specify that any two pointer expressions are assumed to point
+	            to distinct, non-overlapping objects. This is OFF by default.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-OPT:div_split" class="optimization"
+	         regexp="-OPT:div_split=(on|off|0|1)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+       	  <example>-OPT:div_split</example>
+	      <![CDATA[
+	         <p>-OPT:div_split=(ON|OFF)<br>
+	         Enable or disable changing x/y into x*(recip(y)). This is OFF by
+	         default, but enabled by -OPT:Ofast or -OPT:IEEE_arithmetic=3.
+	         This transformation generates fairly accurate code.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-OPT:fast_complex" class="optimization"
+	         regexp="-OPT:fast_complex=(on|off|0|1)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-OPT:fast_complex</example>
+	      <![CDATA[
+	         <p>-OPT:fast_complex<br>
+	         Setting fast_complex=ON enables fast
+	         calculations for values declared to be of the type complex.
+	         When this is set to ON, complex absolute value (norm) and complex
+	         division use fast algorithms that overflow for an operand
+	         (the divisor, in the case of division) that has an absolute value
+	         that is larger than the square root of the largest representable
+	         floating-point number.
+	         This would also apply to an underflow for a value that is smaller
+	         than the square root of the smallest representable floating point
+	         number.<br>
+	         OFF is the default.<br>
+	         fast_complex=ON is enabled if -OPT:roundoff=3 is in effect.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-OPT:IEEE_arith" class="optimization"
+	         regexp="-OPT:(IEEE_arithmetic|IEEE_arith|IEEE_a)=[1-3]\b" compilers="Fpathcc,FpathCC,Fpathf95">
+       	  <example>-OPT:IEEE_arithmetic</example>
+	      <![CDATA[
+	         <p>-OPT:IEEE_arithmetic,IEEE_arith,IEEE_a=(1|2|3)<br>
+	         Specify the level of conformance to IEEE 754 floating pointing
+	         roundoff/overflow behavior.
+	         The options can be one of the following:</p>
+	
+	         <p>1 Adhere to IEEE accuracy. This is the default when optimization
+	         levels -O0, -O1 and -O2 are in effect.</p>
+	
+	         <p>2 May produce inexact result not conforming to IEEE 754.
+	         This is the default when -O3 is in effect.</p>
+	
+	         <p>3 All mathematically valid transformations are allowed.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-OPT:Ofast" class="optimization" 
+	         regexp="-OPT:Ofast\b" compilers="Fpathcc,FpathCC,Fpathf95">
+          <example>-OPT:Ofast</example>
+	      <![CDATA[
+	         <p>-OPT:Ofast<br>
+	         Use optimizations selected to maximize performance.
+	         Although the optimizations are generally safe, they may affect
+	         floating point accuracy due to rearrangement of computations.
+	         This effectively turns on the following optimizations:
+	         -OPT:ro=2:Olimit=0:div_split=ON:alias=typed.</p>
+	      ]]>
+	      <include flag="F-OPT:ro"/>
+	      <include flag="F-OPT:Olimit"/>
+	      <include flag="F-OPT:div_split"/>
+	      <include flag="F-OPT:alias"/>
+	   </flag>
+	
+	   <flag name="F-OPT:Olimit" class="optimization"
+	         regexp="-OPT:Olimit=(\d+)" compilers="Fpathcc,FpathCC,Fpathf95">
+       	  <example>-OPT:Olimit</example>
+	      <![CDATA[
+	         <p>-OPT:Olimit=N<br>
+	         Disable optimization when size of program unit is > N. When N is 0,
+	         program unit size is ignored and optimization process will not be
+	         disabled due to compile time limit.
+	         The default is 0 when -OPT:Ofast is specified,
+	         9000 when -O3 is specified; otherwise the default is 6000.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-OPT:ro" class="optimization"
+	         regexp="-OPT:(roundoff|ro)=[0-3]" compilers="Fpathcc,FpathCC,Fpathf95">
+      	  <example>-OPT:ro</example>
+	      <![CDATA[
+	         <p>-OPT:roundoff,ro=(0|1|2|3)<br>
+	         Specify the level of acceptable departure from source language
+	         floating-point, round-off, and overflow semantics.
+	         The options can be one of the following:</p>
+	
+	         <p>0 = Inhibit optimizations that might affect the floating-point
+	         behavior. This is the default when optimization levels -O0, -O1,
+	         and -O2 are in effect.</p>
+	
+	         <p>1 = Allow simple transformations that might cause limited
+	         round-off or overflow differences. Compounding such transformations
+	         could have more extensive effects.
+	         This is the default when -O3 is in effect.</p>
+	
+	         <p>2 = Allow more extensive transformations, such as the
+	         reordering of reduction loops.
+	         This is the default level when -OPT:Ofast is specified.</p>
+	
+	         <p>3 = Enable any mathematically valid transformation.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-OPT:rsqrt" class="optimization"
+	         regexp="-OPT:rsqrt=[0-2]\b" compilers="Fpathcc,FpathCC,Fpathf95">
+       	  <example>-OPT:rsqrt</example>
+	      <![CDATA[
+	         <p>-OPT:rsqrt=(0|1|2)<br>
+	         This option specifies if the RSQRT machine instruction should be used
+	         to calculate reciprocal square root. RSQRT is faster but potentially
+	         less accurate than the regular square root operation.<br>
+	         0 means not to use RSQRT.<br>
+	         1 means to use RSQRT followed by instructions to refine the result.<br>
+	         2 means to use RSQRT by itself.<br>
+	         Default is 1 when -OPT:roundoff=2 or greater, else the default is 0.</p>
+	      ]]>
+	   </flag>
+	   
+	   <flag name="F-OPT:unroll_size" class="optimization"
+	         regexp="-OPT:unroll_size=(\d+)">
+          <example>-OPT:unroll_size</example>
+	      <![CDATA[
+	         <p>-OPT:unroll_size=N<br>
+	         Set the ceiling of maximum number of instructions for  an
+	         unrolled  inner loop. If N=0, the ceiling is disregarded.
+	         The default is 40.</p>
+	      ]]>
+	   </flag>
+
+	   <flag name="F-OPT:unroll_times_max" class="optimization"
+	         regexp="-OPT:(unroll_times_max|unroll_times)=(\d+)">
+          <example>-OPT:unroll_times_max</example>
+	      <![CDATA[
+	         <p>-OPT:unroll_times_max=N<br>
+	         Unroll  inner loops by a maximum of N.  The default is 4.</p>
+	      ]]>
+	   </flag>
+	
+	   <!-- Individual subflags of the -WOPT: class -->
+	
+	   <flag name="F-WOPT:aggstr" class="optimization"
+	         regexp="-WOPT:aggstr=\d+" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-WOPT:aggstr</example>
+	      <![CDATA[
+	         <p>The -WOPT: Specifies options that affect the global optimizer.
+	         The options are enabled at -O2 or above.</p>
+	
+	         <p>-WOPT:aggstr=N<br>
+	         This controls the aggressiveness of the strength reduction optimization
+	         performed by the scalar optimizer, in which induction expressions
+	         within a loop are replaced by temporaries that are incremented
+	         together with the loop variable. When strength reduction is overdone,
+	         the additional temporaries increase register pressure, resulting in
+	         excessive register spills that decrease performance.
+	         The value specified must be a positive integer value, which specifies
+	         the maximum number of induction expressions that will be strength-reduced
+	         across an index variable increment.
+	         When set at 0, strength reduction is only performed for non-trivial
+	         induction expressions. The default is 11.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-WOPT:mem_opnds" class="optimization"
+	         regexp="-WOPT:mem_opnds=(on|off|0|1)\b" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-WOPT:mem_opnds</example>
+	      <![CDATA[
+	         <p>-WOPT:mem_opnds=(ON|OFF)<br>
+	         Makes  the scalar optimizer preserve any memory operands of arithmetic
+	         operations so as to help bring about subsumption of memory loads into
+	         the operands of arithmetic operations. Load subsumption is the combining
+	         of an arithmetic instruction and a memory load into one instruction.
+	         Default is OFF.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="F-WOPT:retype_expr" class="optimization"
+	         regexp="-WOPT:retype_expr=(on|off|0|1)\b">
+	      <example>-WOPT:retype_expr</example>
+	      <![CDATA[
+	         <p>-WOPT:retype_expr=(ON|OFF)<br>
+	        Enables the optimization in the compiler that converts 64-bit address 
+	        computation to use 32-bit arithmetic as much as possible. 
+	        Default is OFF.</p>
+	      ]]>
+	   </flag>
+	   
+	   <!-- End of description of flag groups -->
+	
+	   <!-- End of description of optimization flags -->
+
+<!-- /OPTIMIZATION -->
+
+<!-- PORTABILITY -->
+
+	   <flag name="F-fno-second-underscore" class="portability" compilers="Fpathcc,FpathCC,Fpathf95">
+	      <example>-fno-second-underscore</example>
+	      <![CDATA[
+	         <p><b>CFP2006:</b></p>
+	         <p>If  -funderscoring is in effect, and the original Fortran external 
+	         identifier contained an underscore, -fsecond-underscore appends 
+	         a second underscore to  the one added  by  -funderscoring.   
+	         -fno-second-underscore  does  not append a second underscore.  
+	         The default is both -funderscoring and -fsecond-underscore, the
+	         same defaults as g77 uses.  -fno-second-underscore correcponds
+	         to the default policies of PGI Fortran and Intel Fortran.
+	
+	      ]]>
+	   </flag>
+	
+<!-- /PORTABILITY -->
+
+<!-- COMPILER -->
+  
+	   <flag name="Fpathcc" class="compiler" regexp="pathcc">
+	      <example>pathcc</example>
+	      <![CDATA[
+	         <p>Invoke the PathScale C compiler.<br>
+	         Also used to invoke linker for C programs.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="FpathCC" class="compiler" regexp="pathCC">
+	      <example>pathCC</example>
+	      <![CDATA[
+	         <p>Invoke the PathScale C++ compiler.<br>
+	         Also used to invoke linker for C++ programs.</p>
+	      ]]>
+	   </flag>
+	
+	   <flag name="Fpathf95" class="compiler" regexp="pathf95">
+	      <example>pathf95</example>
+	      <![CDATA[
+	         <p>Invoke the PathScale Fortran 77, 90 and 95 compilers. <br>
+	         Also used to invoke linker for Fortran programs and
+	         for mixed C / Fortran.  pathf90 and pathf95 are synonymous.</p>
+	      ]]>
+	   </flag>
+
+<!-- /COMPILER -->
+
+<!-- OTHER -->
+
+<!-- /OTHER -->
+
+</flagsdescription>

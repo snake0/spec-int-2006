@@ -1,0 +1,1536 @@
+C  4 NOV 03 - TJP - JKXYZS: VECTORIZATION OFF, JKDSPD: SIMPLIFY IF/THEN
+C 26 OCT 00 - MWS - INTRODUCE MXAO PARAMETER
+C 26 JUL 95 - MWS - REMOVE DREAL
+C 11 NOV 94 - MWS - REMOVE SOME FTNCHEK WARNINGS
+C 10 AUG 94 - MWS - INCREASE NUMBER OF DAF RECORDS
+C 20 JUL 94 - BMB - FINISHED CONVERSION FROM HONDO8
+C
+C   GRD2C CONTAINS FILES SPECIFIC TO THE RYS POLYNOMIAL PACKAGE
+C
+C*MODULE GRD2A   *DECK DSPDFS
+      SUBROUTINE DSPDFS(NG,NR,IJKLG,GIJKL,FIJKL,SIJKL,XYZ,
+     1 FIXYZ,FJXYZ,FKXYZ,FLXYZ,SIIXYZ,SJJXYZ,SKKXYZ,SLLXYZ,
+     2 SIJXYZ,SIKXYZ,SILXYZ,SJKXYZ,SJLXYZ,SKLXYZ,
+     3 XY,XZ,YZ,X,Y,Z,SJ,SK,SL,DIJSI,DIJSJ,DKLSK,DKLSL,DAB)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL IS,JS,KS,LS
+      LOGICAL IJS,IJKS,IJKLS
+      LOGICAL IIEQJJ,KKEQLL,IJEQKL,IJGTKL,IJLTKL
+      LOGICAL SPI,SPJ,SPK,SPL,SPIJ,SPKL,SPIJKL
+      LOGICAL SKIPI,SKIPJ,SKIPK,SKIPL
+      LOGICAL OUT,DBG
+      COMMON /DSHLNO/ LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     *                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     *                NIJ,IJD,KLD,IJ,KL
+      COMMON /DSHLT / RTOL,DTOL,VTOL1,VTOL2,VTOLS,OUT,DBG
+      COMMON/DERSKP/IIAT,JJAT,KKAT,LLAT,SKIPI,SKIPJ,SKIPK,SKIPL
+      COMMON/DERPAR/IDER,JDER,KDER,LDER,NDER
+      COMMON/DERSHL/FD(12),SD(78)
+      COMMON/SHLEQU/IIEQJJ,KKEQLL,IJEQKL,IJGTKL,IJLTKL
+      COMMON/SHLTYP/SPI,SPJ,SPK,SPL,SPIJ,SPKL,SPIJKL
+      DIMENSION GIJKL(1),FIJKL(12,1),SIJKL(78,1),IJKLG(4,1)
+      DIMENSION DAB(1)
+      DIMENSION    XYZ(NG*NR,1)
+      DIMENSION  FIXYZ(NG*NR,1), FJXYZ(NG*NR,1)
+      DIMENSION  FKXYZ(NG*NR,1), FLXYZ(NG*NR,1)
+      DIMENSION SIIXYZ(NG*NR,1),SJJXYZ(NG*NR,1)
+      DIMENSION SKKXYZ(NG*NR,1),SLLXYZ(NG*NR,1)
+      DIMENSION SIJXYZ(NG*NR,1),SIKXYZ(NG*NR,1)
+      DIMENSION SILXYZ(NG*NR,1),SJKXYZ(NG*NR,1)
+      DIMENSION SJLXYZ(NG*NR,1),SKLXYZ(NG*NR,1)
+      DIMENSION XY(NG*NR),XZ(NG*NR),YZ(NG*NR)
+      DIMENSION  X(NG*NR), Y(NG*NR), Z(NG*NR)
+      DIMENSION SJ(NG*NR),SK(NG*NR),SL(NG*NR)
+      DIMENSION DIJSI(NG*NR),DIJSJ(NG*NR),DKLSK(NG*NR),DKLSL(NG*NR)
+      PARAMETER (ZERO=0.0D+00)
+C
+      IF(SPIJKL) GO TO 1000
+C
+C     ----- NO SHARED EXPONENTS ; SUM UP ( IX * IY * IZ ) -----
+C
+      IF(NDER.LT.1) GO TO 700
+C
+C     ----- GRADIENT -----
+C
+      IJKLN=0
+      DO 640 I=MINI,MAXI
+        JMAX=MAXJ
+        IF(IIEQJJ) JMAX=I
+        DO 630 J=MINJ,JMAX
+          KMAX=MAXK
+          IF(IJEQKL) KMAX=I
+          DO 620 K=MINK,KMAX
+            LMAX=MAXL
+            IF(KKEQLL           ) LMAX=K
+            IF(IJEQKL.AND.K.EQ.I) LMAX=J
+            DO 610 L=MINL,LMAX
+              IJKLN=IJKLN+1
+              NN=IJKLG(1,IJKLN)
+              NX=IJKLG(2,IJKLN)
+              NY=IJKLG(3,IJKLN)
+              NZ=IJKLG(4,IJKLN)
+C
+              DO 510 IGR=1,NG*NR
+                XY(IGR)=XYZ(IGR,NX)*XYZ(IGR,NY)
+                XZ(IGR)=XYZ(IGR,NX)*XYZ(IGR,NZ)
+  510           YZ(IGR)=XYZ(IGR,NY)*XYZ(IGR,NZ)
+C
+              IF(SKIPI) GO TO 530
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 520 IGR=1,NG*NR
+                DUMFX =DUMFX + FIXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FIXYZ(IGR,NY)*XZ(IGR)
+  520           DUMFZ =DUMFZ + FIXYZ(IGR,NZ)*XY(IGR)
+              FD( 1)=FD( 1)+DAB(NN)*DUMFX
+              FD( 2)=FD( 2)+DAB(NN)*DUMFY
+              FD( 3)=FD( 3)+DAB(NN)*DUMFZ
+  530         IF(SKIPJ) GO TO 550
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 540 IGR=1,NG*NR
+                DUMFX =DUMFX + FJXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FJXYZ(IGR,NY)*XZ(IGR)
+  540           DUMFZ =DUMFZ + FJXYZ(IGR,NZ)*XY(IGR)
+              FD( 4)=FD( 4)+DAB(NN)*DUMFX
+              FD( 5)=FD( 5)+DAB(NN)*DUMFY
+              FD( 6)=FD( 6)+DAB(NN)*DUMFZ
+  550         IF(SKIPK) GO TO 570
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 560 IGR=1,NG*NR
+                DUMFX =DUMFX + FKXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FKXYZ(IGR,NY)*XZ(IGR)
+  560           DUMFZ =DUMFZ + FKXYZ(IGR,NZ)*XY(IGR)
+              FD( 7)=FD( 7)+DAB(NN)*DUMFX
+              FD( 8)=FD( 8)+DAB(NN)*DUMFY
+              FD( 9)=FD( 9)+DAB(NN)*DUMFZ
+  570         IF(SKIPL) GO TO 600
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 580 IGR=1,NG*NR
+                DUMFX =DUMFX + FLXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FLXYZ(IGR,NY)*XZ(IGR)
+  580           DUMFZ =DUMFZ + FLXYZ(IGR,NZ)*XY(IGR)
+              FD(10)=FD(10)+DAB(NN)*DUMFX
+              FD(11)=FD(11)+DAB(NN)*DUMFY
+              FD(12)=FD(12)+DAB(NN)*DUMFZ
+  600         CONTINUE
+C
+  610       CONTINUE
+  620     CONTINUE
+  630   CONTINUE
+  640 CONTINUE
+C
+  700 CONTINUE
+C
+C     ----- ZEROTH AND FIRST DERIVATIVE INTEGRALS -----
+C
+      IF(.NOT.OUT) RETURN
+C
+      IJKLN=0
+      DO 940 I=MINI,MAXI
+        JMAX=MAXJ
+        IF(IIEQJJ) JMAX=I
+        DO 930 J=MINJ,JMAX
+          KMAX=MAXK
+          IF(IJEQKL) KMAX=I
+          DO 920 K=MINK,KMAX
+            LMAX=MAXL
+            IF(KKEQLL           ) LMAX=K
+            IF(IJEQKL.AND.K.EQ.I) LMAX=J
+            DO 910 L=MINL,LMAX
+            IJKLN=IJKLN+1
+            NN=IJKLG(1,IJKLN)
+            NX=IJKLG(2,IJKLN)
+            NY=IJKLG(3,IJKLN)
+            NZ=IJKLG(4,IJKLN)
+C
+            DO 710 IGR=1,NG*NR
+              XY(IGR)=XYZ(IGR,NX)*XYZ(IGR,NY)
+              XZ(IGR)=XYZ(IGR,NX)*XYZ(IGR,NZ)
+  710         YZ(IGR)=XYZ(IGR,NY)*XYZ(IGR,NZ)
+            DUM=ZERO
+            DO 720 IGR=1,NG*NR
+  720         DUM=DUM+XYZ(IGR,NX)*YZ(IGR)
+            GIJKL(NN)=GIJKL(NN)+DUM
+C
+            IF(SKIPI) GO TO 830
+            DUMFX =ZERO
+            DUMFY =ZERO
+            DUMFZ =ZERO
+            DO 820 IGR=1,NG*NR
+              DUMFX =DUMFX + FIXYZ(IGR,NX)*YZ(IGR)
+              DUMFY =DUMFY + FIXYZ(IGR,NY)*XZ(IGR)
+  820         DUMFZ =DUMFZ + FIXYZ(IGR,NZ)*XY(IGR)
+            FIJKL( 1,NN)=FIJKL( 1,NN)+DUMFX
+            FIJKL( 2,NN)=FIJKL( 2,NN)+DUMFY
+            FIJKL( 3,NN)=FIJKL( 3,NN)+DUMFZ
+  830       IF(SKIPJ) GO TO 850
+            DUMFX =ZERO
+            DUMFY =ZERO
+            DUMFZ =ZERO
+            DO 840 IGR=1,NG*NR
+              DUMFX =DUMFX + FJXYZ(IGR,NX)*YZ(IGR)
+              DUMFY =DUMFY + FJXYZ(IGR,NY)*XZ(IGR)
+  840         DUMFZ =DUMFZ + FJXYZ(IGR,NZ)*XY(IGR)
+            FIJKL( 4,NN)=FIJKL( 4,NN)+DUMFX
+            FIJKL( 5,NN)=FIJKL( 5,NN)+DUMFY
+            FIJKL( 6,NN)=FIJKL( 6,NN)+DUMFZ
+  850       IF(SKIPK) GO TO 870
+            DUMFX =ZERO
+            DUMFY =ZERO
+            DUMFZ =ZERO
+            DO 860 IGR=1,NG*NR
+              DUMFX =DUMFX + FKXYZ(IGR,NX)*YZ(IGR)
+              DUMFY =DUMFY + FKXYZ(IGR,NY)*XZ(IGR)
+  860         DUMFZ =DUMFZ + FKXYZ(IGR,NZ)*XY(IGR)
+            FIJKL( 7,NN)=FIJKL( 7,NN)+DUMFX
+            FIJKL( 8,NN)=FIJKL( 8,NN)+DUMFY
+            FIJKL( 9,NN)=FIJKL( 9,NN)+DUMFZ
+  870       IF(SKIPL) GO TO 900
+            DUMFX =ZERO
+            DUMFY =ZERO
+            DUMFZ =ZERO
+            DO 880 IGR=1,NG*NR
+              DUMFX =DUMFX + FLXYZ(IGR,NX)*YZ(IGR)
+              DUMFY =DUMFY + FLXYZ(IGR,NY)*XZ(IGR)
+  880         DUMFZ =DUMFZ + FLXYZ(IGR,NZ)*XY(IGR)
+            FIJKL(10,NN)=FIJKL(10,NN)+DUMFX
+            FIJKL(11,NN)=FIJKL(11,NN)+DUMFY
+            FIJKL(12,NN)=FIJKL(12,NN)+DUMFZ
+  900       CONTINUE
+C
+  910       CONTINUE
+  920     CONTINUE
+  930   CONTINUE
+  940 CONTINUE
+C
+      RETURN
+C
+C     ----- SHARED EXPONENTS ; FORM ( IX * IY * IZ ) -----
+C
+ 1000 CONTINUE
+      IF(NDER.LT.1) GO TO 3000
+C
+C     ----- GRADIENT -----
+C
+      IJKLN=0
+      DO 2640 I=MINI,MAXI
+        IS=SPI.AND.I.EQ.1
+C
+        JMAX=MAXJ
+        IF(IIEQJJ) JMAX=I
+        DO 2630 J=MINJ,JMAX
+          JS=SPJ.AND.J.EQ.1
+C
+          IF(JS) THEN
+             IF(IS) THEN
+                DO 2110 IGR=1,NG*NR
+ 2110             SJ(IGR)=DIJSJ(IGR)*DIJSI(IGR)
+             ELSE
+                DO 2120 IGR=1,NG*NR
+ 2120             SJ(IGR)=DIJSJ(IGR)
+             ENDIF
+          ELSE
+             IF(IS) THEN
+                DO 2130 IGR=1,NG*NR
+ 2130             SJ(IGR)=DIJSI(IGR)
+             ENDIF
+          ENDIF
+          IJS=IS.OR.JS
+C
+          KMAX=MAXK
+          IF(IJEQKL) KMAX=I
+          DO 2620 K=MINK,KMAX
+            KS=SPK.AND.K.EQ.1
+C
+            IF(KS) THEN
+               IF(IJS) THEN
+                  DO 2210 IGR=1,NG*NR
+ 2210               SK(IGR)=DKLSK(IGR)*SJ(IGR)
+               ELSE
+                  DO 2220 IGR=1,NG*NR
+ 2220               SK(IGR)=DKLSK(IGR)
+               ENDIF
+            ELSE
+               IF(IJS) THEN
+                  DO 2230 IGR=1,NG*NR
+ 2230               SK(IGR)=SJ(IGR)
+               ENDIF
+            ENDIF
+            IJKS=IJS.OR.KS
+C
+            LMAX=MAXL
+            IF(KKEQLL           ) LMAX=K
+            IF(IJEQKL.AND.K.EQ.I) LMAX=J
+            DO 2610 L=MINL,LMAX
+              LS=SPL.AND.L.EQ.1
+C
+              IF(LS) THEN
+                 IF(IJKS) THEN
+                    DO 2310 IGR=1,NG*NR
+ 2310                 SL(IGR)=DKLSL(IGR)*SK(IGR)
+                 ELSE
+                    DO 2320 IGR=1,NG*NR
+ 2320                 SL(IGR)=DKLSL(IGR)
+                 ENDIF
+              ELSE
+                 IF(IJKS) THEN
+                    DO 2330 IGR=1,NG*NR
+ 2330                 SL(IGR)=SK(IGR)
+                 ENDIF
+              ENDIF
+              IJKLS=IJKS.OR.LS
+C
+              IJKLN=IJKLN+1
+              NN=IJKLG(1,IJKLN)
+              NX=IJKLG(2,IJKLN)
+              NY=IJKLG(3,IJKLN)
+              NZ=IJKLG(4,IJKLN)
+C
+              IF(IJKLS) THEN
+                 DO 2500 IGR=1,NG*NR
+                   XY(IGR)=XYZ(IGR,NX)*XYZ(IGR,NY)*SL(IGR)
+                   XZ(IGR)=XYZ(IGR,NX)*XYZ(IGR,NZ)*SL(IGR)
+ 2500              YZ(IGR)=XYZ(IGR,NY)*XYZ(IGR,NZ)*SL(IGR)
+              ELSE
+                 DO 2510 IGR=1,NG*NR
+                   XY(IGR)=XYZ(IGR,NX)*XYZ(IGR,NY)
+                   XZ(IGR)=XYZ(IGR,NX)*XYZ(IGR,NZ)
+ 2510              YZ(IGR)=XYZ(IGR,NY)*XYZ(IGR,NZ)
+              ENDIF
+C
+              IF(SKIPI) GO TO 2530
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 2520 IGR=1,NG*NR
+                DUMFX =DUMFX + FIXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FIXYZ(IGR,NY)*XZ(IGR)
+ 2520           DUMFZ =DUMFZ + FIXYZ(IGR,NZ)*XY(IGR)
+              FD( 1)=FD( 1)+DAB(NN)*DUMFX
+              FD( 2)=FD( 2)+DAB(NN)*DUMFY
+              FD( 3)=FD( 3)+DAB(NN)*DUMFZ
+ 2530         IF(SKIPJ) GO TO 2550
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 2540 IGR=1,NG*NR
+                DUMFX =DUMFX + FJXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FJXYZ(IGR,NY)*XZ(IGR)
+ 2540           DUMFZ =DUMFZ + FJXYZ(IGR,NZ)*XY(IGR)
+              FD( 4)=FD( 4)+DAB(NN)*DUMFX
+              FD( 5)=FD( 5)+DAB(NN)*DUMFY
+              FD( 6)=FD( 6)+DAB(NN)*DUMFZ
+ 2550         IF(SKIPK) GO TO 2570
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 2560 IGR=1,NG*NR
+                DUMFX =DUMFX + FKXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FKXYZ(IGR,NY)*XZ(IGR)
+ 2560           DUMFZ =DUMFZ + FKXYZ(IGR,NZ)*XY(IGR)
+              FD( 7)=FD( 7)+DAB(NN)*DUMFX
+              FD( 8)=FD( 8)+DAB(NN)*DUMFY
+              FD( 9)=FD( 9)+DAB(NN)*DUMFZ
+ 2570         IF(SKIPL) GO TO 2600
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 2580 IGR=1,NG*NR
+                DUMFX =DUMFX + FLXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FLXYZ(IGR,NY)*XZ(IGR)
+ 2580           DUMFZ =DUMFZ + FLXYZ(IGR,NZ)*XY(IGR)
+              FD(10)=FD(10)+DAB(NN)*DUMFX
+              FD(11)=FD(11)+DAB(NN)*DUMFY
+              FD(12)=FD(12)+DAB(NN)*DUMFZ
+ 2600         CONTINUE
+C
+ 2610       CONTINUE
+ 2620     CONTINUE
+ 2630   CONTINUE
+ 2640 CONTINUE
+C
+ 3000 CONTINUE
+C
+C     ----- ZEROTH AND FIRST DERIVATIVE INTEGRALS -----
+C
+      IF(.NOT.OUT) RETURN
+C
+      IJKLN=0
+      DO 3640 I=MINI,MAXI
+        IS=SPI.AND.I.EQ.1
+C
+        JMAX=MAXJ
+        IF(IIEQJJ) JMAX=I
+        DO 3630 J=MINJ,JMAX
+          JS=SPJ.AND.J.EQ.1
+C
+          IF(JS) THEN
+             IF(IS) THEN
+                DO 3110 IGR=1,NG*NR
+ 3110             SJ(IGR)=DIJSJ(IGR)*DIJSI(IGR)
+             ELSE
+                DO 3120 IGR=1,NG*NR
+ 3120             SJ(IGR)=DIJSJ(IGR)
+             ENDIF
+          ELSE
+             IF(IS) THEN
+                DO 3130 IGR=1,NG*NR
+ 3130             SJ(IGR)=DIJSI(IGR)
+             ENDIF
+          ENDIF
+          IJS=IS.OR.JS
+C
+          KMAX=MAXK
+          IF(IJEQKL) KMAX=I
+          DO 3620 K=MINK,KMAX
+            KS=SPK.AND.K.EQ.1
+C
+            IF(KS) THEN
+               IF(IJS) THEN
+                  DO 3210 IGR=1,NG*NR
+ 3210               SK(IGR)=DKLSK(IGR)*SJ(IGR)
+               ELSE
+                  DO 3220 IGR=1,NG*NR
+ 3220               SK(IGR)=DKLSK(IGR)
+               ENDIF
+            ELSE
+               IF(IJS) THEN
+                  DO 3230 IGR=1,NG*NR
+ 3230               SK(IGR)=SJ(IGR)
+               ENDIF
+            ENDIF
+            IJKS=IJS.OR.KS
+C
+            LMAX=MAXL
+            IF(KKEQLL           ) LMAX=K
+            IF(IJEQKL.AND.K.EQ.I) LMAX=J
+            DO 3610 L=MINL,LMAX
+              LS=SPL.AND.L.EQ.1
+C
+              IF(LS) THEN
+                 IF(IJKS) THEN
+                    DO 3310 IGR=1,NG*NR
+ 3310                 SL(IGR)=DKLSL(IGR)*SK(IGR)
+                 ELSE
+                    DO 3320 IGR=1,NG*NR
+ 3320                 SL(IGR)=DKLSL(IGR)
+                 ENDIF
+              ELSE
+                 IF(IJKS) THEN
+                    DO 3330 IGR=1,NG*NR
+ 3330                 SL(IGR)=SK(IGR)
+                 ENDIF
+              ENDIF
+              IJKLS=IJKS.OR.LS
+C
+              IJKLN=IJKLN+1
+              NN=IJKLG(1,IJKLN)
+              NX=IJKLG(2,IJKLN)
+              NY=IJKLG(3,IJKLN)
+              NZ=IJKLG(4,IJKLN)
+C
+              IF(IJKLS) THEN
+                 DO 3400 IGR=1,NG*NR
+                   XY(IGR)=XYZ(IGR,NX)*XYZ(IGR,NY)*SL(IGR)
+                   XZ(IGR)=XYZ(IGR,NX)*XYZ(IGR,NZ)*SL(IGR)
+ 3400              YZ(IGR)=XYZ(IGR,NY)*XYZ(IGR,NZ)*SL(IGR)
+              ELSE
+                 DO 3410 IGR=1,NG*NR
+                   XY(IGR)=XYZ(IGR,NX)*XYZ(IGR,NY)
+                   XZ(IGR)=XYZ(IGR,NX)*XYZ(IGR,NZ)
+ 3410              YZ(IGR)=XYZ(IGR,NY)*XYZ(IGR,NZ)
+              ENDIF
+C
+              DUM=ZERO
+              DO 3420 IGR=1,NG*NR
+ 3420           DUM=DUM+XYZ(IGR,NX)*YZ(IGR)
+              GIJKL(NN)=GIJKL(NN)+DUM
+C
+              IF(SKIPI) GO TO 3530
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 3520 IGR=1,NG*NR
+                DUMFX =DUMFX + FIXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FIXYZ(IGR,NY)*XZ(IGR)
+ 3520           DUMFZ =DUMFZ + FIXYZ(IGR,NZ)*XY(IGR)
+              FIJKL( 1,NN)=FIJKL( 1,NN)+DUMFX
+              FIJKL( 2,NN)=FIJKL( 2,NN)+DUMFY
+              FIJKL( 3,NN)=FIJKL( 3,NN)+DUMFZ
+ 3530         IF(SKIPJ) GO TO 3550
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 3540 IGR=1,NG*NR
+                DUMFX =DUMFX + FJXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FJXYZ(IGR,NY)*XZ(IGR)
+ 3540           DUMFZ =DUMFZ + FJXYZ(IGR,NZ)*XY(IGR)
+              FIJKL( 4,NN)=FIJKL( 4,NN)+DUMFX
+              FIJKL( 5,NN)=FIJKL( 5,NN)+DUMFY
+              FIJKL( 6,NN)=FIJKL( 6,NN)+DUMFZ
+ 3550         IF(SKIPK) GO TO 3570
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 3560 IGR=1,NG*NR
+                DUMFX =DUMFX + FKXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FKXYZ(IGR,NY)*XZ(IGR)
+ 3560           DUMFZ =DUMFZ + FKXYZ(IGR,NZ)*XY(IGR)
+              FIJKL( 7,NN)=FIJKL( 7,NN)+DUMFX
+              FIJKL( 8,NN)=FIJKL( 8,NN)+DUMFY
+              FIJKL( 9,NN)=FIJKL( 9,NN)+DUMFZ
+ 3570         IF(SKIPL) GO TO 3600
+              DUMFX =ZERO
+              DUMFY =ZERO
+              DUMFZ =ZERO
+              DO 3580 IGR=1,NG*NR
+                DUMFX =DUMFX + FLXYZ(IGR,NX)*YZ(IGR)
+                DUMFY =DUMFY + FLXYZ(IGR,NY)*XZ(IGR)
+ 3580           DUMFZ =DUMFZ + FLXYZ(IGR,NZ)*XY(IGR)
+              FIJKL(10,NN)=FIJKL(10,NN)+DUMFX
+              FIJKL(11,NN)=FIJKL(11,NN)+DUMFY
+              FIJKL(12,NN)=FIJKL(12,NN)+DUMFZ
+ 3600         CONTINUE
+C
+ 3610       CONTINUE
+ 3620     CONTINUE
+ 3630   CONTINUE
+ 3640 CONTINUE
+C
+      RETURN
+      END
+C*MODULE GRD2C   *DECK DSPDFV
+      SUBROUTINE DSPDFV(NG,NR,IJKLG,GIJKL,FIJKL,SIJKL,XYZ,
+     1 FIXYZ,FJXYZ,FKXYZ,FLXYZ,SIIXYZ,SJJXYZ,SKKXYZ,SLLXYZ,
+     2 SIJXYZ,SIKXYZ,SILXYZ,SJKXYZ,SJLXYZ,SKLXYZ,
+     3 XY,XZ,YZ,X,Y,Z,SJ,SK,SL,DIJSI,DIJSJ,DKLSK,DKLSL,DAB)
+      WRITE(6,*) 'SCALAR MACHINES SHOULD NOT CALL -DSPDFV-'
+      CALL ABRT
+      STOP
+      END
+C*MODULE GRD2C   *DECK JDXYZS
+      SUBROUTINE JDXYZS(GI,GIJ,GIJK,GIJKL,HIJK,HIJKL,FIJK,FIJKL,
+     1 NG,NIMAX,NJMAX,NKMAX,NLMAX,NI,NJ,NK,NL,AAI,AAJ,AAK,AAL,
+     2 FI,FJ,FK,FL,SII,SJJ,SKK,SLL,SIJ,SIK,SIL,SJK,SJL,SKL)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL SKIPI,SKIPJ,SKIPK,SKIPL
+      LOGICAL IS,JS,KS,LS
+      COMMON/DERSKP/IIAT,JJAT,KKAT,LLAT,SKIPI,SKIPJ,SKIPK,SKIPL
+      DIMENSION GIJKL(NG,NLMAX,NKMAX*NJMAX*NIMAX)
+      DIMENSION  GIJK(NG,NLMAX,NKMAX,NJMAX*NIMAX)
+      DIMENSION   GIJ(NG,NLMAX*NKMAX,NJMAX,NIMAX)
+      DIMENSION    GI(NG,NLMAX*NKMAX*NJMAX,NIMAX)
+      DIMENSION HIJKL(NG,NLMAX,NKMAX*NJMAX,NIMAX)
+      DIMENSION  HIJK(NG,NLMAX,NKMAX,NJMAX,NIMAX)
+      DIMENSION FIJKL(NG,NLMAX,NKMAX,NJMAX,NIMAX)
+      DIMENSION  FIJK(NG,NLMAX,NKMAX,NJMAX*NIMAX)
+      DIMENSION   AAI(NG)
+      DIMENSION   AAJ(NG)
+      DIMENSION   AAK(NG)
+      DIMENSION   AAL(NG)
+      DIMENSION    FI(NG,NLMAX*NKMAX*NJMAX,NIMAX)
+      DIMENSION    FJ(NG,NLMAX*NKMAX,NJMAX,NIMAX)
+      DIMENSION    FK(NG,NLMAX,NKMAX,NJMAX*NIMAX)
+      DIMENSION    FL(NG,NLMAX,NKMAX*NJMAX*NIMAX)
+      DIMENSION   SII(NG,NLMAX*NKMAX*NJMAX,NIMAX)
+      DIMENSION   SJJ(NG,NLMAX*NKMAX,NJMAX,NIMAX)
+      DIMENSION   SKK(NG,NLMAX,NKMAX,NJMAX*NIMAX)
+      DIMENSION   SLL(NG,NLMAX,NKMAX*NJMAX*NIMAX)
+      DIMENSION   SIJ(NG,NLMAX*NKMAX,NJMAX,NIMAX)
+      DIMENSION   SIK(NG,NLMAX,NKMAX,NJMAX,NIMAX)
+      DIMENSION   SIL(NG,NLMAX,NKMAX*NJMAX,NIMAX)
+      DIMENSION   SJK(NG,NLMAX,NKMAX,NJMAX,NIMAX)
+      DIMENSION   SJL(NG,NLMAX,NKMAX,NJMAX,NIMAX)
+      DIMENSION   SKL(NG,NLMAX,NKMAX,NJMAX*NIMAX)
+C
+      IS=NI.EQ.1
+      JS=NJ.EQ.1
+      KS=NK.EQ.1
+      LS=NL.EQ.1
+C
+C     ----- FIRST DERIVATIVES ONLY -----
+C
+      IF(SKIPI) GO TO 1030
+C
+C     ----- -FI- ONLY -----
+C
+      DO 1010 LKJ=1,NLMAX*NKMAX*NJMAX
+        DO 1010 IG =1,NG
+           FI(IG,LKJ,1)=  GI(IG,LKJ,2)*AAI(IG)
+ 1010 CONTINUE
+      IF(IS) GO TO 1030
+      DO 1020 I  =2,NI
+        DO 1020 LKJ=1,NLMAX*NKMAX*NJMAX
+          DO 1020 IG =1,NG
+             FI(IG,LKJ,I)= GI(IG,LKJ,I+1)*AAI(IG)
+     1                    -GI(IG,LKJ,I-1)*(I-1)
+ 1020 CONTINUE
+C
+ 1030 IF(SKIPJ) GO TO 1130
+C
+C     ----- -FJ- ONLY -----
+C
+      DO 1110 I =1,NIMAX
+        DO 1110 LK=1,NLMAX*NKMAX
+          DO 1110 IG=1,NG
+             FJ(IG,LK,1,I)=  GIJ(IG,LK,2,I)*AAJ(IG)
+ 1110 CONTINUE
+      IF(JS) GO TO 1130
+      DO 1120 I =1,NIMAX
+        DO 1120 J =2,NJ
+          DO 1120 LK=1,NLMAX*NKMAX
+            DO 1120 IG=1,NG
+               FJ(IG,LK,J,I)= GIJ(IG,LK,J+1,I)*AAJ(IG)
+     1                       -GIJ(IG,LK,J-1,I)*(J-1)
+ 1120 CONTINUE
+C
+ 1130 IF(SKIPK) GO TO 1230
+C
+C     ----- -FK- ONLY -----
+C
+      DO 1210 JI=1,NJMAX*NIMAX
+        DO 1210 L =1,NLMAX
+          DO 1210 IG=1,NG
+             FK(IG,L,1,JI)=  GIJK(IG,L,2,JI)*AAK(IG)
+ 1210 CONTINUE
+      IF(KS) GO TO 1230
+      DO 1220 JI=1,NJMAX*NIMAX
+        DO 1220 K =2,NK
+          DO 1220 L =1,NLMAX
+            DO 1220 IG=1,NG
+               FK(IG,L,K,JI)= GIJK(IG,L,K+1,JI)*AAK(IG)
+     1                       -GIJK(IG,L,K-1,JI)*(K-1)
+ 1220 CONTINUE
+C
+ 1230 IF(SKIPL) GO TO 1330
+C
+C     ----- -FL- AND -SLL- -----
+C
+      DO 1310 KJI=1,NKMAX*NJMAX*NIMAX
+        DO 1310 IG =1,NG
+           FL(IG,1,KJI)=  GIJKL(IG,2,KJI)*AAL(IG)
+ 1310 CONTINUE
+      IF(LS) GO TO 1330
+      DO 1320 KJI=1,NKMAX*NJMAX*NIMAX
+        DO 1320 L  =2,NL
+          DO 1320 IG =1,NG
+             FL(IG,L,KJI)= GIJKL(IG,L+1,KJI)*AAL(IG)
+     1                    -GIJKL(IG,L-1,KJI)*(L-1)
+ 1320 CONTINUE
+C
+ 1330 CONTINUE
+      RETURN
+      END
+C*MODULE GRD2C   *DECK JDXYZV
+      SUBROUTINE JDXYZV(GI,GIJ,GIJK,GIJKL,HIJK,HIJKL,FIJK,FIJKL,
+     1 NG,NIMAX,NJMAX,NKMAX,NLMAX,NI,NJ,NK,NL,AAI,AAJ,AAK,AAL,
+     2 FI,FJ,FK,FL,SII,SJJ,SKK,SLL,SIJ,SIK,SIL,SJK,SJL,SKL)
+      WRITE(6,*) 'SCALAR MACHINES SHOULD NOT CALL -JDXYZV-'
+      CALL ABRT
+      STOP
+      END
+C*MODULE GRD2C   *DECK JKBCDF
+      SUBROUTINE JKBCDF(B00,B01,B10,C00,D00,F00,DIJ,DKL,
+     1                  ABV,CV,RWV,NUMG,NROOTS)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL NMAXS,NMAXP,MMAXS,MMAXP
+      COMMON/SHLGNM/NMAXS,NMAXP,MMAXS,MMAXP
+      DIMENSION B00(NUMG,NROOTS,3),B01(NUMG,NROOTS,3),B10(NUMG,NROOTS,3)
+      DIMENSION C00(NUMG,NROOTS,3)
+      DIMENSION D00(NUMG,NROOTS,3)
+      DIMENSION F00(NUMG,NROOTS,3),DIJ(NUMG,NROOTS,3),DKL(NUMG,NROOTS,3)
+      DIMENSION ABV(5,1),CV(18,1)
+      DIMENSION RWV(2,NUMG,NROOTS)
+      PARAMETER (PT5=0.5D+00, ONE=1.0D+00)
+C
+      DO 40 NR=1,NROOTS
+        DO 30 NG=1,NUMG
+          AA =ABV(1,NG)
+          BB =ABV(2,NG)
+          RHO=ABV(3,NG)
+          QAB=ABV(4,NG)
+          UU =RHO*RWV(1,NG,NR)
+          WW =    RWV(2,NG,NR)
+          AAUU=AA+UU
+          BBUU=BB+UU
+          F00(NG,NR,1)=WW*QAB
+          F00(NG,NR,2)=ONE
+          F00(NG,NR,3)=ONE
+          DUM2=PT5/(AA*BB+UU*(AA+BB))
+          AUDUM=AAUU*DUM2
+          BUDUM=BBUU*DUM2
+           UDUM=  UU*DUM2
+          B00(NG,NR,1)= UDUM
+          B00(NG,NR,2)= UDUM
+          B00(NG,NR,3)= UDUM
+          B01(NG,NR,1)=AUDUM
+          B01(NG,NR,2)=AUDUM
+          B01(NG,NR,3)=AUDUM
+          B10(NG,NR,1)=BUDUM
+          B10(NG,NR,2)=BUDUM
+          B10(NG,NR,3)=BUDUM
+           UDUM= UDUM+ UDUM
+          IF(MMAXS) GO TO 10
+          AUDUM=AUDUM+AUDUM
+          D00(NG,NR,1)= UDUM*CV( 1,NG) + AUDUM*CV( 2,NG)
+          D00(NG,NR,2)= UDUM*CV( 3,NG) + AUDUM*CV( 4,NG)
+          D00(NG,NR,3)= UDUM*CV( 5,NG) + AUDUM*CV( 6,NG)
+   10     IF(NMAXS) GO TO 20
+          BUDUM=BUDUM+BUDUM
+          C00(NG,NR,1)= UDUM*CV( 8,NG) + BUDUM*CV( 7,NG)
+          C00(NG,NR,2)= UDUM*CV(10,NG) + BUDUM*CV( 9,NG)
+          C00(NG,NR,3)= UDUM*CV(12,NG) + BUDUM*CV(11,NG)
+   20     CONTINUE
+C
+   30   CONTINUE
+   40 CONTINUE
+C
+      DO 60 NR=1,NROOTS
+        DO 50 NG=1,NUMG
+          DIJ(NG,NR,1)=CV(13,NG)
+          DIJ(NG,NR,2)=CV(14,NG)
+          DIJ(NG,NR,3)=CV(15,NG)
+          DKL(NG,NR,1)=CV(16,NG)
+          DKL(NG,NR,2)=CV(17,NG)
+          DKL(NG,NR,3)=CV(18,NG)
+   50   CONTINUE
+   60 CONTINUE
+C
+      RETURN
+      END
+C*MODULE GRD2A   *DECK JKDINV
+      SUBROUTINE JKDINV(FIJKL,SIJKL,IJKLG,FC,NC,DF,LDF,NBF,DEN)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      PARAMETER (MXATM=500)
+C
+      LOGICAL OUT,DBG
+      LOGICAL SKIPI,SKIPJ,SKIPK,SKIPL
+      COMMON /DSHLT / RTOL,DTOL,VTOL1,VTOL2,VTOLS,OUT,DBG
+      COMMON /GRAD  / DE(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON/DERINV/INVTYP
+      COMMON/DERSHL/FD(3,4),SD(78)
+      COMMON/DERPAR/IDER,JDER,KDER,LDER,NDER
+      COMMON/DERSKP/IIAT,JJAT,KKAT,LLAT,SKIPI,SKIPJ,SKIPK,SKIPL
+      DIMENSION FIJKL(3,4,1),SIJKL(78,1),IJKLG(4,1)
+      DIMENSION FC(NC,1),DF(LDF,1),DEN(1)
+      DIMENSION KAT(4)
+      EQUIVALENCE (KAT(1),IIAT)
+C
+      IF(NDER.EQ.0) RETURN
+C
+C     ----- TRANSLATIONAL INVARIANCE FOR GRADIENT ELEMENTS -----
+C
+      IF (INVTYP.EQ.2) THEN
+        DO 210 IXYZ=1,3
+  210     FD(IXYZ,1)=- FD(IXYZ,4)
+      ELSE IF (INVTYP.EQ.3) THEN
+        DO 310 IXYZ=1,3
+  310     FD(IXYZ,1)=- FD(IXYZ,3)
+      ELSE IF (INVTYP.EQ.4.OR.INVTYP.EQ.5) THEN
+        DO 410 IXYZ=1,3
+  410     FD(IXYZ,1)=-(FD(IXYZ,3)+FD(IXYZ,4))
+      ELSE IF (INVTYP.EQ.6) THEN
+        DO 610 IXYZ=1,3
+  610     FD(IXYZ,1)=- FD(IXYZ,2)
+      ELSE IF (INVTYP.EQ.7) THEN
+        DO 710 IXYZ=1,3
+  710     FD(IXYZ,1)=-(FD(IXYZ,2)+FD(IXYZ,4))
+      ELSE IF (INVTYP.EQ.8) THEN
+        DO 810 IXYZ=1,3
+  810     FD(IXYZ,1)=-(FD(IXYZ,2)+FD(IXYZ,4))
+      ELSE IF (INVTYP.EQ.9.OR.INVTYP.EQ.10) THEN
+        DO 910 IXYZ=1,3
+  910     FD(IXYZ,1)=-(FD(IXYZ,2)+FD(IXYZ,3))
+      ELSE IF (INVTYP.EQ.11) THEN
+        DO 1110 IXYZ=1,3
+ 1110     FD(IXYZ,2)=- FD(IXYZ,1)
+      ELSE IF (INVTYP.EQ.12) THEN
+        DO 1210 IXYZ=1,3
+ 1210     FD(IXYZ,2)=-(FD(IXYZ,1)+FD(IXYZ,4))
+      ELSE IF (INVTYP.EQ.13) THEN
+        DO 1310 IXYZ=1,3
+ 1310     FD(IXYZ,2)=-(FD(IXYZ,1)+FD(IXYZ,3))
+      ELSE IF (INVTYP.EQ.14) THEN
+        DO 1410 IXYZ=1,3
+ 1410     FD(IXYZ,3)=-(FD(IXYZ,1)+FD(IXYZ,2))
+      ELSE IF (INVTYP.EQ.15) THEN
+        DO 1510 IXYZ=1,3
+ 1510     FD(IXYZ,4)=-(FD(IXYZ,1)+FD(IXYZ,2)+FD(IXYZ,3))
+      ENDIF
+C
+      DO 2010 I=1,4
+        IAT=KAT(I)
+        DO 2010 IXYZ=1,3
+ 2010     DE(IXYZ,IAT)=DE(IXYZ,IAT)+FD(IXYZ,I)
+C
+      IF(OUT) WRITE(IW,9999)(I,IIAT,DE(I,IIAT),I,JJAT,DE(I,JJAT),
+     1                       I,KKAT,DE(I,KKAT),I,LLAT,DE(I,LLAT),I=1,3)
+C
+      RETURN
+ 9999 FORMAT(4(' DE(',I2,',',I3,') = ',E18.11))
+      END
+C*MODULE GRD2C   *DECK JKDOUT
+      SUBROUTINE JKDOUT(GIJKL,FIJKL,SIJKL,IJKLG,DAB)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXAO=2047)
+C
+      LOGICAL IIEQJJ,KKEQLL,IJEQKL,IJGTKL,IJLTKL
+      LOGICAL BUG1,BUG2,BUG
+C
+      COMMON /DSHLNO/ LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     *                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     *                NIJ,IJD,KLD,IJ,KL
+      COMMON /IJPAIR/ IA(MXAO)
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON/DERPAR/IDER,JDER,KDER,LDER,NDER
+      COMMON/SHLEQU/IIEQJJ,KKEQLL,IJEQKL,IJGTKL,IJLTKL
+      COMMON/SHLNRM/PNRM(35)
+C
+      DIMENSION GIJKL(1),FIJKL(12,1),SIJKL(78,1),IJKLG(4,1)
+      DIMENSION DAB(1)
+      DIMENSION F(12),S(12,12)
+C
+      PARAMETER (ZERO=0.0D+00, TOL=1.0D-10)
+C
+      BUG=.FALSE.
+C
+      IJKLN=0
+      DO 400 I=MINI,MAXI
+        PI=PNRM(I)
+        JMAX=MAXJ
+        IF(IIEQJJ) JMAX=I
+        DO 300 J=MINJ,JMAX
+          PIJ=PNRM(J)*PI
+          KMAX=MAXK
+          IF(IJEQKL) KMAX=I
+          DO 200 K=MINK,KMAX
+            PIJK=PNRM(K)*PIJ
+            LMAX=MAXL
+            IF(KKEQLL           ) LMAX=K
+            IF(IJEQKL.AND.K.EQ.I) LMAX=J
+            DO 100 L=MINL,LMAX
+              PIJKL=PNRM(L)*PIJK
+C
+              IJKLN=IJKLN+1
+              INUM=LOCI+I
+              JNUM=LOCJ+J
+              KNUM=LOCK+K
+              LNUM=LOCL+L
+C
+              VAL=GIJKL(IJKLG(1,IJKLN))*PIJKL
+              DEN=  DAB(IJKLG(1,IJKLN))
+C
+              IF(NDER.EQ.0) GO TO 50
+C
+              DO 10 N=1,12
+   10           F(N)=FIJKL( N,IJKLG(1,IJKLN))*PIJKL
+              ERR1=ZERO
+              DO 20 N=1,12
+   20           ERR1=ERR1+F(N)
+              BUG1= ABS(ERR1).GT.TOL
+              IF(BUG1) THEN
+                BUG=.TRUE.
+                WRITE(IW,9999) INUM,JNUM,KNUM,LNUM,VAL,DEN,
+     1             IJKLG(1,IJKLN),IJKLG(2,IJKLN),IJKLG(3,IJKLN),
+     2             IJKLG(4,IJKLN)
+                WRITE(IW,9998) ERR1
+                WRITE(IW,9995) (F(N),N=1,12)
+              ENDIF
+C
+              IF(NDER.GE.1) GO TO 50
+C
+              DO 30 M=1,12
+                DO 30 N=1,M
+                  S(M,N)=SIJKL(IA(M)+N,IJKLG(1,IJKLN))*PIJKL
+   30             S(N,M)=SIJKL(IA(M)+N,IJKLG(1,IJKLN))*PIJKL
+              ERR2=ZERO
+              DO 40 N=1,12
+                DO 40 M=1,12
+   40             ERR2=ERR2+S(M,N)
+              BUG2= ABS(ERR2).GT.TOL
+              IF(BUG2) THEN
+                BUG=.TRUE.
+                WRITE(IW,9999) INUM,JNUM,KNUM,LNUM,VAL,DEN,
+     1             IJKLG(1,IJKLN),IJKLG(2,IJKLN),IJKLG(3,IJKLN),
+     2             IJKLG(4,IJKLN)
+                WRITE(IW,9997) ERR2
+                WRITE(IW,9994) ((S(M,N),M=1,12),N=1,12)
+              ENDIF
+C
+   50         CONTINUE
+C
+  100       CONTINUE
+  200     CONTINUE
+  300   CONTINUE
+  400 CONTINUE
+C
+      IF(.NOT.BUG) WRITE(IW,9996)
+C
+      RETURN
+ 9999 FORMAT(' I,J,K,L = ',4I3,2E20.12,4I5)
+ 9998 FORMAT(' ERROR IN 1-DERIVATIVE INTEGRALS , ERR1 = ',F20.12)
+ 9997 FORMAT(' ERROR IN 2-DERIVATIVE INTEGRALS , ERR2 = ',F20.12)
+ 9996 FORMAT(' NO -TRANSLATION INVARIANCE ERROR DETECTED',
+     1       ' FOR THIS GROUP OF SHELLS. GOOD GOING')
+ 9995 FORMAT(3E20.12)
+ 9994 FORMAT(6E15.8)
+      END
+C*MODULE GRD2C   *DECK JKDSPD
+      SUBROUTINE JKDSPD(NIJ0,NKL,NKL0,DCHRG,GINT,FINT,SINT,IJKLG,
+     1                  GIJKL,GNKL,GNM,XY,XZ,YZ,X,Y,Z,SJ,SK,SL,
+     2                  B00,B01,B10,C00,D00,F00,DIJ,DKL,DIJSI,DIJSJ,
+     3                  DKLSK,DKLSL,ABV,CV,RWV,AAI,AAJ,BBK,BBL,FI,FJ,
+     4                  FK,FL,SII,SJJ,SKK,SLL,SIJ,SIK,SIL,SJK,SJL,SKL,
+     5                  DAB,MAXXYZ,FC,NC,DF,LDF,NBF,DEN,QQ4,MINVEC,
+     6                  DABCUT, DABMAX)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL SKIPI,SKIPJ,SKIPK,SKIPL
+      LOGICAL SPI,SPJ,SPK,SPL,SPIJ,SPKL,SPIJKL
+      LOGICAL NMAXS,NMAXP,MMAXS,MMAXP
+      LOGICAL EXPNDI,EXPNDK
+      LOGICAL FIRST
+      LOGICAL LAST
+      LOGICAL OUT,DBG
+      COMMON /DSHLNO/ LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     *                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     *                NIJ,IJD,KLD,IJ,KL
+      COMMON /DSHLT / RTOL,DTOL,VTOL1,VTOL2,VTOLS,OUT,DBG
+      COMMON /ROOT  / XX,U(9),W(9),NROOTS
+      COMMON/SHLGNM/NMAXS,NMAXP,MMAXS,MMAXP
+      COMMON/SHLTYP/SPI,SPJ,SPK,SPL,SPIJ,SPKL,SPIJKL
+      COMMON/SHLXPN/EXPNDI,EXPNDK
+      COMMON/DERPAR/IDER,JDER,KDER,LDER,NDER
+      COMMON/DERSKP/IIAT,JJAT,KKAT,LLAT,SKIPI,SKIPJ,SKIPK,SKIPL
+      DIMENSION DCHRG(15,*)
+      DIMENSION GINT(1),FINT(12,1),SINT(78,1),IJKLG(4,1)
+      DIMENSION XY(1),XZ(1),YZ(1),X(1),Y(1),Z(1),SJ(1),SK(1),SL(1)
+      DIMENSION GIJKL(1),GNKL(1),GNM(1)
+      DIMENSION DIJ(1),DKL(1),DIJSI(1),DIJSJ(1),DKLSK(1),DKLSL(1)
+      DIMENSION FI(1),FJ(1),FK(1),FL(1)
+      DIMENSION SII(1),SJJ(1),SKK(1),SLL(1)
+      DIMENSION SIJ(1),SIK(1),SIL(1),SJK(1),SJL(1),SKL(1)
+      DIMENSION B00(1),B01(1),B10(1),C00(1),D00(1),F00(1)
+      DIMENSION AAI(1),AAJ(1),BBK(1),BBL(1)
+      DIMENSION ABV(5,1),CV(18,1),RWV(2,1)
+      DIMENSION DAB(1)
+      DIMENSION FC(NC,1),DF(LDF,1),DEN(1)
+      PARAMETER(PI252=34.986836655250D+00, ONE=1.0D+00)
+C
+      Q4=PI252*QQ4
+C
+      NIMAX=LIT + IDER
+      NJMAX=LJT + JDER
+      NKMAX=LKT + KDER
+      NLMAX=LLT + LDER
+      NMAX=LIT+LJT-1 + MIN0(IDER+JDER,NDER)
+      MMAX=LKT+LLT-1 + MIN0(KDER+LDER,NDER)
+      NMAXS=NMAX.EQ.1
+      NMAXP=NMAX.LE.2
+      MMAXS=MMAX.EQ.1
+      MMAXP=MMAX.LE.2
+C
+      MAXG=MAXXYZ/NROOTS
+C
+C     ----- PAIR OF K,L PRIMITIVES -----
+C
+      FIRST=.TRUE.
+      NG=0
+      KLG=0
+  100 KLG=KLG+1
+      IF(KLG.GT.NKL) GO TO 300
+      DB=DCHRG( 1,KLG+NKL0)
+      BB=DCHRG( 2,KLG+NKL0)
+      XB=DCHRG( 3,KLG+NKL0)
+      YB=DCHRG( 4,KLG+NKL0)
+      ZB=DCHRG( 5,KLG+NKL0)
+      XD=DCHRG( 6,KLG+NKL0)
+      YD=DCHRG( 7,KLG+NKL0)
+      ZD=DCHRG( 8,KLG+NKL0)
+      DXKL=DCHRG( 9,KLG+NKL0)
+      DYKL=DCHRG(10,KLG+NKL0)
+      DZKL=DCHRG(11,KLG+NKL0)
+      Q4DB=Q4*DB
+C
+C     ----- PAIR OF I,J PRIMITIVES -----
+C
+      IJG=0
+  200 IJG=IJG+1
+      IF(IJG.GT.NIJ) GO TO 100
+      DA=DCHRG( 1,IJG+NIJ0)
+      AA=DCHRG( 2,IJG+NIJ0)
+      XA=DCHRG( 3,IJG+NIJ0)
+      YA=DCHRG( 4,IJG+NIJ0)
+      ZA=DCHRG( 5,IJG+NIJ0)
+      AANDB1=ONE/(AA+BB)
+      Q4DBDA=Q4DB*DA
+      DUM   =Q4DBDA*Q4DBDA*AANDB1
+      IF(DUM.LE.DTOL) GO TO 200
+      Q4DBDA=Q4DBDA* SQRT(AANDB1)
+      IF( ABS(Q4DBDA*DABMAX).LT.DABCUT) GO TO 200
+      RHO   =AA*BB*AANDB1
+      XX=RHO*((XA-XB)**2+(YA-YB)**2+(ZA-ZB)**2)
+C
+      NG=NG+1
+      ABV(1,NG)=AA
+      ABV(2,NG)=BB
+      ABV(3,NG)=RHO
+      ABV(4,NG)=Q4DBDA
+      ABV(5,NG)=XX
+C
+      XC=DCHRG( 6,IJG+NIJ0)
+      YC=DCHRG( 7,IJG+NIJ0)
+      ZC=DCHRG( 8,IJG+NIJ0)
+      DXIJ=DCHRG( 9,IJG+NIJ0)
+      DYIJ=DCHRG(10,IJG+NIJ0)
+      DZIJ=DCHRG(11,IJG+NIJ0)
+C
+      AAI(NG)=DCHRG(12,IJG+NIJ0)
+      AAJ(NG)=DCHRG(13,IJG+NIJ0)
+      BBK(NG)=DCHRG(12,KLG+NKL0)
+      BBL(NG)=DCHRG(13,KLG+NKL0)
+C
+      IF(MMAXS) GO TO 210
+      CV( 1,NG)=AA*(XA-XD)
+      CV( 2,NG)=BB*(XB-XD)
+      CV( 3,NG)=AA*(YA-YD)
+      CV( 4,NG)=BB*(YB-YD)
+      CV( 5,NG)=AA*(ZA-ZD)
+      CV( 6,NG)=BB*(ZB-ZD)
+  210 IF(NMAXS) GO TO 220
+      CV( 7,NG)=AA*(XA-XC)
+      CV( 8,NG)=BB*(XB-XC)
+      CV( 9,NG)=AA*(YA-YC)
+      CV(10,NG)=BB*(YB-YC)
+      CV(11,NG)=AA*(ZA-ZC)
+      CV(12,NG)=BB*(ZB-ZC)
+  220 CONTINUE
+      CV(13,NG)=DXIJ
+      CV(14,NG)=DYIJ
+      CV(15,NG)=DZIJ
+      CV(16,NG)=DXKL
+      CV(17,NG)=DYKL
+      CV(18,NG)=DZKL
+      IF(SPI) DIJSI(NG)=DCHRG(14,IJG+NIJ0)
+      IF(SPJ) DIJSJ(NG)=DCHRG(15,IJG+NIJ0)
+      IF(SPK) DKLSK(NG)=DCHRG(14,KLG+NKL0)
+      IF(SPL) DKLSL(NG)=DCHRG(15,KLG+NKL0)
+C
+      IF(NG.LT.MAXG) GO TO 200
+      LAST=.FALSE.
+      GO TO 310
+C
+  300 CONTINUE
+      LAST=.TRUE.
+  310 CONTINUE
+      NUMG=NG
+      IF(NUMG.EQ.0) GO TO 1000
+C
+      IF(NROOTS.EQ.1) GO TO 480
+      IF (SPI) THEN
+          DO 410 IROOT=2,NROOTS
+          DO 410 IG=1,NUMG
+              DIJSI(IG+NUMG*(IROOT-1))=DIJSI(IG)
+  410     CONTINUE
+      ENDIF
+      IF (SPJ) THEN
+         DO 430 IROOT=2,NROOTS
+         DO 430 IG=1,NUMG
+            DIJSJ(IG+NUMG*(IROOT-1))=DIJSJ(IG)
+  430    CONTINUE
+      ENDIF
+      IF (SPK) THEN
+         DO 450 IROOT=2,NROOTS
+         DO 450 IG=1,NUMG
+            DKLSK(IG+NUMG*(IROOT-1))=DKLSK(IG)
+  450    CONTINUE
+      ENDIF
+      IF (SPL) THEN
+         DO 470 IROOT=2,NROOTS
+         DO 470 IG=1,NUMG
+            DKLSL(IG+NUMG*(IROOT-1))=DKLSL(IG)
+  470    CONTINUE
+      ENDIF
+C
+  480 IF(SKIPI) GO TO 520
+      DO 510 IRXYZ=2,NROOTS*3
+      DO 510 IG=1,NUMG
+      AAI(IG+NUMG*(IRXYZ-1))=AAI(IG)
+  510 CONTINUE
+  520 IF(SKIPJ) GO TO 540
+      DO 530 IRXYZ=2,NROOTS*3
+      DO 530 IG=1,NUMG
+      AAJ(IG+NUMG*(IRXYZ-1))=AAJ(IG)
+  530 CONTINUE
+  540 IF(SKIPK) GO TO 560
+      DO 550 IRXYZ=2,NROOTS*3
+      DO 550 IG=1,NUMG
+      BBK(IG+NUMG*(IRXYZ-1))=BBK(IG)
+  550 CONTINUE
+  560 IF(SKIPL) GO TO 580
+      DO 570 IRXYZ=2,NROOTS*3
+      DO 570 IG=1,NUMG
+      BBL(IG+NUMG*(IRXYZ-1))=BBL(IG)
+  570 CONTINUE
+  580 CONTINUE
+C
+C     ----- COMPUTE ROOTS AND WEIGHTS FOR QUADRATURE -----
+C
+      CALL JKWRYS(RWV,ABV,NUMG)
+C
+C     ----- COMPUTE COEFFICIENTS FOR RECURSION FORMULAE -----
+C
+      CALL JKBCDF(B00,B01,B10,C00,D00,F00,DIJ,DKL,
+     1            ABV,CV,RWV,NUMG,NROOTS)
+C
+C     ----- COMPUTE -X- , -Y- , -Z- INTEGRALS ( 2 CENTERS, 2-D ) -----
+C
+      IF(NUMG*NROOTS*3.LT.MINVEC) THEN
+         CALL JKGNMS(GNM,NUMG*NROOTS*3,NMAX,MMAX,
+     *               B00,B01,B10,C00,D00,F00)
+      ELSE
+         CALL JKGNMV(GNM,NUMG*NROOTS*3,NMAX,MMAX,
+     *               B00,B01,B10,C00,D00,F00)
+      END IF
+C
+C     ----- COMPUTE -X- , -Y- , -Z- INTEGRALS ( 4 CENTERS, 2-D ) -----
+C
+      IF(NUMG*NROOTS*3.LT.MINVEC) THEN
+#if defined(SPEC_CPU)
+         CALL SPEC_JKXYZS(GIJKL,GNKL,GNM,
+     *               NUMG*NROOTS*3,NMAX,MMAX,NIMAX,NJMAX,NKMAX,NLMAX,
+     *               DIJ,DKL,EXPNDI,EXPNDK)
+#else
+         CALL JKXYZS(GIJKL,GIJKL,GNKL,GNKL,GNKL,GNM,GNM,
+     *               NUMG*NROOTS*3,NMAX,MMAX,NIMAX,NJMAX,NKMAX,NLMAX,
+     *               DIJ,DKL,EXPNDI,EXPNDK)
+#endif
+      ELSE
+         CALL JKXYZV(GIJKL,GIJKL,GNKL,GNKL,GNKL,GNM,GNM,
+     *               NUMG*NROOTS*3,NMAX,MMAX,NIMAX,NJMAX,NKMAX,NLMAX,
+     *               DIJ,DKL,EXPNDI,EXPNDK)
+      END IF
+C
+C     ----- COMPUTE -X- , -Y- , -Z- INTEGRALS FOR DERIVATIVES -----
+C
+      IF(NUMG*NROOTS*3.LT.MINVEC) THEN
+         CALL JDXYZS(GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,
+     *               NUMG*NROOTS*3,NIMAX,NJMAX,NKMAX,NLMAX,
+     *               LIT,LJT,LKT,LLT,AAI,AAJ,BBK,BBL,FI,FJ,FK,FL,
+     *               SII,SJJ,SKK,SLL,SIJ,SIK,SIL,SJK,SJL,SKL)
+      ELSE
+         CALL JDXYZV(GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,GIJKL,
+     *               NUMG*NROOTS*3,NIMAX,NJMAX,NKMAX,NLMAX,
+     *               LIT,LJT,LKT,LLT,AAI,AAJ,BBK,BBL,FI,FJ,FK,FL,
+     *               SII,SJJ,SKK,SLL,SIJ,SIK,SIL,SJK,SJL,SKL)
+      END IF
+C
+C     ----- ZERO OUT FIRST TIME AROUND -----
+C
+      IF(FIRST) THEN
+         CALL JKDZER(GINT,FINT,SINT,IJKLG)
+         FIRST=.FALSE.
+      ENDIF
+C
+C     ----- COMPUTE DERIVATIVE INTEGRALS -----
+C
+      IF(NUMG*NROOTS.LT.MINVEC) THEN
+         CALL DSPDFS(NUMG,NROOTS,IJKLG,GINT,FINT,SINT,GIJKL,
+     *               FI,FJ,FK,FL,SII,SJJ,SKK,SLL,SIJ,SIK,SIL,SJK,
+     *               SJL,SKL,XY,XZ,YZ,X,Y,Z,SJ,SK,SL,
+     *               DIJSI,DIJSJ,DKLSK,DKLSL,DAB)
+      ELSE
+         CALL DSPDFV(NUMG,NROOTS,IJKLG,GINT,FINT,SINT,GIJKL,
+     *               FI,FJ,FK,FL,SII,SJJ,SKK,SLL,SIJ,SIK,SIL,SJK,
+     *               SJL,SKL,XY,XZ,YZ,X,Y,Z,SJ,SK,SL,
+     *               DIJSI,DIJSJ,DKLSK,DKLSL,DAB)
+      END IF
+C
+      IF(LAST) GO TO 1000
+      NG=0
+      GO TO 200
+ 1000 IF(NUMG.EQ.0.AND.FIRST) RETURN
+C
+C     ----- PROCESS DERIVATIVE INTEGRALS -----
+C
+      CALL JKDINV(FINT,SINT,IJKLG,FC,NC,DF,LDF,NBF,DEN)
+C
+      IF(OUT) CALL JKDOUT(GINT,FINT,SINT,IJKLG,DAB)
+      RETURN
+      END
+C*MODULE GRD2C   *DECK JKDZER
+      SUBROUTINE JKDZER(GIJKL,FIJKL,SIJKL,IJKLG)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL OUT,DBG
+C
+      COMMON /DSHLT / RTOL,DTOL,VTOL1,VTOL2,VTOLS,OUT,DBG
+      COMMON/DERPAR/IDER,JDER,KDER,LDER,NDER
+      COMMON/DERSHL/FD(12),SD(78)
+      COMMON/SHLNUM/NUMI,NUMJ,NUMK,NUML,IJKL
+      DIMENSION GIJKL(*),FIJKL(12,*),SIJKL(78,*),IJKLG(4,*)
+      PARAMETER (ZERO=0.0D+00)
+C
+C     ----- ZERO OUT -GIJKL- -----
+C
+      IF (OUT) THEN
+        DO 10 N=1,IJKL
+ 10     GIJKL(IJKLG(1,N))=ZERO
+      ENDIF
+      IF(NDER.EQ.0) RETURN
+C
+C     ----- ZERO OUT -FIJKL- -----
+C
+      IF(OUT.OR.NDER.EQ.2) THEN
+        DO 30 N=1,IJKL
+          DO 20 M=1,12
+ 20       FIJKL(M,IJKLG(1,N))=ZERO
+ 30     CONTINUE
+      ENDIF
+C
+      DO 40 I=1,12
+   40 FD(I)=ZERO
+      IF(NDER.EQ.1) RETURN
+C
+C     ----- ZERO OUT -SIJKL- -----
+C
+      IF (OUT) THEN
+        DO 60 N=1,IJKL
+          DO 50 M=1,78
+ 50       SIJKL(M,IJKLG(1,N))=ZERO
+ 60     CONTINUE
+      ENDIF
+C
+      DO 70 I=1,78
+   70 SD(I)=ZERO
+      RETURN
+      END
+C*MODULE GRD2C   *DECK JKGNMS
+      SUBROUTINE JKGNMS(GNM,NG,NMAX,MMAX,B00,B01,B10,C00,D00,F00)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL NMAXS,NMAXP,MMAXS,MMAXP
+C
+      DIMENSION GNM(NG,NMAX,MMAX)
+      DIMENSION C00(NG),D00(NG),F00(NG)
+      DIMENSION B00(NG,1),B01(NG,1),B10(NG,1)
+C
+      COMMON /SHLGNM/NMAXS,NMAXP,MMAXS,MMAXP
+C
+C     ----- G(0,0) -----
+C
+      DO 10 IG=1,NG
+   10   GNM(IG,1,1)=F00(IG)
+      IF(NMAXS.AND.MMAXS) RETURN
+      IF(NMAXS) GO TO 30
+C
+C     ----- G(1,0) = C00 * G(0,0) -----
+C
+      DO 20 IG=1,NG
+   20   GNM(IG,2,1)=C00(IG)*GNM(IG,1,1)
+C
+   30 IF(MMAXS) GO TO 60
+C
+C     ----- G(0,1) = D00 * G(0,0) -----
+C
+      DO 40 IG=1,NG
+   40   GNM(IG,1,2)=D00(IG)*GNM(IG,1,1)
+      IF(NMAXS) GO TO 60
+C
+C     ----- G(1,1) = B00 * G(0,0) + D00 * G(1,0) -----
+C
+      DO 50 IG=1,NG
+   50   GNM(IG,2,2)=B00(IG,1)*GNM(IG,1,1)+D00(IG)*GNM(IG,2,1)
+C
+   60 MAX=MAX0(NMAX-1,MMAX-1)
+      DO 70 M=2,MAX
+        DO 70 IG=1,NG
+   70     B00(IG,M)=B00(IG,M-1)+B00(IG,1)
+C
+      IF(NMAXP) GO TO 120
+C
+C     ----- G(N+1,0) = N * B10 * G(N-1,0) + C00 * G(N,0) -----
+C
+      DO 80 N=2,NMAX-1
+        DO 80 IG=1,NG
+   80     B10(IG,N)=B10(IG,N-1)+B10(IG,1)
+      DO 90 N=2,NMAX-1
+        DO 90 IG=1,NG
+   90     GNM(IG,N+1,1)=B10(IG,N-1)*GNM(IG,N-1,1)+C00(IG)*GNM(IG,N,1)
+      IF(MMAXS) GO TO 120
+C
+C     ----- G(N,1) = N * B00 * G(N-1,0) + D00 * G(N,0) -----
+C
+      DO 100 N=2,NMAX-1
+        DO 100 IG=1,NG
+  100     GNM(IG,N+1,2)=B00(IG,N)*GNM(IG,N,1)+D00(IG)*GNM(IG,N+1,1)
+C
+  120 IF(MMAXP) GO TO 170
+C
+C     ----- G(0,M+1) = M * B01 * G(0,M-1) + D00 * G(O,M) -----
+C
+      DO 130 M=2,MMAX-1
+        DO 130 IG=1,NG
+  130     B01(IG,M)=B01(IG,M-1)+B01(IG,1)
+      DO 140 M=2,MMAX-1
+        DO 140 IG=1,NG
+  140     GNM(IG,1,M+1)=B01(IG,M-1)*GNM(IG,1,M-1)+D00(IG)*GNM(IG,1,M)
+      IF(NMAXS) GO TO 170
+C
+C     ----- G(1,M) = M * B00 * G(0,M-1) + C00 * G(0,M) -----
+C
+      DO 150 M=2,MMAX-1
+        DO 150 IG=1,NG
+  150     GNM(IG,2,M+1)=B00(IG,M)*GNM(IG,1,M)+C00(IG)*GNM(IG,1,M+1)
+C
+  170 IF(NMAXP.OR.MMAXP) RETURN
+C
+C     ----- G(N+1,M) = N * B10 * G(N-1,M  ) -----
+C                    +     C00 * G(N  ,M  )
+C                    + M * B00 * G(N  ,M-1)
+C
+      DO 180 M=2,MMAX-1
+        DO 180 N=2,NMAX-1
+          DO 180 IG=1,NG
+            GNM(IG,N+1,M+1)=B10(IG,N-1)*GNM(IG,N-1,M+1)+
+     1                C00(IG    )*GNM(IG,N  ,M+1)+
+     2                B00(IG,M  )*GNM(IG,N  ,M  )
+  180 CONTINUE
+C
+      RETURN
+      END
+C*MODULE GRD2C   *DECK JKGNMV
+      SUBROUTINE JKGNMV(GNM,NG,NMAX,MMAX,B00,B01,B10,C00,D00,F00)
+      WRITE(6,*) 'SCALAR MACHINES SHOULD NOT CALL -JKGNMV-'
+      CALL ABRT
+      STOP
+      END
+C*MODULE GRD2C   *DECK JKWRYS
+      SUBROUTINE JKWRYS(RWV,ABV,NUMG)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      COMMON /ROOT  / XX,U(9),W(9),NROOTS
+      DIMENSION RWV(2,NUMG,1),ABV(5,1)
+C
+      DO 595 NG=1,NUMG
+         XX=ABV(5,NG)
+         IF(NROOTS.LE.3) CALL RT123
+         IF(NROOTS.EQ.4) CALL ROOT4
+         IF(NROOTS.EQ.5) CALL ROOT5
+         IF(NROOTS.GE.6) CALL ROOT6
+         DO 590 NR=1,NROOTS
+           RWV(1,NG,NR)=U(NR)
+           RWV(2,NG,NR)=W(NR)
+ 590     CONTINUE
+ 595  CONTINUE
+C
+      RETURN
+      END
+
+C jray: SPEC version of JKXYZS. Fixed bad aliasing between arguments
+      SUBROUTINE SPEC_JKXYZS(GIJKL,GNKL,GNM,
+     1 NG,NMAX,MMAX,NIMAX,NJMAX,NKMAX,NLMAX,DIJ,DKL,EXPNDI,EXPNDK)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL EXPNDI,EXPNDK
+      DIMENSION GIJKL(NG*NLMAX*NKMAX,NJMAX,NIMAX)
+      DIMENSION  GNKL(NG,NLMAX,NKMAX,NMAX)
+      DIMENSION   GNM(NG,NMAX,MMAX)
+      DIMENSION   DIJ(NG)
+      DIMENSION   DKL(NG)
+C
+C     ----- G(N,K,L) -----
+C
+      IF (.NOT.EXPNDK) THEN
+C
+        DO 30 NK=1,NKMAX
+          DO 10 NL=1,NLMAX
+            DO 10  N=1,NMAX
+              DO 10 IG=1,NG
+   10           GNKL(IG,NL,NK,N)=GNM(IG,N,NL)
+          IF(NK.EQ.NKMAX) GO TO 30
+          MAX=MMAX-NK
+          DO 20  M=1,MAX
+            DO 20  N=1,NMAX
+            DO 20 IG=1,NG
+   20         GNM(IG,N,M)=DKL(IG)*GNM(IG,N,M)+GNM(IG,N,M+1)
+   30   CONTINUE
+C
+      ELSE
+C
+        DO 70 NL=1,NLMAX
+          DO 50 NK=1,NKMAX
+            DO 50  N=1,NMAX
+              DO 50 IG=1,NG
+   50           GNKL(IG,NL,NK,N)=GNM(IG,N,NK)
+          IF(NL.EQ.NLMAX) GO TO 70
+          MAX=MMAX-NL
+          DO 60  M=1,MAX
+            DO 60  N=1,NMAX
+              DO 60 IG=1,NG
+   60           GNM(IG,N,M)=DKL(IG)*GNM(IG,N,M)+GNM(IG,N,M+1)
+   70   CONTINUE
+C
+      ENDIF
+C
+C     ----- G(I,J,K,L) -----
+C
+      IF (.NOT.EXPNDI) THEN
+C
+        DO 130 NI=1,NIMAX
+C SPEC CPU2006
+C Change made to loop nest to clarify aliasing
+          DO 110  NJ=1,NJMAX
+            DO 110 NK=1,NKMAX
+              DO 110 NL=1,NLMAX
+                DO 110 IG=1,NG
+  110  GIJKL(IG+NG*(NL-1+NLMAX*(NK-1)),NJ,NI)=
+     1       GNKL(IG,NL,NK,NJ)
+          IF(NI.EQ.NIMAX) GO TO 130
+          MAX=NMAX-NI
+          DO 120  N=1,MAX
+            DO 120 NK=1,NKMAX
+              DO 120 NL=1,NLMAX
+                DO 120 IG=1,NG
+  120             GNKL(IG,NL,NK,N)=DIJ(IG)*GNKL(IG,NL,NK,N)+
+     1                             GNKL(IG,NL,NK,N+1)
+  130   CONTINUE
+C
+      ELSE
+C
+        DO 170 NJ=1,NJMAX
+          DO 150 NI=1,NIMAX
+C SPEC CPU2006
+C Change made to loop nest to clarify aliasing
+            DO 150 NK=1,NKMAX
+              DO 150 NL=1,NLMAX
+                DO 150 IG=1,NG
+  150         GIJKL(IG+NG*(NL-1+NLMAX*(NK-1)),NJ,NI)=GNKL(IG,NL,NK,NI)
+          IF(NJ.EQ.NJMAX) GO TO 170
+          MAX=NMAX-NJ
+          DO 160  N=1,MAX
+            DO 160 NK=1,NKMAX
+              DO 160 NL=1,NLMAX
+                DO 160 IG=1,NG
+  160             GNKL(IG,NL,NK,N)=DIJ(IG)*GNKL(IG,NL,NK,N)+
+     1                             GNKL(IG,NL,NK,N+1)
+  170   CONTINUE
+      ENDIF
+      RETURN
+      END
+
+
+C*MODULE GRD2C   *DECK JKXYZS
+      SUBROUTINE JKXYZS(GIJKL,HIJKL,GNKL,HNKL,FNKL,GNM,HNM,
+     1 NG,NMAX,MMAX,NIMAX,NJMAX,NKMAX,NLMAX,DIJ,DKL,EXPNDI,EXPNDK)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL EXPNDI,EXPNDK
+      DIMENSION GIJKL(NG*NLMAX*NKMAX,NJMAX,NIMAX)
+      DIMENSION HIJKL(NG*NLMAX*NKMAX*NJMAX,NIMAX)
+      DIMENSION  GNKL(NG,NLMAX,NKMAX,NMAX)
+      DIMENSION  HNKL(NG*NLMAX*NKMAX,NMAX)
+      DIMENSION  FNKL(NG*NLMAX*NKMAX*NMAX)
+      DIMENSION   GNM(NG,NMAX,MMAX)
+      DIMENSION   DIJ(NG)
+      DIMENSION   DKL(NG)
+C
+#if !defined(SPEC_CPU)
+CDIR$ NOVECTOR
+#endif
+C
+C     ----- G(N,K,L) -----
+C
+      IF (.NOT.EXPNDK) THEN
+C
+        DO 30 NK=1,NKMAX
+          DO 10 NL=1,NLMAX
+            DO 10  N=1,NMAX
+              DO 10 IG=1,NG
+   10           GNKL(IG,NL,NK,N)=GNM(IG,N,NL)
+          IF(NK.EQ.NKMAX) GO TO 30
+          MAX=MMAX-NK
+          DO 20  M=1,MAX
+            DO 20  N=1,NMAX
+            DO 20 IG=1,NG
+   20         GNM(IG,N,M)=DKL(IG)*GNM(IG,N,M)+GNM(IG,N,M+1)
+   30   CONTINUE
+C
+      ELSE
+C
+        DO 70 NL=1,NLMAX
+          DO 50 NK=1,NKMAX
+            DO 50  N=1,NMAX
+              DO 50 IG=1,NG
+   50           GNKL(IG,NL,NK,N)=GNM(IG,N,NK)
+          IF(NL.EQ.NLMAX) GO TO 70
+          MAX=MMAX-NL
+          DO 60  M=1,MAX
+            DO 60  N=1,NMAX
+              DO 60 IG=1,NG
+   60           GNM(IG,N,M)=DKL(IG)*GNM(IG,N,M)+GNM(IG,N,M+1)
+   70   CONTINUE
+C
+      ENDIF
+C
+C     ----- G(I,J,K,L) -----
+C
+      IF (.NOT.EXPNDI) THEN
+C
+        DO 130 NI=1,NIMAX
+          DO 110 IGLKJ=1,NG*NLMAX*NKMAX*NJMAX
+  110       HIJKL(IGLKJ,NI)=FNKL(IGLKJ)
+          IF(NI.EQ.NIMAX) GO TO 130
+          MAX=NMAX-NI
+          DO 120  N=1,MAX
+            DO 120 NK=1,NKMAX
+              DO 120 NL=1,NLMAX
+                DO 120 IG=1,NG
+  120             GNKL(IG,NL,NK,N)=DIJ(IG)*GNKL(IG,NL,NK,N)+
+     1                             GNKL(IG,NL,NK,N+1)
+  130   CONTINUE
+C
+      ELSE
+C
+        DO 170 NJ=1,NJMAX
+          DO 150 NI=1,NIMAX
+            DO 150 IGLK=1,NG*NLMAX*NKMAX
+  150         GIJKL(IGLK,NJ,NI)=HNKL(IGLK,NI)
+          IF(NJ.EQ.NJMAX) GO TO 170
+          MAX=NMAX-NJ
+          DO 160  N=1,MAX
+            DO 160 NK=1,NKMAX
+              DO 160 NL=1,NLMAX
+                DO 160 IG=1,NG
+  160             GNKL(IG,NL,NK,N)=DIJ(IG)*GNKL(IG,NL,NK,N)+
+     1                             GNKL(IG,NL,NK,N+1)
+  170   CONTINUE
+      ENDIF
+C
+#if !defined(SPEC_CPU)
+CDIR$ VECTOR
+#endif
+C
+      RETURN
+      END
+C*MODULE GRD2C   *DECK JKXYZV
+      SUBROUTINE JKXYZV(GIJKL,HIJKL,GNKL,HNKL,FNKL,GNM,HNM,
+     1 NG,NMAX,MMAX,NIMAX,NJMAX,NKMAX,NLMAX,DIJ,DKL,EXPNDI,EXPNDK)
+      WRITE(6,*) 'SCALAR MACHINES SHOULD NOT CALL -JKXYZV-'
+      CALL ABRT
+      STOP
+      END

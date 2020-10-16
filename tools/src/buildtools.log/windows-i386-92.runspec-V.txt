@@ -1,0 +1,32 @@
+runspec v4147 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+Using 'windows-i386 ' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 92
+ Benchmarks version: 92
+      Tools version: 92
+    runspec version: 4147 ($Id: runspec 4147 2006-04-13 23:48:00Z cloyce $)
+
+Tools information:
+ Tools package installed: windows-i386 
+ File locking method: flock(2) (probably not network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0777 | 0     | 0     |  200704 | 21-Apr-2006 21:51:55 | specmake.exe
+0777 | 0     | 0     |   40960 | 21-Apr-2006 21:53:23 | specperl.exe
+0777 | 0     | 0     |   90112 | 21-Apr-2006 21:52:13 | specinvoke.exe
+0777 | 0     | 0     |   94208 | 21-Apr-2006 21:52:14 | specinvoke_pm.exe
+0777 | 0     | 0     |  131072 | 21-Apr-2006 21:52:05 | specbzip2.exe
+0777 | 0     | 0     |   65536 | 21-Apr-2006 21:52:12 | specmd5sum.exe
+0666 | 0     | 0     |    7585 | 17-Jan-2006 15:16:50 | specdiff
+0666 | 0     | 0     |   85718 | 31-Aug-2005 16:31:57 | specpp
+0666 | 0     | 0     |   89976 | 21-Apr-2006 21:48:39 | runspec
+0777 | 0     | 0     |    1520 | 17-Jan-2006 15:16:50 | runspec.bat
+0666 | 0     | 0     |  897024 | 21-Apr-2006 21:53:22 | perl58.dll
+
+Version info for specinvoke (C:\cpu2006\bin\specinvoke.exe): Version: 3478
+Version info for specmake (C:\cpu2006\bin\specmake.exe): GNU Make 3.80
+Version info for specbzip2 (C:\cpu2006\bin\specbzip2.exe): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (C:\cpu2006\bin\specperl.exe): filepp version 1.7.1SPEC
+Version info for specperl (C:\cpu2006\bin\specperl.exe): This is specperl, v5.8.7 built for MSWin32-x86-multi-thread
+                           For more detail on specperl, say 'specperl -V'

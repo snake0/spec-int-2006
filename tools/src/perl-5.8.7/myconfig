@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# This script is designed to provide a handy summary of the configuration
+# information being used to build perl. This is especially useful if you
+# are requesting help from comp.lang.perl.misc on usenet or via mail.
+
+# Note that the text lines /^Summary of/ .. /^\s*$/ are copied into Config.pm.
+cat <<'!NO!SUBS!'
+Summary of my perl5 (revision 5 version 8 subversion 7) configuration:
+  Platform:
+    osname=linux, osvers=2.6.32-042stab076.8, archname=x86_64-linux
+    uname='linux victory 2.6.32-042stab076.8 #1 smp tue may 14 20:38:14 msk 2013 x86_64 x86_64 x86_64 gnulinux '
+    config_args='-dOes -Ud_flock -Ddosuid=undef -Dprefix=/var/services/homes/spparmar/spec2006/tools/output -Dd_bincompat3=undef -A ldflags=-L/var/services/homes/spparmar/spec2006/tools/output/lib -A ccflags=-I/var/services/homes/spparmar/spec2006/tools/output/include -Ui_db -Ui_gdbm -Ui_ndbm -Ui_dbm -Uuse5005threads -Dcccdlflags=-fPIC -shared -Dlddlflags=-shared -fPIC -Duseshrplib=true'
+    hint=recommended, useposix=true, d_sigaction=define
+    usethreads=undef use5005threads=undef useithreads=undef usemultiplicity=undef
+    useperlio=define d_sfio=undef uselargefiles=define usesocks=undef
+    use64bitint=define use64bitall=define uselongdouble=undef
+    usemymalloc=n, bincompat5005=undef
+  Compiler:
+    cc='cc', ccflags ='-I/var/services/homes/spparmar/spec2006/tools/output/include -fno-strict-aliasing -pipe -I/usr/local/include -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64',
+    optimize='-O2',
+    cppflags='-I/var/services/homes/spparmar/spec2006/tools/output/include -fno-strict-aliasing -pipe -I/usr/local/include'
+    ccversion='', gccversion='4.7.2', gccosandvers=''
+    intsize=4, longsize=8, ptrsize=8, doublesize=8, byteorder=12345678
+    d_longlong=define, longlongsize=8, d_longdbl=define, longdblsize=16
+    ivtype='long', ivsize=8, nvtype='double', nvsize=8, Off_t='off_t', lseeksize=8
+    alignbytes=8, prototype=define
+  Linker and Libraries:
+    ld='cc', ldflags =' -L/var/services/homes/spparmar/spec2006/tools/output/lib -L/usr/local/lib -L/usr/lib/x86_64-linux-gnu'
+    libpth=/usr/local/lib /usr/lib/x86_64-linux-gnu /lib /usr/lib
+    libs=-lnsl -ldl -lm -lcrypt -lutil -lc
+    perllibs=-lnsl -ldl -lm -lcrypt -lutil -lc
+    libc=, so=so, useshrplib=true, libperl=libperl.so
+    gnulibc_version='2.15'
+  Dynamic Linking:
+    dlsrc=dl_dlopen.xs, dlext=so, d_dlsymun=undef, ccdlflags='-Wl,-E -Wl,-rpath,/var/services/homes/spparmar/spec2006/tools/output/lib/perl5/5.8.7/x86_64-linux/CORE'
+    cccdlflags='-fPIC -shared', lddlflags='-shared -fPIC -L/var/services/homes/spparmar/spec2006/tools/output/lib -L/usr/local/lib -L/usr/lib/x86_64-linux-gnu'
+
+!NO!SUBS!

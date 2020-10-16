@@ -1,0 +1,896 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Windows Install SPEC CPU2006</title>
+<!-- You'll want a nice wide screen when editing this .......................................................................... -->
+
+<style type="text/css">
+@import url(css/cpu2006docs.css);
+</style>
+
+</head>
+<body> 
+
+
+<h1>Installing SPEC CPU2006 Under Microsoft Windows </h1>
+<p style="font-size:80%">Last updated: 03 Aug 2006 jh/mc
+<br />(To check for possible updates to this document,
+please see <a href="http://www.spec.org/cpu2006 Docs/">http://www.spec.org/cpu2006/Docs/</a>)</p>
+
+<hr />
+
+
+<p style="font-size:80%; margin-bottom:0cm;">Contents</p>
+
+<ul style="margin-top:0cm; font-size:80%">
+  <li> <a href="#steps">Installation Steps</a></li>
+  <li> <a href="#text">Using Text Files on Windows</a></li>
+  <li> <a href="#example">Example Installation</a></li>
+  <li> <a href="#appendix">Appendix: the DVD drive is on system A, but I want to install on system B.  What do I do?</a>
+  <ol>
+      <li><a href="#network">Network install</a></li>
+      <li><a href="#tarball">Tar file</a></li>
+  </ol></li>
+</ul> 
+
+
+<h2>Introduction</h2>
+
+<p>The SPEC CPU2006 suite has been tested under Unix, Linux, Mac OS X and Windows XP systems.  Your DVD can be installed
+under many operating systems.  </p>
+
+   <p class="l1"><span class="alarm">Reminder: the SPEC license allows you to install on multiple systems as you may wish
+   within your institution; but you may not share the software with the public.</span></p>
+
+<p style="margin-bottom:.1cm">This document covers the installation procedure for SPEC CPU2006 under Microsoft Windows.</p>
+
+<p class="commentary" style="margin-top:.3cm" >Note: Unless otherwise specified, refererences to "Windows" in this document
+apply to Windows XP, and Windows Advanced Server.  Later and/or earlier versions of Windows/NT-based systems (such as Windows
+2000) might also work, but have not been tested.  Windows/98 and Windows/Me will definitely not work.</p>
+
+<h2 id="steps">Installation Steps</h2>
+
+<p>The installation procedure for Windows is as follows:</p>
+
+<ol>
+<li><p> Review the hardware and software requirements, in
+     <a href="system-requirements.html">system-requirements.html</a></p>
+
+      <p class="commentarystart" style="margin-top:.5em"> <i>Note:</i> links to SPEC CPU2006 documents on this web page
+      assume that you are reading the page from a directory that also contains the other SPEC CPU2006 documents.  If by
+      some chance you are reading this web page from a location where the links do not work, try accessing the referenced
+      documents at one of the following locations:</p>
+      <ul class="commentaryul">
+      <li class="commentaryli"><a href="http://www.spec.org/cpu2006/Docs/">www.spec.org/cpu2006/Docs/</a></li>
+      <li class="commentaryli">The <tt><b>$SPEC/Docs/</b></tt> directory on a system where SPEC CPU2006 has been
+      installed.</li>
+      <li class="commentaryli">The <tt><b>Docs/</b></tt> directory on your SPEC CPU2006 distribution DVD.</li>
+      </ul>
+      <p class="commentaryend"></p>
+
+<p><b>Note: the steps that follow assume that your DVD drive is on the same system as where you wish to install.  If it is on
+a different system, please see the <a href="#appendix">appendix</a>.</b></p>
+
+</li>
+
+<li id="openwin"><p> Open a Command Prompt windows (formerly known as an "MSDOS Window").  Typically, this is done by
+selecting: <br />Start--&gt;All Programs--&gt;Accessories--&gt;Command Prompt.   </p>
+
+   <p>Adjust the properties to allow you to see plenty of lines scrolled off the top (for example, 9000).  Click the upper
+   left corner of the Command Prompt window, scroll down to "Properties", click the "Layout" tab, and in the section labelled
+   "Screen Buffer Size" enter a new value for "Height".
+</p></li>
+
+<li><p> <a name="tempset"> </a>Check to see whether or not the temp environment variable points to a
+directory that can be used to hold for temporary files.</p>
+
+   <pre>
+       C:\&gt; <b>echo %temp%</b>
+       %temp% </pre>
+
+   <p>If it's unset (just prints <tt>%temp%</tt>), you should set it to the full path (with drive letter) to a directory
+   that can be used as scratch space.  For example, if Kumaran would like to use a temporary directory underneath his 
+   directory on drive K:, he could type:</p>
+
+   <p class="ex">C:\&gt; <b>set temp=K:\KUMARAN\TEMP</b> </p>
+
+</li>
+
+<li><p> Decide where you want to install the CPU2006 suite.  You should make sure that your chosen destination disk has at
+least 8GB free.  (For more information on disk usage, see <a href="system-requirements.html">system-requirements.html</a>.)
+For the following examples, we will assume that your destination is on drive <tt>D:</tt>, in the directory <tt>\cpu2006</tt>.
+</p></li>
+
+<li><p> Change to the DVD directory.  For the following examples, we'll assume that your DVD is mounted on drive <tt>E:</tt>.
+
+</p></li>
+
+<li><p> You're now ready to run the installer.  The format for this command is</p>
+
+   <p class="ex">install.bat  destination_drive  destination_directory </p>
+   
+   <p>For example, if your DVD is in drive E:, and you  want to install CPU2006 on drive D:, you could type:</p>
+
+   <p class="ex"> C:\&gt; <b>E:</b> <br />
+                  E:\&gt; <b>install.bat&nbsp;&nbsp;D:&nbsp;&nbsp;\cpu2006 </b></p>
+
+   <p style="background:#ffffc0; font-size:120%;color:red">Please notice the space between <kbd>D:</kbd> and <kbd>\cpu2006</kbd>.  
+   It's very important.</p>
+
+   <p>You should see a message similar to the following:</p>
+
+   <pre>
+      The environment variable SPEC should point to the source of the
+      SPEC distribution (as an absolute path).  I will now try to set
+      the variable for you...
+
+      SPEC is set to E:\
+      If this is NOT what you want, press control-C
+      Press any key to continue . . .  </pre>
+
+   <p>If you see a message similar to the above, just press return.  If you receive an error message such as:</p>
+   <p class="ex">Access is denied</p>
+   <p>then please verify that <kbd>%temp%</kbd> is defined (see <a href="#tempset">above</a>).  </p>
+
+   <p>If you see the message</p>
+   <p class="ex">First parameter must be in the form c:</p>
+   <p>make sure that you included the space between the drive name and the directory.  If you did, and you still see the
+   message, then make sure that your path includes the usual system directories.  If it doesn't, you may be able to fix it by
+   typing:</p>
+
+   <p class="ex">E:\&gt; <b>set path=%systemroot%\;%systemroot%\system32;%path%</b></p>
+
+   <p>If all goes well, you'll see several messages indicating that files are being unpacked.  Please be patient - although
+   only a few messages are printed, thousands of files are installed.</p>
+
+   <p>The installation will consume around 1.5GB on your destination disk.</p>
+
+   <p>After this step completes, you will find yourself in the destination directory that you selected.
+</p></li>
+
+<li id="dotheshrc"><p> Read the comments to the file</p>
+
+   <p class="ex">shrc.bat </p>
+
+   <p>and make the appropriate edits for your compiler paths.  Caution: you may find that the lines are not correctly
+   formatted (the text appears to be all run together) when you edit this file.  If so, see the section below: <a
+   href="#text">Using Text Files on Windows</a>.
+</p></li>
+
+<li><p> Set the environment, using your edited shrc.  For example:</p>
+
+   <p class="ex"> D:\cpu2006&gt; <b>shrc.bat</b></p>
+</li>
+
+<li><p> Test that you can build a benchmark using the config file supplied for your system.  
+    Example config files can be found in <span class="ttnobr">%SPEC%\config</span>.  (For an 
+   introduction to config files, see <a href="runspec.html#section1.2">"About Config Files" 
+   in runspec.html</a>.)  </p>
+
+    <p>In the example below, "^" (often called "hat" or "carat") indicates line continuation:</p>
+
+    <p class="ex">
+       D:\cpu2006&gt; <b>runspec --action=build --tune=base ^</b> <br />
+       More?  <b>--config=windows64-amd64-pgi.cfg 401.bzip2</b> </p>
+
+    <p>The <kbd>--tune=base</kbd> indicates that we want to use only the simple
+    tuning, if the file contains more than one kind of tuning.  </p>
+
+
+</li>
+
+<li><p> Test that you can run a benchmark, using the minimal input set - the "test" workload.  For example:</p>
+
+    <p class="ex">
+      D:\cpu2006&gt; <b>runspec --size=test --iterations=1 --noreportable ^</b> <br />
+      More?  <b>--config=windows64-amd64-pgi.cfg 401.bzip2</b> </p>
+
+    <p>The <kbd>--noreportable</kbd> ensures that the tools will allow us to run just a single benchmark instead of the whole
+    suite.</p>
+</li>
+
+<li><p> Test that you can run a benchmark using the real input set - the "reference" workload.  For example:</p>
+
+    <p class="ex">
+       D:\cpu2006&gt; <b>runspec --size=ref --config=windows64-amd64-pgi.cfg ^</b> <br />
+       More?   <b>--iterations=1 --noreportable 401.bzip2</b> </p>
+
+</li>
+
+<li><p> Have a look at <a href="runspec.html">runspec.html</a> to learn how to do a full run of the suite.
+</p></li>
+</ol>
+
+<hr />
+
+<h2 id="text">Using Text Files on Windows</h2>
+
+   <p>There are many files in the SPEC CPU2006 kit that contain text.  Unfortunately, Unix systems and Windows systems have
+   different conventions for storing text files.  Sometimes, a text file formatted for Windows will appear on Unix as if it
+   has extra Control-M characters.  Sometimes, a text file formatted for Unix will appear on Windows as if all the lines were
+   joined together.</p>
+
+   <p>There are at least three ways for Windows users to correctly view and edit text files that originated on a Unix
+   system:</p>
+
+<ol>
+     <li><p> Use WordPad.  WordPad can commonly be found by <br />
+           Start--&gt;All Programs--&gt;Accessories--&gt;WordPad
+     </p></li>
+
+     <li><p> Use a Command Prompt and type "Edit".  This alternative works only if the file has a short name with 8
+     characters or fewer, a dot, and then 3 characters or fewer.  If you are trying to use Edit with a longer file name, you
+     can discover that there is an "8 dot 3" synonym for it by typing: "<kbd>dir /x</kbd>".  </p></li>
+
+     <li><p> Use the editor "vi".  Although vi originated on Unix systems, it is also often found on Windows systems.  For
+     example:</p>
+       <ul style="list-style:square">
+       <li><p>There is a free ("charityware") version with some non-traditional features known as "Vi IMproved" (at <a
+        href="http://www.vim.org/">http://www.vim.org/</a>).</p></li>
+
+        <li><p>There is a version with the traditional Unix features in the MKS Toolkit (<a
+        href="http://www.datafocus.com/products/tk/">http://www.datafocus.com/products/tk/</a>).</p></li>
+
+        <li><p>Also, there was a version with a subset of the traditional Unix vi features in the "Microsoft Windows Windows
+        Workstation 4.0 Resource Kit" (information available at <a
+        href="http://mspress.microsoft.com">http://mspress.microsoft.com</a>); perhaps later resource kit versions also have
+        it, but this has not been checked.</p></li>
+        </ul>
+
+     <p>Note that mention of these versions of vi is not intended as an endorsement by SPEC.</p>
+
+     </li>
+
+</ol>
+
+<hr />
+
+<h2 id="example">Example Installation </h2>
+
+<p>Here is a complete Windows installation, with commentary.  We assume that Steps 1 and 2 are already done (from the list of
+Installation Steps earlier in this document).</p>
+
+<p id="exstep3" class="commentarysnugbot" >Step 3: Check the temp environment variable.</p>
+<pre>
+C:\&gt;<b>echo %temp%</b>
+C:\TEMP
+</pre>
+<p id="exstep4" class="commentarysnugbot">Step 4: Create a place for the suite, and check space.</p>
+<pre>
+C:\&gt;<b>D:</b>
+D:\&gt;<b>mkdir cpu2006</b>
+D:\&gt;<b>cd cpu2006</b>
+D:\cpu2006&gt;<b>dir</b>
+ Volume in drive D has no label
+ Volume Serial Number is F843-4C63
+
+ Directory of D:\cpu2006
+
+06/01/2006  06:05 PM    &lt;DIR&gt;          .
+06/01/2006  06:05 PM    &lt;DIR&gt;          ..
+               0 File(s)              0 bytes
+               2 Dir(s)   6,964,436,992 bytes free
+</pre>
+<p class="commentarysnugtop">Note that we have about 7GB of space on the destination drive, which is a bit smaller than
+recommended.  This is enough space to demonstrate an installation, but would quickly fill up for actual "reportable"
+runs.</p>
+
+<p id="exstep5" class="commentarysnugbot">Step 5: change to the drive where the DVD is mounted</p>
+<pre>
+D:\cpu2006&gt;<b>e:</b>
+</pre>
+<p id="exstep6" class="commentarysnugbot">Step 6: Actually do the installation.  Note the presence of a space in between "D:" and
+"\cpu2006".  </p>
+
+<pre>
+E:\&gt;<b>install.bat D: \cpu2006</b>
+The environment variable SPEC should point to the source of the
+SPEC distribution as an absolute path.  I will now try to set
+the variable for you...
+
+SPEC is set to E:\
+If this is NOT what you want, press control-C
+Press any key to continue . . .
+Installing from "E:\"
+
+ Depending on the speed of the drive holding your installation media
+ and the speed of your destination disk, this may take more than 5 minutes.
+ Please be patient.
+
+Unpacking CPU2006 base files (7 MB)
+Unpacking 400.perlbench benchmark and data files (61.5 MB)
+Unpacking 401.bzip2 benchmark and data files (110.6 MB)
+Unpacking 403.gcc benchmark and data files (43 MB)
+Unpacking 410.bwaves benchmark and data files (0.1 MB)
+Unpacking 416.gamess benchmark and data files (16.8 MB)
+Unpacking 429.mcf benchmark and data files (6.9 MB)
+Unpacking 433.milc benchmark and data files (0.6 MB)
+Unpacking 434.zeusmp benchmark and data files (1.1 MB)
+Unpacking 435.gromacs benchmark and data files (13 MB)
+Unpacking 436.cactusADM benchmark and data files (3.3 MB)
+Unpacking 437.leslie3d benchmark and data files (0.3 MB)
+Unpacking 444.namd benchmark and data files (7.5 MB)
+Unpacking 445.gobmk benchmark and data files (9.2 MB)
+Unpacking 447.dealII benchmark and data files (70.2 MB)
+Unpacking 450.soplex benchmark and data files (321 MB)
+Unpacking 453.povray benchmark and data files (10.3 MB)
+Unpacking 454.calculix benchmark and data files (26 MB)
+Unpacking 456.hmmer benchmark and data files (57 MB)
+Unpacking 458.sjeng benchmark and data files (0.4 MB)
+Unpacking 459.GemsFDTD benchmark and data files (2.6 MB)
+Unpacking 462.libquantum benchmark and data files (0.2 MB)
+Unpacking 464.h264ref benchmark and data files (52.9 MB)
+Unpacking 465.tonto benchmark and data files (6.8 MB)
+Unpacking 470.lbm benchmark and data files (4.7 MB)
+Unpacking 471.omnetpp benchmark and data files (2.9 MB)
+Unpacking 473.astar benchmark and data files (5.7 MB)
+Unpacking 481.wrf benchmark and data files (67.1 MB)
+Unpacking 482.sphinx3 benchmark and data files (51.7 MB)
+Unpacking 483.xalancbmk benchmark and data files (213.6 MB)
+Unpacking 998.specrand benchmark and data files (4.1 MB)
+Unpacking 999.specrand benchmark and data files (4.1 MB)
+
+Checking the integrity of your source tree...
+
+ Depending on the amount of memory in your system, and the speed of your
+ destination disk, this may take more than 10 minutes.
+ Please be patient.
+
+Unpacking tools binaries
+Setting SPEC environment variable to D:\cpu2006
+Checking the integrity of your binary tools...
+Installation completed!
+</pre>
+
+<p id="exstep7" class="commentarysnugbot">Step 7: Edit shrc.bat.  This was done in a <tt>notepad</tt> session, which is not shown, but the
+"fc" command is used below to compare the original shrc.bat to our modified copy:</p>
+
+<pre>
+D:\cpu2006&gt;<b>copy shrc.bat shrc.bat.as-distributed</b>
+        1 file(s) copied.
+
+D:\cpu2006&gt;<b>notepad shrc.bat</b>
+
+D:\cpu2006&gt;<b>fc shrc.bat.as-distributed shrc.bat</b>
+Comparing files shrc.bat.as-distributed and SHRC.BAT
+***** shrc.bat.as-distributed
+rem the line that follows (just remove the word 'rem').
+rem set SHRC_COMPILER_PATH_SET=yes
+rem
+***** SHRC.BAT
+rem the line that follows (just remove the word 'rem').
+set SHRC_COMPILER_PATH_SET=yes
+rem
+*****
+
+***** shrc.bat.as-distributed
+
+rem The paths above are only examples; be sure to replace the paths with
+***** SHRC.BAT
+
+set PGI=D:\PROGRA~1\PGI
+set PATH=D:\Program Files\Microsoft Platform SDK\bin\win64\x86\AMD64;%PATH%
+set PATH=%PGI%\win64\6.2-1\bin;%PATH%
+
+rem The paths above are only examples; be sure to replace the paths with
+*****
+</pre>
+<p id="exstep8" class="commentarysnugbot">Step 8: set the environment</p>
+
+<pre>
+D:\cpu2006&gt;<b>shrc</b>
+
+PATH=^
+"D:\cpu2006\bin";^
+D:\PROGRA~1\PGI\win64\6.2-1\bin;^
+D:\Program Files\Microsoft Platform SDK\bin\win64\x86\AMD64;^
+D:\WINDOWS\system32;^
+D:\WINDOWS
+D:\cpu2006&gt;<b>pgcc -V</b>
+
+pgcc 6.2-1 64-bit target on x86-64 Windows
+Copyright 1989-2000, The Portland Group, Inc.  All Rights Reserved.
+Copyright 2000-2006, STMicroelectronics, Inc.  All Rights Reserved.
+</pre>
+
+<p id="exstep9" class="commentarysnugbot">Step 9.  Use runspec to do a test build:</p>
+
+<pre>
+D:\cpu2006&gt;<b>runspec --action=build --tune=base --config=windows64-amd64-pgi.cfg 401.bzip2</b>
+runspec v4283 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+Using 'windows-i386 ' tools
+Reading MANIFEST... 18018 files
+Loading runspec modules...............
+Locating benchmarks...found 31 benchmarks in 13 benchsets.
+Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, PostScript, raw, Screen, Submission Check
+Reading config file 'D:/cpu2006/config/windows64-amd64-pgi.cfg'
+Benchmarks selected: 401.bzip2
+Compiling Binaries
+  Building 401.bzip2 test base win64-pgi default: (build_base_win64-pgi.0000)
+
+Build successes: 401.bzip2(base)
+
+Build Complete
+
+The log for this run is in D:\cpu2006/result/CPU2006.005.log
+
+runspec finished at Thu Jun  1 19:11:37 2006; 80 total seconds elapsed
+D:\cpu2006&gt; </pre>
+<p class="commentarysnugtop">At this point, we've accomplished a lot.  The SPEC tree is
+installed, and we have verified that a benchmark can be 
+compiled using the installed C compiler.  </p>
+
+
+<p id="exstep10" class="commentarysnugbot">Step 10. Now try running a benchmark, using the 
+minimal test workload.  The test workload runs in a tiny 
+amount of time and does a minimal verification that the 
+benchmark executable can at least start up: </p>
+
+<pre>
+D:\cpu2006&gt;<b>runspec --size=test --iterations=1 --noreportable --config=windows64-amd64-pgi.cfg 401.bzip2</b>
+runspec v4283 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+Using 'windows-i386 ' tools
+Reading MANIFEST... 18018 files
+Loading runspec modules...............
+Locating benchmarks...found 31 benchmarks in 13 benchsets.
+Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, PostScript, raw, Screen, Submission Check
+Reading config file 'D:/cpu2006/config/windows64-amd64-pgi.cfg'
+Benchmarks selected: 401.bzip2
+Compiling Binaries
+  Up to date 401.bzip2 test base win64-pgi default
+
+
+Parsing Flags
+  Looking at 401.bzip2 base win64-pgi default: done
+Flag Parsing Complete
+
+Setting Up Run Directories
+  Setting up 401.bzip2 test base win64-pgi default: created (run_base_test_win64-pgi.0000)
+Running Benchmarks
+  Running 401.bzip2 test base win64-pgi default
+Success: 1x401.bzip2
+Producing Reports
+mach: default
+  ext: win64-pgi
+    size: test
+      set: int
+        format: raw -&gt; D:/cpu2006/result/CINT2006.006.test.rsf
+        format: flags -&gt; D:/cpu2006/result/CINT2006.006.test.flags.html
+        format: ASCII -&gt; D:/cpu2006/result/CINT2006.006.test.txt
+        format: PDF -&gt; D:/cpu2006/result/CINT2006.006.test.pdf
+      set: fp
+
+The log for this run is in D:\cpu2006/result/CPU2006.006.log
+
+runspec finished at Thu Jun  1 19:14:47 2006; 75 total seconds elapsed
+</pre>
+<p class="commentarysnugtop">Notice about 15 lines up where it says "<tt>Success: 1x401.bzip2</tt>".  That is
+what we want to see.</p>
+
+<p id="exstep11" class="commentarysnugbot">Step 11.  So, let's try running 401.bzip2 with the real workload.  This is going to take a while  - on the
+system used for the sample installation, about an hour.</p>
+<pre>
+D:\cpu2006&gt;<b>runspec --size=ref --iterations=1 --noreportable --config=windows64-amd64-pgi.cfg 401.bzip2</b>
+runspec v4283 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+Using 'windows-i386 ' tools
+Reading MANIFEST... 18018 files
+Loading runspec modules...............
+Locating benchmarks...found 31 benchmarks in 13 benchsets.
+Locating output formats: ASCII, config, CSV, flags, html, mail, PDF,
+PostScript, raw, Screen, Submission Check
+Reading config file 'D:/cpu2006/config/windows64-amd64-pgi.cfg'
+Benchmarks selected: 401.bzip2
+Compiling Binaries
+  Up to date 401.bzip2 ref base win64-pgi default
+
+
+Parsing Flags
+  Looking at 401.bzip2 base win64-pgi default: done
+Flag Parsing Complete
+
+Setting Up Run Directories
+  Setting up 401.bzip2 ref base win64-pgi default: created (run_base_ref_win64-pgi.0000)
+Running Benchmarks
+  Running 401.bzip2 ref base win64-pgi default
+Success: 1x401.bzip2
+Producing Reports
+mach: default
+  ext: win64-pgi
+    size: ref
+      set: int
+        format: raw -&gt; D:/cpu2006/result/CINT2006.008.rsf
+        format: flags -&gt; D:/cpu2006/result/CINT2006.008.flags.html
+        format: ASCII -&gt; D:/cpu2006/result/CINT2006.008.txt
+        format: PDF -&gt; D:/cpu2006/result/CINT2006.008.pdf
+      set: fp
+
+The log for this run is in D:\cpu2006/result/CPU2006.008.log
+
+runspec finished at Thu Jun  1 20:36:30 2006; 3434 total seconds elapsed
+</pre>
+<p class="commentary">Success with the real workload!  So now let's look in the result directory and see what we find:</p>
+<pre>
+D:\cpu2006&gt;<b>cd result</b>
+D:\cpu2006\result&gt;<b>dir</b>
+ Volume in drive D is has no label
+ Volume Serial Number is F843-4C63
+
+ Directory of D:\cpu2006\result
+
+06/01/2006  08:36 PM    &lt;DIR&gt;          .
+06/01/2006  08:36 PM    &lt;DIR&gt;          ..
+06/01/2006  07:14 PM             6,680 CINT2006.006.test.flags.html
+06/01/2006  07:14 PM            51,828 CINT2006.006.test.pdf
+06/01/2006  07:14 PM             7,026 CINT2006.006.test.rsf
+06/01/2006  07:14 PM             7,748 CINT2006.006.test.txt
+06/01/2006  07:38 PM             6,680 CINT2006.007.test.flags.html
+06/01/2006  07:38 PM            51,821 CINT2006.007.test.pdf
+06/01/2006  07:38 PM             7,024 CINT2006.007.test.rsf
+06/01/2006  07:38 PM             7,748 CINT2006.007.test.txt
+06/01/2006  08:36 PM             6,680 CINT2006.008.flags.html
+06/01/2006  08:36 PM            52,341 CINT2006.008.pdf
+06/01/2006  08:36 PM             6,952 CINT2006.008.rsf
+06/01/2006  08:36 PM             7,588 CINT2006.008.txt
+06/01/2006  07:05 PM             6,425 CPU2006.001.log
+06/01/2006  07:06 PM             7,268 CPU2006.002.log
+06/01/2006  07:07 PM             7,474 CPU2006.003.log
+06/01/2006  07:10 PM             1,488 CPU2006.004.log
+06/01/2006  07:11 PM             9,795 CPU2006.005.log
+06/01/2006  07:14 PM             3,889 CPU2006.006.log
+06/01/2006  07:38 PM             3,887 CPU2006.007.log
+06/01/2006  08:36 PM             5,166 CPU2006.008.log
+06/01/2006  07:39 PM                 5 CPU2006.lock
+06/01/2006  06:46 PM    &lt;DIR&gt;          images
+              21 File(s)        265,513 bytes
+               3 Dir(s)   4,489,633,792 bytes free
+</pre>
+<p class="commentarysnug">Notice the log files from our runspec commands.  Those runspec commands are easily extracted with
+"findstr":</p>
+
+<pre>
+
+D:\cpu2006\result&gt;<b>findstr /C:"runspec --" *.log</b>
+CPU2006.005.log:runspec: runspec --action=build --tune=base --config=windows64-amd64-pgi.cfg 401.bzip2
+CPU2006.005.log:runspec          = D:\\cpu2006\\bin\\runspec --action=build --tune=base --config=windows64-amd64-pgi.cfg 401.bzip2
+CPU2006.006.log:runspec: runspec --size=test --iterations=1 --noreportable --config=windows64-amd64-pgi.cfg 401.bzip2
+CPU2006.008.log:runspec: runspec --size=ref --iterations=1 --noreportable --config=windows64-amd64-pgi 401.bzip2
+</pre>
+
+<p class="commentary">Let's look at our results, in the ".txt" file:</p>
+<pre>
+D:\cpu2006\result&gt;<b>type CINT2006.008.txt</b>
+##############################################################################
+#   INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN  #
+#                                                                            #
+# 'reportable' flag not set during run                                       #
+# 471.omnetpp base did not have enough runs!                                 #
+# 456.hmmer base did not have enough runs!                                   #
+# 445.gobmk base did not have enough runs!                                   #
+# 458.sjeng base did not have enough runs!                                   #
+# 429.mcf base did not have enough runs!                                     #
+# 473.astar base did not have enough runs!                                   #
+# 483.xalancbmk base did not have enough runs!                               #
+# 400.perlbench base did not have enough runs!                               #
+# 464.h264ref base did not have enough runs!                                 #
+# 462.libquantum base did not have enough runs!                              #
+# 401.bzip2 base did not have enough runs!                                   #
+# 403.gcc base did not have enough runs!                                     #
+#                                                                            #
+#   INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN  #
+##############################################################################
+                            SPEC CINT2006 Summary
+                                    -- --
+                           Thu Jun  1 19:39:16 2006
+
+SPEC License #0     Test date: --           Hardware availability: --
+Test sponsor: --                            Software availability: --
+
+                                  Estimated                       Estimated
+                Base     Base       Base        Peak     Peak       Peak
+Benchmarks      Ref.   Run Time     Ratio       Ref.   Run Time     Ratio
+-------------- ------  ---------  ---------    ------  ---------  ---------
+400.perlbench                               NR
+401.bzip2        9650       3384       2.85 *
+403.gcc                                     NR
+429.mcf                                     NR
+445.gobmk                                   NR
+456.hmmer                                   NR
+458.sjeng                                   NR
+462.libquantum                              NR
+464.h264ref                                 NR
+471.omnetpp                                 NR
+473.astar                                   NR
+483.xalancbmk                               NR
+==============================================================================
+400.perlbench                               NR
+401.bzip2        9650       3384       2.85 *
+403.gcc                                     NR
+429.mcf                                     NR
+445.gobmk                                   NR
+456.hmmer                                   NR
+458.sjeng                                   NR
+462.libquantum                              NR
+464.h264ref                                 NR
+471.omnetpp                                 NR
+473.astar                                   NR
+483.xalancbmk                               NR
+ Est. SPECint_base2006                 0.00
+ Est. SPECint2006                                                   Not Run
+</pre>
+<p class="commentarystart">In the table above, most of the results are blank, because we only ran 1 of the 12 integer
+benchmarks.  </p>
+
+<p class="commentarycont">Notice that the values for SPECint_base2006 and SPECint2006 are "0.00" and "Not Run"; these would
+be filled in if we did a "reportable" run; for information, please see "--reportable" in <a
+href="runspec.html#strict">runspec.html</a></p>
+
+<p class="commentaryend">There are also lots of dashes for the various portions of the system description, both at the top of
+the page and in the section that follows.  These dashes indicate that we have not filled in the fields that describe the
+hardware and software that we are testing.  For information about these fields, please see <a
+href="config.html">config.html</a></p>
+<pre>
+
+                                   HARDWARE
+                                   --------
+            CPU Name: --
+ CPU Characteristics:
+             CPU MHz: --
+                 FPU: --
+      CPU(s) enabled: --
+    CPU(s) orderable: --
+            Parallel: --
+       Primary Cache: --
+     Secondary Cache: --
+            L3 Cache: --
+         Other Cache: --
+              Memory: --
+      Disk Subsystem: --
+      Other Hardware: --
+
+
+                                   SOFTWARE
+                                   --------
+    Operating System: --
+            Compiler: --
+         File System: --
+        System State: --
+      Other Software: --
+
+
+##############################################################################
+#   INVALID RUN INVALID RUN INVALID RUN INVALID RUN INVALID RUN INVALID RUN  #
+#                                                                            #
+# 'reportable' flag not set during run                                       #
+# 471.omnetpp base did not have enough runs!                                 #
+# 456.hmmer base did not have enough runs!                                   #
+# 445.gobmk base did not have enough runs!                                   #
+# 458.sjeng base did not have enough runs!                                   #
+# 429.mcf base did not have enough runs!                                     #
+# 473.astar base did not have enough runs!                                   #
+# 483.xalancbmk base did not have enough runs!                               #
+# 400.perlbench base did not have enough runs!                               #
+# 464.h264ref base did not have enough runs!                                 #
+# 462.libquantum base did not have enough runs!                              #
+# 401.bzip2 base did not have enough runs!                                   #
+# 403.gcc base did not have enough runs!                                     #
+#                                                                            #
+#   INVALID RUN INVALID RUN INVALID RUN INVALID RUN INVALID RUN INVALID RUN  #
+##############################################################################
+-----------------------------------------------------------------------------
+For questions about this result, please contact the tester.
+For other inquiries, please contact webmaster@spec.org.
+Copyright 2006 Standard Performance Evaluation Corporation
+Generated on Thu Jun  1 20:36:21 2006 by SPEC CPU2006 ASCII formatter 
+</pre>
+<p class="commentary">Done.  The suite is installed, and we can run at least one benchmark for real.  </p>
+
+<hr />
+
+<h2 id="appendix">Appendix: the DVD drive is on system A, but I want to install on system B.  What do I do?</h2>
+
+<p>If the title of this section describes your situation, you basically have two choices.</p>
+<ol>
+   <li><a href="#network">Network mount</a>: You can mount the device over the network and do the installation remotely.</li>
+   <li><a href="#tarball">Tar file</a>: You can install from the tar file</li>
+</ol>
+
+<h3 id="network">1. Network mount</h3>
+
+<p>You might be able to mount the DVD on one system and use network services to make it available on other systems.</p>
+
+   <p class="l1"><span class="alarm">Please note that the SPEC CPU2006 license agreement does not allow you to post the DVD
+   on any public server.</span>  If your institution has a SPEC CPU2006 license, then it's fine to post it on an internal
+   server that is accessible only to members of your institution.</p>
+
+<p class="snugbot">Whether you attempt a network mount will probably depend on:</p>
+<ul>
+<li>available network hardware,</li>
+<li>the networking services provided by your operating system, and </li>
+<li>the security policies of your IT department (if any).</li>
+</ul>
+
+<p class="snugtop">If your network environment allows easy cross-system mounting, you can use a network mount for the
+installation.  Otherwise, you can fall back on <a style="white-space:nowrap;" href="#tarball">the tar file</a>.</p>
+
+<p class="commentary">Note: if you insert the DVD on a system running Unix or Linux, you may need to share it using
+<tt>nfs</tt> commands.  This Windows installation guide does not attempt to give hints about how to do Unix <tt>nfs</tt>
+commands, although you will find some hints in the corresponding appendix of <a
+href="install-guide-unix.html#network">install-guide-unix.html</a>.  Instead, let's assume that you are using two Windows
+systems.  System A is a Windows system with a DVD drive; System B is a Windows system where you would like to do the
+installation.</p>
+
+<p>To do the installation:</p>
+<ol style="list-style-type:upper-alpha">
+   <li><p>At System A, insert the DVD.</p></li>  
+   <li><p>Then, bring up a Windows Explorer window (for example, by double clicking on the <span class="ttnobr">My
+   Documents</span> icon).  Click the plus sign next to <span class="ttnobr">My Computer</span> and you should see the DVD
+   drive.  Let's suppose that it is drive <tt>F:</tt>.</p></li>
+   <li><p>Right-click on the DVD drive and select "Sharing and Security..."</p></li>
+   <li><p>In the box that comes up, under the "Sharing" tab, you may see a warning <tt>To protect your computer from unauthorized
+   access, sharing the root of a dive is not recommended.  If you understand the risk but still want to share the root of the
+   drive, click here.</tt>  This most informative warning is displayed for your consideration and you can proceed to consider
+   it.  If you decide that it is safe to share your DVD drive, then click where indicated.</p></li>
+   <li><p>Select "Share this folder"</p></li>
+   <li><p>Now, move to System B.</p></li>
+
+   <li><p>Bring up a Windows Explorer window (for example, by double clicking on the <span class="ttnobr">My Documents</span>
+   icon).  Select <span class="ttnobr">Tools -&gt; Map Network Drive</span>.  The Drive letter may offer a default, such as
+   <tt>Z:</tt>.  In the box for Folder, type two backslashes, the name of system A, a backslash, and its shared drive
+   letter - for example <span class="ttnobr">\\SystemA\F</span></p></li>
+
+   <li><p>Continue with Step 2 <a href="#openwin">above</a>.  When you get to Steps 5 and 6, remember to use the drive letter as it
+   is known on System B - from the dialog box of a moment ago - for example </p>
+<pre>D:\Documents and Settings\Saturos\&gt; <b>Z:</b>
+Z:\&gt; <b>install.bat  C:  \cpu2006</b>
+   </pre></li>
+</ol>
+
+
+<h3 id="tarball">2. Tar file</h3>
+
+<p>If the DVD drive is on a system other than the one where you wish to do the installation, and if you do not wish to try to
+get a <a href="#network">network mount</a> working, then the final fallback is to use the compressed tarfile.  If you choose
+this option, please carefully observe the <span class="alarm">warnings</span>.</p>
+
+<ol style="list-style-type:lower-alpha">
+<li><p>Go to the system with the DVD drive ("System A").  Insert the SPEC CPU2006 DVD.</p></li>
+
+<li><p>From a command window (aka terminal window), <tt>cd</tt> to the top level directory on
+the DVD.</p></li>
+
+<li><p>You are going to retrieve five things from the DVD.  First, find the large tarfile and its corresponding md5 file:</p>
+
+<pre class="l2">cd original.src 
+dir cpu2006.tar.bz*
+</pre>
+
+<p>or, if System A is a Unix system, then:</p>
+
+<pre class="l2">cd original.src 
+ls -l cpu2006.tar.bz*
+</pre>
+
+<p>In either case, you should see one moderately large file &gt; 400MB, <tt>cpu2006.tar.bz2</tt>, and a small file associated
+with it that contains a checksum, <tt>cpu2006.tar.bz2.md5</tt>.  </p>
+
+<p class="commentary">If you don't see the above files, try looking for <tt>cpu*tar*</tt>.  The name might change if, for
+example, a maintenance update of CPU2006 changes the name slightly to indicate an updated version.</p>
+
+<p> Do whatever is required in order to transfer both files intact to the system where you wish to do the installation
+("System B").  If you use <tt>ftp</tt>, <span class="alarm">do not forget to use image (binary) mode</span>.  For
+example:</p>
+
+<pre class="l2">
+ftp&gt; <b>bin</b>   <span style="font-family:sans;" class="alarm">&lt;-------- important</span>
+200 Type set to I.
+ftp&gt; <b>put cpu2006.tar.bz2</b>
+ftp&gt; <b>put cpu2006.tar.bz2.md5</b>
+</pre>
+
+<p><span class="alarm">Please note that the SPEC CPU2006 license agreement does not allow you to post the above file on any
+public ftp server.</span>  If your institution has a SPEC CPU2006 license, then it's fine to post it on an internal server
+that is accessible only to members of your institution.</p></li>
+
+<li><p>Next, you are going to retrieve <tt>specbzip2.exe</tt>, <tt>specmd5sum.exe</tt>, and <tt>spectar.exe</tt> from the DVD.</p>
+
+<p><span class="alarm">Please do not use Windows Zip utilities</span>, as these will not preserve line endings and will cause
+difficult-to-diagnose benchmark miscompares.</p>
+
+<p><span class="alarm">Please do not use other <tt>tar</tt> utilities, as these may not handle long path names.</span>
+Many commonly-supplied <tt>tar</tt> utilities cannnot.</p>
+
+<p>If you have GNU tar and the genuine bzip2, then you can use those; otherwise, look around on the DVD to find
+the SPEC-supplied versions, like so:</p>
+
+<pre>
+C:\&gt; <b>F:</b>
+F:\&gt; <b>cd tools</b>
+
+F:\tools&gt; <b>cd bin</b>
+
+F:\tools\bin&gt; <b>dir</b>
+ Volume in drive F is SPEC_CPU2006v097
+ Volume Serial Number is 8A74-DF2E
+
+ Directory of F:\tools\bin
+
+07/18/2006  01:37 PM    &lt;DIR&gt;          .
+04/04/2006  09:48 PM    &lt;DIR&gt;          ..
+12/23/2005  11:56 PM    &lt;DIR&gt;          aix5L-ppc
+05/30/2006  08:30 PM    &lt;DIR&gt;          freebsd54-ia32
+05/30/2006  08:30 PM    &lt;DIR&gt;          freebsd60-ia32
+01/28/2006  06:54 PM    &lt;DIR&gt;          hpux-11iv2-ipf
+01/27/2006  07:10 PM    &lt;DIR&gt;          hpux-11iv2-parisc
+01/04/2006  11:36 AM    &lt;DIR&gt;          irix6.5-mips
+12/18/2005  01:59 AM    &lt;DIR&gt;          linux-redhat62-ia32
+01/11/2006  10:30 AM    &lt;DIR&gt;          linux-rhas3r2-ia64
+06/27/2006  10:26 PM    &lt;DIR&gt;          linux-suse101-AMD64
+07/18/2006  01:37 PM    &lt;DIR&gt;          linux-suse101-i386
+12/18/2005  02:44 PM    &lt;DIR&gt;          linux-ydl20-ppc
+12/18/2005  02:44 PM    &lt;DIR&gt;          macosx-ppc
+01/03/2006  10:28 PM    &lt;DIR&gt;          macosx-x86
+05/30/2006  08:30 PM    &lt;DIR&gt;          netbsd21-ia32
+05/30/2006  08:30 PM    &lt;DIR&gt;          openbsd38-ia32
+01/03/2006  10:41 AM    &lt;DIR&gt;          sles9-glibc23-ia64
+12/18/2005  01:59 AM    &lt;DIR&gt;          solaris-sparc
+12/18/2005  01:59 AM    &lt;DIR&gt;          solaris-x86
+05/30/2006  08:30 PM    &lt;DIR&gt;          tru64-alpha
+04/24/2006  09:41 AM    &lt;DIR&gt;          windows-i386
+               0 File(s)              0 bytes
+              22 Dir(s)               0 bytes free
+
+F:\tools\bin&gt; <b>cd win*</b>
+
+F:\tools\bin\windows-i386&gt; <b>dir</b>
+ Volume in drive Z is SPEC_CPU2006v097
+ Volume Serial Number is 8A74-DF2E
+
+ Directory of Z:\tools\bin\windows-i386
+
+04/24/2006  09:41 AM    &lt;DIR&gt;          .
+07/18/2006  01:37 PM    &lt;DIR&gt;          ..
+04/22/2006  07:54 PM        10,767,231 cpu2006tools-windows-i386.tar.bz2
+04/22/2006  07:54 PM           131,072 specbzip2.exe
+04/22/2006  07:54 PM            65,536 specmd5sum.exe
+04/22/2006  07:54 PM           189,440 spectar.exe
+               4 File(s)     11,153,279 bytes
+               2 Dir(s)               0 bytes free
+
+</pre>
+
+<p>Once you've found these versions of <tt>specbzip2</tt>, <tt>specmd5sum</tt>, and <tt>spectar</tt>, 
+transfer them to system B using the same methods that you used for the big tarfile.</p></li>
+
+<li><p>On system B, use <tt>specmd5sum</tt> to check that the file transfer worked correctly.  In this example, we assume that
+you have placed all 5 of the files mentioned above in the <tt>\kits\</tt> directory on drive <tt>C:</tt>:</p>
+<pre>C:\kits\&gt; <b>specmd5sum -c cpu2006.tar.bz2.md5</b>
+cpu2006.tar.bz2: OK
+</pre></li>
+
+<li><p>Pick a disk with 8GB free, go there, and unpack the tarfile, like so:</p>
+<pre>C:\kits\&gt; <b>H:</b>
+H:\&gt; <b>mkdir cpu2006</b>
+H:\&gt; <b>cd cpu2006</b>
+H:\cpu2006\&gt; <b>C:\kits\specbzip2 -dc C:\kits\cpu2006.tar.bz2 | C:\kits\spectar -xf -</b>
+</pre>
+
+<p>Be patient: it will take bit of time to unpack!  It might take 15 minutes, depending on the speed of your processor and
+disks.  Go for a coffee break.</p></li>
+
+<li><p>Now, type <tt>install</tt>, without any arguments afterwards.  That is, unlike the instructions in step 6 above, you
+do not need to mention a device or directory if you are installing from the tarfile. You will see output similar, though  not
+identical, to that shown in the <a href="#example">example installation</a> -- the messages about <tt>Unpacking xxxx</tt> are
+not printed, because you already did the unpacking with your <tt>spectar</tt> command.</p></li>
+
+<li><p>Continue with <a href="#dotheshrc">step 7</a>, above.</p></li>
+
+</ol>
+
+
+<hr />
+<p class="snug">Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+<br />All Rights Reserved</p>
+
+</body></html>
+

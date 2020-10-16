@@ -1,0 +1,13 @@
+1..2
+
+1: COHERENT STRING 1
+1:   A: "Tea for two, and two for tea"
+1:   B: "Tea for two, and two for tea"
+1: ok 1
+
+2: COHERENT STRING 2
+2:   A: "Me 4 U, and U 4 me"
+2:   B: "Me 4 U, and U 4 me"
+2: ok 2
+
+# END

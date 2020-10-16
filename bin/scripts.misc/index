@@ -1,0 +1,591 @@
+#!/usr/bin/perl
+#
+# index - generate an HTML index for results in a directory
+# No support is provided for this script.
+#
+# Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+#  All Rights Reserved
+#
+# Authors: Jason Glick & Cloyce D. Spradling
+#
+# $Id: index 4779 2006-08-08 18:31:45Z cloyce $
+#
+
+use strict;
+use IO::File;
+use Cwd;
+use File::Basename;
+use Date::Format;
+use Data::Dumper;
+use UNIVERSAL qw(isa);
+
+my $output = 'HEADER.html';
+
+my $year = 2006;
+my $suite = 'CPU'.$year;
+my $public = 0;                         # Set to 1 for public-side indexes
+my $pubdir = '.';                       # Could be somewhere else...
+my $lcsuite = lc($suite);
+my $prefix = "spec.$lcsuite";
+my $version = '$LastChangedRevision: 4779 $ '; # Make emacs happier
+$version =~ s/^\$LastChangedRevision: (\d+) \$ $/$1/;
+
+my $debug = 0;
+
+my $cwd = dir_to_desc(basename(getcwd()));
+
+my @metrics = (
+    'SPECint',
+    'SPECfp',
+    'SPECint_rate',
+    'SPECfp_rate'
+);
+my %metrics = map { $_ => {} } @metrics;
+my %count = map { $_ => 0 } @metrics;
+my %dp = ();
+
+my $metric = "units";
+my $rate   = "rate";
+
+my @fields = (
+    'test_sponsor',
+    'hw_model',
+    'hw_nchips',
+    'hw_ncores',
+    'hw_ncoresperchip',
+    'hw_nthreadspercore',
+    'basemean',
+    'peakmean',
+    $metric,
+    $rate,
+    'base_copies',
+);
+
+my $fieldre = "^${prefix}\.(".join('|', @fields).')(\d*): (.*)';
+$fieldre = qr/$fieldre/;
+
+my @fieldinfo = (
+#                                               |---- Header ---|
+#      Field name         Class                 Columns,     Rows
+    [ 'Test Sponsor',      'test_sponsor',       1,           2,   ],
+    [ 'System Name',       'hw_model',           1,           2,   ],
+    [ 'Base<br />Copies',  'base_copies',        1,           2,   ],
+    [ 'Cores',             'hw_ncores',          4,           1,   'Processor', ],
+    [ 'Chips',             'hw_nchips',          1,           1,   '',          ],
+    [ 'Cores/<br/>Chip',   'hw_ncoresperchip',   1,           1,   '',          ],
+    [ 'Threads/<br/>Core', 'hw_nthreadspercore', 1,           1,   '',          ],
+    [ 'Base',              'basemean',           2,           1,   'Results',   ],
+    [ 'Peak',              'peakmean',           1,           1,   ''           ],
+# This is implied when hw_model is done
+#   [ 'Full Disclosures',  'disclosures',        0,           0,   ],
+);
+if (!$public) {
+    push @fieldinfo,
+        [ '?',                'alerts',         1,           2,   ],
+        [ 'Last Modified',    'lastmod',        1,           2,   ];
+}
+
+my %roundfields = (
+    'basemean' => 1,
+    'peakmean' => 1
+);
+
+my @formats = (
+    [ 'HTML'     => 'html'        ],
+    [ 'CSV'      => 'csv'         ],
+    [ 'Text'     => 'txt'         ],
+    [ 'PDF'      => 'pdf'         ],
+    [ 'PS'       => 'ps'          ],
+    [ 'Config'   => 'cfg'         ],
+);
+if (!$public) {
+    push @formats, [ 'Flags'    => 'flags.html'  ];
+    push @formats, [ 'Raw'      => 'rsf' ];
+    push @formats, [ 'Sub'      => 'sub' ];
+    push @formats, [ 'FlagXML'  => 'xml' ];
+}
+
+#
+# Start reading in the result files!
+#
+my $ext = $public ? 'rsf' : 'sub';
+
+foreach my $res_file ( glob( "$pubdir/*.$ext" ) ) {
+    my $ifh = new IO::File '<'.$res_file;
+    if (!defined($ifh)) {
+      warn "Couldn't open $res_file for reading: $!\n";
+      next;
+    }
+
+    # Remember when the sub file was last modified
+    my $modtime = time2str('%m-%d-%Y&nbsp;%H:%M', (stat( $res_file ))[9]);
+    $res_file = dirname( $res_file ).'/'.basename( $res_file, ".$ext" );
+
+    my %fields = ();
+
+    # Get the info from the raw file
+    foreach my $line ( <$ifh> ) {
+        my ($field, $idx, $val) = ($line =~ /$fieldre/);
+        next unless defined($field);
+        $val =~ tr/\012\015//d; # Strip out the EOLs
+        $idx += 0;  # Make the field index a number
+        $fields{$field}->[$idx] = $val;
+    }
+    $ifh->close();
+
+    # Put all the fields together
+    foreach my $field (keys %fields) {
+        next unless isa($fields{$field}, 'ARRAY');
+
+        # Put the fields back together
+        $fields{$field} = join(' ', @{$fields{$field}});
+
+        # Strip leading and trailing whitespace
+        $fields{$field} =~ s/^\s+//;
+        $fields{$field} =~ s/\s+$//;
+
+        # Make numeric fields numeric, and escape non-numeric fields
+        if ($fields{$field} =~ /^\d+(?:\.\d*)?$/) {
+            $fields{$field} += 0;
+        } else {
+            $fields{$field} = escape_HTML($fields{$field});
+        }
+
+        # Round things that should be rounded
+        if ($roundfields{$field} && $fields{$field} =~ /\d/) {
+            $fields{$field} = significant($fields{$field});
+        }
+
+    }
+
+    if ((keys %fields)+0 != @fields+0) {
+        my $got_fields = ((keys %fields)+0).' ('.join(', ', sort keys %fields).')';
+        warn "Expected ".(@fields+0)." fields; got $got_fields.\nSkipping result in $res_file\n";
+        next;
+    }
+
+    # Fix up the metric name for rate runs
+    $fields{$metric} .= '_rate' if ($fields{$rate});
+
+    foreach my $field (grep { /mean$/ } keys %fields) {
+        # Remember the decimal places for the means
+        if ($field =~ /mean$/) {
+            my $dp = significant($fields{$field}, undef, 2);
+            $dp{$fields{$metric}}->{$field} = $dp if ($dp > $dp{$fields{$metric}}->{$field});
+        }
+    }
+
+    # Find the output formats that are available, and make their links here
+    my @outputs = ();
+    foreach my $formatref ( @formats ) {
+        my ( $name, $fileext ) = @{$formatref};
+        print "File: $res_file.$fileext\n" if ($debug & 2);
+        if ( -e "$res_file.$fileext" ) {
+            push @outputs, qq{   <a href="$res_file.$fileext">$name</a>};
+        } else {
+            push @outputs, $name;
+        }
+    }
+    $fields{'disclosures'} = join(" | \n ", @outputs);
+
+    if (!$public) {
+        # Were there alerts for this submission?
+        if ( -e "$res_file.$ext.alert" ) {
+            $fields{'alerts'} = "<a href=\"$res_file.$ext.alert\">?</a>";
+        } else {
+            $fields{'alerts'} = '&nbsp;';
+        }
+
+        # Any changes?
+        if ( -e "$res_file.$ext.diff" ) {
+            my $r  = 0;
+                while( -e "$res_file.$ext.rev$r" ) { $r++; }
+                $fields{'lastmod'} = "<a href=\"$res_file.$ext.diff\">$modtime</a>&nbsp;$r";
+        } else {
+                $fields{'lastmod'} = $modtime;
+        }
+    }
+
+    $metrics{$fields{$metric}}->{$res_file} = { %fields };
+
+    $count{$fields{$metric}}++;
+
+}
+
+#
+# Done reading all the results!
+#
+
+my $total = 0;
+
+foreach ( values( %count ) ) {
+    $total += $_;
+}
+
+my $ofh = new IO::File '>'.$output;
+die( "\nCannot open $output for writing: $!\nStopped" ) unless defined($ofh);
+
+my $description;
+if ($cwd =~ /Quarter/) {
+  # Dated directory
+  $description = "A list of all SPEC $suite benchmark results published during the $cwd.";
+} else {
+  # Other
+  $description = "Index of SPEC $suite results in $cwd";
+}
+
+my $links = '';
+
+if ($public) {
+  $links = <<EOL
+    <link rel="home" href="/" title="Home" />
+    <link rel="help" href="/spec/faq/" title="FAQ" />
+    <link rel="contents" href="/contents.html" title="Contents" />
+    <link rel="index" href="/permuted.html" title="Site Index" />
+    <link rel="glossary" href="/spec/glossary/" title="Glossary" />
+    <link rel="copyright" href="/spec/copyright.html" title="Copyright" />
+    <link rel="search" href="/search.html" title="Search" />
+EOL
+}
+print $ofh <<"EOH";
+<!DOCTYPE html
+      PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>$suite results: $cwd</title>
+<meta name="generator"content="SPEC $suite indexer v$version" />
+<meta name="keywords" content="SPEC, $suite, benchmark results" />
+<meta name="description" content="$description" />
+<link rel="stylesheet" href="/includes/printstyle.css" type="text/css" media="print" />
+<link rel="stylesheet" href="/includes/ns4style.css" type="text/css" media="screen" />
+<style type="text/css" media="screen">
+<!--
+$::screen_style
+-->
+</style>
+$links
+</head>
+<body>
+<div class="speclogo">
+EOH
+if ($public) {
+  print $ofh qq|<a href="/$lcsuite/results/"><img src="/images/spec-sm.gif" alt="SPEC logo (small)" /></a>\n|;
+  print $ofh qq|</div>\n|;
+  print $ofh qq|<h1>$cwd SPEC $suite Results</h1>\n|;
+  print $ofh qq|<p>These results have been submitted to SPEC; see <a href="/spec/disclaimer.html">the disclaimer</a> before studying any results.</p>\n|;
+} else {
+  print $ofh qq|<img src="/images/spec-sm.gif" alt="SPEC logo (small)" />\n|;
+  print $ofh qq|</div>\n|;
+  print $ofh qq|<h3 class="confidential">SPEC Confidential</h3>\n|;
+  print $ofh qq|<h1>$cwd SPEC $suite Results</h1>\n|;
+}
+print $ofh "<p>Last updated: <i>".scalar( localtime )."</i></p>\n";
+
+print $ofh "<h2>".($public ? 'Published' : 'Submitted')." Results ($total):</h2>\n";
+
+print $ofh '<p class="linkbar">|';
+foreach (@metrics) {
+    print $ofh " <a href=\"#$_\">$_</a> |";
+}
+print $ofh "</p>\n";
+
+print $ofh "<hr />\n";
+
+foreach my $metric ( @metrics ) {
+
+    print $ofh qq|<div class="idx_table" id="${metric}div">\n|;
+    print $ofh qq|<h2><a name="$metric" id="$metric">$metric ($count{$metric}):</a></h2>\n|;
+
+    my $flip = 0;
+    if ($count{$metric}) {
+        print $ofh "<table>\n";
+        print $ofh "<thead>\n";
+        my $row = 0;
+        my $maxrows = 1;
+        while ($row < $maxrows) { 
+            print $ofh " <tr>\n";
+            foreach my $fieldref (@fieldinfo) {
+                my ($name, $class, $cols, $rows, @heads) = @{$fieldref};
+                # Don't output base_copies for non-rate runs
+                next if ($metric !~ /rate/ && $class =~ /copies/);
+                $maxrows = $rows if ($rows > $maxrows);
+                next if (($rows > 1) && ($row > 0));
+                my $line = qq|<th class="$class"|;
+                $line .= qq| rowspan="$rows"| if ($rows > 1);
+                if ($cols > 1 && defined($heads[$row]) && $heads[$row] ne '') {
+                    $line .= qq| colspan="$cols"|;
+                }
+                if (defined($heads[$row])) {
+                    if ($heads[$row] eq '') {
+                        next;
+                    } else {
+                        print $ofh qq|  $line>$heads[$row]</th>\n|;
+                    }
+                } else {
+                    print $ofh qq|  $line>$name</th>\n|;
+                }
+            }
+            print $ofh " </tr>\n";
+            $row++;
+        }
+        print $ofh "</thead>\n";
+        print $ofh "<tbody>\n";
+
+        # Output lines for each benchmark
+        foreach my $res_file ( sort( keys( %{$metrics{$metric}} ) ) ) {
+
+            my $i = 0;
+
+            if ($flip) {
+                print $ofh qq| <tr class="odd">\n|;
+            } else {
+                print $ofh " <tr>\n";
+            }
+            $flip = 1 - $flip;
+
+            foreach my $field ( @fieldinfo ) {
+                my ($name, $class) = @{$field};
+                my $val = $metrics{$metric}->{$res_file}->{$class};
+
+                # Do special-case output here!
+                if ($class eq 'hw_model') {
+                    print $ofh qq|  <td class="$class">$val<br />\n   <span class="disclosures">\n $metrics{$metric}->{$res_file}->{'disclosures'}\n   </span>\n  </td>\n|;
+
+                } elsif ($class eq 'basemean' || $class eq 'peakmean') {
+                    $val = pad_rear($val, $dp{$metric}->{$class});
+                    print $ofh qq|  <td class="$class">$val</td>\n|;
+
+                } elsif ($metric !~ /rate/ && $class =~ /copies/) {
+                    # Don't output base_copies for non-rate runs
+                    next;
+
+                } else {
+                    # The general case
+                    print $ofh qq|  <td class="$class">$val</td>\n|;
+                }
+            }
+
+            print $ofh " </tr>\n";
+        
+        }
+        print $ofh "</tbody>\n";
+        print $ofh "</table>\n";
+    } else {
+        print $ofh "<p>No results.</p>\n";
+    }
+    print $ofh "</div>\n";
+}
+
+print $ofh "<hr />\n";
+print $ofh qq|<!-- robots content="noindex" -->\n|;
+if ($public) {
+  print $ofh qq|<p>[Back to <a href="/$lcsuite/results/">$suite Results</a>]</p>\n|;
+} else {
+  print $ofh "<p>SPEC Editor &lt;<a href=\"mailto:editor\@spec.org\">editor\@spec.org&gt;</a></p>\n";
+}
+
+print $ofh ' <div class="w3cbutton3">';
+print $ofh '   <a href="http://validator.w3.org/check?uri=referer">';
+print $ofh '     <span class="w3c">W3C</span>';
+print $ofh '     <span class="spec">XHTML 1.0</span>';
+print $ofh '   </a>';
+print $ofh ' </div>';
+print $ofh ' <div class="w3cbutton3">';
+print $ofh '   <a href="http://jigsaw.w3.org/css-validator/check/referer">';
+print $ofh '     <span class="w3c">W3C</span>';
+print $ofh '     <span class="spec">CSS</span>';
+print $ofh '   </a>';
+print $ofh ' </div>';
+
+print $ofh "</body>\n";
+print $ofh "</html>\n";
+
+$ofh->close();
+
+# This is close to what's in html.pl
+sub significant {
+    my( $value, $min_log, $returnlog ) = @_;
+    return $value unless ( $value =~ /^\d+(?:\.\d*)?$/ );
+
+    my ($log);
+    $min_log = 2 if !defined $min_log;
+
+    if ($value > 0) {
+        $log = floor(log($value)/log(10));
+    } else {
+        return $value;
+    }
+
+    if ($returnlog == 1) {
+        print "  returnlog set to 1; returning \"$log\"\n" if ($debug & 4);
+        return $log;
+    }
+
+    $value = int($value / (10**($log-$min_log))+.5) * (10**($log-$min_log));
+    print "  value rounded to \"$value\"\n" if ($debug & 4);
+
+    # The number has been changed; re-figure its log (it'll change if, for
+    # example, a number less than 1 gets rounded up to 1)
+    if ($value > 0) {
+        $log = floor(log($value)/log(10));
+        print "  new log = $log\n" if ($debug & 4);
+    }
+
+    if ($log < $min_log) {
+        $value = sprintf ("%.*f", $min_log-$log, $value) if ($log < $min_log);
+        print "  reformatted value = \"$value\"\n" if ($debug & 4);
+    }
+
+    if ($returnlog == 2) {
+        # Just get the number of places after the decimal
+        return 0 unless $value =~ s/^[^\.]*\.//;
+        return length($value);
+    }
+
+    print "  returning \"$value\"\n" if ($debug & 4);
+    return $value;
+}
+
+# Also from html.pl
+sub floor {
+    my ($temp) = @_;
+    my $inttemp = int($temp);
+    if ($temp != $inttemp) { #  This is a bad test.
+        if ($temp > 0) {
+            $temp = $inttemp;
+        } else {
+            $temp = $inttemp-1;
+        }
+    }
+    return $temp;
+}
+
+# Still more from html.pl!
+sub pad_rear {
+    my ($val, $dp) = @_;
+    $val = significant($val);
+    my $my_dp = significant($val, undef, 2);
+    return $val unless defined($dp);
+    my $s = '&nbsp;' x ($dp - $my_dp);
+    $s .= '&nbsp;' if ($dp && !$my_dp); # Space for the decimal point
+    return "$val$s";
+}
+
+# This one is from util.pl
+sub escape_HTML {
+  my ($str) = @_;
+
+  $str =~ s/&/&amp;/gso;
+  $str =~ s/</&lt;/gso;
+  $str =~ s/>/&gt;/gso;
+
+  return $str;
+}
+
+sub dir_to_desc {
+    my ($dir) = @_;
+    
+    $dir =~ s/^res(\d+)q(\d+)$/if ($2 == 1) {
+                                 "First Quarter $1"
+                               } elsif ($2 == 2) {
+                                 "Second Quarter $1"
+                               } elsif ($2 == 3) {
+                                 "Third Quarter $1"
+                               } elsif ($2 == 4) {
+                                 "Fourth Quarter $1"
+                               } else {
+                                 "res${1}q$2"
+                               }/egoxi;
+    # Undo any remaining StudlyCaps
+    $dir =~ s/([a-z])([A-Z])/$1 $2/g;
+    return $dir;
+}
+
+BEGIN {
+  $::screen_style = <<EOS;
+\@import url("/includes/sitestyle.css");
+.confidential {
+  text-align: right;
+}
+
+.idx_table tbody td {
+  font-family: serif;
+}
+
+td.hw_nchips, td.hw_ncores, td.hw_ncoresperchip, td.hw_nthreadspercore, td.basemean, td.peakmean, td.base_copies {
+  text-align: right;
+}
+
+th.hw_nchips, th.hw_ncores, th.hw_ncoresperchip, th.hw_nthreadspercore, th.base_copies {
+  font-size: 80%;
+}
+
+td.lastmod {
+  text-align: left;
+}
+
+.idx_table thead tr {
+  background-color: #556699;
+  color: #eeeeef;
+}
+.idx_table thead th, td.lastmod {
+  white-space: nowrap;
+}
+
+.idx_table tbody tr.odd {
+  background-color: #e8e8e8;
+  color: black;
+}
+
+span.disclosures {
+  float: right;
+  font-size: 80%;
+  white-space: nowrap;
+}
+
+.idx_table table {
+  border-spacing: 3px;
+  width: 100%;
+}
+
+div.speclogo {
+  float: left;
+  padding: 1em;
+}
+
+div.speclogo a:link img {
+  border: 0;
+}
+
+/* Style for the non-image W3C marking at the bottom of the page, courtesy of
+ * Marek Prokop (http://www.sovavsiti.cz/css/w3c_buttons.html)
+ */
+.w3cbutton3 {
+  margin: 1em 1em 0 0;
+  width: 9em;
+  border: 1px solid #ccc;
+  font-family: helvetica,arial,sans-serif;
+  font-size: 70%;
+  font-weight: bold;
+  float: left;
+}
+.w3cbutton3 a {
+  display: block;
+  width: 100%;
+}
+.w3cbutton3 a:link,
+.w3cbutton3 a:visited,
+.w3cbutton3 a:hover {
+  background-color: #fc6;
+  color: #000;
+  text-decoration: none;
+  border-bottom: none;
+}
+.w3cbutton3 span.w3c {
+  padding: 0 0.4em;
+  background-color: #fff;
+  color: #0c479d;
+}
+EOS
+}

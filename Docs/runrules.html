@@ -1,0 +1,1761 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Rules SPEC CPU2006</title>
+<link rel="STYLESHEET" href="css/cpu2006docs.css" type="text/css" />
+<style type="text/css">
+p.propnote   {margin-left:0cm; margin-top:.5cm; margin-bottom:.1cm; color:#008000; font-weight:bold; font-family:monospace} 
+p.removenote {margin-left:0cm; margin-top:.5cm; margin-bottom:.1cm; color:#ff0000; font-weight:bold; font-family:monospace} 
+td.proposal  {padding-left:.2cm; background-color:#d0ffd0;}
+td.propbar   {padding:0cm;       background-color:#00ff00; width:.1cm;}
+td.remove    {padding-left:.2cm; background-color:#ffd0d0;}
+td.removebar {padding:0cm;       background-color:#ff0000; width:.1cm;}
+
+p.proposal {padding-left:.2cm;  background-color:#d0ffd0; border-width:0px 0px 0px 4px; border-color:#00ff00; border-style:solid;}
+</style>
+</head>
+<body>
+
+<!-- Note that you'll find this easier to edit in a nice wide window...........................................................  -->
+<pre>
+
+
+</pre>
+<h1>SPEC CPU2006
+<br />Run and Reporting Rules
+<span style="font-size:70%"><br />SPEC Open Systems Group</span></h1>
+
+<p style="text-align:center; margin:1em 25%"><b>ABSTRACT</b> <br />This document provides guidelines required to build, run,
+and report on the SPEC CPU2006 benchmarks.</p> 
+
+<p class="snugbot"><b>Edit history:</b></p>
+<ul>
+   <li><p class="snug">23-Jul-2006: version for release candidate 4</p></li> 
+</ul>
+
+<p style="font-size:80%">(To check for possible updates to this document, please see 
+<a href="http://www.spec.org/cpu2006/">http://www.spec.org/cpu2006/</a>  )</p>
+
+
+<p class="contents">Overview</p>
+<p class="contentsl2">Clicking one of the following will take you to the detailed table of contents for that section:</p>
+
+<p class="contentsl3"><a href="#Dtoc_1"   >1. </a>Philosophy   </p>
+<p class="contentsl3"><a href="#Dtoc_2.0" >2. </a>Building SPEC CPU2006</p>
+<p class="contentsl3"><a href="#Dtoc_3"   >3. </a>Running SPEC CPU2006 </p>
+<p class="contentsl3"><a href="#Dtoc_4"   >4. </a>Results Disclosure   </p>
+<p class="contentsl3last"><a href="#Dtoc_5"   >5. </a>Run Rule Exceptions  </p>
+
+<!-- Note that you'll find this easier to edit in a nice wide window................................................  -->
+
+<p class="contents">Detailed Contents</p>
+
+   <p id="Dtoc_1" class="contentsl1">
+                         <a href="#rule_1"     >1.</a> Philosophy</p>
+   <p class="contentsl2"><a href="#rule_1.1"   >1.1</a> Purpose</p>
+   <p class="contentsl2"><a href="#rule_1.2"   >1.2</a> A SPEC CPU2006 Result Is An Observation</p>
+   <p class="contentsl3"><a href="#rule_1.2.1" >1.2.1</a> Test Methods</p>
+   <p class="contentsl3"><a href="#rule_1.2.2" >1.2.2</a> Conditions of Observation</p>
+   <p class="contentsl3"><a href="#rule_1.2.3" >1.2.3</a> Assumptions About the Tester</p>
+   <p class="contentsl2"><a href="#rule_1.3"   >1.3</a> A SPEC CPU2006 Result Is A Declaration of Expected Performance</p>
+   <p class="contentsl3"><a href="#rule_1.3.1" >1.3.1</a> Reproducibility</p>
+   <p class="contentsl3"><a href="#rule_1.3.2" >1.3.2</a> Obtaining Components</p>
+   <p class="contentsl2"><a href="#rule_1.4"   >1.4</a> A SPEC CPU2006 Result is a Claim about Maturity of Performance Methods</p>
+   <p class="contentsl2"><a href="#rule_1.5"   >1.5</a> Peak and base builds</p>
+   <p class="contentsl2"><a href="#rule_1.6"   >1.6</a> Estimates</p>
+   <p class="contentsl2"><a href="#rule_1.7"   >1.7</a> About SPEC</p>
+   <p class="contentsl3"><a href="#rule_1.7.1" >1.7.1</a> Publication on SPEC's web site is encouraged</p>
+   <p class="contentsl3"><a href="#rule_1.7.2" >1.7.2</a> Publication on SPEC's web site is not required</p>
+   <p class="contentsl3"><a href="#rule_1.7.3" >1.7.3</a> SPEC May Require New Tests</p>
+   <p class="contentsl3"><a href="#rule_1.7.4" >1.7.4</a> SPEC May Adapt the Suites</p>
+   <p class="contentsl2"><a href="#rule_1.8"   >1.8</a> Usage of the Philosophy Section</p>
+
+   <p id="Dtoc_2.0" class="contentsl1">
+                         <a href="#rule_2.0"   >2.0</a> Building SPEC CPU2006</p>
+   <p class="contentsl3"><a href="#rule_2.0.1" >2.0.1</a> (removed)</p>
+   <p class="contentsl3"><a href="#rule_2.0.2" >2.0.2</a> SPEC's tools must be used</p>
+   <p class="contentsl3"><a href="#rule_2.0.3" >2.0.3</a> The runspec build environment</p>
+   <p class="contentsl3"><a href="#rule_2.0.4" >2.0.4</a> Continuous Build requirement</p>
+   <p class="contentsl3"><a href="#rule_2.0.5" >2.0.5</a> Changes to the runspec build environment</p>
+   <p class="contentsl3"><a href="#rule_2.0.6" >2.0.6</a> Cross-compilation allowed</p>
+   <p class="contentsl3"><a href="#rule_2.0.7" >2.0.7</a> Individual builds allowed</p>
+   <p class="contentsl3"><a href="#rule_2.0.8" >2.0.8</a> Tester's assertion of equivalence between build types</p>
+   <p class="contentsl2"><a href="#rule_2.1"   >2.1</a> General Rules for Selecting Compilation Flags</p>
+   <p class="contentsl3"><a href="#rule_2.1.1" >2.1.1</a> Cannot use names</p>
+   <p class="contentsl3"><a href="#rule_2.1.2" >2.1.2</a> Limitations on library substitutions</p>
+   <p class="contentsl3"><a href="#rule_2.1.3" >2.1.3</a> Feedback directed optimization is allowed in peak</p>
+   <p class="contentsl3"><a href="#rule_2.1.4" >2.1.4</a> Limitations on size changes</p>
+   <p class="contentsl3"><a href="#rule_2.1.5" >2.1.5</a> Portability flags</p>
+   <p class="contentsl2"><a href="#rule_2.2"   >2.2</a> Base Optimization Rules</p>
+   <p class="contentsl3"><a href="#rule_2.2.1" >2.2.1</a> Safe</p>
+   <p class="contentsl3"><a href="#rule_2.2.2" >2.2.2</a> Same for all</p>
+   <p class="contentsl3"><a href="#rule_2.2.3" >2.2.3</a> Feedback directed optimization must not be used in base</p>
+   <p class="contentsl3"><a href="#rule_2.2.4" >2.2.4</a> Assertion flags must NOT be used in base</p>
+   <p class="contentsl3"><a href="#rule_2.2.5" >2.2.5</a> Floating point reordering allowed</p>
+   <p class="contentsl3"><a href="#rule_2.2.6" >2.2.6</a> (removed)</p>
+   <p class="contentsl3"><a href="#rule_2.2.7" >2.2.7</a> Safety and Standards Conformance</p>
+   <p class="contentsl3"><a href="#rule_2.2.8" >2.2.8</a> Base build environment</p>
+   <p class="contentsl3"><a href="#rule_2.2.9" >2.2.9</a> Portability Switches for Data Models</p>
+   <p class="contentsl3"><a href="#rule_2.2.10">2.2.10</a> Cross-module optimization</p>
+   <p class="contentsl3"><a href="#rule_2.2.11">2.2.11</a> Alignment switches are allowed</p>
+   <p class="contentsl3"><a href="#rule_2.2.12">2.2.12</a> Pointer sizes</p>
+
+   <p id="Dtoc_3" class="contentsl1">
+                         <a href="#rule_3"     >3.</a>  Running SPEC CPU2006</p>
+   <p class="contentsl2"><a href="#rule_3.1"   >3.1</a> System Configuration</p>
+   <p class="contentsl3"><a href="#rule_3.1.1" >3.1.1</a> File Systems</p>
+   <p class="contentsl3"><a href="#rule_3.1.2" >3.1.2</a> System State</p>
+   <p class="contentsl2"><a href="#rule_3.2"   >3.2</a> Additional Rules for Running SPECrate</p>
+   <p class="contentsl3"><a href="#rule_3.2.1" >3.2.1</a> Number of copies in peak</p>
+   <p class="contentsl3"><a href="#rule_3.2.2" >3.2.2</a> Number of copies in base</p>
+   <p class="contentsl3"><a href="#rule_3.2.3" >3.2.3</a> Single file system</p>
+   <p class="contentsl3"><a href="#rule_3.2.4" >3.2.4</a> Submit</p>
+   <p class="contentsl2"><a href="#rule_3.3"   >3.3</a> Continuous Run Requirement</p>
+   <p class="contentsl2"><a href="#rule_3.4"   >3.4</a> Run-time environment</p>
+   <p class="contentsl2"><a href="#rule_3.5"   >3.5</a> Base, peak, and basepeak</p>
+   <p class="contentsl2"><a href="#rule_3.6"   >3.6</a> Run time dynamic optimization</p>
+
+   <p id="Dtoc_4" class="contentsl1">
+                         <a href="#rule_4"     >4.</a>  Results Disclosure</p>
+   <p class="contentsl2"><a href="#rule_4.1"   >4.1</a> Rules regarding availability date and systems not yet shipped</p>
+   <p class="contentsl3"><a href="#rule_4.1.1" >4.1.1</a> Pre-production software can be used</p>
+   <p class="contentsl3"><a href="#rule_4.1.2" >4.1.2</a> Software component names</p>
+   <p class="contentsl3"><a href="#rule_4.1.3" >4.1.3</a> Specifying dates</p>
+   <p class="contentsl3"><a href="#rule_4.1.4" >4.1.4</a> If dates are not met</p>
+   <p class="contentsl3"><a href="#rule_4.1.5" >4.1.5</a> Performance changes for pre-production systems</p>
+   <p class="contentsl2"><a href="#rule_4.2"   >4.2</a> Configuration Disclosure</p>
+   <p class="contentsl3"><a href="#rule_4.2.1" >4.2.1</a> System Identification</p>
+   <p class="contentsl3"><a href="#rule_4.2.2" >4.2.2</a> Hardware Configuration</p>
+   <p class="contentsl3"><a href="#rule_4.2.3" >4.2.3</a> Software Configuration</p>
+   <p class="contentsl3"><a href="#rule_4.2.4" >4.2.4</a> Tuning Information</p>
+   <p class="contentsl3"><a href="#rule_4.2.5" >4.2.5</a> Description of Tuning Options ("Flags File")</p>
+   <p class="contentsl2"><a href="#rule_4.3"   >4.3</a> Test Results Disclosure</p>
+   <p class="contentsl3"><a href="#rule_4.3.1" >4.3.1</a> Speed Metrics</p>
+   <p class="contentsl3"><a href="#rule_4.3.2" >4.3.2</a> Throughput Metrics</p>
+   <p class="contentsl3"><a href="#rule_4.3.3" >4.3.3</a> Performance changes for production systems</p>
+   <p class="contentsl2"><a href="#rule_4.4"   >4.4</a> Metric Selection</p>
+   <p class="contentsl2"><a href="#rule_4.5"   >4.5</a> Research and Academic usage of CPU2006</p>
+   <p class="contentsl2"><a href="#rule_4.6"   >4.6</a> Required Disclosures</p>
+   <p class="contentsl2"><a href="#rule_4.7"   >4.7</a> Fair Use</p>
+   <p class="contentsl2"><a href="#rule_4.8"   >4.8</a> Estimates are Allowed</p>
+
+   <p id="Dtoc_5" class="contentsl1last"><a href="#rule_5"     >5.</a>  Run Rule Exceptions</p>
+
+<h2 id="rule_1">1 Philosophy</h2>
+<p>This section is an overview of the purpose, definitions, methods, and assumptions for the SPEC CPU2006 run rules.</p>
+
+<h3 id="rule_1.1">1.1 Purpose</h3>
+<p>The purpose of the SPEC CPU2006 benchmark and its run rules is to further the cause of fair and objective CPU benchmarking.  The rules help
+ensure that published results are meaningful, comparable to other results, and reproducible.  SPEC believes that the user
+community benefits from an objective series of tests which serve as a common reference.</p> 
+
+<p>Per the SPEC license agreement, all SPEC CPU results disclosed in public -- whether in writing or in verbal
+form -- must adhere to the SPEC CPU Run and Reporting Rules, or be clearly described as estimates. </p>
+
+<p class="snugbot">A published SPEC CPU2006 result is three things: </p>
+<ol>
+<li class="snug">A performance <a href="#obs">observation</a>; </li>
+<li class="snug">A <a href="#decl">declaration</a> of expected performance; and </li>
+<li class="snug">A claim about maturity of performance <a href="#opt">methods</a>.</li>
+</ol>
+
+<h3 id="rule_1.2"><a name="obs" />1.2 A SPEC CPU2006 Result Is An Observation</h3>
+<p>A published SPEC CPU2006 result is an empirical report of performance observed when carrying out certain computationally
+intensive tasks.</p>
+
+<h4 id="rule_1.2.1">1.2.1 Test Methods</h4>
+<p>SPEC supplies the CPU2006 benchmarks in the form of source code, which testers are not allowed to modify except under
+certain very restricted circumstances.  SPEC CPU2006 includes 29 benchmarks, organized into 2 suites: an integer suite of
+12 benchmarks, known as CINT2006; and a floating point suite of 17 benchmarks, known as CFP2006.  </p>
+
+<p style="margin-left:+2em"><b>Note:</b> this document avoids the (otherwise common) usage "CPU2006 suite" (singular),
+instead insisting on "CPU2006 suites" (plural).  Thus a rule that requires consistency within a suite means that consistency
+is required across the set of 12, or across the set of 17; not the set of 29.</p>
+
+<p>
+The tester supplies compilers and the System Under Test (SUT).  The tester may set
+optimization flags and, where needed, portability flags, in a SPEC config file.  SPEC supplies tools which automatically:</p>
+<ul>
+  <li>archive the user-selected configuration file,</li>
+  <li>generate Makefiles which are used to compile the benchmarks,</li>
+  <li>run all the benchmarks in a suite (integer or floating point) in a single continuous run,</li>
+  <li>validate each benchmark output to ensure that the benchmark generated acceptable outputs,</li>
+  <li>pick the median of three runs for each benchmark, </li>
+  <li>and compute metrics, such as SPECint2006 and SPECfp2006.</li>
+</ul>
+
+ <p>The CPU2006 benchmarks (code + workload) have been designed to fit within about 1GB of memory (when compiled with 32 bit pointers), i.e.
+ within the capabilities of systems that allow user applications to use 32 bits (4GB).  </p>
+
+    <p class="example">(SPEC is aware that some systems that are commonly described as "32-bit" may provide a smaller number
+    of bits to user applications, for example if one or more bits are reserved to privileged code.  SPEC is also aware that
+    there are many ways to spend profligate amounts of virtual memory.  Therefore, although 32-bit systems are within the design
+    center for the CPU2006 suites, SPEC does not guarantee any particular memory size for the benchmarks, nor that they will
+    necessarily fit on all systems that are described as 32-bit.) </p>
+
+<h4 id="rule_1.2.2">1.2.2 Conditions of Observation</h4>
+<p>The report that certain performance has been observed is meaningful only if the conditions of observation are stated.  SPEC therefore
+requires that a published result include a description of all performance-relevant conditions. </p>
+
+<h4 id="rule_1.2.3">1.2.3 Assumptions About the Tester</h4>
+<p>It is assumed that the tester:</p>
+<ul>
+   <li>is willing to describe the observation and its conditions clearly;</li>
+   <li>is able to learn how to operate the SUT in ways that comply with the rules in this document, for example by selecting
+   compilation options that meet SPEC's requirements; </li>
+   <li>knows the SUT better than those who have only indirect contact with it;</li>
+   <li>is honest: SPEC CPU does not employ an independent auditor process, though it does have requirements for
+   reproducibility and does encourage use of a peer review process.</li>
+</ul>
+<p>The person who actually carries out the test is, therefore, the first and the most important audience for these run rules.
+The rules attempt to help the tester by trying to be clear about what is and what is not allowed.</p>
+
+<h3 id="rule_1.3"><a name="decl" />1.3 A Published SPEC CPU2006 Result Is a Declaration of Expected Performance</h3>
+<p>A published SPEC CPU2006 result is a declaration that the observed level of performance can be obtained by others.  Such
+declarations are widely used by vendors in their marketing literature, and are expected to be meaningful to ordinary customers.</p>
+
+<h4 id="rule_1.3.1">1.3.1 Reproducibility</h4>
+<p>It is expected that later testers can obtain a copy of the SPEC CPU2006 suites, obtain the components described in the
+original result, and reproduce the claimed performance, within a small range to allow for run-to-run variation.</p>
+
+<h4 id="rule_1.3.2">1.3.2 Obtaining Components</h4>
+<p>Therefore, it is expected that the components used in a published result can in fact be obtained, with the level of quality commonly
+expected for products sold to ordinary customers.  Such components are required to:</p>
+<ul>
+   <li>be specified using customer-recognizable names,</li>
+   <li>be generally available within certain time frames,</li>
+   <li>provide documentation,</li>
+   <li>provide an option for customer support,</li>
+   <li>be of production quality, and</li>
+   <li>provide a suitable environment for programming.</li>
+</ul>
+
+<p>The judgment of whether a component meets the above list may sometimes pose difficulty, and various references are given
+in these rules to guidelines for such judgment.  But by way of introduction, imagine a vendor-internal version of a compiler,
+designated only by an internal code name, unavailable to customers, which frequently generates incorrect code.  Such a
+compiler would fail to provide a suitable environment for general programming, and would not be ready for use in a SPEC
+CPU2006 result.</p>
+
+<h3 id="rule_1.4"><a name="opt" />1.4 A SPEC CPU2006 Result is a Claim About Maturity of Performance Methods</h3>
+<p>A published SPEC CPU result carries an implicit claim that the performance methods it employs are more than just
+"prototype" or "experimental" or "research" methods; it is a claim that there is a certain level of maturity and general
+applicability in its methods.  Unless clearly described as an estimate, a published SPEC result is a claim that the
+performance methods employed (whether hardware or software, compiler or other):</p>
+<ul>
+   <li>Generate correct code for a class of programs larger than the SPEC CPU2006 suites,</li>
+   <li>Improve performance for a class of programs larger than the SPEC CPU2006 suites,</li>
+   <li>Are recommended by the vendor for a specified class of programs larger than the SPEC CPU2006 suites,</li>
+   <li>Are generally available, documented, supported, and</li>
+   <li>If used as part of <a href="#rule_2.2">base</a>, are <a href="#rule_2.2.1">safe</a>.</li>
+</ul>
+
+<p>SPEC is aware of the importance of optimizations in producing the best performance.  SPEC is also aware that it is
+sometimes hard to draw an exact line between legitimate optimizations that happen to benefit SPEC benchmarks, versus
+optimizations that exclusively target the SPEC benchmarks.  However, with the list above, SPEC wants to increase awareness of
+implementers and end users to issues of unwanted benchmark-specific optimizations that would be incompatible with SPEC's goal
+of fair benchmarking. </p>
+
+<p>The tester must describe the performance methods that are used in terms that a performance-aware user can follow, so that
+users can understand how the performance was obtained and can determine whether the methods may be applicable to their own applications.
+The tester must be able to make a credible public claim
+that a class of applications in the real world may benefit from these methods. </p> 
+
+<h3 id="rule_1.5">1.5 Peak and base builds </h3>
+
+<p>"Peak" metrics may be produced by building each benchmark in the suite with a set of optimizations individually selected
+for that benchmark. The optimizations selected must adhere to the set of general benchmark optimization rules described in
+section 2.1 below. This may also be referred to as "aggressive compilation".</p>
+
+<p>"Base" metrics must be produced by building all the benchmarks in the suite with a common set of optimizations.  In
+addition to the general benchmark optimization rules (section 2.1), base optimizations must adhere to a stricter set of rules
+described in section 2.2.  </p>
+
+<p>These additional rules serve to form a "baseline" of performance that can be obtained with a single set of compiler
+switches, single-pass make process, and a high degree of portability, safety, and performance.</p>
+
+<ul> 
+<li><p> The choice of a single set of switches and single-pass make process is intended to reflect the performance that
+may be attained by a user who is interested in performance, but who prefers not to invest the time required for tuning of
+individual programs, development of training workloads, and development of multi-pass Makefiles.</p></li>
+
+<li><p>SPEC allows base builds to assume that the program follows the relevant language standard (i.e. it is portable).   But
+this assumption may be made only where it does not interfere with getting the expected answer.  For all testing, SPEC
+requires that benchmark outputs match an expected set of outputs, typically within a benchmark-defined tolerance to allow for
+implementation differences among systems.</p>
+
+<p>Because the SPEC CPU benchmarks are drawn from the compute intensive portion of real applications, some of them use
+popular practices that compilers must commonly cater for, even if those practices are nonstandard.  In particular, some of
+the programs (and, therefore, all of base) may have to be compiled with settings that do not exploit all optimization
+possibilities that would be possible for programs with perfect standards compliance.</p></li>
+
+<li><p>In base, the compiler may not make unsafe assumptions that are more aggressive than what the language standard
+allows.</p></li>
+
+<li><p>Finally, though, as a performance suite, SPEC CPU has throughout its history allowed certain common optimizations to
+nevertheless be included in base, such as reordering of operands in accordance with algebraic identities.</p></li>
+</ul>
+<p>Rules for building the benchmarks are described in section 2.</p>
+
+
+
+<h3 id="rule_1.6">1.6 Estimates</h3>
+<p>SPEC CPU2006 metrics may be estimated.  All <a href="#rule_4.8">estimates</a> must be clearly designated as such.</p>
+
+<h3 id="rule_1.7">1.7 About SPEC</h3>
+<h4 id="rule_1.7.1">1.7.1 Publication on SPEC's web site is encouraged</h4>
+
+<p>SPEC encourages the review of CPU2006 results by the relevant subcommittee, and subsequent publication on SPEC's web
+site (<a href="http://www.spec.org/cpu2006">http://www.spec.org/cpu2006</a>).  SPEC uses a peer-review process prior to publication, in
+order to improve consistency in the understanding, application, and interpretation of these run rules.  </p>
+
+<h4 id="rule_1.7.2">1.7.2 Publication on SPEC's web site is not required </h4>
+<p>Review by SPEC is not required.  Testers may publish rule-compliant results independently.  No matter
+where published, all results publicly disclosed must adhere to the SPEC Run and Reporting Rules, or be clearly marked as
+estimates.  SPEC <a href="#rule_4.6">may take action</a> if the rules are not followed.</p>
+
+<h4 id="rule_1.7.3">1.7.3 SPEC May Require New Tests</h4>
+<p>In cases where it appears that the run rules have not been followed, SPEC may investigate such a claim and require that a
+result be regenerated, or may require that the tester correct the deficiency (e.g. make the optimization more general purpose
+or correct problems with code generation).</p>
+
+<h4 id="rule_1.7.4">1.7.4 SPEC May Adapt the Suites</h4>
+<p>The SPEC Open Systems Group reserves the right to adapt the SPEC CPU2006 suites as it deems necessary to preserve its goal
+of fair benchmarking.  Such adaptations might include (but are not limited to) removing benchmarks, modifying codes or
+workloads, adapting metrics, republishing old results adapted to a new metric, or requiring retesting by the original
+tester.</p>
+
+<h3 id="rule_1.8">1.8 Usage of the Philosophy Section</h3>
+<p>This philosophy section is intended to introduce concepts of fair benchmarking.  It is understood that in some cases, this
+section uses terms that may require judgment, or which may lack specificity.  For more specific requirements, please see the
+sections below.</p>
+
+<p>In case of a conflict between this philosophy section and a run rule in one of the sections below, normally the run rule found 
+below takes priority.</p>
+
+<p>Nevertheless, there are several conditions under which questions should be resolved by reference to this section: (a)
+self-conflict: if rules below are found to impose incompatible requirements; (b) ambiguity: if they are unclear or
+silent with respect to a question that affects how a result is obtained, published, or interpreted; (c) obsolecsence: if the
+rules below  are made obsolete by changing technical circumstances or by directives from superior entities within
+SPEC.</p>
+
+<p>When questions arise as to interpretation of the run rules:</p>
+<ol>
+   <li><p> Interested parties should seek first to resolve questions based on the rules as written in the sections that
+   follow.  If this is not practical (because of problems of contradiction, ambiguity, or obsolescence), then the principles
+   of the philosophy section should be used to resolve the issue.</p></li>
+   <li><p> The SPEC CPU subcommittee should be notified of the issue.  Contact information may be found via the SPEC web site,
+   www.spec.org.</p></li>
+   <li><p>SPEC may choose to issue a ruling on the issue at hand, and may choose to amend the rules to avoid future such
+   issues.</p></li>
+</ol>
+
+
+<h2 id="rule_2.0">2.0 Building SPEC CPU2006</h2>
+
+<p>SPEC has adopted a set of rules defining how SPEC CPU2006 benchmark suites must be built and run to produce peak and base
+metrics. </p>
+
+<h4 id="rule_2.0.1">2.0.1 Base and Peak Builds </h4>
+
+<p>(This rule, formerly present in CPU2000, is now covered in <a href="#rule_1.5">section 1.5</a>.) </p>
+
+<h4 id="rule_2.0.2">2.0.2 SPEC's tools must be used</h4>
+
+<p>With the release of SPEC CPU2006 suites, a set of tools based on GNU Make and Perl5 are supplied to build and run the
+benchmarks.  To produce publication-quality results, these SPEC tools must be used.  This helps ensure reproducibility of
+results by requiring that all individual benchmarks in the suites are run in the same way and that a configuration file is
+available that defines the optimizations used. </p>
+
+<p>The primary tool is called <tt>runspec</tt> (<tt>runspec.bat</tt> for
+Microsoft Windows). It is described in the <tt>runspec</tt> documentation in the
+<tt>Docs</tt> subdirectory of the SPEC root directory -- in a Bourne shell
+that would be called <tt>${SPEC}/Docs/</tt>, or on Microsoft Windows 
+<tt>%SPEC%\Docs\</tt>.</p>
+
+<p>Some Fortran programs in the floating point suite need to be preprocessed, for example to choose variable sizes depending on whether
+-DSPEC_CPU_LP64 has been set.  Fortran preprocessing must be done using the SPEC-supplied preprocessor, even if the vendor's
+compiler has its own preprocessor.  <tt>Runspec</tt> will automatically enforce this requirement by invoking the SPEC
+preprocessor.</p>
+
+<p>SPEC supplies pre-compiled versions of the tools for a variety of platforms.  If a new platform is used, please see
+<tt>tools-build.html</tt> in the Docs directories for information on how to build the tools, and how to obtain approval for
+them.  SPEC's approval is required for the tool build, so a log must be generated during the build.</p>
+
+<p>For more complex ways of compilation, for example feedback-driven compilation, SPEC has provided hooks in the tools so
+that such compilation and execution is possible (see the tools documentation for details).  Only if, unexpectedly, such a
+compilation and execution should not be possible, there is the possibility that the tester may ask for permission to
+use performance-neutral alternatives (see <a href="#rule_5">section&nbsp;5</a>).</p>
+
+<h4 id="rule_2.0.3">2.0.3 The runspec build environment </h4>
+
+<p>When <tt>runspec</tt> is used to build the SPEC CPU2006 benchmarks, it must be used in generally available, documented,
+and supported environments (see <a href="#rule_1">section&nbsp;1</a>), and any aspects of the environment that contribute to
+performance must be disclosed to SPEC (see <a href="#rule_4">section&nbsp;4</a>).  </p>
+
+<p>On occasion, it may be possible to improve run time performance by environmental choices at build time.  For example, one
+might install a performance monitor, turn on an operating system feature such as bigpages, or set an environment variable
+that causes the <tt>cc</tt> driver to invoke a faster version of the linker.</p>
+
+<p>It is difficult to draw a precise line between environment settings that are reasonable versus settings that are not.
+Some settings are obviously not relevant to performance (such as hostname), and SPEC makes no attempt to regulate such
+settings.  But for settings that do have a performance effect, for the sake of clarity, SPEC has chosen that: </p>
+
+<ul>
+   <li><p>(a) The tester may install whatever software the tester wishes, including performance-enhancing software, but such
+   software must be installed prior to starting the builds, must remain installed throughout the builds, and must be
+   documented, supported, generally available, and disclosed to SPEC.</p></li>
+
+   <li><p>(b) The tester may set whatever system configuration parameters the tester wishes, but these must be applied at
+   boot time, documented, supported, generally available, and disclosed to SPEC. "Dynamic" system parameters (i.e. ones that
+   do not require a reboot) must nevertheless be applied at boot time, except as provided under <a
+   href="#rule_2.0.5">section&nbsp;2.0.5</a>.</p></li>
+
+   <li><p>(c) After the boot process is completed, environment settings may be made as follows:
+      <br />* to specify resource limits (for example, as in the Bourne shell <tt>ulimit</tt> command), and
+      <br />* to select major components of the compilation system -- for example, as in:</p>
+         <p class="codeexample">
+         setenv CC_LOC /net/dist/version73/cc
+         <br />setenv LD_LOC /net/opt/dist/ld-fast</p>
+      <p>-- but these settings must be documented; supported; generally available; disclosed to SPEC; made PRIOR to starting
+      the build; and must not change during the build, except as provided in 
+      <a href="#rule_2.0.5" >section 2.0.5</a>.</p></li>
+</ul>
+
+<h4 id="rule_2.0.4">2.0.4 Continuous Build requirement</h4>
+
+<p>As described in <a href="#rule_1">section&nbsp;1</a>, it is expected that testers can reproduce other testers' results.
+In particular, it must be possible for a new tester to compile both the base and peak benchmarks for an entire suite (i.e.
+CINT2006 or CFP2006) in one execution of <tt>runspec</tt>, with appropriate command line arguments and an appropriate
+configuration file, and obtain executable binaries that are (from a performance point of view) equivalent to the binaries
+used by the original tester.</p>
+
+<p>The simplest and least error-prone way to meet this requirement is for the original tester to take production hardware,
+production software, a SPEC config file, and the SPEC tools and actually build the benchmarks in a single invocation of
+<tt>runspec</tt> on the System Under Test (SUT).  But SPEC realizes that there is a cost to benchmarking and would like to
+address this, for example through the rules that follow regarding cross-compilation and individual builds.  However, in all
+cases, the tester is taken to assert that the compiled executables will exhibit the same performance as if they all had been
+compiled with a single invocation of <tt>runspec</tt> (see <a href="#rule_2.0.8">2.0.8)</a>.</p>
+
+<h4 id="rule_2.0.5">2.0.5 Changes to the runspec build environment </h4>
+
+<p>SPEC CPU2006 base binaries must be built using the environment rules of <a href="#rule_2.0.3">section&nbsp;2.0.3</a>, and
+must not rely upon any changes to the environment during the build.  </p>
+
+<p><i><b>Note 1:</b> base cross compiles using multiple hosts are allowed (<a href="#rule_2.0.6">2.0.6</a>), but the
+performance of the resulting binaries must not depend upon environmental differences among the hosts.  It must be possible to
+build performance-equivalent base binaries with one set of switches (<a href="#rule_2.2.2">2.2.2</a>), in one execution of
+<tt>runspec</tt> (<a href="#rule_2.0.4">2.0.4</a>), on one host, with one environment (<a href="#rule_2.0.3">2.0.3</a>).
+</i></p>
+
+<p>For a peak build, the environment may be changed, subject to the following constraints:</p>
+<ul>
+   <li><p>The environment change must be accomplished using the SPEC-provided config file hooks (such as
+   <tt>fdo_pre0</tt>).</p></li>
+
+   <li><p>The environment change must be fully disclosed to SPEC (see <a href="#rule_4">section&nbsp;4</a>).</p></li>
+
+   <li><p>The environment change must not be incompatible with a Continuous Build (see <a
+   href="#rule_2.0.4">section&nbsp;2.0.4</a>).</p></li>
+
+   <li><p>The environment change must be accomplished using simple shell commands.  It is not permitted to invoke a more
+   complex entity unless that entity is provided as part of a generally-available software package.  </p>
+
+        <p class="example" style="margin-bottom:0cm" >Examples: </p>
+        <ul>
+        <li class="example">Allowed: simple shell commands such as <tt>/usr/opt/performance_monitor -start</tt>, or
+        <tt>setenv BIGPAGES YES</tt>.</li>
+
+        <li class="example">Not allowed: a shell script, batch file, <tt>kdbx</tt> script, or Microsoft Windows  registry
+        adjustment program (unless provided as part of a generally-available software package).  </li>
+
+        <li class="example">Allowed: a script that is provided as part of the OS, and which uses <tt>kdbx</tt> to adjust the
+        setting of <tt>bigpages</tt></li>
+
+        <li class="example">Not allowed: a <tt>kdbx</tt> script specially written by the tester just for SPEC.</li>
+
+        </ul>
+
+   </li>
+
+</ul>
+
+<p><i><b>Note 2</b>: peak cross compiles using multiple hosts are allowed (<a href="#rule_2.0.6">2.0.6</a>), but the
+performance of the resulting binaries must not depend upon environmental differences among the hosts.  It must be possible to
+build performance-equivalent peak binaries with one config file, in one execution of <tt>runspec</tt> (<a
+href="#rule_2.0.4">2.0.4</a>), in the same execution of <tt>runspec</tt> that built the base binaries, on one host, starting
+from the environment used for the base build (<a href="#rule_2.0.3">2.0.3</a>), and changing that environment only through
+config file hooks (<a href="#rule_2.0.5">2.0.5</a>).  </i></p>
+
+<h4 id="rule_2.0.6">2.0.6 Cross-compilation allowed </h4>
+
+<p>It is permitted to use cross-compilation, that is, a building process where the benchmark executables are built on a
+system (or systems) that differ(s) from the SUT.  The <tt>runspec</tt> tool must be used on all systems (typically with <tt
+style="white-space:nowrap;">-a build</tt> on the host(s) and <tt style="white-space:nowrap;">-a validate</tt> on the
+SUT).</p>
+
+<p>If all systems belong to the same product family and if the software used to build the executables is available on all
+systems, this does not need to be documented.  In the case of a true cross compilation, (e.g. if the software used to build
+the benchmark executables is not available on the SUT, or the host system provides performance gains via specialized tuning
+or hardware not on the SUT), the host system(s) and software used for the benchmark building process must be documented in
+the Notes section.  See <a href="#rule_4">section&nbsp;4</a>.</p>
+
+<p>It is permitted to use more than one host in a cross-compilation. If more than one host is used in a cross-compilation,
+they must be sufficiently equivalent so as not to violate rule <a href="#rule_2.0.4">2.0.4</a>.  That is, it must be possible
+to build the entire suite on a single host and obtain binaries that are equivalent to the binaries produced using multiple
+hosts.  </p>
+
+<p>The purpose of allowing multiple hosts is so that testers can save time when recompiling many programs.  Multiple hosts
+must NOT be used in order to gain performance advantages due to environmental differences among the hosts.  In fact, the
+tester must exercise great care to ensure that any environment differences are performance neutral among the hosts, for
+example by ensuring that each has the same version of the operating system, the same performance software, the same
+compilers, and the same libraries.  The tester must exercise due diligence to ensure that differences that appear to be
+performance neutral - such as differing MHz or differing memory amounts on the build hosts - are in fact truly neutral.</p>
+
+<p>Multiple hosts must NOT be used in order to work around system or compiler incompatibilities (e.g. compiling the
+SPECfp2006 C benchmarks on a different OS version than the SPECfp2006 Fortran benchmarks in order to meet the different
+compilers' respective OS requirements), since that would violate the Continuous Build rule (<a
+href="#rule_2.0.4">2.0.4</a>).</p>
+
+<h4 id="rule_2.0.7">2.0.7 Individual builds allowed</h4>
+
+<p>It is permitted to build the benchmarks with multiple invocations of <tt>runspec</tt>, for example during a tuning effort.
+But, the executables must be built using a consistent set of software.  If a change to the software environment is introduced
+(for example, installing a new version of the C compiler which is expected to improve the performance of one of the floating
+point benchmarks), then all affected benchmarks must be rebuilt (in this example, all the C benchmarks in the floating point
+suite). </p>
+
+<h4 id="rule_2.0.8">2.0.8 Tester's assertion of equivalence between build types </h4>
+
+<p>The previous 4 rules may appear to contradict each other (<a href="#rule_2.0.4">2.0.4</a> through <a
+href="#rule_2.0.7">2.0.7</a>), but the key word in <a href="#rule_2.0.4">2.0.4</a> is the word "possible".</p>
+
+<p class="example">Consider the following sequence of events:</p>
+
+<ul>
+   <li class="example">A tester has built a complete set of CPU2006 executable images ("binaries") on her usual host system.  </li>
+
+   <li class="example">A hot new SUT arrives for a limited period of time.  It has no compilers installed.</li>
+
+   <li class="example">A SPEC CPU2006 tree is installed on the SUT, along with the binaries and config file generated on the
+   usual host.</li>
+
+   <li class="example">It is learned that performance could be improved if the peak version of <tt>999.sluggard</tt> were
+   compiled with <tt>-O5</tt> instead of <tt>-O4</tt>.  </li>
+
+   <li class="example">On the host system, the tester edits the config file to change to <tt>-O5</tt> for
+   <tt>999.sluggard</tt>, and issues the command: <br /><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;runspec -c myconfig -D -a
+   build -T peak sluggard</tt></li>
+
+   <li class="example">The tester copies the new binary and config file to the SUT</li>
+
+   <li class="example">A complete run is started by issuing the command:
+        <br /><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;runspec -c myconfig -a validate all</tt></li>
+
+    <li class="example">Performance is as expected, and the results are published at SPEC (including the config file).</li>
+</ul>
+
+<p class="example">In this example, the tester is taken to be asserting that the above sequence of events produces binaries
+that are, from a performance point of view, equivalent to binaries that it would have been possible to build in a single
+invocation of the tools.</p>  
+
+<p>If there is some optimization that can only be applied to individual benchmark builds, but which it is not possible to
+apply in a continuous build, the optimization must not be used.</p>
+
+<p>Rule <a href="#rule_2.0.8">2.0.8</a> is intended to provide some guidance about the kinds of practices that are
+reasonable, but the ultimate responsibility for result reproducibility lies with the tester.  If the tester is uncertain
+whether a cross-compile or an individual benchmark build is equivalent to a full build on the SUT, then a full build on the
+SUT is required (or, in the case of a true cross-compile which is documented as such, then a single <tt>runspec -a build</tt>
+is required on a single host.)  Although full builds add to the cost of benchmarking, in some instances a full build in a
+single <tt>runspec</tt> may be the only way to ensure that results will be reproducible.</p>
+
+
+<h3 id="rule_2.1">2.1 General Rules for Selecting Compilation Flags </h3>
+
+<p>The following rules apply to compiler flag selection for SPEC CPU2006 Peak and Base Metrics.  Additional rules for Base
+Metrics follow in <a href="#rule_2.2">section&nbsp;2.2</a>. </p>
+
+<h4 id="rule_2.1.1">2.1.1 Must not use names</h4>
+
+<p>Source file or variable or subroutine names must not be used within optimization flags or compiler/build options.  </p>
+
+<p>Identifiers used in preprocessor directives to select alternative source code are also forbidden, except for a
+rule-compliant library substitution (<a href="#rule_2.1.2">2.1.2</a>) or an approved portability flag (<a
+href="#rule_2.1.5">2.1.5</a>).</p>
+
+<p class="snugbot">For example, if a benchmark source code uses one of:</p>
+<pre>
+        #ifdef IDENTIFIER 
+        #ifndef IDENTIFIER 
+        #if defined IDENTIFIER
+        #if !defined IDENTIFIER
+</pre>
+
+<p class="snugtop">to provide alternative source code under the control of a compiler option such as <tt>-DIDENTIFIER</tt>,
+such a switch may not be used unless it meets the criteria of 2.1.2 or 2.1.5.</p>
+
+<h4 id="rule_2.1.2">2.1.2  Limitations on library substitutions</h4>
+
+<p>Flags which substitute pre-computed (e.g. library-based) routines for routines defined in the benchmark on the basis of
+the routine's name must not be used.  Exceptions are:</p>
+
+<p>a) the function <tt>alloca</tt>.  It is permitted to use a flag that substitutes the system's <tt>builtin_alloca</tt>.
+Such a flag may be applied to individual benchmarks (in both base and peak).</p>
+
+<p>b) the level 1, 2 and 3 BLAS functions in the CFP2006 benchmarks, and the netlib-interface-compliant FFT functions.  Such
+substitution may be used in a peak run, but must not be used in base.</p>
+
+<p>Note: rule 2.1.2 does not forbid flags that select alternative implementations of library functions defined in an ANSI/ISO
+language standard.  For example, such flags might select an optimized library of these functions, or allow them to be
+inlined.  </p>
+
+<h4 id="rule_2.1.3">2.1.3  Feedback directed optimization is allowed in peak.  </h4>
+
+<p>Feedback directed optimization may be used in peak.  Only the training input (which is automatically selected by
+<tt>runspec</tt>) may be used for the run(s) that generate(s) feedback data.  </p>
+
+<p>Optimization with multiple feedback runs is also allowed (build, run, build, run, build...).</p>
+
+<p>The requirement to use only the train data set at compile time shall not be taken to forbid the use of run-time dynamic
+optimization tools that would observe the reference execution and dynamically modify the in-memory copy of the benchmark.
+However, such tools must not in any way affect later executions of the same benchmark (for example, when running multiple
+times in order to determine the median run time).   Such tools must also be disclosed in the publication of a result, and must
+be used for the entire suite (see <a href="#rule_3.3">section&nbsp;3.3</a>).</p>
+
+<h4 id="rule_2.1.4">2.1.4 Limitations on size changes</h4>
+
+<p>Flags that change a data type size to a size different from the default
+size of the compilation system are not allowed.  Exceptions are: a) the C long type may be set to 32 or greater bits; b)
+pointer sizes may be set in a manner which requires, or which assumes, that the benchmarks (code+data) fit into 32
+bits of address space.</p>
+
+<h4 id="rule_2.1.5">2.1.5 Portability Flags </h4>
+
+<p>Rule <a href="#rule_2.2.2">2.2.2</a> requires that all benchmarks use the same flags in base.  <i>Portability flags</i> are
+an exception to this rule: they may differ from one benchmark to another, even in base.  Such flags are subject to two major
+requirements:</p>
+
+<ol>
+<li>They must be used via the provided config file PORTABILITY lines
+    (such as <tt>CPORTABILITY</tt>, 
+    <tt>FPORTABILITY</tt>, etc).  </li>
+
+<li>They must be approved by the SPEC CPU Subcommittee.</li>
+</ol>
+
+<p>The initial published results for CPU2006 will include a reviewed set of portability flags on several operating systems;
+later users who propose to apply additional portability flags must prepare a justification for their use.  </p>
+
+<p>A proposed portability flag will normally be approved if one of the following conditions holds:</p>
+
+<ul>
+   <li><p>(a) The flag selects a performance-neutral alternate benchmark source, and the benchmark cannot build and execute
+   correctly on the given platform unless the alternate source is selected.  (Examples might be flags such as
+   <tt>-DHOST_WORDS_BIG_ENDIAN</tt>, <tt>-DHAVE_SIGNED_CHAR</tt>.)</p></li>
+
+   <li><p>(b) The flag selects a compiler mode that allows basic parsing of the input source program, and it is not possible
+   to set that flag for all programs of the given language in the suite.  (An example might be <tt>-fixedform</tt>, to select
+   Fortran source code fixed format.)</p></li>
+
+   <li><p>(c) The flag selects features from a certain version of the language, and it is not possible to set that flag for
+   all programs of the given language in the suite.  (An example might be <tt>-language:c89</tt>.)</p></li>
+
+   <li><p>(d) The flag solves a data model problem, as described in section <a href="#rule_2.2.9">2.2.9</a>.</p></li>
+
+   <li><p>(e) The flag selects a resource limit, and it is not possible to set that flag for all programs of the given
+   language in the suite.  </p></li>
+
+</ul>
+
+<p>A proposed portability flag will normally not be approved unless it is essential in order to successfully build and run
+the benchmark.  </p>
+
+<p>If more than one solution can be used for a problem, the subcommittee will review attributes such as precedent from
+previously published results, performance neutrality, standards compliance, amount of code affected, impact on the expressed original
+intent of the program, and good coding practices (in rough order of priority).</p>
+
+<p>If a benchmark is discovered to violate the relevant standard, that may or may not be reason for the subcommittee to grant
+a portability flag.  If the justification for a portability flag is standards compliance, the tester must include a
+specific reference to the offending source code module and line number, and a specific reference to the relevant sections of
+the appropriate standard.  The tester should also address impact on the other attributes mentioned in the previous
+paragraph.</p>
+
+<p>If a given portability problem (within a given language) occurs in multiple places within a suite, then,
+in base, the same method(s) must be applied to solve all instances of the problem.</p>
+
+<p>If a library is specified as a portability flag, SPEC may request that the table of contents of the library be included in
+the disclosure.</p>
+
+
+<h3 id="rule_2.2">2.2 Base Optimization Rules</h3>
+
+<p>In addition to the rules listed in <a href="#rule_2.1">section&nbsp;2.1</a> above, the selection of optimizations to be
+used to produce SPEC CPU2006 Base Metrics includes the following: </p>
+
+<h4 id="rule_2.2.1">2.2.1  Safety and Standards Conformance</h4>
+
+<p>The optimizations used are expected to be safe, and it is expected that system or compiler vendors would endorse
+the general use of these optimizations by customers who seek to achieve good application performance.</p>
+
+<p>The requirements that optimizations be safe, and that they generate correct code for a class of programs larger than the
+suites themselves (rule <a href="#rule_1.4">1.4</a>), are normally interpreted as requiring that the system, as used in base,
+implement the language correctly.  "The language" is defined by the appropriate ANSI/ISO standard (C99, Fortran-95, C++
+98).</p>
+
+<p>The principle of standards conformance is not automatically applied, because SPEC has historically allowed certain
+exceptions:</p>
+<ol>
+   <li><a href="#rule_2.2.5">Section 2.2.5</a> allows reordering of arithmetic operands.</li>
+   <li>SPEC has not insisted on conformance to the C standard in the setting of <tt>errno</tt>.</li>
+   <li>SPEC has not dealt with (and does not intend to deal with) language standard violations that are performance neutral
+   for the CPU2006 suites.</li>
+   <li>When a more recent language standard modifies a requirement imposed by an earlier standard, SPEC will also accept
+   systems that adhere to the more recent ANSI/ISO language standard.</li>
+</ol>
+
+<p>Otherwise, a deviation from the standard that is not performance neutral, and gives the particular implementation a
+CPU2006 performance advantage over standard-conforming implementations, is considered an indication that the requirements
+about "safe" and "correct code" optimizations are probably not met.  Such a deviation may be a reason for SPEC to find a
+result not rule-conforming.</p>
+
+<p>If an optimization causes any SPEC CPU2006 benchmark to fail to validate, and if the relevant portion of this benchmark's
+code is within the language standard, the failure is taken as additional evidence that an optimization is not safe.</p>
+
+<p><b>Regarding C++:</b> Note that for C++ applications, the standard calls for support of both run-time type information
+(RTTI) and exception handling.  The compiler, as used in base, must enable these.  </p>
+
+   <p class="example">For example, a compiler enables exception handling by default; it can be turned off with <tt
+   style="white-space:nowrap;">--noexcept</tt>.  The switch <tt style="white-space:nowrap;">--noexcept</tt> is not allowed in
+   base.</p>
+
+   <p class="example">For example, a compiler defaults to no run time type information, but allows it to be turned on via <tt
+   style="white-space:nowrap;">--rtti</tt>.  The switch <tt style="white-space:nowrap;">--rtti</tt> must be used in base.</p>
+
+
+<p><b>Regarding accuracy: </b>Because language standards generally do not set specific requirements for accuracy, SPEC has
+also chosen not to do so.  Nevertheless:</p>
+
+<ul>   
+   <li> Optimizations are expected to generate code that provides appropriate accuracy for a class of problems, where that
+   class is larger than the SPEC benchmarks themselves.</li>
+   <li> Implementations are encouraged to clearly document any accuracy limitations.</li>
+   <li> Implementations are encouraged to adhere to the principle of "no surprises"; this can be achieved both by predictable
+   algorithms and by documentation.</li>
+</ul>
+
+<p>In cases where the class of appropriate applications appears to be so narrowly drawn as to constitute a "benchmark special",
+that may be a reason for SPEC to find a result non-conforming.</p>
+
+<h4 id="rule_2.2.2">2.2.2  Same for all </h4>
+
+<p>In base, the same compiler must be used for all modules of a given language within a benchmark suite.  Except for
+portability flags (see <a href="#rule_2.1.5">2.1.5</a> above), all flags or options that affect the transformation process
+from SPEC-supplied source to completed executable must be the same, including but not limited to:</p>
+
+<ul>
+   <li>compiler options</li>
+   <li>linker options</li>
+   <li>preprocessor options</li>
+   <li>libraries</li>
+   <li>flags that set warning levels (typically <tt>-w</tt>), </li>
+   <li>flags that create object files (typically <tt>-c</tt>, <tt>-o</tt>), </li>
+   <li>flags that affect the verbosity level of the compiler driver (typically <tt>-v</tt>)</li>
+   <li>language dialect selection switches (e.g. <tt>-ansi99</tt>, <tt>-std</tt>)</li>
+   <li>flags that assert standards compliance by the benchmarks (see <a href="#rule_2.2.4">2.2.4</a>, below)</li>
+   <li>flags that are set at installation time</li>
+   <li>flags that are set on a system-global basis</li>
+</ul>
+
+<p>All flags must be applied in the same order for all compiles of a given language.</p>
+
+<p class="snugbot">Note that the SPEC tools provide methods to set flags on a per-language basis.  </p>
+<p class="example">For example, if a tester sets:</p>
+<p class="codeexample">fp=base:<br />
+                     COPTIMIZE = -O4<br />
+                     FOPTIMIZE = -O5</p>
+<p class="example">then the floating point C benchmarks will be compiled with <tt>-O4</tt> and the floating point Fortran
+benchmarks with <tt>-O5</tt>.  (This is legal: there is no requirement to compile C with the same optimization level as
+Fortran.)</p>
+
+<p><b>Regarding benchmarks that have been written in more than one language:</b>  </p>
+
+<p class="snugbot">In a mixed-language benchmark, the tools automatically compile each source module with the
+options that have been set for its language.</p>
+<p class="example">Continuing the example just above, a benchmark that uses both C and Fortran would have its C modules
+compiled with <tt>-O4</tt> and its Fortran modules with <tt>-O5</tt>.  This, too, is legal.</p>
+
+<p>In order to link an executable for a mixed-language benchmark, the tools need to decide which link options to apply (e.g.
+those defined in <tt>CLD</tt>/<tt>CLDOPT</tt> vs. those in <tt>FLD</tt>/<tt>FLDOPT</tt> vs. those in
+<tt>CXXLD</tt>/<tt>CXXLDOPT</tt>).  This decision is based on benchmark classifications that were determined during
+development of CPU2006.  
+
+For reasons of link time library inclusion, the classifications were not made based on percentage of code nor on
+the language of the main routine; rather, the classifications have been set to either <tt>F</tt> (for mixed
+Fortran/C benchmarks) or <tt>CXX</tt> (for benchmarks that include C++).</p>
+ 
+<!-- Note: for the pargraph that follows, in the face-to-face discussion 10 aug 2005, it was considered important to have the
+example in sentence two located up tight against the first sentence; the paragraph should not be broken into two.  -->
+<p>Link options must be consistent in a base build.  For example, if FLD is set to <tt>/usr/opt/advanced/ld</tt> for pure
+Fortran benchmarks, the same setting must be used for any mixed language benchmarks that have been classified, for purpose of
+linking, as Fortran.  </p>
+
+<p><b>Inter-module optimization and mixed-language benchmarks:</b></p>
+
+<p class="snugbot">For mixed-language benchmarks, if the compilers have an incompatible inter-module optimization format,
+flags that require inter-module format compatibility may be dropped from base optimization of mixed-language benchmarks.
+The same flags must be dropped from all benchmarks that use the same combination of languages.  All other base
+optimization flags for a given language must be retained for the modules of that language.  </p>
+
+<p class="example">For example, suppose that a suite has exactly two benchmarks that employ both C and Fortran, namely
+<tt>997.CFmix1</tt> and <tt>998.CFmix2</tt>.  A tester uses a C compiler and Fortran compiler that are sufficiently
+compatible to be able to allow their object modules to be linked together - but not sufficiently compatible to allow
+inter-module optimization.  The C compiler spells its intermodule optimization switch <tt>-ifo</tt>, and the Fortran compiler
+spells its switch <tt>--intermodule_optimize</tt>.  In this case, the following would be legal:</p>
+<p class="codeexample">fp=base:<br />
+   COPTIMIZE = -fast -O4 -ur=8 -ifo<br />
+   FOPTIMIZE = --prefetch:all --optimize:5 --intermodule_optimize<br />
+   FLD=/usr/opt/advanced/ld<br />
+   FLDOPT=--nocompress --lazyload --intermodule_optimize<br />
+   <br />
+   997.CFmix1,998.CFmix2=base:<br />
+   COPTIMIZE = -fast -O4 -ur=8 <br />
+   FOPTIMIZE = --prefetch:all --optimize:5 <br />
+   FLD=/usr/opt/advanced/ld<br />
+   FLDOPT=--nocompress --lazyload</p>
+<p class="example">Following the precedence rules as explained in <a href="config.html">config.html</a>, the above section
+specifiers set default tuning for the C and Fortran benchmarks in the floating point suite, but the tuning is modified 
+for the two mixed-language benchmarks to remove switches that would have attempted inter-module optimization.</p>
+
+
+
+<h4 id="rule_2.2.3">2.2.3   Feedback directed optimization must not be used in base.  </h4>
+
+<p>Feedback directed optimization must not be used in base for SPEC CPU2006.  (This is a change from SPEC CPU2000.)</p>
+
+<h4 id="rule_2.2.4">2.2.4  Assertion flags must NOT be used in base.  </h4>
+
+<p>An assertion flag is one that supplies semantic information that the compilation system did not derive from the source
+statements of the benchmark.</p>
+
+<p>With an assertion flag, the programmer asserts to the compiler that the program has certain nice properties that allow the
+compiler to apply more aggressive optimization techniques (for example, that there is no aliasing via C pointers).  The
+problem is that there can be legal programs (possibly strange, but still standard-conforming programs) where such a property
+does not hold.  These programs could crash or give incorrect results if an assertion flag is used.  This is the reason why
+such flags are sometimes also called "unsafe flags".  Assertion flags should never be applied to a production program without
+previous careful checks; therefore they must not be used for base.  </p>
+
+<p>Exception: a tester is free to turn on a flag that asserts that the benchmark source code complies to the relevant
+standard (e.g. <tt>-ansi_alias</tt>).  Note, however, that if such a flag is used, it must be applied to all compiles of the
+given language (C, C++, or Fortran), while still passing SPEC's validation tools with correct answers for all the affected
+programs.</p>
+
+<h4 id="rule_2.2.5">2.2.5  Floating point reordering allowed</h4>
+
+<p>Base results may use flags which affect the numerical accuracy or sensitivity by reordering floating-point operations
+based on algebraic identities. </p>
+
+<h4 id="rule_2.2.6">2.2.6  (removed) </h4>
+
+<p>(This rule, formerly present in CPU2000, has been removed for CPU2006.)</p>
+
+
+<h4 id="rule_2.2.7">2.2.7 Safety and Standards Conformance</h4>
+
+<p>This rule, formerly present in CPU2000, has been merged into rule <a href="#rule_2.2.1">2.2.1</a> for CPU2006.</p>
+
+<h4 id="rule_2.2.8">2.2.8 Base build environment</h4>
+
+<p>The system environment must not be manipulated during a build of base.  For example, suppose that an environment variable
+called <tt>bigpages</tt> can be set to <tt>yes</tt> or <tt>no</tt>, and the default is <tt>no</tt>.  The tester must not
+change the choice during the build of the base binaries.  See <a href="#rule_2.0.5">section&nbsp;2.0.5</a>.</p>
+
+
+<h4 id="rule_2.2.9">2.2.9 Portability Switches for Data Models</h4>
+
+<p>Normally, it is expected that the data model (such as pointer sizes, sizes of int, etc) will be consistent in base 
+for all compilation of a given language.  In particular, several benchmarks use -DSPEC_CPU_LP64, -DSPEC_CPU_P64, and/or 
+-DSPEC_CPU_ILP64 to control the data model.  If one of these flags is used in base, then normally it should be set for 
+all benchmarks of the given language in the suite for base. </p>
+ 
+<p>If for some reason it is not practical to use a consistent data model in base, then SPEC may choose to grant a 
+portability flag and allow use of an inconsistent data model in base. </p>
+
+<p class="example">(i) For example, suppose that it is preferable to use a certain system in 64-bit mode, but that a
+benchmark is found, unexpectedly, to have a source code limitation that prevents such usage.</p>  
+
+<p class="example">(ii) For example, suppose that a certain compiler combination runs into data model difficulties due to the
+presence of mixed-language benchmarks in a suite.</p>
+
+<p>The tester could describe the problem to SPEC and request that SPEC allow
+use of an inconsistent data model in base.  SPEC would consider such a request using the same process outlined in <a
+href="#rule_2.1.5">rule 2.1.5</a>, including consideration of the technical arguments as to the nature of the data model
+problem and consideration of the practicality of technical alternatives, if any.  SPEC might or might not grant the
+portability flag.  SPEC might also choose to fix source code limitations, if any,  that are causing difficulty.</p> 
+
+
+<h4 id="rule_2.2.10">2.2.10 Cross-module optimization</h4>
+
+<p>Frequently, performance may be improved via optimizations that work across source modules, for example <tt>-ifo</tt>,
+<tt>-xcrossfile</tt>, or <tt>-IPA</tt>.  Some compilers may require the simultaneous presentation of all source files for
+inter-file optimization, as in:</p>
+
+<p class="codeexample">cc -ifo -o a.out file1.c file2.c</p>
+
+<p>Other compilers may be able to do cross-module optimization even with separate compilation, as in:</p>
+
+<p class="codeexample">cc -ifo -c -o file1.o file1.c
+<br />cc -ifo -c -o file2.o file2.c
+<br />cc -ifo -o a.out file1.o file2.o
+</p>
+
+<p>By default, the SPEC tools operate in the latter mode, but they can be switched to the former through the config file
+option <tt>ONESTEP=yes</tt>.</p>
+
+<p>ONESTEP is not allowed in base.  (This is a change from CPU2000.)</p>
+
+<h4 id="rule_2.2.11">2.2.11 Alignment switches are allowed </h4>
+
+<p>Switches that cause data to be aligned on natural boundaries may be used in base. </p>
+
+<h4 id="rule_2.2.12">2.2.12 Pointer sizes</h4>
+<p>In base, pointer sizes may be set in a manner which requires, or which assumes, that the benchmarks (code+data) fit into 32
+bits of address space.</p> 
+
+<h2 id="rule_3">3. Running SPEC CPU2006</h2>
+
+<h3 id="rule_3.1">3.1 System Configuration  </h3>
+
+<h4 id="rule_3.1.1">3.1.1   File Systems </h4>
+
+<p>SPEC requires the use of a of single file system to contain the directory tree for the SPEC CPU2006 suite being run.  SPEC
+allows any type of file system (disk-based, memory-based, NFS, DFS, FAT, NTFS etc.) to be used.  The type of file system must
+be disclosed in reported results. </p>
+
+   <p>There is a  config file feature that allows a user to define a directory 
+     tree to hold the run directories (along with some other outputs; please 
+     see the discussion of <a href="config.html#output_root">output_root in config.html</a>).  This 
+     feature  may be used in a reportable run.  If it is used,</p>
+   <ul>
+      <li> The directory tree that contains the run directories is not required to be on the same file system as 
+         the installed SPEC CPU2006 tree.</li>
+      <li> A single file system must contain the directory tree that contains the run directories.</li>
+   </ul>
+
+<h4 id="rule_3.1.2">3.1.2   System State </h4>
+
+<p>The system state (multi-user, single-user, init level N) may be selected by the tester.  This state along with any changes in
+the default configuration of daemon processes or system tuning parameters must be documented in the notes section of the
+results disclosure.  (For Microsoft Windows, system state is normally "Default"; a list of services that are shut down
+should be provided, if any, e.g.  networking service shut down) </p>
+
+<h3 id="rule_3.2">3.2 Additional Rules for Running SPECrate </h3>
+
+<h4 id="rule_3.2.1">3.2.1  Number of copies in peak</h4>
+
+<p>For SPECint_rate2006 and SPECfp_rate2006 (peak), the tester is free to choose the number of concurrent copies for each
+individual benchmark independently of the other benchmarks. </p>
+
+<p>The median value that is used must, for each benchmark, come from three runs with the same number of copies.
+However, this number may be different between benchmarks.</p>
+
+<h4 id="rule_3.2.2">3.2.2  Number of copies in base</h4>
+
+<p>For SPECint_rate_base2006 and SPECfp_rate_base2006, the tester must select a single value to use as the number of concurrent
+copies to be applied to all benchmarks in the suite.</p>
+
+<h4 id="rule_3.2.3">3.2.3  Single file system</h4>
+
+<p>The multiple concurrent copies of the benchmark must be executed using data from different directories within the same file
+system.  Each copy of the test must have its own working directory, which must contain all the input files needed for the
+actual execution of the benchmark, and all output files when created.  The output of each copy of the benchmark must be
+validated to be the correct output. </p>
+
+<p>Note: although benchmark inputs are duplicated across run directories, the benchmark binary itself is only placed into the
+run directories once. </p> 
+
+<h4 id="rule_3.2.4">3.2.4  Submit</h4>
+
+<p>The config file option <tt>submit</tt> may be used to assign work to processors.  It is commonly used for SPECrate runs,
+but can also be used for the non-rate ("speed") case.  The tester may, if desired: </p>
+
+<ul>
+<li>place benchmarks on desired processors;</li>
+<li>place the benchmark memory on a desired memory unit;</li>
+<li>do arithmetic (e.g. via shell commands) to derive a valid processor number from the SPEC copy number; </li>
+<li>cause the tools to write each copy's benchmark invocation lines to a file, which is then sent to its processor; </li>
+<li>reference a testbed description provided by the tester (such as a topology file).</li>
+</ul>
+
+<p>The <tt>submit</tt> command must not be used to change the run time environment (see section <a href="#rule_3.4">3.4</a>).
+In addition, if a testbed description is referenced by a <tt>submit</tt> option, the same description must be used by all
+benchmarks.</p>
+
+<p>In base, the <tt>submit</tt> command must be the same for all benchmarks in a suite (integer or fp).  In peak, different
+benchmarks may use different submit commands.</p>
+
+
+<h3 id="rule_3.3">3.3 Continuous Run Requirement  </h3>
+
+<p>All benchmark executions, including the validation steps, contributing to a particular result page must occur continuously,
+that is, in one execution of <tt>runspec</tt>.  </p>
+
+<p>For a reportable run, the <tt>runspec</tt> tool will run all three workloads (test, train, and ref), and will ensure that
+the correct answer is obtained for all three.  (Note: the execution and validation of test and train is not part of the
+timing of the benchmark - it is only an additional test for correct operation of the binary.)</p>
+
+<h3 id="rule_3.4">3.4 Run-time environment</h3>
+
+<p>SPEC does not attempt to regulate the run-time environment for the benchmarks, other than to require that the environment
+be:</p>
+<ul>
+   <li>(a) set prior to <tt>runspec</tt> and consistent throughout the run,</li>
+   <li>(b) fully described, and</li>
+   <li>(c) in compliance with <a href="#rule_1">section&nbsp;1</a>, Philosophy.  </li>
+</ul>
+<p>For example, if each of the following:</p>
+
+<p class="codeexample">run level:   single-user 
+<br />OS tuning:   bigpages=yes, cpu_affinity=hard
+<br />file system: in memory</p>
+
+<p>were set prior to the start of <tt>runspec</tt>, unchanged during the run, described in the notes section of the result page, and documented and
+supported by a vendor for general use, then these options could be used in a published CPU2006 result.</p>
+
+<p>Note 1: Item (a) is intended to forbid all means by which a tester might change the environment.  In particular, it is
+forbidden to change the environment during the run using config file hooks such as <tt>submit</tt> or
+<tt>monitor_pre_bench</tt>.</p>
+
+<p class="example">For example, it would not be acceptable to use <tt>submit</tt> to cause different benchmarks to pick
+differing page sizes, differing number of threads, or differing choices for local vs. shared memory.</p>
+
+<p>Note 2: Although the tester is not allowed to change the run-time environment, it <span class="u">is</span> acceptable to
+select choices at compile time that cause benchmark binaries to carry information about their run time requirements.  </p>
+
+<p class="example">For example, a compiler choice could be made that causes binaries to request running with bigpages, and, for
+peak only, that choice could differ from benchmark to benchmark.</p>
+
+
+<h3 id="rule_3.5">3.5 Base, peak, and basepeak</h3>
+
+<p>If a result page will contain both base and peak results, a single <tt>runspec</tt> invocation must be used for the runs.
+When both base and peak are run, the tools run the base executables first, followed by the peak executables.</p>
+
+<p>It is permitted to publish base results as peak.  This can be accomplished in various ways, all of which are allowed:</p>
+<ul>
+
+<li><p>Set <tt>basepeak=yes</tt> in the config file for individual benchmarks.</p>  
+<p>In this case, the tools will run the same binary for both base and peak; however, the base times will be reported for both
+base and peak.  (The reason for running the binary during both base and peak is to remove the possibility that skipping a
+benchmark altogether might somehow change the performance of some other benchmark.)</p></li>
+
+<li><p>Set <tt>basepeak=yes</tt> in the config file for an entire suite.</p>   
+<p>In this case, the peak runs will be skipped and base results will be reported as both base and peak for the
+suite.</p></li>
+
+<li><p>Select the <tt style="white-space:nowrap;">--basepeak</tt> option when using <tt>rawformat</tt>.</p>  
+<p>Doing so will cause a new rawfile to be written, with base results copied to peak.  It is permitted to use this feature to
+copy all of the base results to peak, or just the results for selected benchmarks.</p></li>
+
+</ul>
+
+<p>Notes: </p>
+
+<p>1. It is permitted but not required to compile in the same <tt>runspec</tt> invocation as the execution.  See rule <a
+href="#rule_2.0.6">2.0.6</a> regarding cross compilation.</p>
+
+<p>2. It is permitted but not required to run both the integer suite and the floating point suite in a single invocation of
+<tt>runspec</tt>.  </p>
+
+<h3 id="rule_3.6">3.6 Run-Time Dynamic Optimization</h3>
+
+<h4 id="rule_3.6.1">3.6.1 Definitions and Background</h4>
+
+<p>As used in these run rules, the term "run-time dynamic optimization" (RDO) refers broadly to any method by which a system
+adapts to improve performance of an executing program based upon observation of its behavior as it runs.  This is an
+intentionally broad definition, intended to include techniques such as:</p>
+
+<ul>
+   <li class="tightli"> rearrangement of code to improve instruction cache performance</li>
+   <li class="tightli"> replacement of emulated instructions by native code</li>
+   <li class="tightli"> value prediction</li>
+   <li class="tightli"> branch predictor training</li>
+   <li class="tightli"> reallocation of on-chip functional units among hardware threads</li>
+   <li class="tightli"> TLB training</li>
+   <li class="tightli"> adjustment of the supply of big pages</li>
+</ul>
+
+<p>RDO may be under control of hardware, software, or both.</p>
+
+<p>Understood this broadly, RDO is already commonly in use, and usage can be expected to increase.  SPEC believes that RDO is
+useful, and does not wish to prevent its development.  Furthermore, SPEC views at least some RDO techniques as appropriate
+for base, on the grounds that some techniques may require no special settings or user intervention; the system simply learns
+about the workload and adapts.</p>
+
+<p>However, benchmarking a system that includes RDO presents a challenge.  A central idea of SPEC benchmarking is to create
+tests that are repeatable: if you run a benchmark suite multiple times, it is expected that results will be similar, although
+there will be a small degree of run-to-run variation.  But an adaptive system may recognize the program that it is asked to
+run, and "carry over" lessons learned in the previous execution; therefore, it might complete a benchmark more quickly each
+time it is run.  Furthermore, unlike in real life, the programs in the benchmark suites are presented with the same inputs
+each time they are run: value prediction is too easy if the inputs never change.  In the extreme case, an adaptive system
+could be imagined that notices which program is about to run, notices what the inputs are, and which reduces the entire
+execution to a print statement.   In the interest of benchmarking that is both repeatable and representative of real-life
+usage, it is therefore necessary to place limits on RDO carry-over.</p>
+
+<h4 id="rule_3.6.2">3.6.2 RDO Is Allowed, Subject to Certain Conditions</h4>
+
+<p>Run time dynamic optimization is allowed, subject to the usual provisions that the techniques must be generally available,
+documented, and supported.  It is also subject to the conditions listed in the rules immediately following.</p>
+
+<h4 id="rule_3.6.3">3.6.3 RDO Disclosure and Resources</h4>
+
+<p><a href="#rule_4.2">Rule 4.2</a> applies to run-time dynamic optimization: any settings which the tester has set to
+non-default values must be disclosed.  If RDO requires any hardware resources, these must be included in the description of
+the hardware configuration.</p>
+
+<p class="example">For example, suppose that a system can be described as a 64-core system.  After experimenting for a while,
+the tester decides that optimum SPECrate throughput is achieved by dedicating 4 cores to the run-time dynamic optimizer, and
+running only 60 copies of the benchmarks.   The system under test is still correctly described as a 64-core system, even
+though only 60 cores ran SPEC code.</p>
+
+<h4 id="rule_3.6.4">3.6.4 RDO Settings Cannot Be Changed At Run-time</h4>
+
+<p>Run time dynamic optimization is subject to <a href="#rule_3.4">rule 3.4</a>: settings cannot be changed at run-time.  But
+Note 2 of rule 3.4 also applies to RDO: for example, in peak it would be acceptable to compile a subset of the benchmarks
+with a flag that suggests to the run-time dynamic optimizer that code rearrangement should be attempted.  Of course, 
+<a href="#rule_2.1.1">rule 2.1.1</a> also would apply: such a flag could not tell RDO which routines to rearrange.</p>
+
+<h4 id="rule_3.6.5">3.6.5 RDO and safety in base</h4>
+
+<p>If run-time dynamic optimization is effectively enabled for base (after taking into account the system state at run-time
+and any compilation flags that interact with the run-time state), then RDO must comply with 2.2.1, the <a
+href="#rule_2.2.1">safety rule</a>.  It is understood that the safety rule has sometimes required judgment, including
+deliberation by SPEC in order to determine its applicability.  The following is intended as guidance for the tester and for
+SPEC:</p>
+
+<ul>
+   <li><p>If an RDO system optimizes a SPEC benchmark in a way which allows it to successfully process the SPEC-supplied
+   inputs, that is not enough to demonstrate safety.  If it can be shown that a different, but valid, input causes the
+   program running under RDO to fail (either by giving a wrong answer or by exiting), where such failure does not occur
+   without RDO; and if it is not a fault of the original source code; then this is taken as evidence that the RDO method is
+   not safe.</p></li>
+
+   <li><p>If an RDO system requires that programs use a subset of the relevant ANSI/ISO language standard, or requires that
+   they use non-standard features, then this is taken as evidence that it is not safe.</p></li>
+
+   <li><p>But an RDO system <b><i>is</i></b> allowed to assume that the programs adhere to the relevant ANSI/ISO language
+   standard.</p></li>
+</ul>
+
+<h4 id="rule_3.6.6">3.6.6 RDO carry-over by program is not allowed</h4>
+
+<p>As described in section 3.6.1, SPEC has an interest in preventing carry-over of information from run to run.  Specifically, 
+no information may be carried over which identifies the specific program or executable image.  Here are some examples of 
+behavior that is, and is not, allowed.</p>
+
+<p>It doesn't matter whether the information is intentionally stored, or just "left over"; if it's about a specific 
+program, it's not allowed:</p>
+
+<ul>
+   <li>Allowed: when a program is run, its use of emulated instructions is noticed by the run-time dynamic optimizer, and
+   these are replaced as it runs, during this run only, by native code. </li>
+   <li>Not allowed: when the program is re-run, a disk cache is consulted to find out what instructions were replaced last
+   time, and the replacement code is used instead of the original program.</li>
+   <li>Not allowed: when the program is re-run, the replacement native instructions are still sitting in memory, and the
+   replacement instructions are used instead of the original program.</li>
+</ul>
+
+<p>If information is left over from a previous run that is <b><i>not</i></b> associated with a specific program, that
+<b><i>is</i></b> allowed:</p>
+
+<ul>
+   <li> Allowed: a virtually-indexed branch predictor is trained during the reference run of 400.perlbench.
+     When the second run of 400.perlbench is begun, a portion of the branch predictor tables happen to still
+     be in the state that they were in at the end of the previous run (i.e. some entries have not been
+     re-used during runs of intervening programs).</li>
+   <li> Not allowed: a branch predictor specifically identifies certain virtual addresses belong to the executable for
+     400.perlbench, and on the second run of that executable it uses that knowledge.</li>
+</ul>
+
+<p>Any form of RDO that uses memory about a specific program is forbidden:</p>
+<ul>
+   <li> Allowed: while 400.perlbench is running, the run-time dynamic optimizer notices that it seems to be doing a poor job
+   of rearranging instructions for instruction cache packing today, and gives up for the duration of this run.</li>
+   <li> Not allowed: the next time 400.perlbench runs, the run-time dynamic optimizer remembers that it had difficulty last
+   time and decides not to even try this time.</li>
+   <li> Not allowed: the run-time dynamic optimizer recognizes that this new program is 400.perlbench by the fact that it has
+   the same filename, or has the same size, or has the same checksum, or contains the same symbols.</li>
+</ul>
+
+<p>The system is allowed to respond to the currently running program, and to the overall workload:</p>
+<ul>
+   <li> Allowed: the operating system notices that demand for big pages is intense for the currently running program, and 
+     takes measures to increase their supply.</li>
+   <li> Not allowed: the operating system notices that the demand for big pages is intense for certain programs, and takes
+     measures to supply big pages to those specific programs.</li>
+   <li> Allowed: the operating system notices that the demand for big pages is intense today, and takes measures to increase
+   the supply of them.  This causes all but the first few SPECfp2006 benchmarks to run more quickly, as the bigpage
+   supply is improved.</li>
+</ul>
+
+
+
+<h2 id="rule_4">4. Results Disclosure</h2>
+
+<p>SPEC requires a full disclosure of results and configuration details sufficient to reproduce the results.  For results
+published on its web site, SPEC also requires
+that base results be published whenever peak results are published.  If peak results are published outside of the SPEC web
+site (<a href="http://www.spec.org/cpu2006/">http://www.spec.org/cpu2006/</a>) in a publicly available medium, the tester
+must supply base results on request.  Publication of results under non-disclosure or company internal use or company
+confidential are not "publicly" available. </p>
+
+<p>A full disclosure of results must include:</p>
+<ul>
+   <li>The components of the disclosure page, as generated by the SPEC tools.  </li>
+
+   <li>The tester's configuration file and any supplemental files needed to build the executables used to generate the
+   results.</li>
+
+   <li>A flags definition disclosure.</li>
+</ul>
+
+<p>A full disclosure of results must include sufficient information to allow a result to be independently reproduced.  If a
+tester is aware that a configuration choice affects performance, then s/he must document it in the full disclosure.</p>
+
+<p>Note: this rule is not meant to imply that the tester must describe irrelevant details or provide massively redundant
+information.  </p>
+
+<p class="example">For example, if the SuperHero Model 1 comes with a write-through cache, and the SuperHero Model 2 comes with
+a write-back cache, then specifying the model number is sufficient, and no additional steps need to be taken to document the
+cache protocol.  But if the Model 3 is available with both write-through and write-back caches, then a full disclosure must
+specify which cache is used.</p>
+
+<p>For information on how to publish a result on SPEC's web site, contact the SPEC office.  Contact information is maintained at the SPEC
+web site, <a href="http://www.spec.org/">http://www.spec.org/</a>.</p>
+
+
+<h3 id="rule_4.1">4.1 Rules regarding availability date and systems not yet shipped</h3>
+
+<p>If a tester publishes results for a hardware or software configuration that has not yet shipped, </p>
+<ul>
+   <li><p>The component suppliers must have firm plans to make production versions of all components generally available,
+   within 3 months of the first public release of the result (whether first published by the tester or by SPEC); and</p></li>
+
+   <li><p>The tester must specify the general availability dates that are planned.</p></li>
+</ul>
+
+<p>Note 1: "Generally available" is defined in the SPEC Open Systems Group Policy document, which can be found at <a
+href="http://www.spec.org/osg/policy.html">http://www.spec.org/osg/policy.html</a>.</p>
+
+<p>Note 2: It is acceptable to test larger configurations than customers are currently ordering, provided that the larger
+configurations can be ordered and the company is prepared to ship them.</p>
+
+<p class="example">For example, if the SuperHero is available in configurations of 1 to 1000 CPUs, but the largest order
+received to date is for 128 CPUs, the tester would still be at liberty to test a 1000 CPU configuration and publish the
+result.</p>
+
+<h4 id="rule_4.1.1">4.1.1 Pre-production software can be used</h4>
+
+<p>A "pre-production", "alpha", "beta", or other pre-release version of a compiler (or other software) can be used in a test,
+provided that the performance-related features of the software are committed for inclusion in the final product.  </p>
+
+<p>The tester must practice due diligence to ensure that the tests do not use an uncommitted prototype with no particular
+shipment plans.  An example of due diligence would be a memo from the compiler Project Leader which asserts that the tester's
+version accurately represents the planned product, and that the product will ship on date X. </p>
+
+<p>The final, production version of all components must be generally available within 3 months after first public release of
+the result.</p>
+
+<h4 id="rule_4.1.2">4.1.2 Software component names</h4>
+
+<p>When specifying a software component name in the results disclosure, the component name that should be used is the name
+that customers are expected to be able to use to order the component, as best as can be determined by the tester.  It is
+understood that sometimes this may not be known with full accuracy; for example, the tester may believe that the component
+will be called "TurboUnix V5.1.1" and later find out that it has been renamed "TurboUnix V5.2", or even "Nirvana 1.0".  In
+such cases, an editorial request can be made to update the result after publication.</p>
+
+<p>Some testers may wish to also specify the exact identifier of the version actually used in the test (for example, "build
+20020604").  Such additional identifiers may aid in later result reproduction, but are not required; the key point is to
+include the name that customers will be able to use to order the component.</p>
+
+<h4 id="rule_4.1.3">4.1.3 Specifying dates</h4>
+
+<p>The configuration disclosure includes fields for both "Hardware Availability" and "Software Availability".  In both cases,
+the date which must be used is the date of the component which is the <b>last</b> of the respective type to become generally
+available.</p> 
+
+<h4 id="rule_4.1.4">4.1.4 If dates are not met</h4>
+
+<p>If a software or hardware date changes, but still falls within 3 months of first publication, a result page may be updated
+on request to SPEC.</p>
+
+<p>If a software or hardware date changes to more than 3 months after first publication, the result is considered
+Non-Compliant.  For procedures regarding Non-Compliant results, see the SPEC Open Systems Group (OSG) Policy Document, <a
+href="http://www.spec.org/osg/policy.html">http://www.spec.org/osg/policy.html</a>.</p>
+
+<h4 id="rule_4.1.5">4.1.5 Performance changes for pre-production systems</h4>
+
+<p>SPEC is aware that performance results for pre-production systems may sometimes be subject to change, for example when a
+last-minute bugfix reduces the final performance.  </p>
+
+<p>For results measured on pre-production systems, if the tester becomes aware of something that will reduce production
+system performance by more than 1.75% on an overall metric (for example, SPECfp_base2006 or SPECfp2006), the tester is
+required to republish the result, and the original result shall be considered non-compliant.</p>
+
+
+
+<h3 id="rule_4.2">4.2 Configuration Disclosure </h3>
+
+<p>The following sections describe the various elements that make up the disclosure for the system and test configuration used
+to produce a given test result.  The SPEC tools used for the benchmark allow setting this information in the configuration
+file: </p>
+
+
+<h4 id="rule_4.2.1">4.2.1 System Identification</h4>
+
+<ol style="list-style-type:lower-alpha">
+   <li> <b>Model Name</b></li>
+   <li> <b>Test Date</b>: Month, Year</li>
+   <li> <b>Hardware Availability Date</b>: Month, Year.  If more than one date applies, use the latest one.</li>
+   <li> <b>Software Availability Date</b>: Month, Year.  If more than one date applies, use the latest one.</li>
+   <li> <b>Hardware Vendor</b> </li>
+   <li> <b>Test sponsor</b>: the entity sponsoring the testing (defaults to hardware vendor). </li>
+   <li> <b>Tester</b>: the entity actually carrying out the tests (defaults to test sponsor). </li>
+   <li> <b>CPU2006 license number</b> of the test sponsor or the tester </li>
+</ol>
+
+
+<h4 id="rule_4.2.2">4.2.2 Hardware Configuration</h4>
+
+<ol style="list-style-type:lower-alpha">
+   <li><p><b>CPU Name:</b> A manufacturer-determined processor formal name.</p></li>
+   <li><p><b>CPU Characteristics:</b> Technical characteristics to help identify the processor.</p> 
+      <ol>
+         <li><p>This field must be used to disambiguate which processor is used, unless the CPU is already unambiguously designated
+             by the combination of the fields "CPU Name", "CPU MHz", "FPU", and "Level (n) Cache".</p></li>
+         <li><p>In addition, SPEC encourages use of this field to make it easier for the reader to identify a processor, even if
+             the processor choice is not, technically, ambiguous. </p></li>
+         <li><p>SPEC does not require that CPU2006 results be published on the SPEC web site, although such publication is encouraged.  For 
+             results that are published on its web site, SPEC is likely to use this field to note CPU technical characteristics that SPEC 
+             may deem useful for queries, and may adjust its contents from time to time.</p></li>
+         <li><p>Some processor differences may not be relevant to performance, such as differences in packaging, distribution 
+             channels, or CPU revision levels that affect a SPEC CPU2006 overall performance metric by less than 1.75%.  In 
+             those cases, SPEC does not require disambiguation as to which processor was tested.</p></li>
+         </ol>
+
+      An example may help to clarify these four points.
+
+         <p class="example">For example, when first introduced, the TurboBlaster series is available with only one instruction set,
+         and runs at speeds up to 2GHz.  Later, a second instruction set (known as "Arch2") is introduced and older processors are
+         commonly, but informally, referred to as having employed "Arch1", even though they were not sold with that term at the
+         time.   Chips with Arch2 are sold at speeds of 2GHz and higher.  The manufacturer has chosen to call both Arch1 and Arch2
+         chips by the same formal chip name (TurboBlaster).</p>
+         <p class="example">1. A 2.0GHz TurboBlaster result is published.  Since the formal chip name is the same, and since both 
+         Arch1 and Arch2 are available at 2.0GHz, the CPU Characteristics field <b>must</b> be used to identify whether this is 
+         an Arch1 or Arch2 chip.</p>
+         <p class="example">2. A 2.2GHz TurboBlaster result is published.  In this case, there is technically no ambiguity, since 
+         all 2.2GHz results use Arch2.  Nevertheless, the tester is encouraged to note that the chip uses Arch2, to help the 
+         reader disambiguate the processors.</p>
+         <p class="example">3. As an aid to technical readers doing queries, SPEC may decide to adjust all the TurboBlaster results 
+         that have been posted on its website by adding either "Arch1" or "Arch2" to all posted results.</p>
+         <p class="example">4. The 2.2GHz TurboBlaster is available in an OEM package and a Consumer package.  These are highly 
+         similar, although the OEM version has additional testing features for use by OEMs.   But these are both 2.2GHz 
+         TurboBlasters, with the same cache structure, same instruction set, and, within run-to-run variation, the same CPU2006 
+         performance.  In this case, it is not necessary to specify whether the OEM or Consumer version was tested.</p>
+         </li>
+
+   <li><p><b>CPU MHz:</b> a numeric value expressed in megahertz.  That is, do not say "1.0 GHz", say "1000".  The value here is
+       to be the speed at which the CPU is run, even if the chip itself is sold at a different clock rate.  That is, if you
+       "over-clock" or "under-clock" the part, disclose here the actual speed used.</p></li>
+
+   <li><p><b>FPU</b></p></li>
+
+   <li><p id="cpucount"><b>Number of CPUs in System</b>. As of early 2006, it is assumed that processors can be described
+   as containing one
+   or more "chips", each of which contains some number of "cores", each of which can run some number of hardware "threads".
+   Fields are provided in the results disclosure for each of these.  If industry practice evolves such that these terms are
+   no longer sufficient to describe processors, SPEC may adjust the field set.</p>
+
+   <p>The current fields are:</p>
+
+     <ul>
+     <li><tt>hw_ncores</tt>: number of processor cores enabled (total) during this test</li>
+     <li><tt>hw_nchips</tt>: number of processor chips enabled during this test</li>
+     <li><tt>hw_ncoresperchip</tt>: number of cores that are manufactured into a chip</li>
+     <li><tt>hw_nthreadspercore</tt>: number of hardware threads enabled (per core) during this test</li>
+     </ul>
+
+    <p>Regarding the fields in the above list that mention the word "enabled": if a chip, core, or thread is available for
+    use during the test, then it must be counted.  If one of these resources is disabled - for example by a firmware setting
+    prior to boot - then it need not be counted, but the tester must exercise due diligence to ensure that disabled resources
+    are truly disabled, and not silently giving help to the result.  </p>
+
+    <p>Regarding the remaining field (<tt>hw_ncoresperchip</tt>), the tester must count the cores irrespective of whether
+    they are enabled.</p>
+
+      <p class="example">Example:  In the following tests, the SUT is a Turboblaster Model 32-64-256, which contains 32
+      chips.  Each chip has 2 cores.  Each core can run 4 hardware threads.  </p>
+
+      <ol>
+      <li class="example"><p>A 256-copy SPECint_rate2006 test uses all the available resources.  It is reported as:</p>
+<pre>
+             hw_ncores:            64
+             hw_nchips:            32
+             hw_ncoresperchip:      2
+             hw_nthreadspercore:    4
+</pre></li>
+      <li class="example"><p>The same system is tested with a 24-copy SPECint_rate2006 test, without changing the system
+      configuration.  Even though they are now only lightly loaded, all the above resources are still configured into the
+      SUT; therefore the SUT must still be described as:</p>
+<pre>
+             hw_ncores:            64
+             hw_nchips:            32
+             hw_ncoresperchip:      2
+             hw_nthreadspercore:    4
+</pre></li>
+      <li class="example"><p>The system is halted, and firmware commands are entered to disable all but 3 of the chips.  All
+      resources are available on the remaining 3 chips.  The system is rebooted and a 24-copy test is run once more.  This
+      time, the resources are: </p>
+<pre>
+             hw_ncores:             6
+             hw_nchips:             3
+             hw_ncoresperchip:      2
+             hw_nthreadspercore:    4
+</pre></li>
+      <li class="example"><p>The system is halted, and firmware commands are entered to enable 24 chips; but only 1 core is
+      enabled per chip, and hardware threading is turned off.  The system is booted, and a 24-copy test is run.  The
+      resources this time are:</p>
+<pre>
+             hw_ncores:            24
+             hw_nchips:            24
+             hw_ncoresperchip:      2
+             hw_nthreadspercore:    1
+</pre></li>
+      </ol>
+
+    <p>Note: if resources are disabled, the method(s) used for 
+    such disabling must be documented and supported.</p></li>
+
+   <li><p><b>Number of CPUs orderable</b>.  Specify the number of processors
+   that can be ordered, using whatever units the customer would
+   use when placing an order.  If necessary, provide a mapping
+   from that unit to the chips/cores units just above.  For
+   example: </p>
+   
+     <p class="example">1 to 8 TurboCabinets.  Each TurboCabinet contains 4 chips.</p></li>
+
+   <li><p><b>Level 1 (primary) Cache</b>: Size, location, number of instances (e.g. "<tt>32 KB I + 64 KB D on chip per
+   core</tt>")      </p></li>
+   <li><p><b>Level 2 (secondary) Cache</b>: Size, location, number of instances </p></li>
+   <li><p><b>Level 3 (tertiary) Cache</b>: Size, location, number of instances </p></li>
+   <li><p><b>Other Cache</b>: Size, location, number of instances </p></li>
+   <li><p><b>Memory</b>: Size in MB/GB.  <span id="memoryconfig">Performance relevant information as to the 
+      memory configuration</span> must be included, either in the field or in the notes 
+      section.  If there is one and only one way to configure memory of the stated 
+      size, then no
+      additional detail need be disclosed.   But if a buyer of the system has choices to make, then the result page must
+      document the choices that were made by the tester. </p> 
+
+      <p class="example">For example, the tester may need to document number of memory carriers, size of DIMMs, banks,
+      interleaving, access time, or even arrangement of modules: which sockets were used, which were left empty, which
+      sockets had the bigger DIMMs.</p>
+
+      <p>Exception: if the tester has evidence that a memory configuration choice does not affect performance, then SPEC does
+      not require disclosure of the choice made by the tester.  </p>
+
+      <p class="example">For example, if a 1GB system is known to perform identically whether configured with 8 x 128MB DIMMs
+      or 4 x 256MB DIMMs, then SPEC does not require disclosure of which choice was made.</p></li>
+
+   <li><p><b>Disk Subsystem</b>: Size (MB/GB), Type (SCSI, Fast SCSI etc.), other performance-relevant characteristics.  The
+   disk subsystem used for the SPEC CPU2006 run directories must be described.  If other disks are also performance relevant, 
+   then they must also be described. </p></li>
+   <li><p><b>Other Hardware</b>: Additional equipment added to improve performance</p></li>
+</ol>
+
+
+<h4 id="rule_4.2.3">4.2.3 Software Configuration</h4>
+
+<ol style="list-style-type:lower-alpha">
+   <li><b>Operating System</b>: Name and Version</li>
+   <li><b>System State</b>: e.g. Single User, Multi-user, Init 3, Default </li>
+   <li><b>File System Type</b> used for the SPEC CPU2006 run directories</li>
+   <li><b>Compilers:</b>
+      <ul>
+         <li> C Compiler Name and Version </li>
+         <li> C++ Compiler Name and Version </li>
+         <li> Fortran Compiler Name and Version </li>
+         <li> Pre-processors (if used): Name and Version </li>
+      </ul></li>
+   <li><b>Auto Parallel</b>: Whether the benchmarks are automatically optimized to use multiple threads, cores, and/or chips.
+   Parallel directives, such as OpenMP directives, are disabled for SPEC CPU2006; but compilers are allowed to do automatic
+   parallelization.</li>
+   <li><b>Other Software</b>: Additional software added to improve performance</li>
+</ol>
+
+<h4 id="rule_4.2.4">4.2.4 Tuning Information</h4>
+
+<ol style="list-style-type:lower-alpha">
+   <li><b>Base flags</b> list</li>
+   <li><b>Peak flags</b> list for each benchmark</li>
+   <li><b>Portability flags</b> used for any benchmark</li>
+   <li><b>Base pointers</b>: size of pointers in base.  
+       <ul>
+       <li>"32-bit": if all benchmarks in base are compiled with switches that request only 32-bit pointers.</li>
+       <li>"64-bit": if all benchmarks in base are compiled with switches that request only 64-bit pointers.</li>
+       <li>"32/64-bit": if there is a mix of 32-bit and 64-bit</li>
+       </ul>
+      </li>
+   <li><b>Peak pointers</b>: size of pointers in peak. </li>
+   <li>The notes section must describe any <b>System Tuning</b>, such as special OS parameters set or changes to standard
+   daemons (services for Microsoft Windows).</li>
+   <li>Any additional notes such as listing any use of SPEC-approved alternate sources or tool changes.</li>
+   <li>If a change is planned for the spelling of a tuning string, both spellings should be documented in the notes section.
+
+   <p class="example">For example, suppose the tester uses a pre-release compiler with:</p>
+   <p class="codeexample">f90 -O4 --newcodegen --loopunroll:outerloop:alldisable</p>
+   <p class="example">but the tester knows that the new code generator will be automatically applied in the final product, and
+   that the spelling of the unroll switch will be simpler than the spelling used here.  The recommended spelling for customers
+   who wish to achieve the effect of the above command will be:</p>
+   <p class="codeexample">f90 -O4 -no-outer-unroll</p>
+   <p class="example"> In this case, the flags report will include the actual spelling used by the tester, but a note should
+   be added to document the spelling that will be recommended for customers.</p></li>
+
+</ol>
+
+<h4 id="rule_4.2.5">4.2.5 Description of Tuning Options ("Flags File") </h4>
+
+<p>SPEC CPU2006 provides benchmarks in source code form, which are compiled under control of SPEC's toolset.  Compilation flags
+are detected and reported by the tools with the help of "flag description files".  Such files provide information about the
+syntax of flags and their meaning.  </p>
+
+<p>A result will be marked "invalid" unless it has an associated flag description file.  A description of how to write one may
+be found at <a href="http://www.spec.org/cpu2006/Docs">www.spec.org/cpu2006/Docs</a>.  </p>
+
+<p>The level of detail in the description of a flag is expected to be sufficient so that an interested technical reader can form
+a preliminary judgment of whether he or she would also want to apply the option.  </p>
+
+<ul>
+  <li><p> This requirement is phrased as a "preliminary judgment" because a complete judgment of a performance option often
+  requires testing with the user's own application, to ensure that there are no unintended consequences.</p></li>
+
+  <li><p> At minimum, if a flag has implications for safety, accuracy, or standards conformance, such implications must be
+  disclosed.  </p></li>
+
+  <li><p> For example, one might write:</p> 
+  <p class="example">When --algebraII is used, the compiler is allowed to use the rules of elementary algebra to simplify
+  expressions and perform calculations in an order that it deems efficient.  This flag allows the compiler to perform
+  arithmetic in an order that may differ from the order indicated by programmer-supplied parentheses.</p>
+  
+  </li>
+
+  <li><p> The final sentence of the preceding paragraph is an example of a deviation from a standard which must be
+  disclosed.</p></li>
+</ul>
+
+<p>It is acceptable, and even common practice, for testers to build on each others' flags files, copying all or part of flags
+files posted by others into their own flags files; but doing so does not relieve an individual tester of the responsibility to
+ensure that the description is accurate.</p>
+
+<p>Although these descriptions have historically been called "flags files", they must also include descriptions of other
+performance-relevant options that have been selected, including but not limited to environment variables, kernel options,
+file system tuning options, BIOS options, and options for any other performance-relevant software packages.  </p>
+
+<p><b>Description of Feedback-directed optimization</b></p>
+
+<p>If feedback directed optimization is used, the description must
+indicate whether training runs:</p>
+
+<ul>
+<li> gather information regarding execution paths</li>
+<li> gather information regarding data values</li>
+<li> use hardware performance counters</li>
+<li> gather data for optimizations unique to FDO</li>
+</ul>
+
+<p>Hardware performance counters are often available to provide information such as branch mispredict frequencies, cache
+misses, or instruction frequencies.  If they are used during the training run, the description needs to note this; but SPEC
+does not require a description of exactly which performance counters are used.</p>
+                                                                                                           
+<p>As with any other optimization, if the optimizations performed have effects regarding safety, accuracy, or standards
+conformance, these effects must be described.</p>
+
+<h3 id="rule_4.3">4.3 Test Results Disclosure</h3>
+
+<p>The actual test results consist of the elapsed times and ratios for the individual benchmarks and the overall SPEC metric
+produced by running the benchmarks via the SPEC tools.  The required use of the SPEC tools ensures that the results generated
+are based on benchmarks built, run, and validated according to the SPEC run rules.  Below is a list of the measurement
+components for each SPEC CPU2006 suite and metric: </p>
+
+<h4 id="rule_4.3.1">4.3.1   Speed Metrics</h4>
+
+<pre>
+o CINT2006 Speed Metrics: 
+     <b>SPECint_base2006</b>  (Required Base result)
+     <b>SPECint2006</b>       (Optional Peak result)
+
+o CFP2006 Speed Metrics:  
+     <b>SPECfp_base2006</b>   (Required Base result)
+     <b>SPECfp2006</b>        (Optional Peak result)
+</pre>
+
+<p>The elapsed time in seconds for each of the benchmarks in the CINT2006 or CFP2006 suite is given and the ratio to the
+reference machine (a Sun UltraSparc II system at 296MHz), is calculated.  The SPECint_base2006 and SPECfp_base2006 metrics
+are calculated as a Geometric Mean of the individual ratios, where each ratio is based on the median execution time from
+three runs.  All runs of a specific benchmark when using the SPEC tools are required to have validated correctly.</p>
+
+<p>The benchmark executables must have been built according to the rules described in <a href="#rule_2.0">section&nbsp;2</a>
+above.  </p>
+
+<h4 id="rule_4.3.2">4.3.2   Throughput Metrics</h4>
+
+<pre>
+o CINT2006 Throughput Metrics:    
+        <b>SPECint_rate_base2006</b> (Required Base result)
+        <b>SPECint_rate2006</b>      (Optional Peak result)
+
+o CFP2006 Throughput Metrics:     
+        <b>SPECfp_rate_base2006</b>  (Required Base result)
+        <b>SPECfp_rate2006</b>       (Optional Peak result)
+</pre>
+
+<p>The throughput metrics are calculated based on the execution of benchmark binaries that are built using the same rules as
+binaries built for speed metrics.  However, the tester may select the number of concurrent copies of each benchmark to be
+run.  The same number of copies must be used for all benchmarks in a base test.  This is not true for the peak results where
+the tester is free to select any combination of copies.  The number of copies selected is usually a function of the number of
+CPUs in the system. </p>
+
+<p>The "rate" calculated for each benchmark is a function of: <tt>
+<br />&nbsp;&nbsp;&nbsp;the number of copies run * 
+<br />&nbsp;&nbsp;&nbsp;reference factor for the benchmark / 
+<br />&nbsp;&nbsp;&nbsp;elapsed time in seconds</tt> 
+<br />which yields a rate in jobs/time.  The rate metrics are calculated as a geometric mean from the individual SPECrates
+using the median result from three runs.  As with the speed metric, all copies of the benchmark during each run are required
+to have validated correctly.</p>
+
+<p>It is permitted to use the SPEC tools to generate a 1-cpu rate disclosure from a 1-cpu speed run.  The reverse is not
+permitted.</p>
+
+<h4 id="rule_4.3.3">4.3.3 Performance changes for production systems</h4>
+
+<p>As mentioned <a href="#rule_4.1.5">above</a>, performance may sometimes change for pre-production systems; but this is
+also true of production systems (that is, systems that have already begun shipping).  For example, a later revision to the
+firmware, or a mandatory OS bugfix, might reduce performance.</p> 
+
+<p>For production systems, if the tester becomes aware of something that reduces performance by more than 1.75% on an overall
+metric (for example, SPECfp_base2006 or SPECfp2006), the tester is encouraged but not required to republish the result.  In
+such cases, the original result is not considered non-compliant.  The tester is also encouraged, but not required, to include
+a reference to the change that makes the results different (e.g. "with OS patch 20020604-02").</p>
+
+<h3 id="rule_4.4">4.4  Metric Selection</h3>
+
+<p>Publication of peak results are considered optional by SPEC, so the tester may choose to publish only base results.  Since
+by definition base results adhere to all the rules that apply to peak results, the tester may choose to refer to these
+results by either the base or peak metric names (e.g. SPECint_base2006 or SPECint2006).</p>
+
+<p>It is permitted to publish base-only results.  Alternatively, the use of the flag <tt>basepeak</tt> is permitted, as
+described in <a href="#rule_3.5">section&nbsp;3.5</a>.</p>
+
+<h3 id="rule_4.5">4.5 Research and Academic usage of CPU2006</h3>
+
+<p>SPEC encourages use of the CPU2006 suites in academic and research environments.  It is understood that experiments in
+such environments may be conducted in a less formal fashion than that demanded of testers who publish on the SPEC web
+site.  For example, a research environment may use early prototype hardware that simply cannot be expected to stay up for the
+length of time required to meet the Continuous Run requirement (see <a href="#rule_3.3">section&nbsp;3.3</a>), or may use
+research compilers that are unsupported and are not generally available (see <a href="#rule_1">section&nbsp;1</a>).</p>
+
+<p>Nevertheless, SPEC would like to encourage researchers to obey as many of the run rules as practical, even for informal
+research.  SPEC respectfully suggests that following the rules will improve the clarity, reproducibility, and comparability
+of research results.</p>
+
+<p>Where the rules cannot be followed, SPEC requires that the deviations from the rules be clearly disclosed, and that any
+SPEC metrics (such as SPECint2006) be clearly marked as estimated. </p>
+
+<p>It is especially important to clearly distinguish results that do not comply with the run rules when the areas of
+non-compliance are major, such as not using the reference workload, or only being able to correctly validate a subset of the
+benchmarks.</p>
+
+<h3 id="rule_4.6">4.6 Required Disclosures  </h3>
+
+<p>If a SPEC CPU2006 licensee publicly discloses a CPU2006 result (for example in a press release, academic paper, magazine
+article, or public web site), and does not clearly mark the result as an estimate, any SPEC member may request that the
+rawfile(s) from the run(s) be sent to SPEC.  Such results must be made available to all interested members no later than 10
+working days after the request.</p>
+
+<p>Any SPEC member may request that the result and its rawfile be reviewed by the appropriate SPEC subcommittee.  If the
+tester does not wish to have the result posted on the SPEC web pages, the result will not be posted. </p>
+
+<p>But when public claims are made about CPU2006 results, whether by vendors or by academic researchers, SPEC reserves the
+right to take actions, for example if it should occur that the rawfile is not made available, or shows substantially
+different performance from the tester's claim, or shows obvious violations of the run rules.</p>
+
+<h3 id="rule_4.7">4.7 Fair Use  </h3>
+
+<p>Any public use of SPEC CPU2006 results must, at the time of publication, adhere to the then-currently-posted version of
+SPEC's Fair Use Rules, <a href="http://www.spec.org/fairuse.html">http://www.spec.org/fairuse.html</a>.</p>
+
+<p>If a competitive comparison uses SPEC CPU2006, it must use one or more of the following metrics:</p>
+
+<ul>
+<li> <p>The overall results: SPECint_base2006, SPECint2006, SPECfp_base2006, SPECfp2006, SPECint_base_rate2006,
+SPECint_rate2006, SPECfp_base_rate2006, SPECfp_rate2006;</p></li>
+
+<li> <p>Median run times of the individual benchmarks [see <a href="#s4.7note1">Note 1</a>];</p></li>
+
+<li> <p>Median individual benchmark SPECratios [see <a href="#s4.7note1">Note 1</a>];</p></li>
+</ul>
+
+<p>The basis for comparison must be stated.  Information from result pages may be used to define a basis for comparing a
+subset of systems, including but not limited to operating system version, cache size, memory size, compiler version, or
+compiler optimizations used.</p>
+
+<p>All public statements regarding SPEC, its benchmarks, and especially results posted at www.spec.org, are required to be
+scrupulously correct as of the date listed in the public statement.  However, there is no requirement to update public
+statements as new results are published.  For example, if a web page says that the Turboblaster 1000 has "the best
+SPECint2006 result when compared versus all results published at www.spec.org through July 1, 2006", there is no requirement
+to change that web page if a better result is published on July 2.</p>
+
+<p id="s4.7note1"><i><b>Note 1</b>:  Regarding the use of non-median individual benchmark results: As described in <a
+href="#rule_4.3">section 4.3</a>, each benchmark is run multiple times and the median is picked from the set of runs.  Any
+result from such a set may be mentioned in a competitive comparison, provided that the median from the same set is also
+mentioned</i></p>
+
+<h3 id="rule_4.8">4.8 Estimates are allowed</h3>
+
+<p>SPEC CPU2006 metrics may be estimated.  All estimates must be clearly identified as such.  </p>
+
+<p>SPEC requires that every use of an estimated number be clearly marked with "est." or "estimated" next to each estimated
+number, rather than burying a footnote at the bottom of a page.
+</p>
+
+<p class="example">For example, say that the JumboFast will achieve estimated performance of:</p> 
+<pre>          Model 1   SPECint_base2006  50 est.
+                    SPECint2006       60 est.
+          Model 2   SPECint_rate2006  70 est.
+                    SPECfp_rate2006   80 est.
+</pre>
+
+<p>For graphs, the word "estimated" must be plainly visible next to the scale or the title.</p>
+
+<p>Licensees are encouraged to give a rationale or methodology for any estimates, together with other information that may
+help the reader assess the accuracy of the estimate.  For example:</p>
+<ol>
+<li>"This is a measured estimate: SPEC CPU2006 was run on pre-production hardware.  Customer systems, planned for Q4, are
+expected to be similar."</li>
+<li>"Performance estimates are modeled using the cycle simulator GrokSim Mark IV.  It is likely that actual hardware, if
+built, would include significant differences."</li>
+</ol>
+
+<p>Those who publish estimates are encouraged to publish actual SPEC CPU2006 metrics as soon as possible. </p>
+
+<h2 id="rule_5">5.  Run Rule Exceptions</h2>
+
+<p>If for some reason, the tester cannot run the benchmarks as specified in these rules, the tester can seek SPEC
+approval for performance-neutral alternatives.  No publication may be done without such approval.  The SPEC Open Systems
+Group (OSG) maintains a
+Policies and Procedures document that defines the procedures for such exceptions.
+<br /></p>
+
+<p style="border-top: thin black solid"> 
+Copyright (C) 1999-2006 Standard Performance Evaluation Corporation All Rights Reserved</p>
+
+
+</body></html>

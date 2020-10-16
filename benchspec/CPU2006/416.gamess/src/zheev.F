@@ -1,0 +1,9900 @@
+C 26 MAR 02 - KRG - USE ABRT CALL, REMOVE FTNCHEK WARNINGS
+C  9 MAY 95 - MWS - USE DREAL INSTEAD OF DBLE
+C  2 MAR 95 - MWS - SANITIZE FLOATING POINT TYPES FOR USE ON CRAY
+C 29 DEC 94 - SK  - EXTRACTED FROM LAPACK
+C
+C*MODULE LAPACK  *DECK ZHEEV
+C
+      SUBROUTINE ZHEEV( JOBZ, UPLO, N, A, LDA, W, WORK, LWORK, RWORK,
+     $                  INFO )
+C
+C  -- LAPACK DRIVER ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          JOBZ, UPLO
+      INTEGER            INFO, LDA, LWORK, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   RWORK( * ), W( * )
+      COMPLEX*16         A( LDA, * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZHEEV COMPUTES ALL EIGENVALUES AND, OPTIONALLY, EIGENVECTORS OF A
+C  COMPLEX HERMITIAN MATRIX A.
+C
+C  ARGUMENTS
+C  =========
+C
+C  JOBZ    (INPUT) CHARACTER*1
+C          = 'N':  COMPUTE EIGENVALUES ONLY;
+C          = 'V':  COMPUTE EIGENVALUES AND EIGENVECTORS.
+C
+C  UPLO    (INPUT) CHARACTER*1
+C          = 'U':  UPPER TRIANGLE OF A IS STORED;
+C          = 'L':  LOWER TRIANGLE OF A IS STORED.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA, N)
+C          ON ENTRY, THE HERMITIAN MATRIX A.  IF UPLO = 'U', THE
+C          LEADING N-BY-N UPPER TRIANGULAR PART OF A CONTAINS THE
+C          UPPER TRIANGULAR PART OF THE MATRIX A.  IF UPLO = 'L',
+C          THE LEADING N-BY-N LOWER TRIANGULAR PART OF A CONTAINS
+C          THE LOWER TRIANGULAR PART OF THE MATRIX A.
+C          ON EXIT, IF JOBZ = 'V', THEN IF INFO = 0, A CONTAINS THE
+C          ORTHONORMAL EIGENVECTORS OF THE MATRIX A.
+C          IF JOBZ = 'N', THEN ON EXIT THE LOWER TRIANGLE (IF UPLO='L')
+C          OR THE UPPER TRIANGLE (IF UPLO='U') OF A, INCLUDING THE
+C          DIAGONAL, IS DESTROYED.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  W       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          IF INFO = 0, THE EIGENVALUES IN ASCENDING ORDER.
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE LENGTH OF THE ARRAY WORK.  LWORK >= MAX(1,2*N-1).
+C          FOR OPTIMAL EFFICIENCY, LWORK >= (NB+1)*N,
+C          WHERE NB IS THE BLOCKSIZE FOR ZHETRD RETURNED BY ILAENV.
+C
+C  RWORK   (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (MAX(1, 3*N-2))
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C          > 0:  IF INFO = I, THE ALGORITHM FAILED TO CONVERGE; I
+C                OFF-DIAGONAL ELEMENTS OF AN INTERMEDIATE TRIDIAGONAL
+C                FORM DID NOT CONVERGE TO ZERO.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            LOWER, WANTZ
+      INTEGER            IINFO, IMAX, INDE, INDRWK, INDTAU, INDWRK,
+     $                   ISCALE, J, LLWORK, LOPT
+      DOUBLE PRECISION   ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN, SIGMA,
+     $                   SMLNUM
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           LSAME, DLAMCH
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           DSCAL, DSTERF, XERBLA, ZDSCAL, ZHETRD, ZSTEQR,
+     $                   ZUNGTR
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      WANTZ = LSAME( JOBZ, 'V' )
+      LOWER = LSAME( UPLO, 'L' )
+C
+      INFO = 0
+      IF( .NOT.( WANTZ .OR. LSAME( JOBZ, 'N' ) ) ) THEN
+         INFO = -1
+      ELSE IF( .NOT.( LOWER .OR. LSAME( UPLO, 'U' ) ) ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, 2*N-1 ) ) THEN
+         INFO = -8
+      END IF
+C
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZHEEV ', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+      IF( N.EQ.1 ) THEN
+#if defined(SPEC_CPU)
+         W( 1 ) = DBLE(A( 1, 1 ))
+#else
+         W( 1 ) = DREAL(A( 1, 1 ))
+#endif
+         WORK( 1 ) = 3
+         IF( WANTZ )
+     $      A( 1, 1 ) = ONE
+         RETURN
+      END IF
+C
+C     GET MACHINE CONSTANTS.
+C
+      SAFMIN = DLAMCH( 'SAFE MINIMUM' )
+      EPS = DLAMCH( 'PRECISION' )
+      SMLNUM = SAFMIN / EPS
+      BIGNUM = ONE / SMLNUM
+      RMIN = SQRT( SMLNUM )
+      RMAX = SQRT( BIGNUM )
+C
+C     SCALE MATRIX TO ALLOWABLE RANGE, IF NECESSARY.
+C
+      CALL ZZLANHE(ANRM, 'M', UPLO, N, A, LDA, RWORK )
+      ISCALE = 0
+      IF( ANRM.GT.ZERO .AND. ANRM.LT.RMIN ) THEN
+         ISCALE = 1
+         SIGMA = RMIN / ANRM
+      ELSE IF( ANRM.GT.RMAX ) THEN
+         ISCALE = 1
+         SIGMA = RMAX / ANRM
+      END IF
+      IF( ISCALE.EQ.1 ) THEN
+         IF( LOWER ) THEN
+            DO 10 J = 1, N
+               CALL ZDSCAL( N-J+1, SIGMA, A( J, J ), 1 )
+   10       CONTINUE
+         ELSE
+            DO 20 J = 1, N
+               CALL ZDSCAL( J, SIGMA, A( 1, J ), 1 )
+   20       CONTINUE
+         END IF
+      END IF
+C
+C     CALL ZHETRD TO REDUCE HERMITIAN MATRIX TO TRIDIAGONAL FORM.
+C
+      INDE = 1
+      INDTAU = 1
+      INDWRK = INDTAU + N
+      LLWORK = LWORK - INDWRK + 1
+      CALL ZHETRD( UPLO, N, A, LDA, W, RWORK( INDE ), WORK( INDTAU ),
+     $             WORK( INDWRK ), LLWORK, IINFO )
+      LOPT = N + INT(WORK( INDWRK ))
+C
+C     FOR EIGENVALUES ONLY, CALL DSTERF.  FOR EIGENVECTORS, FIRST CALL
+C     ZUNGTR TO GENERATE THE UNITARY MATRIX, THEN CALL ZSTEQR.
+C
+      IF( .NOT.WANTZ ) THEN
+         CALL DSTERF( N, W, RWORK( INDE ), INFO )
+      ELSE
+         CALL ZUNGTR( UPLO, N, A, LDA, WORK( INDTAU ), WORK( INDWRK ),
+     $                LLWORK, IINFO )
+         INDRWK = INDE + N
+         CALL ZSTEQR( JOBZ, N, W, RWORK( INDE ), A, LDA,
+     $                RWORK( INDRWK ), INFO )
+      END IF
+C
+C     IF MATRIX WAS SCALED, THEN RESCALE EIGENVALUES APPROPRIATELY.
+C
+      IF( ISCALE.EQ.1 ) THEN
+         IF( INFO.EQ.0 ) THEN
+            IMAX = N
+         ELSE
+            IMAX = INFO - 1
+         END IF
+         CALL DSCAL( IMAX, ONE / SIGMA, W, 1 )
+      END IF
+C
+C     SET WORK(1) TO OPTIMAL COMPLEX WORKSPACE SIZE.
+C
+      WORK( 1 ) = MAX( 2*N-1, LOPT )
+C
+      RETURN
+C
+C     END OF ZHEEV
+C
+      END
+C*MODULE LAPACK  *DECK XERBLA    CALLED BY ZHEEV
+      SUBROUTINE XERBLA( SRNAME, INFO )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER*6        SRNAME
+      INTEGER            INFO
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  XERBLA  IS AN ERROR HANDLER FOR THE LAPACK ROUTINES.
+C  IT IS CALLED BY AN LAPACK ROUTINE IF AN INPUT PARAMETER HAS AN
+C  INVALID VALUE.  A MESSAGE IS PRINTED AND EXECUTION STOPS.
+C
+C  INSTALLERS MAY CONSIDER MODIFYING THE STOP STATEMENT IN ORDER TO
+C  CALL SYSTEM-SPECIFIC EXCEPTION-HANDLING FACILITIES.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SRNAME  (INPUT) CHARACTER*6
+C          THE NAME OF THE ROUTINE WHICH CALLED XERBLA.
+C
+C  INFO    (INPUT) INTEGER
+C          THE POSITION OF THE INVALID PARAMETER IN THE PARAMETER LIST
+C          OF THE CALLING ROUTINE.
+C
+C     .. EXECUTABLE STATEMENTS ..
+C
+      WRITE( *, FMT = 9999) SRNAME,INFO
+      CALL ABRT
+      STOP
+C
+ 9999 FORMAT( ' ** ON ENTRY TO ', A6, ' PARAMETER NUMBER ', I2, ' HAD ',
+     $      'AN ILLEGAL VALUE' )
+C
+C     END OF XERBLA
+C
+      END
+C*MODULE LAPACK  *DECK ZHETRD     CALLED BY ZHEEV
+      SUBROUTINE ZHETRD( UPLO, N, A, LDA, D, E, TAU, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          UPLO
+      INTEGER            INFO, LDA, LWORK, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   D( * ), E( * )
+      COMPLEX*16         A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZHETRD REDUCES A COMPLEX HERMITIAN MATRIX A TO REAL SYMMETRIC
+C  TRIDIAGONAL FORM T BY A UNITARY SIMILARITY TRANSFORMATION:
+C  Q**H * A * Q = T.
+C
+C  ARGUMENTS
+C  =========
+C
+C  UPLO    (INPUT) CHARACTER*1
+C          = 'U':  UPPER TRIANGLE OF A IS STORED;
+C          = 'L':  LOWER TRIANGLE OF A IS STORED.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE HERMITIAN MATRIX A.  IF UPLO = 'U', THE LEADING
+C          N-BY-N UPPER TRIANGULAR PART OF A CONTAINS THE UPPER
+C          TRIANGULAR PART OF THE MATRIX A, AND THE STRICTLY LOWER
+C          TRIANGULAR PART OF A IS NOT REFERENCED.  IF UPLO = 'L', THE
+C          LEADING N-BY-N LOWER TRIANGULAR PART OF A CONTAINS THE LOWER
+C          TRIANGULAR PART OF THE MATRIX A, AND THE STRICTLY UPPER
+C          TRIANGULAR PART OF A IS NOT REFERENCED.
+C          ON EXIT, IF UPLO = 'U', THE DIAGONAL AND FIRST SUPERDIAGONAL
+C          OF A ARE OVERWRITTEN BY THE CORRESPONDING ELEMENTS OF THE
+C          TRIDIAGONAL MATRIX T, AND THE ELEMENTS ABOVE THE FIRST
+C          SUPERDIAGONAL, WITH THE ARRAY TAU, REPRESENT THE UNITARY
+C          MATRIX Q AS A PRODUCT OF ELEMENTARY REFLECTORS; IF UPLO
+C          = 'L', THE DIAGONAL AND FIRST SUBDIAGONAL OF A ARE OVER-
+C          WRITTEN BY THE CORRESPONDING ELEMENTS OF THE TRIDIAGONAL
+C          MATRIX T, AND THE ELEMENTS BELOW THE FIRST SUBDIAGONAL, WITH
+C          THE ARRAY TAU, REPRESENT THE UNITARY MATRIX Q AS A PRODUCT
+C          OF ELEMENTARY REFLECTORS. SEE FURTHER DETAILS.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  D       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          THE DIAGONAL ELEMENTS OF THE TRIDIAGONAL MATRIX T:
+C          D(I) = A(I,I).
+C
+C  E       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          THE OFF-DIAGONAL ELEMENTS OF THE TRIDIAGONAL MATRIX T:
+C          E(I) = A(I,I+1) IF UPLO = 'U', E(I) = A(I+1,I) IF UPLO = 'L'.
+C
+C  TAU     (OUTPUT) COMPLEX*16 ARRAY, DIMENSION (N-1)
+C          THE SCALAR FACTORS OF THE ELEMENTARY REFLECTORS (SEE FURTHER
+C          DETAILS).
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK.  LWORK >= 1.
+C          FOR OPTIMUM PERFORMANCE LWORK >= N*NB, WHERE NB IS THE
+C          OPTIMAL BLOCKSIZE.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  IF UPLO = 'U', THE MATRIX Q IS REPRESENTED AS A PRODUCT OF ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(N-1) . . . H(2) H(1).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A COMPLEX SCALAR, AND V IS A COMPLEX VECTOR WITH
+C  V(I+1:N) = 0 AND V(I) = 1; V(1:I-1) IS STORED ON EXIT IN
+C  A(1:I-1,I+1), AND TAU IN TAU(I).
+C
+C  IF UPLO = 'L', THE MATRIX Q IS REPRESENTED AS A PRODUCT OF ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(1) H(2) . . . H(N-1).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A COMPLEX SCALAR, AND V IS A COMPLEX VECTOR WITH
+C  V(1:I) = 0 AND V(I+1) = 1; V(I+2:N) IS STORED ON EXIT IN A(I+2:N,I),
+C  AND TAU IN TAU(I).
+C
+C  THE CONTENTS OF A ON EXIT ARE ILLUSTRATED BY THE FOLLOWING EXAMPLES
+C  WITH N = 5:
+C
+C  IF UPLO = 'U':                       IF UPLO = 'L':
+C
+C    (  D   E   V2  V3  V4 )              (  D                  )
+C    (      D   E   V3  V4 )              (  E   D              )
+C    (          D   E   V4 )              (  V1  E   D          )
+C    (              D   E  )              (  V1  V2  E   D      )
+C    (                  D  )              (  V1  V2  V3  E   D  )
+C
+C  WHERE D AND E DENOTE DIAGONAL AND OFF-DIAGONAL ELEMENTS OF T, AND VI
+C  DENOTES AN ELEMENT OF THE VECTOR DEFINING H(I).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+      COMPLEX*16         CONE
+      PARAMETER          ( CONE = 1.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            UPPER
+      INTEGER            I, IINFO, IWS, J, KK, LDWORK, NB, NBMIN, NX
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA, ZHER2K, ZHETD2, ZLATRD
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      INTEGER            ILAENV
+      EXTERNAL           LSAME, ILAENV
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS
+C
+      INFO = 0
+      UPPER = LSAME( UPLO, 'U' )
+      IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -2
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -4
+      ELSE IF( LWORK.LT.1 ) THEN
+         INFO = -9
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZHETRD', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+C     DETERMINE THE BLOCK SIZE.
+C
+      NB = ILAENV( 1, 'ZHETRD', UPLO, N, -1, -1, -1 )
+      NX = N
+      IWS = 1
+      IF( NB.GT.1 .AND. NB.LT.N ) THEN
+C
+C        DETERMINE WHEN TO CROSS OVER FROM BLOCKED TO UNBLOCKED CODE
+C        (LAST BLOCK IS ALWAYS HANDLED BY UNBLOCKED CODE).
+C
+         NX = MAX( NB, ILAENV( 3, 'ZHETRD', UPLO, N, -1, -1, -1 ) )
+         IF( NX.LT.N ) THEN
+C
+C           DETERMINE IF WORKSPACE IS LARGE ENOUGH FOR BLOCKED CODE.
+C
+            LDWORK = N
+            IWS = LDWORK*NB
+            IF( LWORK.LT.IWS ) THEN
+C
+C              NOT ENOUGH WORKSPACE TO USE OPTIMAL NB:  DETERMINE THE
+C              MINIMUM VALUE OF NB, AND REDUCE NB OR FORCE USE OF
+C              UNBLOCKED CODE BY SETTING NX = N.
+C
+               NB = LWORK / LDWORK
+               NBMIN = ILAENV( 2, 'ZHETRD', UPLO, N, -1, -1, -1 )
+               IF( NB.LT.NBMIN )
+     $            NX = N
+            END IF
+         ELSE
+            NX = N
+         END IF
+      ELSE
+         NB = 1
+      END IF
+C
+      IF( UPPER ) THEN
+C
+C        REDUCE THE UPPER TRIANGLE OF A.
+C        COLUMNS 1:KK ARE HANDLED BY THE UNBLOCKED METHOD.
+C
+         KK = N - ( ( N-NX+NB-1 ) / NB )*NB
+         DO 20 I = N - NB + 1, KK + 1, -NB
+C
+C           REDUCE COLUMNS I:I+NB-1 TO TRIDIAGONAL FORM AND FORM THE
+C           MATRIX W WHICH IS NEEDED TO UPDATE THE UNREDUCED PART OF
+C           THE MATRIX
+C
+            CALL ZLATRD( UPLO, I+NB-1, NB, A, LDA, E, TAU, WORK,
+     $                   LDWORK )
+C
+C           UPDATE THE UNREDUCED SUBMATRIX A(1:I-1,1:I-1), USING AN
+C           UPDATE OF THE FORM:  A := A - V*W' - W*V'
+C
+            CALL ZHER2K( UPLO, 'NO TRANSPOSE', I-1, NB, -CONE,
+     $                   A( 1, I ), LDA, WORK, LDWORK, ONE, A, LDA )
+C
+C           COPY SUPERDIAGONAL ELEMENTS BACK INTO A, AND DIAGONAL
+C           ELEMENTS INTO D
+C
+            DO 10 J = I, I + NB - 1
+               A( J-1, J ) = E( J-1 )
+#if defined(SPEC_CPU)
+               D( J ) = DBLE(A( J, J ))
+#else
+               D( J ) = DREAL(A( J, J ))
+#endif
+   10       CONTINUE
+   20    CONTINUE
+C
+C        USE UNBLOCKED CODE TO REDUCE THE LAST OR ONLY BLOCK
+C
+         CALL ZHETD2( UPLO, KK, A, LDA, D, E, TAU, IINFO )
+      ELSE
+C
+C        REDUCE THE LOWER TRIANGLE OF A
+C
+         DO 40 I = 1, N - NX, NB
+C
+C           REDUCE COLUMNS I:I+NB-1 TO TRIDIAGONAL FORM AND FORM THE
+C           MATRIX W WHICH IS NEEDED TO UPDATE THE UNREDUCED PART OF
+C           THE MATRIX
+C
+            CALL ZLATRD( UPLO, N-I+1, NB, A( I, I ), LDA, E( I ),
+     $                   TAU( I ), WORK, LDWORK )
+C
+C           UPDATE THE UNREDUCED SUBMATRIX A(I+NB:N,I+NB:N), USING
+C           AN UPDATE OF THE FORM:  A := A - V*W' - W*V'
+C
+            CALL ZHER2K( UPLO, 'NO TRANSPOSE', N-I-NB+1, NB, -CONE,
+     $                   A( I+NB, I ), LDA, WORK( NB+1 ), LDWORK, ONE,
+     $                   A( I+NB, I+NB ), LDA )
+C
+C           COPY SUBDIAGONAL ELEMENTS BACK INTO A, AND DIAGONAL
+C           ELEMENTS INTO D
+C
+            DO 30 J = I, I + NB - 1
+               A( J+1, J ) = E( J )
+#if defined(SPEC_CPU)
+               D( J ) = DBLE(A( J, J ))
+#else
+               D( J ) = DREAL(A( J, J ))
+#endif
+   30       CONTINUE
+   40    CONTINUE
+C
+C        USE UNBLOCKED CODE TO REDUCE THE LAST OR ONLY BLOCK
+C
+         CALL ZHETD2( UPLO, N-I+1, A( I, I ), LDA, D( I ), E( I ),
+     $                TAU( I ), IINFO )
+      END IF
+C
+      WORK( 1 ) = IWS
+      RETURN
+C
+C     END OF ZHETRD
+C
+      END
+C*MODULE LAPACK  *DECK ZLATRD     CALLED BY ZHETRD
+      SUBROUTINE ZLATRD( UPLO, N, NB, A, LDA, E, TAU, W, LDW )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          UPLO
+      INTEGER            LDA, LDW, N, NB
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   E( * )
+      COMPLEX*16         A( LDA, * ), TAU( * ), W( LDW, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLATRD REDUCES NB ROWS AND COLUMNS OF A COMPLEX HERMITIAN MATRIX A TO
+C  HERMITIAN TRIDIAGONAL FORM BY A UNITARY SIMILARITY
+C  TRANSFORMATION Q' * A * Q, AND RETURNS THE MATRICES V AND W WHICH ARE
+C  NEEDED TO APPLY THE TRANSFORMATION TO THE UNREDUCED PART OF A.
+C
+C  IF UPLO = 'U', ZLATRD REDUCES THE LAST NB ROWS AND COLUMNS OF A
+C  MATRIX, OF WHICH THE UPPER TRIANGLE IS SUPPLIED;
+C  IF UPLO = 'L', ZLATRD REDUCES THE FIRST NB ROWS AND COLUMNS OF A
+C  MATRIX, OF WHICH THE LOWER TRIANGLE IS SUPPLIED.
+C
+C  THIS IS AN AUXILIARY ROUTINE CALLED BY ZHETRD.
+C
+C  ARGUMENTS
+C  =========
+C
+C  UPLO    (INPUT) CHARACTER
+C          SPECIFIES WHETHER THE UPPER OR LOWER TRIANGULAR PART OF THE
+C          HERMITIAN MATRIX A IS STORED:
+C          = 'U': UPPER TRIANGULAR
+C          = 'L': LOWER TRIANGULAR
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.
+C
+C  NB      (INPUT) INTEGER
+C          THE NUMBER OF ROWS AND COLUMNS TO BE REDUCED.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE HERMITIAN MATRIX A.  IF UPLO = 'U', THE LEADING
+C          N-BY-N UPPER TRIANGULAR PART OF A CONTAINS THE UPPER
+C          TRIANGULAR PART OF THE MATRIX A, AND THE STRICTLY LOWER
+C          TRIANGULAR PART OF A IS NOT REFERENCED.  IF UPLO = 'L', THE
+C          LEADING N-BY-N LOWER TRIANGULAR PART OF A CONTAINS THE LOWER
+C          TRIANGULAR PART OF THE MATRIX A, AND THE STRICTLY UPPER
+C          TRIANGULAR PART OF A IS NOT REFERENCED.
+C          ON EXIT:
+C          IF UPLO = 'U', THE LAST NB COLUMNS HAVE BEEN REDUCED TO
+C            TRIDIAGONAL FORM, WITH THE DIAGONAL ELEMENTS OVERWRITING
+C            THE DIAGONAL ELEMENTS OF A; THE ELEMENTS ABOVE THE DIAGONAL
+C            WITH THE ARRAY TAU, REPRESENT THE UNITARY MATRIX Q AS A
+C            PRODUCT OF ELEMENTARY REFLECTORS;
+C          IF UPLO = 'L', THE FIRST NB COLUMNS HAVE BEEN REDUCED TO
+C            TRIDIAGONAL FORM, WITH THE DIAGONAL ELEMENTS OVERWRITING
+C            THE DIAGONAL ELEMENTS OF A; THE ELEMENTS BELOW THE DIAGONAL
+C            WITH THE ARRAY TAU, REPRESENT THE  UNITARY MATRIX Q AS A
+C            PRODUCT OF ELEMENTARY REFLECTORS.
+C          SEE FURTHER DETAILS.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  E       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          IF UPLO = 'U', E(N-NB:N-1) CONTAINS THE SUPERDIAGONAL
+C          ELEMENTS OF THE LAST NB COLUMNS OF THE REDUCED MATRIX;
+C          IF UPLO = 'L', E(1:NB) CONTAINS THE SUBDIAGONAL ELEMENTS OF
+C          THE FIRST NB COLUMNS OF THE REDUCED MATRIX.
+C
+C  TAU     (OUTPUT) COMPLEX*16 ARRAY, DIMENSION (N-1)
+C          THE SCALAR FACTORS OF THE ELEMENTARY REFLECTORS, STORED IN
+C          TAU(N-NB:N-1) IF UPLO = 'U', AND IN TAU(1:NB) IF UPLO = 'L'.
+C          SEE FURTHER DETAILS.
+C
+C  W       (OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDW,NB)
+C          THE N-BY-NB MATRIX W REQUIRED TO UPDATE THE UNREDUCED PART
+C          OF A.
+C
+C  LDW     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY W. LDW >= MAX(1,N).
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  IF UPLO = 'U', THE MATRIX Q IS REPRESENTED AS A PRODUCT OF ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(N) H(N-1) . . . H(N-NB+1).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A COMPLEX SCALAR, AND V IS A COMPLEX VECTOR WITH
+C  V(I:N) = 0 AND V(I-1) = 1; V(1:I-1) IS STORED ON EXIT IN A(1:I-1,I),
+C  AND TAU IN TAU(I-1).
+C
+C  IF UPLO = 'L', THE MATRIX Q IS REPRESENTED AS A PRODUCT OF ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(1) H(2) . . . H(NB).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A COMPLEX SCALAR, AND V IS A COMPLEX VECTOR WITH
+C  V(1:I) = 0 AND V(I+1) = 1; V(I+1:N) IS STORED ON EXIT IN A(I+1:N,I),
+C  AND TAU IN TAU(I).
+C
+C  THE ELEMENTS OF THE VECTORS V TOGETHER FORM THE N-BY-NB MATRIX V
+C  WHICH IS NEEDED, WITH W, TO APPLY THE TRANSFORMATION TO THE UNREDUCED
+C  PART OF THE MATRIX, USING A HERMITIAN RANK-2K UPDATE OF THE FORM:
+C  A := A - V*W' - W*V'.
+C
+C  THE CONTENTS OF A ON EXIT ARE ILLUSTRATED BY THE FOLLOWING EXAMPLES
+C  WITH N = 5 AND NB = 2:
+C
+C  IF UPLO = 'U':                       IF UPLO = 'L':
+C
+C    (  A   A   A   V4  V5 )              (  D                  )
+C    (      A   A   V4  V5 )              (  1   D              )
+C    (          A   1   V5 )              (  V1  1   A          )
+C    (              D   1  )              (  V1  V2  A   A      )
+C    (                  D  )              (  V1  V2  A   A   A  )
+C
+C  WHERE D DENOTES A DIAGONAL ELEMENT OF THE REDUCED MATRIX, A DENOTES
+C  AN ELEMENT OF THE ORIGINAL MATRIX THAT IS UNCHANGED, AND VI DENOTES
+C  AN ELEMENT OF THE VECTOR DEFINING H(I).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ZERO, ONE, HALF
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, HALF = 0.5D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, IW
+      COMPLEX*16         ALPHA
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           ZAXPY, ZGEMV, ZHEMV, ZLACGV, ZLARFG, ZSCAL
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      COMPLEX*16         ZDOTC
+      EXTERNAL           LSAME, ZDOTC
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          DBLE, MIN
+#else
+      INTRINSIC          DREAL, MIN
+#endif
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 )
+     $   RETURN
+C
+      IF( LSAME( UPLO, 'U' ) ) THEN
+C
+C        REDUCE LAST NB COLUMNS OF UPPER TRIANGLE
+C
+         DO 10 I = N, N - NB + 1, -1
+            IW = I - N + NB
+            IF( I.LT.N ) THEN
+C
+C              UPDATE A(1:I,I)
+C
+#if defined(SPEC_CPU)
+               A( I, I ) = DBLE( A( I, I ) )
+#else
+               A( I, I ) = DREAL( A( I, I ) )
+#endif
+               CALL ZLACGV( N-I, W( I, IW+1 ), LDW )
+               CALL ZGEMV( 'NO TRANSPOSE', I, N-I, -ONE, A( 1, I+1 ),
+     $                     LDA, W( I, IW+1 ), LDW, ONE, A( 1, I ), 1 )
+               CALL ZLACGV( N-I, W( I, IW+1 ), LDW )
+               CALL ZLACGV( N-I, A( I, I+1 ), LDA )
+               CALL ZGEMV( 'NO TRANSPOSE', I, N-I, -ONE, W( 1, IW+1 ),
+     $                     LDW, A( I, I+1 ), LDA, ONE, A( 1, I ), 1 )
+               CALL ZLACGV( N-I, A( I, I+1 ), LDA )
+#if defined(SPEC_CPU)
+               A( I, I ) = DBLE( A( I, I ) )
+#else
+               A( I, I ) = DREAL( A( I, I ) )
+#endif
+            END IF
+            IF( I.GT.1 ) THEN
+C
+C              GENERATE ELEMENTARY REFLECTOR H(I) TO ANNIHILATE
+C              A(1:I-2,I)
+C
+               ALPHA = A( I-1, I )
+               CALL ZLARFG( I-1, ALPHA, A( 1, I ), 1, TAU( I-1 ) )
+#if defined(SPEC_CPU)
+               E( I-1 ) = DBLE(ALPHA)
+#else
+               E( I-1 ) = DREAL(ALPHA)
+#endif
+               A( I-1, I ) = ONE
+C
+C              COMPUTE W(1:I-1,I)
+C
+               CALL ZHEMV( 'UPPER', I-1, ONE, A, LDA, A( 1, I ), 1,
+     $                     ZERO, W( 1, IW ), 1 )
+               IF( I.LT.N ) THEN
+                  CALL ZGEMV( 'CONJUGATE TRANSPOSE', I-1, N-I, ONE,
+     $                        W( 1, IW+1 ), LDW, A( 1, I ), 1, ZERO,
+     $                        W( I+1, IW ), 1 )
+                  CALL ZGEMV( 'NO TRANSPOSE', I-1, N-I, -ONE,
+     $                        A( 1, I+1 ), LDA, W( I+1, IW ), 1, ONE,
+     $                        W( 1, IW ), 1 )
+                  CALL ZGEMV( 'CONJUGATE TRANSPOSE', I-1, N-I, ONE,
+     $                        A( 1, I+1 ), LDA, A( 1, I ), 1, ZERO,
+     $                        W( I+1, IW ), 1 )
+                  CALL ZGEMV( 'NO TRANSPOSE', I-1, N-I, -ONE,
+     $                        W( 1, IW+1 ), LDW, W( I+1, IW ), 1, ONE,
+     $                        W( 1, IW ), 1 )
+               END IF
+               CALL ZSCAL( I-1, TAU( I-1 ), W( 1, IW ), 1 )
+               ALPHA = -HALF*TAU( I-1 )*ZDOTC( I-1, W( 1, IW ), 1,
+     $                 A( 1, I ), 1 )
+               CALL ZAXPY( I-1, ALPHA, A( 1, I ), 1, W( 1, IW ), 1 )
+            END IF
+C
+   10    CONTINUE
+      ELSE
+C
+C        REDUCE FIRST NB COLUMNS OF LOWER TRIANGLE
+C
+         DO 20 I = 1, NB
+C
+C           UPDATE A(I:N,I)
+C
+#if defined(SPEC_CPU)
+            A( I, I ) = DBLE( A( I, I ) )
+#else
+            A( I, I ) = DREAL( A( I, I ) )
+#endif
+            CALL ZLACGV( I-1, W( I, 1 ), LDW )
+            CALL ZGEMV( 'NO TRANSPOSE', N-I+1, I-1, -ONE, A( I, 1 ),
+     $                  LDA, W( I, 1 ), LDW, ONE, A( I, I ), 1 )
+            CALL ZLACGV( I-1, W( I, 1 ), LDW )
+            CALL ZLACGV( I-1, A( I, 1 ), LDA )
+            CALL ZGEMV( 'NO TRANSPOSE', N-I+1, I-1, -ONE, W( I, 1 ),
+     $                  LDW, A( I, 1 ), LDA, ONE, A( I, I ), 1 )
+            CALL ZLACGV( I-1, A( I, 1 ), LDA )
+#if defined(SPEC_CPU)
+            A( I, I ) = DBLE( A( I, I ) )
+#else
+            A( I, I ) = DREAL( A( I, I ) )
+#endif
+            IF( I.LT.N ) THEN
+C
+C              GENERATE ELEMENTARY REFLECTOR H(I) TO ANNIHILATE
+C              A(I+2:N,I)
+C
+               ALPHA = A( I+1, I )
+               CALL ZLARFG( N-I, ALPHA, A( MIN( I+2, N ), I ), 1,
+     $                      TAU( I ) )
+#if defined(SPEC_CPU)
+               E( I ) = DBLE(ALPHA)
+#else
+               E( I ) = DREAL(ALPHA)
+#endif
+               A( I+1, I ) = ONE
+C
+C              COMPUTE W(I+1:N,I)
+C
+               CALL ZHEMV( 'LOWER', N-I, ONE, A( I+1, I+1 ), LDA,
+     $                     A( I+1, I ), 1, ZERO, W( I+1, I ), 1 )
+               CALL ZGEMV( 'CONJUGATE TRANSPOSE', N-I, I-1, ONE,
+     $                     W( I+1, 1 ), LDW, A( I+1, I ), 1, ZERO,
+     $                     W( 1, I ), 1 )
+               CALL ZGEMV( 'NO TRANSPOSE', N-I, I-1, -ONE, A( I+1, 1 ),
+     $                     LDA, W( 1, I ), 1, ONE, W( I+1, I ), 1 )
+               CALL ZGEMV( 'CONJUGATE TRANSPOSE', N-I, I-1, ONE,
+     $                     A( I+1, 1 ), LDA, A( I+1, I ), 1, ZERO,
+     $                     W( 1, I ), 1 )
+               CALL ZGEMV( 'NO TRANSPOSE', N-I, I-1, -ONE, W( I+1, 1 ),
+     $                     LDW, W( 1, I ), 1, ONE, W( I+1, I ), 1 )
+               CALL ZSCAL( N-I, TAU( I ), W( I+1, I ), 1 )
+               ALPHA = -HALF*TAU( I )*ZDOTC( N-I, W( I+1, I ), 1,
+     $                 A( I+1, I ), 1 )
+               CALL ZAXPY( N-I, ALPHA, A( I+1, I ), 1, W( I+1, I ), 1 )
+            END IF
+C
+   20    CONTINUE
+      END IF
+C
+      RETURN
+C
+C     END OF ZLATRD
+C
+      END
+C*MODULE LAPACK  *DECK ZLACGV     CALLED BY ZLATRD
+      SUBROUTINE ZLACGV( N, X, INCX )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INCX, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         X( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLACGV CONJUGATES A COMPLEX VECTOR OF LENGTH N.
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE LENGTH OF THE VECTOR X.  N >= 0.
+C
+C  X       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION
+C                         (1+(N-1)*ABS(INCX))
+C          ON ENTRY, THE VECTOR OF LENGTH N TO BE CONJUGATED.
+C          ON EXIT, X IS OVERWRITTEN WITH CONJG(X).
+C
+C  INCX    (INPUT) INTEGER
+C          THE SPACING BETWEEN SUCCESSIVE ELEMENTS OF X.
+C
+C =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      INTEGER            I, IOFF
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          DCONJG
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( INCX.EQ.1 ) THEN
+         DO 10 I = 1, N
+            X( I ) = DCONJG( X( I ) )
+   10    CONTINUE
+      ELSE
+         IOFF = 1
+         IF( INCX.LT.0 )
+     $      IOFF = 1 - ( N-1 )*INCX
+         DO 20 I = 1, N
+            X( IOFF ) = DCONJG( X( IOFF ) )
+            IOFF = IOFF + INCX
+   20    CONTINUE
+      END IF
+      RETURN
+C
+C     END OF ZLACGV
+C
+      END
+C*MODULE LAPACK  *DECK ZLARFG     CALLED BY ZLATRD
+      SUBROUTINE ZLARFG( N, ALPHA, X, INCX, TAU )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INCX, N
+      COMPLEX*16         ALPHA, TAU
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         X( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLARFG GENERATES A COMPLEX ELEMENTARY REFLECTOR H OF ORDER N, SUCH
+C  THAT
+C
+C        H' * ( ALPHA ) = ( BETA ),   H' * H = I.
+C             (   X   )   (   0  )
+C
+C  WHERE ALPHA AND BETA ARE SCALARS, WITH BETA REAL, AND X IS AN
+C  (N-1)-ELEMENT COMPLEX VECTOR. H IS REPRESENTED IN THE FORM
+C
+C        H = I - TAU * ( 1 ) * ( 1 V' ) ,
+C                      ( V )
+C
+C  WHERE TAU IS A COMPLEX SCALAR AND V IS A COMPLEX (N-1)-ELEMENT
+C  VECTOR. NOTE THAT H IS NOT HERMITIAN.
+C
+C  IF THE ELEMENTS OF X ARE ALL ZERO AND ALPHA IS REAL, THEN TAU = 0
+C  AND H IS TAKEN TO BE THE UNIT MATRIX.
+C
+C  OTHERWISE  1 <= REAL(TAU) <= 2  AND  ABS(TAU-1) <= 1 .
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE ELEMENTARY REFLECTOR.
+C
+C  ALPHA   (INPUT/OUTPUT) COMPLEX*16
+C          ON ENTRY, THE VALUE ALPHA.
+C          ON EXIT, IT IS OVERWRITTEN WITH THE VALUE BETA.
+C
+C  X       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION
+C                         (1+(N-2)*ABS(INCX))
+C          ON ENTRY, THE VECTOR X.
+C          ON EXIT, IT IS OVERWRITTEN WITH THE VECTOR V.
+C
+C  INCX    (INPUT) INTEGER
+C          THE INCREMENT BETWEEN ELEMENTS OF X. INCX <> 0.
+C
+C  TAU     (OUTPUT) COMPLEX*16
+C          THE VALUE TAU.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            J, KNT
+      DOUBLE PRECISION   ALPHI, ALPHR, BETA, RSAFMN, SAFMIN, XNORM
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMCH, DLAPY3, DZNRM2
+      COMPLEX*16         ZLADIV
+      EXTERNAL           DLAMCH, DLAPY3, DZNRM2, ZLADIV
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          ABS, DBLE, DCMPLX, DIMAG, SIGN
+#else
+      INTRINSIC          ABS, DREAL, DCMPLX, DIMAG, SIGN
+#endif
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           ZDSCAL, ZSCAL
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( N.LE.0 ) THEN
+         TAU = ZERO
+         RETURN
+      END IF
+C
+      XNORM = DZNRM2( N-1, X, INCX )
+#if defined(SPEC_CPU)
+      ALPHR = DBLE( ALPHA )
+#else
+      ALPHR = DREAL( ALPHA )
+#endif
+      ALPHI = DIMAG( ALPHA )
+C
+      IF( XNORM.EQ.ZERO .AND. ALPHI.EQ.ZERO ) THEN
+C
+C        H  =  I
+C
+         TAU = ZERO
+      ELSE
+C
+C        GENERAL CASE
+C
+         BETA = -SIGN( DLAPY3( ALPHR, ALPHI, XNORM ), ALPHR )
+         SAFMIN = DLAMCH( 'S' )
+         RSAFMN = ONE / SAFMIN
+C
+         IF( ABS( BETA ).LT.SAFMIN ) THEN
+C
+C           XNORM, BETA MAY BE INACCURATE; SCALE X AND RECOMPUTE THEM
+C
+            KNT = 0
+   10       CONTINUE
+            KNT = KNT + 1
+            CALL ZDSCAL( N-1, RSAFMN, X, INCX )
+            BETA = BETA*RSAFMN
+            ALPHI = ALPHI*RSAFMN
+            ALPHR = ALPHR*RSAFMN
+            IF( ABS( BETA ).LT.SAFMIN )
+     $         GO TO 10
+C
+C           NEW BETA IS AT MOST 1, AT LEAST SAFMIN
+C
+            XNORM = DZNRM2( N-1, X, INCX )
+            ALPHA = DCMPLX( ALPHR, ALPHI )
+            BETA = -SIGN( DLAPY3( ALPHR, ALPHI, XNORM ), ALPHR )
+            TAU = DCMPLX( ( BETA-ALPHR ) / BETA, -ALPHI / BETA )
+            ALPHA = ZLADIV( DCMPLX( ONE ), ALPHA-BETA )
+            CALL ZSCAL( N-1, ALPHA, X, INCX )
+C
+C           IF ALPHA IS SUBNORMAL, IT MAY LOSE RELATIVE ACCURACY
+C
+            ALPHA = BETA
+            DO 20 J = 1, KNT
+               ALPHA = ALPHA*SAFMIN
+   20       CONTINUE
+         ELSE
+            TAU = DCMPLX( ( BETA-ALPHR ) / BETA, -ALPHI / BETA )
+            ALPHA = ZLADIV( DCMPLX( ONE ), ALPHA-BETA )
+            CALL ZSCAL( N-1, ALPHA, X, INCX )
+            ALPHA = BETA
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZLARFG
+C
+      END
+C*MODULE LAPACK  *DECK ZHETD2     CALLED BY ZHETRD
+      SUBROUTINE ZHETD2( UPLO, N, A, LDA, D, E, TAU, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          UPLO
+      INTEGER            INFO, LDA, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   D( * ), E( * )
+      COMPLEX*16         A( LDA, * ), TAU( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZHETD2 REDUCES A COMPLEX HERMITIAN MATRIX A TO REAL SYMMETRIC
+C  TRIDIAGONAL FORM T BY A UNITARY SIMILARITY TRANSFORMATION:
+C  Q' * A * Q = T.
+C
+C  ARGUMENTS
+C  =========
+C
+C  UPLO    (INPUT) CHARACTER*1
+C          SPECIFIES WHETHER THE UPPER OR LOWER TRIANGULAR PART OF THE
+C          HERMITIAN MATRIX A IS STORED:
+C          = 'U':  UPPER TRIANGULAR
+C          = 'L':  LOWER TRIANGULAR
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE HERMITIAN MATRIX A.  IF UPLO = 'U', THE LEADING
+C          N-BY-N UPPER TRIANGULAR PART OF A CONTAINS THE UPPER
+C          TRIANGULAR PART OF THE MATRIX A, AND THE STRICTLY LOWER
+C          TRIANGULAR PART OF A IS NOT REFERENCED.  IF UPLO = 'L', THE
+C          LEADING N-BY-N LOWER TRIANGULAR PART OF A CONTAINS THE LOWER
+C          TRIANGULAR PART OF THE MATRIX A, AND THE STRICTLY UPPER
+C          TRIANGULAR PART OF A IS NOT REFERENCED.
+C          ON EXIT, IF UPLO = 'U', THE DIAGONAL AND FIRST SUPERDIAGONAL
+C          OF A ARE OVERWRITTEN BY THE CORRESPONDING ELEMENTS OF THE
+C          TRIDIAGONAL MATRIX T, AND THE ELEMENTS ABOVE THE FIRST
+C          SUPERDIAGONAL, WITH THE ARRAY TAU, REPRESENT THE UNITARY
+C          MATRIX Q AS A PRODUCT OF ELEMENTARY REFLECTORS; IF UPLO
+C          = 'L', THE DIAGONAL AND FIRST SUBDIAGONAL OF A ARE OVER-
+C          WRITTEN BY THE CORRESPONDING ELEMENTS OF THE TRIDIAGONAL
+C          MATRIX T, AND THE ELEMENTS BELOW THE FIRST SUBDIAGONAL, WITH
+C          THE ARRAY TAU, REPRESENT THE UNITARY MATRIX Q AS A PRODUCT
+C          OF ELEMENTARY REFLECTORS. SEE FURTHER DETAILS.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  D       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          THE DIAGONAL ELEMENTS OF THE TRIDIAGONAL MATRIX T:
+C          D(I) = A(I,I).
+C
+C  E       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          THE OFF-DIAGONAL ELEMENTS OF THE TRIDIAGONAL MATRIX T:
+C          E(I) = A(I,I+1) IF UPLO = 'U', E(I) = A(I+1,I) IF UPLO = 'L'.
+C
+C  TAU     (OUTPUT) COMPLEX*16 ARRAY, DIMENSION (N-1)
+C          THE SCALAR FACTORS OF THE ELEMENTARY REFLECTORS (SEE FURTHER
+C          DETAILS).
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  IF UPLO = 'U', THE MATRIX Q IS REPRESENTED AS A PRODUCT OF ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(N-1) . . . H(2) H(1).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A COMPLEX SCALAR, AND V IS A COMPLEX VECTOR WITH
+C  V(I+1:N) = 0 AND V(I) = 1; V(1:I-1) IS STORED ON EXIT IN
+C  A(1:I-1,I+1), AND TAU IN TAU(I).
+C
+C  IF UPLO = 'L', THE MATRIX Q IS REPRESENTED AS A PRODUCT OF ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(1) H(2) . . . H(N-1).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A COMPLEX SCALAR, AND V IS A COMPLEX VECTOR WITH
+C  V(1:I) = 0 AND V(I+1) = 1; V(I+2:N) IS STORED ON EXIT IN A(I+2:N,I),
+C  AND TAU IN TAU(I).
+C
+C  THE CONTENTS OF A ON EXIT ARE ILLUSTRATED BY THE FOLLOWING EXAMPLES
+C  WITH N = 5:
+C
+C  IF UPLO = 'U':                       IF UPLO = 'L':
+C
+C    (  D   E   V2  V3  V4 )              (  D                  )
+C    (      D   E   V3  V4 )              (  E   D              )
+C    (          D   E   V4 )              (  V1  E   D          )
+C    (              D   E  )              (  V1  V2  E   D      )
+C    (                  D  )              (  V1  V2  V3  E   D  )
+C
+C  WHERE D AND E DENOTE DIAGONAL AND OFF-DIAGONAL ELEMENTS OF T, AND VI
+C  DENOTES AN ELEMENT OF THE VECTOR DEFINING H(I).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE, ZERO, HALF
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0,
+     $                   HALF = 1.0D+0 / 2.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            UPPER
+      INTEGER            I
+      COMPLEX*16         ALPHA, TAUI
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA, ZAXPY, ZHEMV, ZHER2, ZLARFG
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      COMPLEX*16         ZDOTC
+      EXTERNAL           LSAME, ZDOTC
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          DBLE, MAX, MIN
+#else
+      INTRINSIC          DREAL, MAX, MIN
+#endif
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS
+C
+      INFO = 0
+      UPPER = LSAME( UPLO, 'U' )
+      IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -2
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -4
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZHETD2', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 )
+     $   RETURN
+C
+      IF( UPPER ) THEN
+C
+C        REDUCE THE UPPER TRIANGLE OF A
+C
+#if defined(SPEC_CPU)
+         A( N, N ) = DBLE( A( N, N ) )
+#else
+         A( N, N ) = DREAL( A( N, N ) )
+#endif
+         DO 10 I = N - 1, 1, -1
+C
+C           GENERATE ELEMENTARY REFLECTOR H(I) = I - TAU * V * V'
+C           TO ANNIHILATE A(1:I-1,I+1)
+C
+            ALPHA = A( I, I+1 )
+            CALL ZLARFG( I, ALPHA, A( 1, I+1 ), 1, TAUI )
+#if defined(SPEC_CPU)
+            E( I ) = DBLE(ALPHA)
+#else
+            E( I ) = DREAL(ALPHA)
+#endif
+C
+            IF( TAUI.NE.ZERO ) THEN
+C
+C              APPLY H(I) FROM BOTH SIDES TO A(1:I,1:I)
+C
+               A( I, I+1 ) = ONE
+C
+C              COMPUTE  X := TAU * A * V  STORING X IN TAU(1:I)
+C
+               CALL ZHEMV( UPLO, I, TAUI, A, LDA, A( 1, I+1 ), 1, ZERO,
+     $                     TAU, 1 )
+C
+C              COMPUTE  W := X - 1/2 * TAU * (X'*V) * V
+C
+               ALPHA = -HALF*TAUI*ZDOTC( I, TAU, 1, A( 1, I+1 ), 1 )
+               CALL ZAXPY( I, ALPHA, A( 1, I+1 ), 1, TAU, 1 )
+C
+C              APPLY THE TRANSFORMATION AS A RANK-2 UPDATE:
+C                 A := A - V * W' - W * V'
+C
+               CALL ZHER2( UPLO, I, -ONE, A( 1, I+1 ), 1, TAU, 1, A,
+     $                     LDA )
+C
+            END IF
+            A( I, I+1 ) = E( I )
+#if defined(SPEC_CPU)
+            D( I+1 ) = DBLE(A( I+1, I+1 ))
+#else
+            D( I+1 ) = DREAL(A( I+1, I+1 ))
+#endif
+            TAU( I ) = TAUI
+   10    CONTINUE
+#if defined(SPEC_CPU)
+         D( 1 ) = DBLE(A( 1, 1 ))
+#else
+         D( 1 ) = DREAL(A( 1, 1 ))
+#endif
+      ELSE
+C
+C        REDUCE THE LOWER TRIANGLE OF A
+C
+#if defined(SPEC_CPU)
+         A( 1, 1 ) = DBLE( A( 1, 1 ) )
+#else
+         A( 1, 1 ) = DREAL( A( 1, 1 ) )
+#endif
+         DO 20 I = 1, N - 1
+C
+C           GENERATE ELEMENTARY REFLECTOR H(I) = I - TAU * V * V'
+C           TO ANNIHILATE A(I+2:N,I)
+C
+            ALPHA = A( I+1, I )
+            CALL ZLARFG( N-I, ALPHA, A( MIN( I+2, N ), I ), 1, TAUI )
+#if defined(SPEC_CPU)
+            E( I ) = DBLE(ALPHA)
+#else
+            E( I ) = DREAL(ALPHA)
+#endif
+C
+            IF( TAUI.NE.ZERO ) THEN
+C
+C              APPLY H(I) FROM BOTH SIDES TO A(I+1:N,I+1:N)
+C
+               A( I+1, I ) = ONE
+C
+C              COMPUTE  X := TAU * A * V  STORING Y IN TAU(I:N-1)
+C
+               CALL ZHEMV( UPLO, N-I, TAUI, A( I+1, I+1 ), LDA,
+     $                     A( I+1, I ), 1, ZERO, TAU( I ), 1 )
+C
+C              COMPUTE  W := X - 1/2 * TAU * (X'*V) * V
+C
+               ALPHA = -HALF*TAUI*ZDOTC( N-I, TAU( I ), 1, A( I+1, I ),
+     $                 1 )
+               CALL ZAXPY( N-I, ALPHA, A( I+1, I ), 1, TAU( I ), 1 )
+C
+C              APPLY THE TRANSFORMATION AS A RANK-2 UPDATE:
+C                 A := A - V * W' - W * V'
+C
+               CALL ZHER2( UPLO, N-I, -ONE, A( I+1, I ), 1, TAU( I ), 1,
+     $                     A( I+1, I+1 ), LDA )
+C
+            END IF
+            A( I+1, I ) = E( I )
+#if defined(SPEC_CPU)
+            D( I ) = DBLE(A( I, I ))
+#else
+            D( I ) = DREAL(A( I, I ))
+#endif
+            TAU( I ) = TAUI
+   20    CONTINUE
+#if defined(SPEC_CPU)
+         D( N ) = DBLE(A( N, N ))
+#else
+         D( N ) = DREAL(A( N, N ))
+#endif
+      END IF
+C
+      RETURN
+C
+C     END OF ZHETD2
+C
+      END
+C*MODULE LAPACK  *DECK DSTERF     CALLED BY ZHEEV
+      SUBROUTINE DSTERF( N, D, E, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INFO, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   D( * ), E( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DSTERF COMPUTES ALL EIGENVALUES OF A SYMMETRIC TRIDIAGONAL MATRIX
+C  USING THE PAL-WALKER-KAHAN VARIANT OF THE QL OR QR ALGORITHM.
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX.  N >= 0.
+C
+C  D       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          ON ENTRY, THE N DIAGONAL ELEMENTS OF THE TRIDIAGONAL MATRIX.
+C          ON EXIT, IF INFO = 0, THE EIGENVALUES IN ASCENDING ORDER.
+C
+C  E       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          ON ENTRY, THE (N-1) SUBDIAGONAL ELEMENTS OF THE TRIDIAGONAL
+C          MATRIX.
+C          ON EXIT, E HAS BEEN DESTROYED.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C          > 0:  THE ALGORITHM FAILED TO FIND ALL OF THE EIGENVALUES IN
+C                A TOTAL OF 30*N ITERATIONS; IF INFO = I, THEN I
+C                ELEMENTS OF E HAVE NOT CONVERGED TO ZERO.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE, TWO
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TWO = 2.0D+0 )
+      INTEGER            MAXIT
+      PARAMETER          ( MAXIT = 30 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, II, J, JTOT, K, L, L1, LEND, LENDM1, LENDP1,
+     $                   LM1, M, MM1, NM1, NMAXIT
+      DOUBLE PRECISION   ALPHA, BB, C, EPS, GAMMA, OLDC, OLDGAM, P, R,
+     $                   RT1, RT2, RTE, S, SIGMA, TST
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMCH, DLAPY2
+      EXTERNAL           DLAMCH, DLAPY2
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           DLAE2, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, SIGN, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LT.0 ) THEN
+         INFO = -1
+         CALL XERBLA( 'DSTERF', -INFO )
+         RETURN
+      END IF
+      IF( N.LE.1 )
+     $   RETURN
+C
+C     DETERMINE THE UNIT ROUNDOFF FOR THIS ENVIRONMENT.
+C
+      EPS = DLAMCH( 'E' )
+C
+C     COMPUTE THE EIGENVALUES OF THE TRIDIAGONAL MATRIX.
+C
+      DO 10 I = 1, N - 1
+         E( I ) = E( I )**2
+   10 CONTINUE
+C
+      NMAXIT = N*MAXIT
+      SIGMA = ZERO
+      JTOT = 0
+C
+C     DETERMINE WHERE THE MATRIX SPLITS AND CHOOSE QL OR QR ITERATION
+C     FOR EACH BLOCK, ACCORDING TO WHETHER TOP OR BOTTOM DIAGONAL
+C     ELEMENT IS SMALLER.
+C
+      L1 = 1
+      NM1 = N - 1
+C
+   20 CONTINUE
+      IF( L1.GT.N )
+     $   GO TO 170
+      IF( L1.GT.1 )
+     $   E( L1-1 ) = ZERO
+      IF( L1.LE.NM1 ) THEN
+         DO 30 M = L1, NM1
+            TST = SQRT( ABS( E( M ) ) )
+            IF( TST.LE.EPS*( ABS( D( M ) )+ABS( D( M+1 ) ) ) )
+     $         GO TO 40
+   30    CONTINUE
+      END IF
+      M = N
+C
+   40 CONTINUE
+      L = L1
+      LEND = M
+      IF( ABS( D( LEND ) ).LT.ABS( D( L ) ) ) THEN
+         L = LEND
+         LEND = L1
+      END IF
+      L1 = M + 1
+C
+      IF( LEND.GE.L ) THEN
+C
+C        QL ITERATION
+C
+C        LOOK FOR SMALL SUBDIAGONAL ELEMENT.
+C
+   50    CONTINUE
+         IF( L.NE.LEND ) THEN
+            LENDM1 = LEND - 1
+            DO 60 M = L, LENDM1
+               TST = SQRT( ABS( E( M ) ) )
+               IF( TST.LE.EPS*( ABS( D( M ) )+ABS( D( M+1 ) ) ) )
+     $            GO TO 70
+   60       CONTINUE
+         END IF
+C
+         M = LEND
+C
+   70    CONTINUE
+         IF( M.LT.LEND )
+     $      E( M ) = ZERO
+         P = D( L )
+         IF( M.EQ.L )
+     $      GO TO 90
+C
+C        IF REMAINING MATRIX IS 2 BY 2, USE DLAE2 TO COMPUTE ITS
+C        EIGENVALUES.
+C
+         IF( M.EQ.L+1 ) THEN
+            RTE = SQRT( E( L ) )
+            CALL DLAE2( D( L ), RTE, D( L+1 ), RT1, RT2 )
+            D( L ) = RT1
+            D( L+1 ) = RT2
+            E( L ) = ZERO
+            L = L + 2
+            IF( L.LE.LEND )
+     $         GO TO 50
+            GO TO 20
+         END IF
+C
+         IF( JTOT.EQ.NMAXIT )
+     $      GO TO 150
+         JTOT = JTOT + 1
+C
+C        FORM SHIFT.
+C
+         RTE = SQRT( E( L ) )
+         SIGMA = ( D( L+1 )-P ) / ( TWO*RTE )
+         R = DLAPY2( SIGMA, ONE )
+         SIGMA = P - ( RTE / ( SIGMA+SIGN( R, SIGMA ) ) )
+C
+         C = ONE
+         S = ZERO
+         GAMMA = D( M ) - SIGMA
+         P = GAMMA*GAMMA
+C
+C        INNER LOOP
+C
+         MM1 = M - 1
+         DO 80 I = MM1, L, -1
+            BB = E( I )
+            R = P + BB
+            IF( I.NE.M-1 )
+     $         E( I+1 ) = S*R
+            OLDC = C
+            C = P / R
+            S = BB / R
+            OLDGAM = GAMMA
+            ALPHA = D( I )
+            GAMMA = C*( ALPHA-SIGMA ) - S*OLDGAM
+            D( I+1 ) = OLDGAM + ( ALPHA-GAMMA )
+            IF( C.NE.ZERO ) THEN
+               P = ( GAMMA*GAMMA ) / C
+            ELSE
+               P = OLDC*BB
+            END IF
+   80    CONTINUE
+C
+         E( L ) = S*P
+         D( L ) = SIGMA + GAMMA
+         GO TO 50
+C
+C        EIGENVALUE FOUND.
+C
+   90    CONTINUE
+         D( L ) = P
+C
+         L = L + 1
+         IF( L.LE.LEND )
+     $      GO TO 50
+         GO TO 20
+C
+      ELSE
+C
+C        QR ITERATION
+C
+C        LOOK FOR SMALL SUPERDIAGONAL ELEMENT.
+C
+  100    CONTINUE
+         IF( L.NE.LEND ) THEN
+            LENDP1 = LEND + 1
+            DO 110 M = L, LENDP1, -1
+               TST = SQRT( ABS( E( M-1 ) ) )
+               IF( TST.LE.EPS*( ABS( D( M ) )+ABS( D( M-1 ) ) ) )
+     $            GO TO 120
+  110       CONTINUE
+         END IF
+C
+         M = LEND
+C
+  120    CONTINUE
+         IF( M.GT.LEND )
+     $      E( M-1 ) = ZERO
+         P = D( L )
+         IF( M.EQ.L )
+     $      GO TO 140
+C
+C        IF REMAINING MATRIX IS 2 BY 2, USE DLAE2 TO COMPUTE ITS
+C        EIGENVALUES.
+C
+         IF( M.EQ.L-1 ) THEN
+            RTE = SQRT( E( L-1 ) )
+            CALL DLAE2( D( L ), RTE, D( L-1 ), RT1, RT2 )
+            D( L ) = RT1
+            D( L-1 ) = RT2
+            E( L-1 ) = ZERO
+            L = L - 2
+            IF( L.GE.LEND )
+     $         GO TO 100
+            GO TO 20
+         END IF
+C
+         IF( JTOT.EQ.NMAXIT )
+     $      GO TO 150
+         JTOT = JTOT + 1
+C
+C        FORM SHIFT.
+C
+         RTE = SQRT( E( L-1 ) )
+         SIGMA = ( D( L-1 )-P ) / ( TWO*RTE )
+         R = DLAPY2( SIGMA, ONE )
+         SIGMA = P - ( RTE / ( SIGMA+SIGN( R, SIGMA ) ) )
+C
+         C = ONE
+         S = ZERO
+         GAMMA = D( M ) - SIGMA
+         P = GAMMA*GAMMA
+C
+C        INNER LOOP
+C
+         LM1 = L - 1
+         DO 130 I = M, LM1
+            BB = E( I )
+            R = P + BB
+            IF( I.NE.M )
+     $         E( I-1 ) = S*R
+            OLDC = C
+            C = P / R
+            S = BB / R
+            OLDGAM = GAMMA
+            ALPHA = D( I+1 )
+            GAMMA = C*( ALPHA-SIGMA ) - S*OLDGAM
+            D( I ) = OLDGAM + ( ALPHA-GAMMA )
+            IF( C.NE.ZERO ) THEN
+               P = ( GAMMA*GAMMA ) / C
+            ELSE
+               P = OLDC*BB
+            END IF
+  130    CONTINUE
+C
+         E( LM1 ) = S*P
+         D( L ) = SIGMA + GAMMA
+         GO TO 100
+C
+C        EIGENVALUE FOUND.
+C
+  140    CONTINUE
+         D( L ) = P
+C
+         L = L - 1
+         IF( L.GE.LEND )
+     $      GO TO 100
+         GO TO 20
+C
+      END IF
+C
+C     SET ERROR -- NO CONVERGENCE TO AN EIGENVALUE AFTER A TOTAL
+C     OF N*MAXIT ITERATIONS.
+C
+  150 CONTINUE
+      DO 160 I = 1, N - 1
+         IF( E( I ).NE.ZERO )
+     $      INFO = INFO + 1
+  160 CONTINUE
+      RETURN
+C
+C     SORT EIGENVALUES IN INCREASING ORDER.
+C
+  170 CONTINUE
+      DO 190 II = 2, N
+         I = II - 1
+         K = I
+         P = D( I )
+         DO 180 J = II, N
+            IF( D( J ).LT.P ) THEN
+               K = J
+               P = D( J )
+            END IF
+  180    CONTINUE
+         IF( K.NE.I ) THEN
+            D( K ) = D( I )
+            D( I ) = P
+         END IF
+  190 CONTINUE
+C
+      RETURN
+C
+C     END OF DSTERF
+C
+      END
+C*MODULE LAPACK  *DECK DLAE2      CALLED BY DSTERF
+      SUBROUTINE DLAE2( A, B, C, RT1, RT2 )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   A, B, C, RT1, RT2
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAE2  COMPUTES THE EIGENVALUES OF A 2-BY-2 SYMMETRIC MATRIX
+C     [  A   B  ]
+C     [  B   C  ].
+C  ON RETURN, RT1 IS THE EIGENVALUE OF LARGER ABSOLUTE VALUE, AND RT2
+C  IS THE EIGENVALUE OF SMALLER ABSOLUTE VALUE.
+C
+C  ARGUMENTS
+C  =========
+C
+C  A       (INPUT) DOUBLE PRECISION
+C          THE (1,1) ENTRY OF THE 2-BY-2 MATRIX.
+C
+C  B       (INPUT) DOUBLE PRECISION
+C          THE (1,2) AND (2,1) ENTRIES OF THE 2-BY-2 MATRIX.
+C
+C  C       (INPUT) DOUBLE PRECISION
+C          THE (2,2) ENTRY OF THE 2-BY-2 MATRIX.
+C
+C  RT1     (OUTPUT) DOUBLE PRECISION
+C          THE EIGENVALUE OF LARGER ABSOLUTE VALUE.
+C
+C  RT2     (OUTPUT) DOUBLE PRECISION
+C          THE EIGENVALUE OF SMALLER ABSOLUTE VALUE.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  RT1 IS ACCURATE TO A FEW ULPS BARRING OVER/UNDERFLOW.
+C
+C  RT2 MAY BE INACCURATE IF THERE IS MASSIVE CANCELLATION IN THE
+C  DETERMINANT A*C-B*B; HIGHER PRECISION OR CORRECTLY ROUNDED OR
+C  CORRECTLY TRUNCATED ARITHMETIC WOULD BE NEEDED TO COMPUTE RT2
+C  ACCURATELY IN ALL CASES.
+C
+C  OVERFLOW IS POSSIBLE ONLY IF RT1 IS WITHIN A FACTOR OF 5 OF OVERFLOW.
+C  UNDERFLOW IS HARMLESS IF THE INPUT DATA IS 0 OR EXCEEDS
+C     UNDERFLOW_THRESHOLD / MACHEPS.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+      DOUBLE PRECISION   TWO
+      PARAMETER          ( TWO = 2.0D+0 )
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+      DOUBLE PRECISION   HALF
+      PARAMETER          ( HALF = 0.5D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      DOUBLE PRECISION   AB, ACMN, ACMX, ADF, DF, RT, SM, TB
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     COMPUTE THE EIGENVALUES
+C
+      SM = A + C
+      DF = A - C
+      ADF = ABS( DF )
+      TB = B + B
+      AB = ABS( TB )
+      IF( ABS( A ).GT.ABS( C ) ) THEN
+         ACMX = A
+         ACMN = C
+      ELSE
+         ACMX = C
+         ACMN = A
+      END IF
+      IF( ADF.GT.AB ) THEN
+         RT = ADF*SQRT( ONE+( AB / ADF )**2 )
+      ELSE IF( ADF.LT.AB ) THEN
+         RT = AB*SQRT( ONE+( ADF / AB )**2 )
+      ELSE
+C
+C        INCLUDES CASE AB=ADF=0
+C
+         RT = AB*SQRT( TWO )
+      END IF
+      IF( SM.LT.ZERO ) THEN
+         RT1 = HALF*( SM-RT )
+C
+C        ORDER OF EXECUTION IMPORTANT.
+C        TO GET FULLY ACCURATE SMALLER EIGENVALUE,
+C        NEXT LINE NEEDS TO BE EXECUTED IN HIGHER PRECISION.
+C
+         RT2 = ( ACMX / RT1 )*ACMN - ( B / RT1 )*B
+      ELSE IF( SM.GT.ZERO ) THEN
+         RT1 = HALF*( SM+RT )
+C
+C        ORDER OF EXECUTION IMPORTANT.
+C        TO GET FULLY ACCURATE SMALLER EIGENVALUE,
+C        NEXT LINE NEEDS TO BE EXECUTED IN HIGHER PRECISION.
+C
+         RT2 = ( ACMX / RT1 )*ACMN - ( B / RT1 )*B
+      ELSE
+C
+C        INCLUDES CASE RT1 = RT2 = 0
+C
+         RT1 = HALF*RT
+         RT2 = -HALF*RT
+      END IF
+      RETURN
+C
+C     END OF DLAE2
+C
+      END
+C*MODULE LAPACK  *DECK ZUNGTR     CALLED BY ZHEEV
+      SUBROUTINE ZUNGTR( UPLO, N, A, LDA, TAU, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          UPLO
+      INTEGER            INFO, LDA, LWORK, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), TAU( * ), WORK( LWORK )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZUNGTR GENERATES A COMPLEX UNITARY MATRIX Q WHICH IS DEFINED AS THE
+C  PRODUCT OF N-1 ELEMENTARY REFLECTORS OF ORDER N, AS RETURNED BY
+C  ZHETRD:
+C
+C  IF UPLO = 'U', Q = H(N-1) . . . H(2) H(1),
+C
+C  IF UPLO = 'L', Q = H(1) H(2) . . . H(N-1).
+C
+C  ARGUMENTS
+C  =========
+C
+C  UPLO    (INPUT) CHARACTER*1
+C          = 'U': UPPER TRIANGLE OF A CONTAINS ELEMENTARY REFLECTORS
+C                 FROM ZHETRD;
+C          = 'L': LOWER TRIANGLE OF A CONTAINS ELEMENTARY REFLECTORS
+C                 FROM ZHETRD.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX Q. N >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE VECTORS WHICH DEFINE THE ELEMENTARY REFLECTORS,
+C          AS RETURNED BY ZHETRD.
+C          ON EXIT, THE N-BY-N UNITARY MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A. LDA >= N.
+C
+C  TAU     (INPUT) COMPLEX*16 ARRAY, DIMENSION (N-1)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY ZHETRD.
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK. LWORK >= N-1.
+C          FOR OPTIMUM PERFORMANCE LWORK >= (N-1)*NB, WHERE NB IS
+C          THE OPTIMAL BLOCKSIZE.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            UPPER
+      INTEGER            I, IINFO, J
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA, ZUNGQL, ZUNGQR
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      UPPER = LSAME( UPLO, 'U' )
+      IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -2
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -4
+      ELSE IF( LWORK.LT.MAX( 1, N-1 ) ) THEN
+         INFO = -7
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZUNGTR', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+      IF( UPPER ) THEN
+C
+C        Q WAS DETERMINED BY A CALL TO ZHETRD WITH UPLO = 'U'
+C
+C        SHIFT THE VECTORS WHICH DEFINE THE ELEMENTARY REFLECTORS ONE
+C        COLUMN TO THE LEFT, AND SET THE LAST ROW AND COLUMN OF Q TO
+C        THOSE OF THE UNIT MATRIX
+C
+         DO 20 J = 1, N - 1
+            DO 10 I = 1, J - 1
+               A( I, J ) = A( I, J+1 )
+   10       CONTINUE
+            A( N, J ) = ZERO
+   20    CONTINUE
+         DO 30 I = 1, N - 1
+            A( I, N ) = ZERO
+   30    CONTINUE
+         A( N, N ) = ONE
+C
+C        GENERATE Q(1:N-1,1:N-1)
+C
+         CALL ZUNGQL( N-1, N-1, N-1, A, LDA, TAU, WORK, LWORK, IINFO )
+C
+      ELSE
+C
+C        Q WAS DETERMINED BY A CALL TO ZHETRD WITH UPLO = 'L'.
+C
+C        SHIFT THE VECTORS WHICH DEFINE THE ELEMENTARY REFLECTORS ONE
+C        COLUMN TO THE RIGHT, AND SET THE FIRST ROW AND COLUMN OF Q TO
+C        THOSE OF THE UNIT MATRIX
+C
+         DO 50 J = N, 2, -1
+            A( 1, J ) = ZERO
+            DO 40 I = J + 1, N
+               A( I, J ) = A( I, J-1 )
+   40       CONTINUE
+   50    CONTINUE
+         A( 1, 1 ) = ONE
+         DO 60 I = 2, N
+            A( I, 1 ) = ZERO
+   60    CONTINUE
+         IF( N.GT.1 ) THEN
+C
+C           GENERATE Q(2:N,2:N)
+C
+            CALL ZUNGQR( N-1, N-1, N-1, A( 2, 2 ), LDA, TAU, WORK,
+     $                   LWORK, IINFO )
+         END IF
+      END IF
+      RETURN
+C
+C     END OF ZUNGTR
+C
+      END
+C*MODULE LAPACK  *DECK ZUNGQL     CALLED BY ZUNGTR
+      SUBROUTINE ZUNGQL( M, N, K, A, LDA, TAU, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INFO, K, LDA, LWORK, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), TAU( * ), WORK( LWORK )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZUNGQL GENERATES AN M-BY-N COMPLEX MATRIX Q WITH ORTHONORMAL COLUMNS,
+C  WHICH IS DEFINED AS THE LAST N COLUMNS OF A PRODUCT OF K ELEMENTARY
+C  REFLECTORS OF ORDER M
+C
+C        Q  =  H(K) . . . H(2) H(1)
+C
+C  AS RETURNED BY ZGEQLF.
+C
+C  ARGUMENTS
+C  =========
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX Q. M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX Q. M >= N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTARY REFLECTORS WHOSE PRODUCT DEFINES THE
+C          MATRIX Q. N >= K >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE (N-K+I)-TH COLUMN MUST CONTAIN THE VECTOR WHICH
+C          DEFINES THE ELEMENTARY REFLECTOR H(I), FOR I = 1,2,...,K, AS
+C          RETURNED BY ZGEQLF IN THE LAST K COLUMNS OF ITS ARRAY
+C          ARGUMENT A.
+C          ON EXIT, THE M-BY-N MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE FIRST DIMENSION OF THE ARRAY A. LDA >= MAX(1,M).
+C
+C  TAU     (INPUT) COMPLEX*16 ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY ZGEQLF.
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK. LWORK >= MAX(1,N).
+C          FOR OPTIMUM PERFORMANCE LWORK >= N*NB, WHERE NB IS THE
+C          OPTIMAL BLOCKSIZE.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAS AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, IB, IINFO, IWS, J, KK, L, LDWORK, NB, NBMIN,
+     $                   NX
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA, ZLARFB, ZLARFT, ZUNG2L
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      IF( M.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 .OR. N.GT.M ) THEN
+         INFO = -2
+      ELSE IF( K.LT.0 .OR. K.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, M ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, N ) ) THEN
+         INFO = -8
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZUNGQL', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+C     DETERMINE THE BLOCK SIZE.
+C
+      NB = ILAENV( 1, 'ZUNGQL', ' ', M, N, K, -1 )
+      NBMIN = 2
+      NX = 0
+      IWS = N
+      IF( NB.GT.1 .AND. NB.LT.K ) THEN
+C
+C        DETERMINE WHEN TO CROSS OVER FROM BLOCKED TO UNBLOCKED CODE.
+C
+         NX = MAX( 0, ILAENV( 3, 'ZUNGQL', ' ', M, N, K, -1 ) )
+         IF( NX.LT.K ) THEN
+C
+C           DETERMINE IF WORKSPACE IS LARGE ENOUGH FOR BLOCKED CODE.
+C
+            LDWORK = N
+            IWS = LDWORK*NB
+            IF( LWORK.LT.IWS ) THEN
+C
+C              NOT ENOUGH WORKSPACE TO USE OPTIMAL NB:  REDUCE NB AND
+C              DETERMINE THE MINIMUM VALUE OF NB.
+C
+               NB = LWORK / LDWORK
+               NBMIN = MAX( 2, ILAENV( 2, 'ZUNGQL', ' ', M, N, K, -1 ) )
+            END IF
+         END IF
+      END IF
+C
+      IF( NB.GE.NBMIN .AND. NB.LT.K .AND. NX.LT.K ) THEN
+C
+C        USE BLOCKED CODE AFTER THE FIRST BLOCK.
+C        THE LAST KK COLUMNS ARE HANDLED BY THE BLOCK METHOD.
+C
+         KK = MIN( K, ( ( K-NX+NB-1 ) / NB )*NB )
+C
+C        SET A(M-KK+1:M,1:N-KK) TO ZERO.
+C
+         DO 20 J = 1, N - KK
+            DO 10 I = M - KK + 1, M
+               A( I, J ) = ZERO
+   10       CONTINUE
+   20    CONTINUE
+      ELSE
+         KK = 0
+      END IF
+C
+C     USE UNBLOCKED CODE FOR THE FIRST OR ONLY BLOCK.
+C
+      CALL ZUNG2L( M-KK, N-KK, K-KK, A, LDA, TAU, WORK, IINFO )
+C
+      IF( KK.GT.0 ) THEN
+C
+C        USE BLOCKED CODE
+C
+         DO 50 I = K - KK + 1, K, NB
+            IB = MIN( NB, K-I+1 )
+            IF( N-K+I.GT.1 ) THEN
+C
+C              FORM THE TRIANGULAR FACTOR OF THE BLOCK REFLECTOR
+C              H = H(I+IB-1) . . . H(I+1) H(I)
+C
+               CALL ZLARFT( 'BACKWARD', 'COLUMNWISE', M-K+I+IB-1, IB,
+     $                      A( 1, N-K+I ), LDA, TAU( I ), WORK, LDWORK )
+C
+C              APPLY H TO A(1:M-K+I+IB-1,1:N-K+I-1) FROM THE LEFT
+C
+               CALL ZLARFB( 'LEFT', 'NO TRANSPOSE', 'BACKWARD',
+     $                      'COLUMNWISE', M-K+I+IB-1, N-K+I-1, IB,
+     $                      A( 1, N-K+I ), LDA, WORK, LDWORK, A, LDA,
+     $                      WORK( IB+1 ), LDWORK )
+            END IF
+C
+C           APPLY H TO ROWS 1:M-K+I+IB-1 OF CURRENT BLOCK
+C
+            CALL ZUNG2L( M-K+I+IB-1, IB, IB, A( 1, N-K+I ), LDA,
+     $                   TAU( I ), WORK, IINFO )
+C
+C           SET ROWS M-K+I+IB:M OF CURRENT BLOCK TO ZERO
+C
+            DO 40 J = N - K + I, N - K + I + IB - 1
+               DO 30 L = M - K + I + IB, M
+                  A( L, J ) = ZERO
+   30          CONTINUE
+   40       CONTINUE
+   50    CONTINUE
+      END IF
+C
+      WORK( 1 ) = IWS
+      RETURN
+C
+C     END OF ZUNGQL
+C
+      END
+C*MODULE LAPACK  *DECK ZUNG2L     CALLED BY ZUNGQL
+      SUBROUTINE ZUNG2L( M, N, K, A, LDA, TAU, WORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INFO, K, LDA, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZUNG2L GENERATES AN M BY N COMPLEX MATRIX Q WITH ORTHONORMAL COLUMNS,
+C  WHICH IS DEFINED AS THE LAST N COLUMNS OF A PRODUCT OF K ELEMENTARY
+C  REFLECTORS OF ORDER M
+C
+C        Q  =  H(K) . . . H(2) H(1)
+C
+C  AS RETURNED BY ZGEQLF.
+C
+C  ARGUMENTS
+C  =========
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX Q. M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX Q. M >= N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTARY REFLECTORS WHOSE PRODUCT DEFINES THE
+C          MATRIX Q. N >= K >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE (N-K+I)-TH COLUMN MUST CONTAIN THE VECTOR WHICH
+C          DEFINES THE ELEMENTARY REFLECTOR H(I), FOR I = 1,2,...,K, AS
+C          RETURNED BY ZGEQLF IN THE LAST K COLUMNS OF ITS ARRAY
+C          ARGUMENT A.
+C          ON EXIT, THE M-BY-N MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE FIRST DIMENSION OF THE ARRAY A. LDA >= MAX(1,M).
+C
+C  TAU     (INPUT) COMPLEX*16 ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY ZGEQLF.
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (N)
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0: SUCCESSFUL EXIT
+C          < 0: IF INFO = -I, THE I-TH ARGUMENT HAS AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, II, J, L
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA, ZLARF, ZSCAL
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      IF( M.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 .OR. N.GT.M ) THEN
+         INFO = -2
+      ELSE IF( K.LT.0 .OR. K.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, M ) ) THEN
+         INFO = -5
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZUNG2L', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 )
+     $   RETURN
+C
+C     INITIALISE COLUMNS 1:N-K TO COLUMNS OF THE UNIT MATRIX
+C
+      DO 20 J = 1, N - K
+         DO 10 L = 1, M
+            A( L, J ) = ZERO
+   10    CONTINUE
+         A( M-N+J, J ) = ONE
+   20 CONTINUE
+C
+      DO 40 I = 1, K
+         II = N - K + I
+C
+C        APPLY H(I) TO A(1:M-K+I,1:N-K+I) FROM THE LEFT
+C
+         A( M-N+II, II ) = ONE
+         CALL ZLARF( 'LEFT', M-N+II, II-1, A( 1, II ), 1, TAU( I ), A,
+     $               LDA, WORK )
+         CALL ZSCAL( M-N+II-1, -TAU( I ), A( 1, II ), 1 )
+         A( M-N+II, II ) = ONE - TAU( I )
+C
+C        SET A(M-K+I+1:M,N-K+I) TO ZERO
+C
+         DO 30 L = M - N + II + 1, M
+            A( L, II ) = ZERO
+   30    CONTINUE
+   40 CONTINUE
+      RETURN
+C
+C     END OF ZUNG2L
+C
+      END
+C*MODULE LAPACK  *DECK ZLARF      CALLED BY ZUNG2L
+      SUBROUTINE ZLARF( SIDE, M, N, V, INCV, TAU, C, LDC, WORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          SIDE
+      INTEGER            INCV, LDC, M, N
+      COMPLEX*16         TAU
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         C( LDC, * ), V( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLARF APPLIES A COMPLEX ELEMENTARY REFLECTOR H TO A COMPLEX M-BY-N
+C  MATRIX C, FROM EITHER THE LEFT OR THE RIGHT. H IS REPRESENTED IN THE
+C  FORM
+C
+C        H = I - TAU * V * V'
+C
+C  WHERE TAU IS A COMPLEX SCALAR AND V IS A COMPLEX VECTOR.
+C
+C  IF TAU = 0, THEN H IS TAKEN TO BE THE UNIT MATRIX.
+C
+C  TO APPLY H' (THE CONJUGATE TRANSPOSE OF H), SUPPLY CONJG(TAU) INSTEAD
+C  TAU.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          = 'L': FORM  H * C
+C          = 'R': FORM  C * H
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX C.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX C.
+C
+C  V       (INPUT) COMPLEX*16 ARRAY, DIMENSION
+C                     (1 + (M-1)*ABS(INCV)) IF SIDE = 'L'
+C                  OR (1 + (N-1)*ABS(INCV)) IF SIDE = 'R'
+C          THE VECTOR V IN THE REPRESENTATION OF H. V IS NOT USED IF
+C          TAU = 0.
+C
+C  INCV    (INPUT) INTEGER
+C          THE INCREMENT BETWEEN ELEMENTS OF V. INCV <> 0.
+C
+C  TAU     (INPUT) COMPLEX*16
+C          THE VALUE TAU IN THE REPRESENTATION OF H.
+C
+C  C       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDC,N)
+C          ON ENTRY, THE M-BY-N MATRIX C.
+C          ON EXIT, C IS OVERWRITTEN BY THE MATRIX H * C IF SIDE = 'L',
+C          OR C * H IF SIDE = 'R'.
+C
+C  LDC     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY C. LDC >= MAX(1,M).
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION
+C                         (N) IF SIDE = 'L'
+C                      OR (M) IF SIDE = 'R'
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           ZGEMV, ZGERC
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C        FORM  H * C
+C
+         IF( TAU.NE.ZERO ) THEN
+C
+C           W := C' * V
+C
+            CALL ZGEMV( 'CONJUGATE TRANSPOSE', M, N, ONE, C, LDC, V,
+     $                  INCV, ZERO, WORK, 1 )
+C
+C           C := C - V * W'
+C
+            CALL ZGERC( M, N, -TAU, V, INCV, WORK, 1, C, LDC )
+         END IF
+      ELSE
+C
+C        FORM  C * H
+C
+         IF( TAU.NE.ZERO ) THEN
+C
+C           W := C * V
+C
+            CALL ZGEMV( 'NO TRANSPOSE', M, N, ONE, C, LDC, V, INCV,
+     $                  ZERO, WORK, 1 )
+C
+C           C := C - W * V'
+C
+            CALL ZGERC( M, N, -TAU, WORK, 1, V, INCV, C, LDC )
+         END IF
+      END IF
+      RETURN
+C
+C     END OF ZLARF
+C
+      END
+C*MODULE LAPACK  *DECK ZLARFT     CALLED BY ZUNGQL
+      SUBROUTINE ZLARFT( DIRECT, STOREV, N, K, V, LDV, TAU, T, LDT )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          DIRECT, STOREV
+      INTEGER            K, LDT, LDV, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         T( LDT, * ), TAU( * ), V( LDV, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLARFT FORMS THE TRIANGULAR FACTOR T OF A COMPLEX BLOCK REFLECTOR H
+C  OF ORDER N, WHICH IS DEFINED AS A PRODUCT OF K ELEMENTARY REFLECTORS.
+C
+C  IF DIRECT = 'F', H = H(1) H(2) . . . H(K) AND T IS UPPER TRIANGULAR;
+C
+C  IF DIRECT = 'B', H = H(K) . . . H(2) H(1) AND T IS LOWER TRIANGULAR.
+C
+C  IF STOREV = 'C', THE VECTOR WHICH DEFINES THE ELEMENTARY REFLECTOR
+C  H(I) IS STORED IN THE I-TH COLUMN OF THE ARRAY V, AND
+C
+C     H  =  I - V * T * V'
+C
+C  IF STOREV = 'R', THE VECTOR WHICH DEFINES THE ELEMENTARY REFLECTOR
+C  H(I) IS STORED IN THE I-TH ROW OF THE ARRAY V, AND
+C
+C     H  =  I - V' * T * V
+C
+C  ARGUMENTS
+C  =========
+C
+C  DIRECT  (INPUT) CHARACTER*1
+C          SPECIFIES THE ORDER IN WHICH THE ELEMENTARY REFLECTORS ARE
+C          MULTIPLIED TO FORM THE BLOCK REFLECTOR:
+C          = 'F': H = H(1) H(2) . . . H(K) (FORWARD)
+C          = 'B': H = H(K) . . . H(2) H(1) (BACKWARD)
+C
+C  STOREV  (INPUT) CHARACTER*1
+C          SPECIFIES HOW THE VECTORS WHICH DEFINE THE ELEMENTARY
+C          REFLECTORS ARE STORED (SEE ALSO FURTHER DETAILS):
+C          = 'C': COLUMNWISE
+C          = 'R': ROWWISE
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE BLOCK REFLECTOR H. N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE ORDER OF THE TRIANGULAR FACTOR T (= THE NUMBER OF
+C          ELEMENTARY REFLECTORS). K >= 1.
+C
+C  V       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION
+C                               (LDV,K) IF STOREV = 'C'
+C                               (LDV,N) IF STOREV = 'R'
+C          THE MATRIX V. SEE FURTHER DETAILS.
+C
+C  LDV     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY V.
+C          IF STOREV = 'C', LDV >= MAX(1,N); IF STOREV = 'R', LDV >= K.
+C
+C  TAU     (INPUT) COMPLEX*16 ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I).
+C
+C  T       (OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDT,K)
+C          THE K BY K TRIANGULAR FACTOR T OF THE BLOCK REFLECTOR.
+C          IF DIRECT = 'F', T IS UPPER TRIANGULAR; IF DIRECT = 'B', T IS
+C          LOWER TRIANGULAR. THE REST OF THE ARRAY IS NOT USED.
+C
+C  LDT     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY T. LDT >= K.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE SHAPE OF THE MATRIX V AND THE STORAGE OF THE VECTORS WHICH DEFINE
+C  THE H(I) IS BEST ILLUSTRATED BY THE FOLLOWING EXAMPLE WITH N = 5 AND
+C  K = 3. THE ELEMENTS EQUAL TO 1 ARE NOT STORED; THE CORRESPONDING
+C  ARRAY ELEMENTS ARE MODIFIED BUT RESTORED ON EXIT. THE REST OF THE
+C  ARRAY IS NOT USED.
+C
+C  DIRECT = 'F' AND STOREV = 'C':         DIRECT = 'F' AND STOREV = 'R':
+C
+C               V = (  1       )                 V = (  1 V1 V1 V1 V1 )
+C                   ( V1  1    )                     (     1 V2 V2 V2 )
+C                   ( V1 V2  1 )                     (        1 V3 V3 )
+C                   ( V1 V2 V3 )
+C                   ( V1 V2 V3 )
+C
+C  DIRECT = 'B' AND STOREV = 'C':         DIRECT = 'B' AND STOREV = 'R':
+C
+C               V = ( V1 V2 V3 )                 V = ( V1 V1  1       )
+C                   ( V1 V2 V3 )                     ( V2 V2 V2  1    )
+C                   (  1 V2 V3 )                     ( V3 V3 V3 V3  1 )
+C                   (     1 V3 )
+C                   (        1 )
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+      COMPLEX*16         VII
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           ZGEMV, ZLACGV, ZTRMV
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 )
+     $   RETURN
+C
+      IF( LSAME( DIRECT, 'F' ) ) THEN
+         DO 20 I = 1, K
+            IF( TAU( I ).EQ.ZERO ) THEN
+C
+C              H(I)  =  I
+C
+               DO 10 J = 1, I
+                  T( J, I ) = ZERO
+   10          CONTINUE
+            ELSE
+C
+C              GENERAL CASE
+C
+               VII = V( I, I )
+               V( I, I ) = ONE
+               IF( LSAME( STOREV, 'C' ) ) THEN
+C
+C                 T(1:I-1,I) := - TAU(I) * V(I:N,1:I-1)' * V(I:N,I)
+C
+                  CALL ZGEMV( 'CONJUGATE TRANSPOSE', N-I+1, I-1,
+     $                        -TAU( I ), V( I, 1 ), LDV, V( I, I ), 1,
+     $                        ZERO, T( 1, I ), 1 )
+               ELSE
+C
+C                 T(1:I-1,I) := - TAU(I) * V(1:I-1,I:N) * V(I,I:N)'
+C
+                  IF( I.LT.N )
+     $               CALL ZLACGV( N-I, V( I, I+1 ), LDV )
+                  CALL ZGEMV( 'NO TRANSPOSE', I-1, N-I+1, -TAU( I ),
+     $                        V( 1, I ), LDV, V( I, I ), LDV, ZERO,
+     $                        T( 1, I ), 1 )
+                  IF( I.LT.N )
+     $               CALL ZLACGV( N-I, V( I, I+1 ), LDV )
+               END IF
+               V( I, I ) = VII
+C
+C              T(1:I-1,I) := T(1:I-1,1:I-1) * T(1:I-1,I)
+C
+               CALL ZTRMV( 'UPPER', 'NO TRANSPOSE', 'NON-UNIT', I-1, T,
+     $                     LDT, T( 1, I ), 1 )
+               T( I, I ) = TAU( I )
+            END IF
+   20    CONTINUE
+      ELSE
+         DO 40 I = K, 1, -1
+            IF( TAU( I ).EQ.ZERO ) THEN
+C
+C              H(I)  =  I
+C
+               DO 30 J = I, K
+                  T( J, I ) = ZERO
+   30          CONTINUE
+            ELSE
+C
+C              GENERAL CASE
+C
+               IF( I.LT.K ) THEN
+                  IF( LSAME( STOREV, 'C' ) ) THEN
+                     VII = V( N-K+I, I )
+                     V( N-K+I, I ) = ONE
+C
+C                    T(I+1:K,I) :=
+C                            - TAU(I) * V(1:N-K+I,I+1:K)' * V(1:N-K+I,I)
+C
+                     CALL ZGEMV( 'CONJUGATE TRANSPOSE', N-K+I, K-I,
+     $                           -TAU( I ), V( 1, I+1 ), LDV, V( 1, I ),
+     $                           1, ZERO, T( I+1, I ), 1 )
+                     V( N-K+I, I ) = VII
+                  ELSE
+                     VII = V( I, N-K+I )
+                     V( I, N-K+I ) = ONE
+C
+C                    T(I+1:K,I) :=
+C                            - TAU(I) * V(I+1:K,1:N-K+I) * V(I,1:N-K+I)'
+C
+                     CALL ZLACGV( N-K+I-1, V( I, 1 ), LDV )
+                     CALL ZGEMV( 'NO TRANSPOSE', K-I, N-K+I, -TAU( I ),
+     $                           V( I+1, 1 ), LDV, V( I, 1 ), LDV, ZERO,
+     $                           T( I+1, I ), 1 )
+                     CALL ZLACGV( N-K+I-1, V( I, 1 ), LDV )
+                     V( I, N-K+I ) = VII
+                  END IF
+C
+C                 T(I+1:K,I) := T(I+1:K,I+1:K) * T(I+1:K,I)
+C
+                  CALL ZTRMV( 'LOWER', 'NO TRANSPOSE', 'NON-UNIT', K-I,
+     $                        T( I+1, I+1 ), LDT, T( I+1, I ), 1 )
+               END IF
+               T( I, I ) = TAU( I )
+            END IF
+   40    CONTINUE
+      END IF
+      RETURN
+C
+C     END OF ZLARFT
+C
+      END
+C*MODULE LAPACK  *DECK ZLARFB     CALLED BY ZUNGQL
+      SUBROUTINE ZLARFB( SIDE, TRANS, DIRECT, STOREV, M, N, K, V, LDV,
+     $                   T, LDT, C, LDC, WORK, LDWORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          DIRECT, SIDE, STOREV, TRANS
+      INTEGER            K, LDC, LDT, LDV, LDWORK, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         C( LDC, * ), T( LDT, * ), V( LDV, * ),
+     $                   WORK( LDWORK, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLARFB APPLIES A COMPLEX BLOCK REFLECTOR H OR ITS TRANSPOSE H' TO A
+C  COMPLEX M-BY-N MATRIX C, FROM EITHER THE LEFT OR THE RIGHT.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          = 'L': APPLY H OR H' FROM THE LEFT
+C          = 'R': APPLY H OR H' FROM THE RIGHT
+C
+C  TRANS   (INPUT) CHARACTER*1
+C          = 'N': APPLY H (NO TRANSPOSE)
+C          = 'C': APPLY H' (CONJUGATE TRANSPOSE)
+C
+C  DIRECT  (INPUT) CHARACTER*1
+C          INDICATES HOW H IS FORMED FROM A PRODUCT OF ELEMENTARY
+C          REFLECTORS
+C          = 'F': H = H(1) H(2) . . . H(K) (FORWARD)
+C          = 'B': H = H(K) . . . H(2) H(1) (BACKWARD)
+C
+C  STOREV  (INPUT) CHARACTER*1
+C          INDICATES HOW THE VECTORS WHICH DEFINE THE ELEMENTARY
+C          REFLECTORS ARE STORED:
+C          = 'C': COLUMNWISE
+C          = 'R': ROWWISE
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX C.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX C.
+C
+C  K       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX T (= THE NUMBER OF ELEMENTARY
+C          REFLECTORS WHOSE PRODUCT DEFINES THE BLOCK REFLECTOR).
+C
+C  V       (INPUT) COMPLEX*16 ARRAY, DIMENSION
+C                                (LDV,K) IF STOREV = 'C'
+C                                (LDV,M) IF STOREV = 'R' AND SIDE = 'L'
+C                                (LDV,N) IF STOREV = 'R' AND SIDE = 'R'
+C          THE MATRIX V. SEE FURTHER DETAILS.
+C
+C  LDV     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY V.
+C          IF STOREV = 'C' AND SIDE = 'L', LDV >= MAX(1,M);
+C          IF STOREV = 'C' AND SIDE = 'R', LDV >= MAX(1,N);
+C          IF STOREV = 'R', LDV >= K.
+C
+C  T       (INPUT) COMPLEX*16 ARRAY, DIMENSION (LDT,K)
+C          THE TRIANGULAR K-BY-K MATRIX T IN THE REPRESENTATION OF THE
+C          BLOCK REFLECTOR.
+C
+C  LDT     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY T. LDT >= K.
+C
+C  C       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDC,N)
+C          ON ENTRY, THE M-BY-N MATRIX C.
+C          ON EXIT, C IS OVERWRITTEN BY H*C OR H'*C OR C*H OR C*H'.
+C
+C  LDC     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY C. LDC >= MAX(1,M).
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (LDWORK,K)
+C
+C  LDWORK  (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY WORK.
+C          IF SIDE = 'L', LDWORK >= MAX(1,N);
+C          IF SIDE = 'R', LDWORK >= MAX(1,M).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      CHARACTER          TRANST
+      INTEGER            I, J
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           ZCOPY, ZGEMM, ZLACGV, ZTRMM
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          DCONJG
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( M.LE.0 .OR. N.LE.0 )
+     $   RETURN
+C
+      IF( LSAME( TRANS, 'N' ) ) THEN
+         TRANST = 'C'
+      ELSE
+         TRANST = 'N'
+      END IF
+C
+      IF( LSAME( STOREV, 'C' ) ) THEN
+C
+         IF( LSAME( DIRECT, 'F' ) ) THEN
+C
+C           LET  V =  ( V1 )    (FIRST K ROWS)
+C                     ( V2 )
+C           WHERE  V1  IS UNIT LOWER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V  =  (C1'*V1 + C2'*V2)  (STORED IN WORK)
+C
+C              W := C1'
+C
+               DO 10 J = 1, K
+                  CALL ZCOPY( N, C( J, 1 ), LDC, WORK( 1, J ), 1 )
+                  CALL ZLACGV( N, WORK( 1, J ), 1 )
+   10          CONTINUE
+C
+C              W := W * V1
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C2'*V2
+C
+                  CALL ZGEMM( 'CONJUGATE TRANSPOSE', 'NO TRANSPOSE', N,
+     $                        K, M-K, ONE, C( K+1, 1 ), LDC,
+     $                        V( K+1, 1 ), LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C2 := C2 - V2 * W'
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'CONJUGATE TRANSPOSE',
+     $                        M-K, N, K, -ONE, V( K+1, 1 ), LDV, WORK,
+     $                        LDWORK, ONE, C( K+1, 1 ), LDC )
+               END IF
+C
+C              W := W * V1'
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', N, K, ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W'
+C
+               DO 30 J = 1, K
+                  DO 20 I = 1, N
+                     C( J, I ) = C( J, I ) - DCONJG( WORK( I, J ) )
+   20             CONTINUE
+   30          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V  =  (C1*V1 + C2*V2)  (STORED IN WORK)
+C
+C              W := C1
+C
+               DO 40 J = 1, K
+                  CALL ZCOPY( M, C( 1, J ), 1, WORK( 1, J ), 1 )
+   40          CONTINUE
+C
+C              W := W * V1
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C2 * V2
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, K, N-K,
+     $                        ONE, C( 1, K+1 ), LDC, V( K+1, 1 ), LDV,
+     $                        ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V'
+C
+               IF( N.GT.K ) THEN
+C
+C                 C2 := C2 - W * V2'
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'CONJUGATE TRANSPOSE', M,
+     $                        N-K, K, -ONE, WORK, LDWORK, V( K+1, 1 ),
+     $                        LDV, ONE, C( 1, K+1 ), LDC )
+               END IF
+C
+C              W := W * V1'
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', M, K, ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W
+C
+               DO 60 J = 1, K
+                  DO 50 I = 1, M
+                     C( I, J ) = C( I, J ) - WORK( I, J )
+   50             CONTINUE
+   60          CONTINUE
+            END IF
+C
+         ELSE
+C
+C           LET  V =  ( V1 )
+C                     ( V2 )    (LAST K ROWS)
+C           WHERE  V2  IS UNIT UPPER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V  =  (C1'*V1 + C2'*V2)  (STORED IN WORK)
+C
+C              W := C2'
+C
+               DO 70 J = 1, K
+                  CALL ZCOPY( N, C( M-K+J, 1 ), LDC, WORK( 1, J ), 1 )
+                  CALL ZLACGV( N, WORK( 1, J ), 1 )
+   70          CONTINUE
+C
+C              W := W * V2
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V( M-K+1, 1 ), LDV, WORK, LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C1'*V1
+C
+                  CALL ZGEMM( 'CONJUGATE TRANSPOSE', 'NO TRANSPOSE', N,
+     $                        K, M-K, ONE, C, LDC, V, LDV, ONE, WORK,
+     $                        LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C1 := C1 - V1 * W'
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'CONJUGATE TRANSPOSE',
+     $                        M-K, N, K, -ONE, V, LDV, WORK, LDWORK,
+     $                        ONE, C, LDC )
+               END IF
+C
+C              W := W * V2'
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', N, K, ONE, V( M-K+1, 1 ), LDV, WORK,
+     $                     LDWORK )
+C
+C              C2 := C2 - W'
+C
+               DO 90 J = 1, K
+                  DO 80 I = 1, N
+                     C( M-K+J, I ) = C( M-K+J, I ) -
+     $                               DCONJG( WORK( I, J ) )
+   80             CONTINUE
+   90          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V  =  (C1*V1 + C2*V2)  (STORED IN WORK)
+C
+C              W := C2
+C
+               DO 100 J = 1, K
+                  CALL ZCOPY( M, C( 1, N-K+J ), 1, WORK( 1, J ), 1 )
+  100          CONTINUE
+C
+C              W := W * V2
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V( N-K+1, 1 ), LDV, WORK, LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C1 * V1
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, K, N-K,
+     $                        ONE, C, LDC, V, LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V'
+C
+               IF( N.GT.K ) THEN
+C
+C                 C1 := C1 - W * V1'
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'CONJUGATE TRANSPOSE', M,
+     $                        N-K, K, -ONE, WORK, LDWORK, V, LDV, ONE,
+     $                        C, LDC )
+               END IF
+C
+C              W := W * V2'
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', M, K, ONE, V( N-K+1, 1 ), LDV, WORK,
+     $                     LDWORK )
+C
+C              C2 := C2 - W
+C
+               DO 120 J = 1, K
+                  DO 110 I = 1, M
+                     C( I, N-K+J ) = C( I, N-K+J ) - WORK( I, J )
+  110             CONTINUE
+  120          CONTINUE
+            END IF
+         END IF
+C
+      ELSE IF( LSAME( STOREV, 'R' ) ) THEN
+C
+         IF( LSAME( DIRECT, 'F' ) ) THEN
+C
+C           LET  V =  ( V1  V2 )    (V1: FIRST K COLUMNS)
+C           WHERE  V1  IS UNIT UPPER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V'  =  (C1'*V1' + C2'*V2') (STORED IN WORK)
+C
+C              W := C1'
+C
+               DO 130 J = 1, K
+                  CALL ZCOPY( N, C( J, 1 ), LDC, WORK( 1, J ), 1 )
+                  CALL ZLACGV( N, WORK( 1, J ), 1 )
+  130          CONTINUE
+C
+C              W := W * V1'
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', N, K, ONE, V, LDV, WORK, LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C2'*V2'
+C
+                  CALL ZGEMM( 'CONJUGATE TRANSPOSE',
+     $                        'CONJUGATE TRANSPOSE', N, K, M-K, ONE,
+     $                        C( K+1, 1 ), LDC, V( 1, K+1 ), LDV, ONE,
+     $                        WORK, LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V' * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C2 := C2 - V2' * W'
+C
+                  CALL ZGEMM( 'CONJUGATE TRANSPOSE',
+     $                        'CONJUGATE TRANSPOSE', M-K, N, K, -ONE,
+     $                        V( 1, K+1 ), LDV, WORK, LDWORK, ONE,
+     $                        C( K+1, 1 ), LDC )
+               END IF
+C
+C              W := W * V1
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W'
+C
+               DO 150 J = 1, K
+                  DO 140 I = 1, N
+                     C( J, I ) = C( J, I ) - DCONJG( WORK( I, J ) )
+  140             CONTINUE
+  150          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V'  =  (C1*V1' + C2*V2')  (STORED IN WORK)
+C
+C              W := C1
+C
+               DO 160 J = 1, K
+                  CALL ZCOPY( M, C( 1, J ), 1, WORK( 1, J ), 1 )
+  160          CONTINUE
+C
+C              W := W * V1'
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', M, K, ONE, V, LDV, WORK, LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C2 * V2'
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'CONJUGATE TRANSPOSE', M,
+     $                        K, N-K, ONE, C( 1, K+1 ), LDC,
+     $                        V( 1, K+1 ), LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V
+C
+               IF( N.GT.K ) THEN
+C
+C                 C2 := C2 - W * V2
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, N-K, K,
+     $                        -ONE, WORK, LDWORK, V( 1, K+1 ), LDV, ONE,
+     $                        C( 1, K+1 ), LDC )
+               END IF
+C
+C              W := W * V1
+C
+               CALL ZTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W
+C
+               DO 180 J = 1, K
+                  DO 170 I = 1, M
+                     C( I, J ) = C( I, J ) - WORK( I, J )
+  170             CONTINUE
+  180          CONTINUE
+C
+            END IF
+C
+         ELSE
+C
+C           LET  V =  ( V1  V2 )    (V2: LAST K COLUMNS)
+C           WHERE  V2  IS UNIT LOWER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V'  =  (C1'*V1' + C2'*V2') (STORED IN WORK)
+C
+C              W := C2'
+C
+               DO 190 J = 1, K
+                  CALL ZCOPY( N, C( M-K+J, 1 ), LDC, WORK( 1, J ), 1 )
+                  CALL ZLACGV( N, WORK( 1, J ), 1 )
+  190          CONTINUE
+C
+C              W := W * V2'
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', N, K, ONE, V( 1, M-K+1 ), LDV, WORK,
+     $                     LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C1'*V1'
+C
+                  CALL ZGEMM( 'CONJUGATE TRANSPOSE',
+     $                        'CONJUGATE TRANSPOSE', N, K, M-K, ONE, C,
+     $                        LDC, V, LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V' * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C1 := C1 - V1' * W'
+C
+                  CALL ZGEMM( 'CONJUGATE TRANSPOSE',
+     $                        'CONJUGATE TRANSPOSE', M-K, N, K, -ONE, V,
+     $                        LDV, WORK, LDWORK, ONE, C, LDC )
+               END IF
+C
+C              W := W * V2
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V( 1, M-K+1 ), LDV, WORK, LDWORK )
+C
+C              C2 := C2 - W'
+C
+               DO 210 J = 1, K
+                  DO 200 I = 1, N
+                     C( M-K+J, I ) = C( M-K+J, I ) -
+     $                               DCONJG( WORK( I, J ) )
+  200             CONTINUE
+  210          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V'  =  (C1*V1' + C2*V2')  (STORED IN WORK)
+C
+C              W := C2
+C
+               DO 220 J = 1, K
+                  CALL ZCOPY( M, C( 1, N-K+J ), 1, WORK( 1, J ), 1 )
+  220          CONTINUE
+C
+C              W := W * V2'
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'CONJUGATE TRANSPOSE',
+     $                     'UNIT', M, K, ONE, V( 1, N-K+1 ), LDV, WORK,
+     $                     LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C1 * V1'
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'CONJUGATE TRANSPOSE', M,
+     $                        K, N-K, ONE, C, LDC, V, LDV, ONE, WORK,
+     $                        LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V
+C
+               IF( N.GT.K ) THEN
+C
+C                 C1 := C1 - W * V1
+C
+                  CALL ZGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, N-K, K,
+     $                        -ONE, WORK, LDWORK, V, LDV, ONE, C, LDC )
+               END IF
+C
+C              W := W * V2
+C
+               CALL ZTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V( 1, N-K+1 ), LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W
+C
+               DO 240 J = 1, K
+                  DO 230 I = 1, M
+                     C( I, N-K+J ) = C( I, N-K+J ) - WORK( I, J )
+  230             CONTINUE
+  240          CONTINUE
+C
+            END IF
+C
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZLARFB
+C
+      END
+C*MODULE LAPACK  *DECK ZUNGQR     CALLED BY ZUNGTR
+      SUBROUTINE ZUNGQR( M, N, K, A, LDA, TAU, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INFO, K, LDA, LWORK, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), TAU( * ), WORK( LWORK )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZUNGQR GENERATES AN M-BY-N COMPLEX MATRIX Q WITH ORTHONORMAL COLUMNS,
+C  WHICH IS DEFINED AS THE FIRST N COLUMNS OF A PRODUCT OF K ELEMENTARY
+C  REFLECTORS OF ORDER M
+C
+C        Q  =  H(1) H(2) . . . H(K)
+C
+C  AS RETURNED BY ZGEQRF.
+C
+C  ARGUMENTS
+C  =========
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX Q. M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX Q. M >= N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTARY REFLECTORS WHOSE PRODUCT DEFINES THE
+C          MATRIX Q. N >= K >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE I-TH COLUMN MUST CONTAIN THE VECTOR WHICH
+C          DEFINES THE ELEMENTARY REFLECTOR H(I), FOR I = 1,2,...,K, AS
+C          RETURNED BY ZGEQRF IN THE FIRST K COLUMNS OF ITS ARRAY
+C          ARGUMENT A.
+C          ON EXIT, THE M-BY-N MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE FIRST DIMENSION OF THE ARRAY A. LDA >= MAX(1,M).
+C
+C  TAU     (INPUT) COMPLEX*16 ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY ZGEQRF.
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK. LWORK >= MAX(1,N).
+C          FOR OPTIMUM PERFORMANCE LWORK >= N*NB, WHERE NB IS THE
+C          OPTIMAL BLOCKSIZE.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAS AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, IB, IINFO, IWS, J, KI, KK, L, LDWORK, NB,
+     $                   NBMIN, NX
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA, ZLARFB, ZLARFT, ZUNG2R
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      IF( M.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 .OR. N.GT.M ) THEN
+         INFO = -2
+      ELSE IF( K.LT.0 .OR. K.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, M ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, N ) ) THEN
+         INFO = -8
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZUNGQR', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+C     DETERMINE THE BLOCK SIZE.
+C
+      NB = ILAENV( 1, 'ZUNGQR', ' ', M, N, K, -1 )
+      NBMIN = 2
+      NX = 0
+      IWS = N
+      IF( NB.GT.1 .AND. NB.LT.K ) THEN
+C
+C        DETERMINE WHEN TO CROSS OVER FROM BLOCKED TO UNBLOCKED CODE.
+C
+         NX = MAX( 0, ILAENV( 3, 'ZUNGQR', ' ', M, N, K, -1 ) )
+         IF( NX.LT.K ) THEN
+C
+C           DETERMINE IF WORKSPACE IS LARGE ENOUGH FOR BLOCKED CODE.
+C
+            LDWORK = N
+            IWS = LDWORK*NB
+            IF( LWORK.LT.IWS ) THEN
+C
+C              NOT ENOUGH WORKSPACE TO USE OPTIMAL NB:  REDUCE NB AND
+C              DETERMINE THE MINIMUM VALUE OF NB.
+C
+               NB = LWORK / LDWORK
+               NBMIN = MAX( 2, ILAENV( 2, 'ZUNGQR', ' ', M, N, K, -1 ) )
+            END IF
+         END IF
+      END IF
+C
+      IF( NB.GE.NBMIN .AND. NB.LT.K .AND. NX.LT.K ) THEN
+C
+C        USE BLOCKED CODE AFTER THE LAST BLOCK.
+C        THE FIRST KK COLUMNS ARE HANDLED BY THE BLOCK METHOD.
+C
+         KI = ( ( K-NX-1 ) / NB )*NB
+         KK = MIN( K, KI+NB )
+C
+C        SET A(1:KK,KK+1:N) TO ZERO.
+C
+         DO 20 J = KK + 1, N
+            DO 10 I = 1, KK
+               A( I, J ) = ZERO
+   10       CONTINUE
+   20    CONTINUE
+      ELSE
+         KK = 0
+      END IF
+C
+C     USE UNBLOCKED CODE FOR THE LAST OR ONLY BLOCK.
+C
+      IF( KK.LT.N )
+     $   CALL ZUNG2R( M-KK, N-KK, K-KK, A( KK+1, KK+1 ), LDA,
+     $                TAU( KK+1 ), WORK, IINFO )
+C
+      IF( KK.GT.0 ) THEN
+C
+C        USE BLOCKED CODE
+C
+         DO 50 I = KI + 1, 1, -NB
+            IB = MIN( NB, K-I+1 )
+            IF( I+IB.LE.N ) THEN
+C
+C              FORM THE TRIANGULAR FACTOR OF THE BLOCK REFLECTOR
+C              H = H(I) H(I+1) . . . H(I+IB-1)
+C
+               CALL ZLARFT( 'FORWARD', 'COLUMNWISE', M-I+1, IB,
+     $                      A( I, I ), LDA, TAU( I ), WORK, LDWORK )
+C
+C              APPLY H TO A(I:M,I+IB:N) FROM THE LEFT
+C
+               CALL ZLARFB( 'LEFT', 'NO TRANSPOSE', 'FORWARD',
+     $                      'COLUMNWISE', M-I+1, N-I-IB+1, IB,
+     $                      A( I, I ), LDA, WORK, LDWORK, A( I, I+IB ),
+     $                      LDA, WORK( IB+1 ), LDWORK )
+            END IF
+C
+C           APPLY H TO ROWS I:M OF CURRENT BLOCK
+C
+            CALL ZUNG2R( M-I+1, IB, IB, A( I, I ), LDA, TAU( I ), WORK,
+     $                   IINFO )
+C
+C           SET ROWS 1:I-1 OF CURRENT BLOCK TO ZERO
+C
+            DO 40 J = I, I + IB - 1
+               DO 30 L = 1, I - 1
+                  A( L, J ) = ZERO
+   30          CONTINUE
+   40       CONTINUE
+   50    CONTINUE
+      END IF
+C
+      WORK( 1 ) = IWS
+      RETURN
+C
+C     END OF ZUNGQR
+C
+      END
+C*MODULE LAPACK  *DECK ZUNG2R     CALLED BY ZUNGQR
+      SUBROUTINE ZUNG2R( M, N, K, A, LDA, TAU, WORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INFO, K, LDA, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZUNG2R GENERATES AN M BY N COMPLEX MATRIX Q WITH ORTHONORMAL COLUMNS,
+C  WHICH IS DEFINED AS THE FIRST N COLUMNS OF A PRODUCT OF K ELEMENTARY
+C  REFLECTORS OF ORDER M
+C
+C        Q  =  H(1) H(2) . . . H(K)
+C
+C  AS RETURNED BY ZGEQRF.
+C
+C  ARGUMENTS
+C  =========
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX Q. M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX Q. M >= N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTARY REFLECTORS WHOSE PRODUCT DEFINES THE
+C          MATRIX Q. N >= K >= 0.
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE I-TH COLUMN MUST CONTAIN THE VECTOR WHICH
+C          DEFINES THE ELEMENTARY REFLECTOR H(I), FOR I = 1,2,...,K, AS
+C          RETURNED BY ZGEQRF IN THE FIRST K COLUMNS OF ITS ARRAY
+C          ARGUMENT A.
+C          ON EXIT, THE M BY N MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE FIRST DIMENSION OF THE ARRAY A. LDA >= MAX(1,M).
+C
+C  TAU     (INPUT) COMPLEX*16 ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY ZGEQRF.
+C
+C  WORK    (WORKSPACE) COMPLEX*16 ARRAY, DIMENSION (N)
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0: SUCCESSFUL EXIT
+C          < 0: IF INFO = -I, THE I-TH ARGUMENT HAS AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J, L
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA, ZLARF, ZSCAL
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      IF( M.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 .OR. N.GT.M ) THEN
+         INFO = -2
+      ELSE IF( K.LT.0 .OR. K.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, M ) ) THEN
+         INFO = -5
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZUNG2R', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 )
+     $   RETURN
+C
+C     INITIALISE COLUMNS K+1:N TO COLUMNS OF THE UNIT MATRIX
+C
+      DO 20 J = K + 1, N
+         DO 10 L = 1, M
+            A( L, J ) = ZERO
+   10    CONTINUE
+         A( J, J ) = ONE
+   20 CONTINUE
+C
+      DO 40 I = K, 1, -1
+C
+C        APPLY H(I) TO A(I:M,I:N) FROM THE LEFT
+C
+         IF( I.LT.N ) THEN
+            A( I, I ) = ONE
+            CALL ZLARF( 'LEFT', M-I+1, N-I, A( I, I ), 1, TAU( I ),
+     $                  A( I, I+1 ), LDA, WORK )
+         END IF
+         IF( I.LT.M )
+     $      CALL ZSCAL( M-I, -TAU( I ), A( I+1, I ), 1 )
+         A( I, I ) = ONE - TAU( I )
+C
+C        SET A(1:I-1,I) TO ZERO
+C
+         DO 30 L = 1, I - 1
+            A( L, I ) = ZERO
+   30    CONTINUE
+   40 CONTINUE
+      RETURN
+C
+C     END OF ZUNG2R
+C
+      END
+C*MODULE LAPACK  *DECK ZSTEQR     CALLED BY ZHEEV
+      SUBROUTINE ZSTEQR( COMPZ, N, D, E, Z, LDZ, WORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     MARCH 31, 1993
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          COMPZ
+      INTEGER            INFO, LDZ, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   D( * ), E( * ), WORK( * )
+      COMPLEX*16         Z( LDZ, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZSTEQR COMPUTES ALL EIGENVALUES AND, OPTIONALLY, EIGENVECTORS OF A
+C  SYMMETRIC TRIDIAGONAL MATRIX USING THE IMPLICIT QL OR QR METHOD.
+C  THE EIGENVECTORS OF A FULL OR BAND COMPLEX HERMITIAN MATRIX CAN ALSO
+C  BE FOUND IF ZSYTRD OR ZSPTRD OR ZSBTRD HAS BEEN USED TO REDUCE THIS
+C  MATRIX TO TRIDIAGONAL FORM.
+C
+C  ARGUMENTS
+C  =========
+C
+C  COMPZ   (INPUT) CHARACTER*1
+C          = 'N':  COMPUTE EIGENVALUES ONLY.
+C          = 'V':  COMPUTE EIGENVALUES AND EIGENVECTORS OF THE ORIGINAL
+C                  SYMMETRIC MATRIX.  ON ENTRY, Z MUST CONTAIN THE
+C                  ORTHOGONAL MATRIX USED TO REDUCE THE ORIGINAL MATRIX
+C                  TO TRIDIAGONAL FORM.
+C          = 'I':  COMPUTE EIGENVALUES AND EIGENVECTORS OF THE
+C                  TRIDIAGONAL MATRIX.  Z IS INITIALIZED TO THE IDENTITY
+C                  MATRIX.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX.  N >= 0.
+C
+C  D       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          ON ENTRY, THE DIAGONAL ELEMENTS OF THE TRIDIAGONAL MATRIX.
+C          ON EXIT, IF INFO = 0, THE EIGENVALUES IN ASCENDING ORDER.
+C
+C  E       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          ON ENTRY, THE (N-1) SUBDIAGONAL ELEMENTS OF THE TRIDIAGONAL
+C          MATRIX.
+C          ON EXIT, E HAS BEEN DESTROYED.
+C
+C  Z       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDZ, N)
+C          ON ENTRY, IF  COMPZ = 'V', THEN Z CONTAINS THE UNITARY
+C          MATRIX USED IN THE REDUCTION TO TRIDIAGONAL FORM.
+C          ON EXIT, IF  COMPZ = 'V', Z CONTAINS THE ORTHONORMAL
+C          EIGENVECTORS OF THE ORIGINAL HERMITIAN MATRIX, AND IF
+C          COMPZ = 'I', Z CONTAINS THE ORTHONORMAL EIGENVECTORS OF
+C          THE SYMMETRIC TRIDIAGONAL MATRIX.  IF AN ERROR EXIT IS
+C          MADE, Z CONTAINS THE EIGENVECTORS ASSOCIATED WITH THE
+C          STORED EIGENVALUES.
+C          IF COMPZ = 'N', THEN Z IS NOT REFERENCED.
+C
+C  LDZ     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY Z.  LDZ >= 1, AND IF
+C          EIGENVECTORS ARE DESIRED, THEN  LDZ >= MAX(1,N).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (MAX(1,2*N-2))
+C          IF COMPZ = 'N', THEN WORK IS NOT REFERENCED.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C          > 0:  THE ALGORITHM HAS FAILED TO FIND ALL THE EIGENVALUES IN
+C                A TOTAL OF 30*N ITERATIONS; IF INFO = I, THEN I
+C                ELEMENTS OF E HAVE NOT CONVERGED TO ZERO; ON EXIT, D
+C                AND E CONTAIN THE ELEMENTS OF A SYMMETRIC TRIDIAGONAL
+C                MATRIX WHICH IS ORTHOGONALLY SIMILAR TO THE ORIGINAL
+C                MATRIX.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE, TWO
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TWO = 2.0D+0 )
+      COMPLEX*16         CZERO, CONE
+      PARAMETER          ( CZERO = 0.0D+0, CONE = 1.0D+0 )
+      INTEGER            MAXIT
+      PARAMETER          ( MAXIT = 30 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, ICOMPZ, II, J, JTOT, K, L, L1, LEND, LENDM1,
+     $                   LENDP1, LM1, M, MM, MM1, NM1, NMAXIT
+      DOUBLE PRECISION   B, C, EPS, F, G, P, R, RT1, RT2, S, TST
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      DOUBLE PRECISION   DLAMCH, DLAPY2
+      EXTERNAL           LSAME, DLAMCH, DLAPY2
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           DLAE2, DLAEV2, DLARTG, XERBLA, ZLASR, ZLAZRO,
+     $                   ZSWAP
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, SIGN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+C
+      IF( LSAME( COMPZ, 'N' ) ) THEN
+         ICOMPZ = 0
+      ELSE IF( LSAME( COMPZ, 'V' ) ) THEN
+         ICOMPZ = 1
+      ELSE IF( LSAME( COMPZ, 'I' ) ) THEN
+         ICOMPZ = 2
+      ELSE
+         ICOMPZ = -1
+      END IF
+      IF( ICOMPZ.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -2
+      ELSE IF( ( LDZ.LT.1 ) .OR. ( ICOMPZ.GT.0 .AND. LDZ.LT.MAX( 1,
+     $         N ) ) ) THEN
+         INFO = -6
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZSTEQR', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 )
+     $   RETURN
+C
+      IF( N.EQ.1 ) THEN
+         IF( ICOMPZ.GT.0 )
+     $      Z( 1, 1 ) = CONE
+         RETURN
+      END IF
+C
+C     DETERMINE THE UNIT ROUNDOFF FOR THIS ENVIRONMENT.
+C
+      EPS = DLAMCH( 'E' )
+C
+C     COMPUTE THE EIGENVALUES AND EIGENVECTORS OF THE TRIDIAGONAL
+C     MATRIX.
+C
+      IF( ICOMPZ.EQ.2 )
+     $   CALL ZLAZRO( N, N, CZERO, CONE, Z, LDZ )
+C
+      NMAXIT = N*MAXIT
+      JTOT = 0
+C
+C     DETERMINE WHERE THE MATRIX SPLITS AND CHOOSE QL OR QR ITERATION
+C     FOR EACH BLOCK, ACCORDING TO WHETHER TOP OR BOTTOM DIAGONAL
+C     ELEMENT IS SMALLER.
+C
+      L1 = 1
+      NM1 = N - 1
+C
+   10 CONTINUE
+      IF( L1.GT.N )
+     $   GO TO 160
+      IF( L1.GT.1 )
+     $   E( L1-1 ) = ZERO
+      IF( L1.LE.NM1 ) THEN
+         DO 20 M = L1, NM1
+            TST = ABS( E( M ) )
+            IF( TST.LE.EPS*( ABS( D( M ) )+ABS( D( M+1 ) ) ) )
+     $         GO TO 30
+   20    CONTINUE
+      END IF
+      M = N
+C
+   30 CONTINUE
+      L = L1
+      LEND = M
+      IF( ABS( D( LEND ) ).LT.ABS( D( L ) ) ) THEN
+         L = LEND
+         LEND = L1
+      END IF
+      L1 = M + 1
+C
+      IF( LEND.GE.L ) THEN
+C
+C        QL ITERATION
+C
+C        LOOK FOR SMALL SUBDIAGONAL ELEMENT.
+C
+   40    CONTINUE
+         IF( L.NE.LEND ) THEN
+            LENDM1 = LEND - 1
+            DO 50 M = L, LENDM1
+               TST = ABS( E( M ) )
+               IF( TST.LE.EPS*( ABS( D( M ) )+ABS( D( M+1 ) ) ) )
+     $            GO TO 60
+   50       CONTINUE
+         END IF
+C
+         M = LEND
+C
+   60    CONTINUE
+         IF( M.LT.LEND )
+     $      E( M ) = ZERO
+         P = D( L )
+         IF( M.EQ.L )
+     $      GO TO 80
+C
+C        IF REMAINING MATRIX IS 2-BY-2, USE DLAE2 OR DLAEV2
+C        TO COMPUTE ITS EIGENSYSTEM.
+C
+         IF( M.EQ.L+1 ) THEN
+            IF( ICOMPZ.GT.0 ) THEN
+               CALL DLAEV2( D( L ), E( L ), D( L+1 ), RT1, RT2, C, S )
+               WORK( L ) = C
+               WORK( N-1+L ) = S
+               CALL ZLASR( 'R', 'V', 'B', N, 2, WORK( L ),
+     $                     WORK( N-1+L ), Z( 1, L ), LDZ )
+            ELSE
+               CALL DLAE2( D( L ), E( L ), D( L+1 ), RT1, RT2 )
+            END IF
+            D( L ) = RT1
+            D( L+1 ) = RT2
+            E( L ) = ZERO
+            L = L + 2
+            IF( L.LE.LEND )
+     $         GO TO 40
+            GO TO 10
+         END IF
+C
+         IF( JTOT.EQ.NMAXIT )
+     $      GO TO 140
+         JTOT = JTOT + 1
+C
+C        FORM SHIFT.
+C
+         G = ( D( L+1 )-P ) / ( TWO*E( L ) )
+         R = DLAPY2( G, ONE )
+         G = D( M ) - P + ( E( L ) / ( G+SIGN( R, G ) ) )
+C
+         S = ONE
+         C = ONE
+         P = ZERO
+C
+C        INNER LOOP
+C
+         MM1 = M - 1
+         DO 70 I = MM1, L, -1
+            F = S*E( I )
+            B = C*E( I )
+            CALL DLARTG( G, F, C, S, R )
+            IF( I.NE.M-1 )
+     $         E( I+1 ) = R
+            G = D( I+1 ) - P
+            R = ( D( I )-G )*S + TWO*C*B
+            P = S*R
+            D( I+1 ) = G + P
+            G = C*R - B
+C
+C           IF EIGENVECTORS ARE DESIRED, THEN SAVE ROTATIONS.
+C
+            IF( ICOMPZ.GT.0 ) THEN
+               WORK( I ) = C
+               WORK( N-1+I ) = -S
+            END IF
+C
+   70    CONTINUE
+C
+C        IF EIGENVECTORS ARE DESIRED, THEN APPLY SAVED ROTATIONS.
+C
+         IF( ICOMPZ.GT.0 ) THEN
+            MM = M - L + 1
+            CALL ZLASR( 'R', 'V', 'B', N, MM, WORK( L ), WORK( N-1+L ),
+     $                  Z( 1, L ), LDZ )
+         END IF
+C
+         D( L ) = D( L ) - P
+         E( L ) = G
+         GO TO 40
+C
+C        EIGENVALUE FOUND.
+C
+   80    CONTINUE
+         D( L ) = P
+C
+         L = L + 1
+         IF( L.LE.LEND )
+     $      GO TO 40
+         GO TO 10
+C
+      ELSE
+C
+C        QR ITERATION
+C
+C        LOOK FOR SMALL SUPERDIAGONAL ELEMENT.
+C
+   90    CONTINUE
+         IF( L.NE.LEND ) THEN
+            LENDP1 = LEND + 1
+            DO 100 M = L, LENDP1, -1
+               TST = ABS( E( M-1 ) )
+               IF( TST.LE.EPS*( ABS( D( M ) )+ABS( D( M-1 ) ) ) )
+     $            GO TO 110
+  100       CONTINUE
+         END IF
+C
+         M = LEND
+C
+  110    CONTINUE
+         IF( M.GT.LEND )
+     $      E( M-1 ) = ZERO
+         P = D( L )
+         IF( M.EQ.L )
+     $      GO TO 130
+C
+C        IF REMAINING MATRIX IS 2-BY-2, USE DLAE2 OR DLAEV2
+C        TO COMPUTE ITS EIGENSYSTEM.
+C
+         IF( M.EQ.L-1 ) THEN
+            IF( ICOMPZ.GT.0 ) THEN
+               CALL DLAEV2( D( L-1 ), E( L-1 ), D( L ), RT1, RT2, C, S )
+               WORK( M ) = C
+               WORK( N-1+M ) = S
+               CALL ZLASR( 'R', 'V', 'F', N, 2, WORK( M ),
+     $                     WORK( N-1+M ), Z( 1, L-1 ), LDZ )
+            ELSE
+               CALL DLAE2( D( L-1 ), E( L-1 ), D( L ), RT1, RT2 )
+            END IF
+            D( L-1 ) = RT1
+            D( L ) = RT2
+            E( L-1 ) = ZERO
+            L = L - 2
+            IF( L.GE.LEND )
+     $         GO TO 90
+            GO TO 10
+         END IF
+C
+         IF( JTOT.EQ.NMAXIT )
+     $      GO TO 140
+         JTOT = JTOT + 1
+C
+C        FORM SHIFT.
+C
+         G = ( D( L-1 )-P ) / ( TWO*E( L-1 ) )
+         R = DLAPY2( G, ONE )
+         G = D( M ) - P + ( E( L-1 ) / ( G+SIGN( R, G ) ) )
+C
+         S = ONE
+         C = ONE
+         P = ZERO
+C
+C        INNER LOOP
+C
+         LM1 = L - 1
+         DO 120 I = M, LM1
+            F = S*E( I )
+            B = C*E( I )
+            CALL DLARTG( G, F, C, S, R )
+            IF( I.NE.M )
+     $         E( I-1 ) = R
+            G = D( I ) - P
+            R = ( D( I+1 )-G )*S + TWO*C*B
+            P = S*R
+            D( I ) = G + P
+            G = C*R - B
+C
+C           IF EIGENVECTORS ARE DESIRED, THEN SAVE ROTATIONS.
+C
+            IF( ICOMPZ.GT.0 ) THEN
+               WORK( I ) = C
+               WORK( N-1+I ) = S
+            END IF
+C
+  120    CONTINUE
+C
+C        IF EIGENVECTORS ARE DESIRED, THEN APPLY SAVED ROTATIONS.
+C
+         IF( ICOMPZ.GT.0 ) THEN
+            MM = L - M + 1
+            CALL ZLASR( 'R', 'V', 'F', N, MM, WORK( M ), WORK( N-1+M ),
+     $                  Z( 1, M ), LDZ )
+         END IF
+C
+         D( L ) = D( L ) - P
+         E( LM1 ) = G
+         GO TO 90
+C
+C        EIGENVALUE FOUND.
+C
+  130    CONTINUE
+         D( L ) = P
+C
+         L = L - 1
+         IF( L.GE.LEND )
+     $      GO TO 90
+         GO TO 10
+C
+      END IF
+C
+C     SET ERROR -- NO CONVERGENCE TO AN EIGENVALUE AFTER A TOTAL
+C     OF N*MAXIT ITERATIONS.
+C
+  140 CONTINUE
+      DO 150 I = 1, N - 1
+         IF( E( I ).NE.ZERO )
+     $      INFO = INFO + 1
+  150 CONTINUE
+      RETURN
+C
+C     ORDER EIGENVALUES AND EIGENVECTORS.
+C
+  160 CONTINUE
+      DO 180 II = 2, N
+         I = II - 1
+         K = I
+         P = D( I )
+         DO 170 J = II, N
+            IF( D( J ).LT.P ) THEN
+               K = J
+               P = D( J )
+            END IF
+  170    CONTINUE
+         IF( K.NE.I ) THEN
+            D( K ) = D( I )
+            D( I ) = P
+            IF( ICOMPZ.GT.0 )
+     $         CALL ZSWAP( N, Z( 1, I ), 1, Z( 1, K ), 1 )
+         END IF
+  180 CONTINUE
+C
+      RETURN
+C
+C     END OF ZSTEQR
+C
+      END
+C*MODULE LAPACK  *DECK ZLAZRO     CALLED BY ZSTEQR
+      SUBROUTINE ZLAZRO( M, N, ALPHA, BETA, A, LDA )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            LDA, M, N
+      COMPLEX*16         ALPHA, BETA
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLAZRO INITIALIZES A 2-D ARRAY A TO BETA ON THE DIAGONAL AND
+C  ALPHA ON THE OFFDIAGONALS.
+C
+C  ARGUMENTS
+C  =========
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX A.  M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX A.  N >= 0.
+C
+C  ALPHA   (INPUT) COMPLEX*16
+C          THE CONSTANT TO WHICH THE OFFDIAGONAL ELEMENTS ARE TO BE SET.
+C
+C  BETA    (INPUT) COMPLEX*16
+C          THE CONSTANT TO WHICH THE DIAGONAL ELEMENTS ARE TO BE SET.
+C
+C  A       (OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          ON EXIT, THE LEADING M BY N SUBMATRIX OF A IS SET SUCH THAT
+C             A(I,J) = ALPHA,  1 <= I <= M, 1 <= J <= N, I <> J
+C             A(I,I) = BETA,   1 <= I <= MIN(M,N).
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,M).
+C
+C =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      DO 20 J = 1, N
+         DO 10 I = 1, M
+            A( I, J ) = ALPHA
+   10    CONTINUE
+   20 CONTINUE
+C
+      DO 30 I = 1, MIN( M, N )
+         A( I, I ) = BETA
+   30 CONTINUE
+C
+      RETURN
+C
+C     END OF ZLAZRO
+C
+      END
+C*MODULE LAPACK  *DECK DLAEV2     CALLED BY ZSTEQR
+      SUBROUTINE DLAEV2( A, B, C, RT1, RT2, CS1, SN1 )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   A, B, C, CS1, RT1, RT2, SN1
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAEV2 COMPUTES THE EIGENDECOMPOSITION OF A 2-BY-2 SYMMETRIC MATRIX
+C     [  A   B  ]
+C     [  B   C  ].
+C  ON RETURN, RT1 IS THE EIGENVALUE OF LARGER ABSOLUTE VALUE, RT2 IS THE
+C  EIGENVALUE OF SMALLER ABSOLUTE VALUE, AND (CS1,SN1) IS THE UNIT RIGHT
+C  EIGENVECTOR FOR RT1, GIVING THE DECOMPOSITION
+C
+C     [ CS1  SN1 ] [  A   B  ] [ CS1 -SN1 ]  =  [ RT1  0  ]
+C     [-SN1  CS1 ] [  B   C  ] [ SN1  CS1 ]     [  0  RT2 ].
+C
+C  ARGUMENTS
+C  =========
+C
+C  A       (INPUT) DOUBLE PRECISION
+C          THE (1,1) ENTRY OF THE 2-BY-2 MATRIX.
+C
+C  B       (INPUT) DOUBLE PRECISION
+C          THE (1,2) ENTRY AND THE CONJUGATE OF THE (2,1) ENTRY OF THE
+C          2-BY-2 MATRIX.
+C
+C  C       (INPUT) DOUBLE PRECISION
+C          THE (2,2) ENTRY OF THE 2-BY-2 MATRIX.
+C
+C  RT1     (OUTPUT) DOUBLE PRECISION
+C          THE EIGENVALUE OF LARGER ABSOLUTE VALUE.
+C
+C  RT2     (OUTPUT) DOUBLE PRECISION
+C          THE EIGENVALUE OF SMALLER ABSOLUTE VALUE.
+C
+C  CS1     (OUTPUT) DOUBLE PRECISION
+C  SN1     (OUTPUT) DOUBLE PRECISION
+C          THE VECTOR (CS1, SN1) IS A UNIT RIGHT EIGENVECTOR FOR RT1.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  RT1 IS ACCURATE TO A FEW ULPS BARRING OVER/UNDERFLOW.
+C
+C  RT2 MAY BE INACCURATE IF THERE IS MASSIVE CANCELLATION IN THE
+C  DETERMINANT A*C-B*B; HIGHER PRECISION OR CORRECTLY ROUNDED OR
+C  CORRECTLY TRUNCATED ARITHMETIC WOULD BE NEEDED TO COMPUTE RT2
+C  ACCURATELY IN ALL CASES.
+C
+C  CS1 AND SN1 ARE ACCURATE TO A FEW ULPS BARRING OVER/UNDERFLOW.
+C
+C  OVERFLOW IS POSSIBLE ONLY IF RT1 IS WITHIN A FACTOR OF 5 OF OVERFLOW.
+C  UNDERFLOW IS HARMLESS IF THE INPUT DATA IS 0 OR EXCEEDS
+C     UNDERFLOW_THRESHOLD / MACHEPS.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+      DOUBLE PRECISION   TWO
+      PARAMETER          ( TWO = 2.0D+0 )
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+      DOUBLE PRECISION   HALF
+      PARAMETER          ( HALF = 0.5D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            SGN1, SGN2
+      DOUBLE PRECISION   AB, ACMN, ACMX, ACS, ADF, CS, CT, DF, RT, SM,
+     $                   TB, TN
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     COMPUTE THE EIGENVALUES
+C
+      SM = A + C
+      DF = A - C
+      ADF = ABS( DF )
+      TB = B + B
+      AB = ABS( TB )
+      IF( ABS( A ).GT.ABS( C ) ) THEN
+         ACMX = A
+         ACMN = C
+      ELSE
+         ACMX = C
+         ACMN = A
+      END IF
+      IF( ADF.GT.AB ) THEN
+         RT = ADF*SQRT( ONE+( AB / ADF )**2 )
+      ELSE IF( ADF.LT.AB ) THEN
+         RT = AB*SQRT( ONE+( ADF / AB )**2 )
+      ELSE
+C
+C        INCLUDES CASE AB=ADF=0
+C
+         RT = AB*SQRT( TWO )
+      END IF
+      IF( SM.LT.ZERO ) THEN
+         RT1 = HALF*( SM-RT )
+         SGN1 = -1
+C
+C        ORDER OF EXECUTION IMPORTANT.
+C        TO GET FULLY ACCURATE SMALLER EIGENVALUE,
+C        NEXT LINE NEEDS TO BE EXECUTED IN HIGHER PRECISION.
+C
+         RT2 = ( ACMX / RT1 )*ACMN - ( B / RT1 )*B
+      ELSE IF( SM.GT.ZERO ) THEN
+         RT1 = HALF*( SM+RT )
+         SGN1 = 1
+C
+C        ORDER OF EXECUTION IMPORTANT.
+C        TO GET FULLY ACCURATE SMALLER EIGENVALUE,
+C        NEXT LINE NEEDS TO BE EXECUTED IN HIGHER PRECISION.
+C
+         RT2 = ( ACMX / RT1 )*ACMN - ( B / RT1 )*B
+      ELSE
+C
+C        INCLUDES CASE RT1 = RT2 = 0
+C
+         RT1 = HALF*RT
+         RT2 = -HALF*RT
+         SGN1 = 1
+      END IF
+C
+C     COMPUTE THE EIGENVECTOR
+C
+      IF( DF.GE.ZERO ) THEN
+         CS = DF + RT
+         SGN2 = 1
+      ELSE
+         CS = DF - RT
+         SGN2 = -1
+      END IF
+      ACS = ABS( CS )
+      IF( ACS.GT.AB ) THEN
+         CT = -TB / CS
+         SN1 = ONE / SQRT( ONE+CT*CT )
+         CS1 = CT*SN1
+      ELSE
+         IF( AB.EQ.ZERO ) THEN
+            CS1 = ONE
+            SN1 = ZERO
+         ELSE
+            TN = -CS / TB
+            CS1 = ONE / SQRT( ONE+TN*TN )
+            SN1 = TN*CS1
+         END IF
+      END IF
+      IF( SGN1.EQ.SGN2 ) THEN
+         TN = CS1
+         CS1 = -SN1
+         SN1 = TN
+      END IF
+      RETURN
+C
+C     END OF DLAEV2
+C
+      END
+C*MODULE LAPACK  *DECK ZLASR      CALLED BY ZSTEQR
+      SUBROUTINE ZLASR( SIDE, PIVOT, DIRECT, M, N, C, S, A, LDA )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          DIRECT, PIVOT, SIDE
+      INTEGER            LDA, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   C( * ), S( * )
+      COMPLEX*16         A( LDA, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLASR   PERFORMS THE TRANSFORMATION
+C
+C     A := P*A,   WHEN SIDE = 'L' OR 'L'  (  LEFT-HAND SIDE )
+C
+C     A := A*P',  WHEN SIDE = 'R' OR 'R'  ( RIGHT-HAND SIDE )
+C
+C  WHERE A IS AN M BY N COMPLEX MATRIX AND P IS AN ORTHOGONAL MATRIX,
+C  CONSISTING OF A SEQUENCE OF PLANE ROTATIONS DETERMINED BY THE
+C  PARAMETERS PIVOT AND DIRECT AS FOLLOWS ( Z = M WHEN SIDE = 'L' OR 'L'
+C  AND Z = N WHEN SIDE = 'R' OR 'R' ):
+C
+C  WHEN  DIRECT = 'F' OR 'F'  ( FORWARD SEQUENCE ) THEN
+C
+C     P = P( Z - 1 )*...*P( 2 )*P( 1 ),
+C
+C  AND WHEN DIRECT = 'B' OR 'B'  ( BACKWARD SEQUENCE ) THEN
+C
+C     P = P( 1 )*P( 2 )*...*P( Z - 1 ),
+C
+C  WHERE  P( K ) IS A PLANE ROTATION MATRIX FOR THE FOLLOWING PLANES:
+C
+C     WHEN  PIVOT = 'V' OR 'V'  ( VARIABLE PIVOT ),
+C        THE PLANE ( K, K + 1 )
+C
+C     WHEN  PIVOT = 'T' OR 'T'  ( TOP PIVOT ),
+C        THE PLANE ( 1, K + 1 )
+C
+C     WHEN  PIVOT = 'B' OR 'B'  ( BOTTOM PIVOT ),
+C        THE PLANE ( K, Z )
+C
+C  C( K ) AND S( K )  MUST CONTAIN THE  COSINE AND SINE THAT DEFINE THE
+C  MATRIX  P( K ).  THE TWO BY TWO PLANE ROTATION PART OF THE MATRIX
+C  P( K ), R( K ), IS ASSUMED TO BE OF THE FORM
+C
+C     R( K ) = (  C( K )  S( K ) ).
+C              ( -S( K )  C( K ) )
+C
+C  ARGUMENTS
+C  =========
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          SPECIFIES WHETHER THE PLANE ROTATION MATRIX P IS APPLIED TO
+C          A ON THE LEFT OR THE RIGHT.
+C          = 'L':  LEFT, COMPUTE A := P*A
+C          = 'R':  RIGHT, COMPUTE A:= A*P'
+C
+C  DIRECT  (INPUT) CHARACTER*1
+C          SPECIFIES WHETHER P IS A FORWARD OR BACKWARD SEQUENCE OF
+C          PLANE ROTATIONS.
+C          = 'F':  FORWARD, P = P( Z - 1 )*...*P( 2 )*P( 1 )
+C          = 'B':  BACKWARD, P = P( 1 )*P( 2 )*...*P( Z - 1 )
+C
+C  PIVOT   (INPUT) CHARACTER*1
+C          SPECIFIES THE PLANE FOR WHICH P(K) IS A PLANE ROTATION
+C          MATRIX.
+C          = 'V':  VARIABLE PIVOT, THE PLANE (K,K+1)
+C          = 'T':  TOP PIVOT, THE PLANE (1,K+1)
+C          = 'B':  BOTTOM PIVOT, THE PLANE (K,Z)
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX A.  IF M <= 1, AN IMMEDIATE
+C          RETURN IS EFFECTED.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX A.  IF N <= 1, AN
+C          IMMEDIATE RETURN IS EFFECTED.
+C
+C  C, S    (INPUT) DOUBLE PRECISION ARRAYS, DIMENSION
+C                  (M-1) IF SIDE = 'L'
+C                  (N-1) IF SIDE = 'R'
+C          C(K) AND S(K) CONTAIN THE COSINE AND SINE THAT DEFINE THE
+C          MATRIX P(K).  THE TWO BY TWO PLANE ROTATION PART OF THE
+C          MATRIX P(K), R(K), IS ASSUMED TO BE OF THE FORM
+C          R( K ) = (  C( K )  S( K ) ).
+C                   ( -S( K )  C( K ) )
+C
+C  A       (INPUT/OUTPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          THE M BY N MATRIX A.  ON EXIT, A IS OVERWRITTEN BY P*A IF
+C          SIDE = 'R' OR BY A*P' IF SIDE = 'L'.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,M).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, INFO, J
+      DOUBLE PRECISION   CTEMP, STEMP
+      COMPLEX*16         TEMP
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS
+C
+      INFO = 0
+      IF( .NOT.( LSAME( SIDE, 'L' ) .OR. LSAME( SIDE, 'R' ) ) ) THEN
+         INFO = 1
+      ELSE IF( .NOT.( LSAME( PIVOT, 'V' ) .OR. LSAME( PIVOT,
+     $         'T' ) .OR. LSAME( PIVOT, 'B' ) ) ) THEN
+         INFO = 2
+      ELSE IF( .NOT.( LSAME( DIRECT, 'F' ) .OR. LSAME( DIRECT, 'B' ) ) )
+     $          THEN
+         INFO = 3
+      ELSE IF( M.LT.0 ) THEN
+         INFO = 4
+      ELSE IF( N.LT.0 ) THEN
+         INFO = 5
+      ELSE IF( LDA.LT.MAX( 1, M ) ) THEN
+         INFO = 9
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'ZLASR ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( ( M.EQ.0 ) .OR. ( N.EQ.0 ) )
+     $   RETURN
+      IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C        FORM  P * A
+C
+         IF( LSAME( PIVOT, 'V' ) ) THEN
+            IF( LSAME( DIRECT, 'F' ) ) THEN
+               DO 20 J = 1, M - 1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 10 I = 1, N
+                        TEMP = A( J+1, I )
+                        A( J+1, I ) = CTEMP*TEMP - STEMP*A( J, I )
+                        A( J, I ) = STEMP*TEMP + CTEMP*A( J, I )
+   10                CONTINUE
+                  END IF
+   20          CONTINUE
+            ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
+               DO 40 J = M - 1, 1, -1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 30 I = 1, N
+                        TEMP = A( J+1, I )
+                        A( J+1, I ) = CTEMP*TEMP - STEMP*A( J, I )
+                        A( J, I ) = STEMP*TEMP + CTEMP*A( J, I )
+   30                CONTINUE
+                  END IF
+   40          CONTINUE
+            END IF
+         ELSE IF( LSAME( PIVOT, 'T' ) ) THEN
+            IF( LSAME( DIRECT, 'F' ) ) THEN
+               DO 60 J = 2, M
+                  CTEMP = C( J-1 )
+                  STEMP = S( J-1 )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 50 I = 1, N
+                        TEMP = A( J, I )
+                        A( J, I ) = CTEMP*TEMP - STEMP*A( 1, I )
+                        A( 1, I ) = STEMP*TEMP + CTEMP*A( 1, I )
+   50                CONTINUE
+                  END IF
+   60          CONTINUE
+            ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
+               DO 80 J = M, 2, -1
+                  CTEMP = C( J-1 )
+                  STEMP = S( J-1 )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 70 I = 1, N
+                        TEMP = A( J, I )
+                        A( J, I ) = CTEMP*TEMP - STEMP*A( 1, I )
+                        A( 1, I ) = STEMP*TEMP + CTEMP*A( 1, I )
+   70                CONTINUE
+                  END IF
+   80          CONTINUE
+            END IF
+         ELSE IF( LSAME( PIVOT, 'B' ) ) THEN
+            IF( LSAME( DIRECT, 'F' ) ) THEN
+               DO 100 J = 1, M - 1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 90 I = 1, N
+                        TEMP = A( J, I )
+                        A( J, I ) = STEMP*A( M, I ) + CTEMP*TEMP
+                        A( M, I ) = CTEMP*A( M, I ) - STEMP*TEMP
+   90                CONTINUE
+                  END IF
+  100          CONTINUE
+            ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
+               DO 120 J = M - 1, 1, -1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 110 I = 1, N
+                        TEMP = A( J, I )
+                        A( J, I ) = STEMP*A( M, I ) + CTEMP*TEMP
+                        A( M, I ) = CTEMP*A( M, I ) - STEMP*TEMP
+  110                CONTINUE
+                  END IF
+  120          CONTINUE
+            END IF
+         END IF
+      ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C        FORM A * P'
+C
+         IF( LSAME( PIVOT, 'V' ) ) THEN
+            IF( LSAME( DIRECT, 'F' ) ) THEN
+               DO 140 J = 1, N - 1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 130 I = 1, M
+                        TEMP = A( I, J+1 )
+                        A( I, J+1 ) = CTEMP*TEMP - STEMP*A( I, J )
+                        A( I, J ) = STEMP*TEMP + CTEMP*A( I, J )
+  130                CONTINUE
+                  END IF
+  140          CONTINUE
+            ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
+               DO 160 J = N - 1, 1, -1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 150 I = 1, M
+                        TEMP = A( I, J+1 )
+                        A( I, J+1 ) = CTEMP*TEMP - STEMP*A( I, J )
+                        A( I, J ) = STEMP*TEMP + CTEMP*A( I, J )
+  150                CONTINUE
+                  END IF
+  160          CONTINUE
+            END IF
+         ELSE IF( LSAME( PIVOT, 'T' ) ) THEN
+            IF( LSAME( DIRECT, 'F' ) ) THEN
+               DO 180 J = 2, N
+                  CTEMP = C( J-1 )
+                  STEMP = S( J-1 )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 170 I = 1, M
+                        TEMP = A( I, J )
+                        A( I, J ) = CTEMP*TEMP - STEMP*A( I, 1 )
+                        A( I, 1 ) = STEMP*TEMP + CTEMP*A( I, 1 )
+  170                CONTINUE
+                  END IF
+  180          CONTINUE
+            ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
+               DO 200 J = N, 2, -1
+                  CTEMP = C( J-1 )
+                  STEMP = S( J-1 )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 190 I = 1, M
+                        TEMP = A( I, J )
+                        A( I, J ) = CTEMP*TEMP - STEMP*A( I, 1 )
+                        A( I, 1 ) = STEMP*TEMP + CTEMP*A( I, 1 )
+  190                CONTINUE
+                  END IF
+  200          CONTINUE
+            END IF
+         ELSE IF( LSAME( PIVOT, 'B' ) ) THEN
+            IF( LSAME( DIRECT, 'F' ) ) THEN
+               DO 220 J = 1, N - 1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 210 I = 1, M
+                        TEMP = A( I, J )
+                        A( I, J ) = STEMP*A( I, N ) + CTEMP*TEMP
+                        A( I, N ) = CTEMP*A( I, N ) - STEMP*TEMP
+  210                CONTINUE
+                  END IF
+  220          CONTINUE
+            ELSE IF( LSAME( DIRECT, 'B' ) ) THEN
+               DO 240 J = N - 1, 1, -1
+                  CTEMP = C( J )
+                  STEMP = S( J )
+                  IF( ( CTEMP.NE.ONE ) .OR. ( STEMP.NE.ZERO ) ) THEN
+                     DO 230 I = 1, M
+                        TEMP = A( I, J )
+                        A( I, J ) = STEMP*A( I, N ) + CTEMP*TEMP
+                        A( I, N ) = CTEMP*A( I, N ) - STEMP*TEMP
+  230                CONTINUE
+                  END IF
+  240          CONTINUE
+            END IF
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZLASR
+C
+      END
+C*MODULE LAPACK  *DECK LSAME     EXTERNAL FUNCTION CALLED BY ZHEEV
+      LOGICAL          FUNCTION LSAME( CA, CB )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992 
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          CA, CB
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  LSAME RETURNS .TRUE. IF CA IS THE SAME LETTER AS CB REGARDLESS OF
+C  CASE.
+C
+C  ARGUMENTS
+C  =========
+C
+C  CA      (INPUT) CHARACTER*1
+C  CB      (INPUT) CHARACTER*1
+C          CA AND CB SPECIFY THE SINGLE CHARACTERS TO BE COMPARED.
+C
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ICHAR
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            INTA, INTB, ZCODE
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST IF THE CHARACTERS ARE EQUAL
+C
+      LSAME = CA.EQ.CB
+      IF( LSAME )
+     $   RETURN
+C
+C     NOW TEST FOR EQUIVALENCE IF BOTH CHARACTERS ARE ALPHABETIC.
+C
+      ZCODE = ICHAR( 'Z' )
+C
+C     USE 'Z' RATHER THAN 'A' SO THAT ASCII CAN BE DETECTED ON PRIME
+C     MACHINES, ON WHICH ICHAR RETURNS A VALUE WITH BIT 8 SET.
+C     ICHAR('A') ON PRIME MACHINES RETURNS 193 WHICH IS THE SAME AS
+C     ICHAR('A') ON AN EBCDIC MACHINE.
+C
+      INTA = ICHAR( CA )
+      INTB = ICHAR( CB )
+C
+      IF( ZCODE.EQ.90 .OR. ZCODE.EQ.122 ) THEN
+C
+C        ASCII IS ASSUMED - ZCODE IS THE ASCII CODE OF EITHER LOWER OR
+C        UPPER CASE 'Z'.
+C
+         IF( INTA.GE.97 .AND. INTA.LE.122 ) INTA = INTA - 32
+         IF( INTB.GE.97 .AND. INTB.LE.122 ) INTB = INTB - 32
+C
+      ELSE IF( ZCODE.EQ.233 .OR. ZCODE.EQ.169 ) THEN
+C
+C        EBCDIC IS ASSUMED - ZCODE IS THE EBCDIC CODE OF EITHER LOWER OR
+C        UPPER CASE 'Z'.
+C
+         IF( INTA.GE.129 .AND. INTA.LE.137 .OR.
+     $       INTA.GE.145 .AND. INTA.LE.153 .OR.
+     $       INTA.GE.162 .AND. INTA.LE.169 ) INTA = INTA + 64
+         IF( INTB.GE.129 .AND. INTB.LE.137 .OR.
+     $       INTB.GE.145 .AND. INTB.LE.153 .OR.
+     $       INTB.GE.162 .AND. INTB.LE.169 ) INTB = INTB + 64
+C
+      ELSE IF( ZCODE.EQ.218 .OR. ZCODE.EQ.250 ) THEN
+C
+C        ASCII IS ASSUMED, ON PRIME MACHINES - ZCODE IS THE ASCII CODE
+C        PLUS 128 OF EITHER LOWER OR UPPER CASE 'Z'.
+C
+         IF( INTA.GE.225 .AND. INTA.LE.250 ) INTA = INTA - 32
+         IF( INTB.GE.225 .AND. INTB.LE.250 ) INTB = INTB - 32
+      END IF
+      LSAME = INTA.EQ.INTB
+C
+C     RETURN
+C
+C     END OF LSAME
+C
+      END
+C*MODULE LAPACK  *DECK DLAMCH    EXTERNAL FUNCTION CALLED BY ZHEEV
+      DOUBLE PRECISION FUNCTION DLAMCH( CMACH )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          CMACH
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAMCH DETERMINES DOUBLE PRECISION MACHINE PARAMETERS.
+C
+C  ARGUMENTS
+C  =========
+C
+C  CMACH   (INPUT) CHARACTER*1
+C          SPECIFIES THE VALUE TO BE RETURNED BY DLAMCH:
+C          = 'E' OR 'E',   DLAMCH := EPS
+C          = 'S' OR 'S ,   DLAMCH := SFMIN
+C          = 'B' OR 'B',   DLAMCH := BASE
+C          = 'P' OR 'P',   DLAMCH := EPS*BASE
+C          = 'N' OR 'N',   DLAMCH := T
+C          = 'R' OR 'R',   DLAMCH := RND
+C          = 'M' OR 'M',   DLAMCH := EMIN
+C          = 'U' OR 'U',   DLAMCH := RMIN
+C          = 'L' OR 'L',   DLAMCH := EMAX
+C          = 'O' OR 'O',   DLAMCH := RMAX
+C
+C          WHERE
+C
+C          EPS   = RELATIVE MACHINE PRECISION
+C          SFMIN = SAFE MINIMUM, SUCH THAT 1/SFMIN DOES NOT OVERFLOW
+C          BASE  = BASE OF THE MACHINE
+C          PREC  = EPS*BASE
+C          T     = NUMBER OF (BASE) DIGITS IN THE MANTISSA
+C          RND   = 1.0 WHEN ROUNDING OCCURS IN ADDITION, 0.0 OTHERWISE
+C          EMIN  = MINIMUM EXPONENT BEFORE (GRADUAL) UNDERFLOW
+C          RMIN  = UNDERFLOW THRESHOLD - BASE**(EMIN-1)
+C          EMAX  = LARGEST EXPONENT BEFORE OVERFLOW
+C          RMAX  = OVERFLOW THRESHOLD  - (BASE**EMAX)*(1-EPS)
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            FIRST, LRND
+      INTEGER            BETA, IMAX, IMIN, IT
+      DOUBLE PRECISION   BASE, EMAX, EMIN, EPS, PREC, RMACH, RMAX, RMIN,
+     $                   RND, SFMIN, SMALL, T
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           DLAMC2
+C     ..
+C     .. SAVE STATEMENT ..
+      SAVE               FIRST, EPS, SFMIN, BASE, T, RND, EMIN, RMIN,
+     $                   EMAX, RMAX, PREC
+C     ..
+C     .. DATA STATEMENTS ..
+      DATA               FIRST / .TRUE. /
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( FIRST ) THEN
+         FIRST = .FALSE.
+         CALL DLAMC2( BETA, IT, LRND, EPS, IMIN, RMIN, IMAX, RMAX )
+         BASE = BETA
+         T = IT
+         IF( LRND ) THEN
+            RND = ONE
+            EPS = ( BASE**( 1-IT ) ) / 2
+         ELSE
+            RND = ZERO
+            EPS = BASE**( 1-IT )
+         END IF
+         PREC = EPS*BASE
+         EMIN = IMIN
+         EMAX = IMAX
+         SFMIN = RMIN
+         SMALL = ONE / RMAX
+         IF( SMALL.GE.SFMIN ) THEN
+C
+C           USE SMALL PLUS A BIT, TO AVOID THE POSSIBILITY OF ROUNDING
+C           CAUSING OVERFLOW WHEN COMPUTING  1/SFMIN.
+C
+            SFMIN = SMALL*( ONE+EPS )
+         END IF
+      END IF
+C
+      IF( LSAME( CMACH, 'E' ) ) THEN
+         RMACH = EPS
+      ELSE IF( LSAME( CMACH, 'S' ) ) THEN
+         RMACH = SFMIN
+      ELSE IF( LSAME( CMACH, 'B' ) ) THEN
+         RMACH = BASE
+      ELSE IF( LSAME( CMACH, 'P' ) ) THEN
+         RMACH = PREC
+      ELSE IF( LSAME( CMACH, 'N' ) ) THEN
+         RMACH = T
+      ELSE IF( LSAME( CMACH, 'R' ) ) THEN
+         RMACH = RND
+      ELSE IF( LSAME( CMACH, 'M' ) ) THEN
+         RMACH = EMIN
+      ELSE IF( LSAME( CMACH, 'U' ) ) THEN
+         RMACH = RMIN
+      ELSE IF( LSAME( CMACH, 'L' ) ) THEN
+         RMACH = EMAX
+      ELSE IF( LSAME( CMACH, 'O' ) ) THEN
+         RMACH = RMAX
+      END IF
+C
+      DLAMCH = RMACH
+      RETURN
+C
+C     END OF DLAMCH
+C
+      END
+C
+C***********************************************************************
+C
+      SUBROUTINE DLAMC1( BETA, T, RND, IEEE1 )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      LOGICAL            IEEE1, RND
+      INTEGER            BETA, T
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAMC1 DETERMINES THE MACHINE PARAMETERS GIVEN BY BETA, T, RND, AND
+C  IEEE1.
+C
+C  ARGUMENTS
+C  =========
+C
+C  BETA    (OUTPUT) INTEGER
+C          THE BASE OF THE MACHINE.
+C
+C  T       (OUTPUT) INTEGER
+C          THE NUMBER OF ( BETA ) DIGITS IN THE MANTISSA.
+C
+C  RND     (OUTPUT) LOGICAL
+C          SPECIFIES WHETHER PROPER ROUNDING  ( RND = .TRUE. )  OR
+C          CHOPPING  ( RND = .FALSE. )  OCCURS IN ADDITION. THIS MAY NOT
+C          BE A RELIABLE GUIDE TO THE WAY IN WHICH THE MACHINE PERFORMS
+C          ITS ARITHMETIC.
+C
+C  IEEE1   (OUTPUT) LOGICAL
+C          SPECIFIES WHETHER ROUNDING APPEARS TO BE DONE IN THE IEEE
+C          'ROUND TO NEAREST' STYLE.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE ROUTINE IS BASED ON THE ROUTINE  ENVRON  BY MALCOLM AND
+C  INCORPORATES SUGGESTIONS BY GENTLEMAN AND MAROVICH. SEE
+C
+C     MALCOLM M. A. (1972) ALGORITHMS TO REVEAL PROPERTIES OF
+C        FLOATING-POINT ARITHMETIC. COMMS. OF THE ACM, 15, 949-951.
+C
+C     GENTLEMAN W. M. AND MAROVICH S. B. (1974) MORE ON ALGORITHMS
+C        THAT REVEAL PROPERTIES OF FLOATING POINT ARITHMETIC UNITS.
+C        COMMS. OF THE ACM, 17, 276-277.
+C
+C =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      LOGICAL            FIRST, LIEEE1, LRND
+      INTEGER            LBETA, LT
+      DOUBLE PRECISION   A, B, C, F, ONE, QTR, SAVEC, T1, T2
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMC3
+      EXTERNAL           DLAMC3
+C     ..
+C     .. SAVE STATEMENT ..
+      SAVE               FIRST, LIEEE1, LBETA, LRND, LT
+C     ..
+C     .. DATA STATEMENTS ..
+      DATA               FIRST / .TRUE. /
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( FIRST ) THEN
+         FIRST = .FALSE.
+         ONE = 1
+C
+C        LBETA,  LIEEE1,  LT AND  LRND  ARE THE  LOCAL VALUES  OF  BETA,
+C        IEEE1, T AND RND.
+C
+C        THROUGHOUT THIS ROUTINE  WE USE THE FUNCTION  DLAMC3  TO ENSURE
+C        THAT RELEVANT VALUES ARE  STORED AND NOT HELD IN REGISTERS,  OR
+C        ARE NOT AFFECTED BY OPTIMIZERS.
+C
+C        COMPUTE  A = 2.0**M  WITH THE  SMALLEST POSITIVE INTEGER M SUCH
+C        THAT
+C
+C           FL( A + 1.0 ) = A.
+C
+         A = 1
+         C = 1
+C
+C+       WHILE( C.EQ.ONE )LOOP
+   10    CONTINUE
+         IF( C.EQ.ONE ) THEN
+            A = 2*A
+            C = DLAMC3( A, ONE )
+            C = DLAMC3( C, -A )
+            GO TO 10
+         END IF
+C+       END WHILE
+C
+C        NOW COMPUTE  B = 2.0**M  WITH THE SMALLEST POSITIVE INTEGER M
+C        SUCH THAT
+C
+C           FL( A + B ) .GT. A.
+C
+         B = 1
+         C = DLAMC3( A, B )
+C
+C+       WHILE( C.EQ.A )LOOP
+   20    CONTINUE
+         IF( C.EQ.A ) THEN
+            B = 2*B
+            C = DLAMC3( A, B )
+            GO TO 20
+         END IF
+C+       END WHILE
+C
+C        NOW COMPUTE THE BASE.  A AND C  ARE NEIGHBOURING FLOATING POINT
+C        NUMBERS  IN THE  INTERVAL  ( BETA**T, BETA**( T + 1 ) )  AND SO
+C        THEIR DIFFERENCE IS BETA. ADDING 0.25 TO C IS TO ENSURE THAT IT
+C        IS TRUNCATED TO BETA AND NOT ( BETA - 1 ).
+C
+         QTR = ONE / 4
+         SAVEC = C
+         C = DLAMC3( C, -A )
+         LBETA = INT(C + QTR)
+C
+C        NOW DETERMINE WHETHER ROUNDING OR CHOPPING OCCURS,  BY ADDING A
+C        BIT  LESS  THAN  BETA/2  AND A  BIT  MORE  THAN  BETA/2  TO  A.
+C
+         B = LBETA
+         F = DLAMC3( B / 2, -B / 100 )
+         C = DLAMC3( F, A )
+         IF( C.EQ.A ) THEN
+            LRND = .TRUE.
+         ELSE
+            LRND = .FALSE.
+         END IF
+         F = DLAMC3( B / 2, B / 100 )
+         C = DLAMC3( F, A )
+         IF(LRND  .AND. (C.EQ.A) )
+     $      LRND = .FALSE.
+C
+C        TRY AND DECIDE WHETHER ROUNDING IS DONE IN THE  IEEE  'ROUND TO
+C        NEAREST' STYLE. B/2 IS HALF A UNIT IN THE LAST PLACE OF THE TWO
+C        NUMBERS A AND SAVEC. FURTHERMORE, A IS EVEN, I.E. HAS LAST  BIT
+C        ZERO, AND SAVEC IS ODD. THUS ADDING B/2 TO A SHOULD NOT  CHANGE
+C        A, BUT ADDING B/2 TO SAVEC SHOULD CHANGE SAVEC.
+C
+         T1 = DLAMC3( B / 2, A )
+         T2 = DLAMC3( B / 2, SAVEC )
+         LIEEE1 = ( T1.EQ.A ) .AND. ( T2.GT.SAVEC ) .AND. LRND
+C
+C        NOW FIND  THE  MANTISSA, T.  IT SHOULD  BE THE  INTEGER PART OF
+C        LOG TO THE BASE BETA OF A,  HOWEVER IT IS SAFER TO DETERMINE  T
+C        BY POWERING.  SO WE FIND T AS THE SMALLEST POSITIVE INTEGER FOR
+C        WHICH
+C
+C           FL( BETA**T + 1.0 ) = 1.0.
+C
+         LT = 0
+         A = 1
+         C = 1
+C
+C+       WHILE( C.EQ.ONE )LOOP
+   30    CONTINUE
+         IF( C.EQ.ONE ) THEN
+            LT = LT + 1
+            A = A*LBETA
+            C = DLAMC3( A, ONE )
+            C = DLAMC3( C, -A )
+            GO TO 30
+         END IF
+C+       END WHILE
+C
+      END IF
+C
+      BETA = LBETA
+      T = LT
+      RND = LRND
+      IEEE1 = LIEEE1
+      RETURN
+C
+C     END OF DLAMC1
+C
+      END
+C
+C***********************************************************************
+C
+      SUBROUTINE DLAMC2( BETA, T, RND, EPS, EMIN, RMIN, EMAX, RMAX )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      LOGICAL            RND
+      INTEGER            BETA, EMAX, EMIN, T
+      DOUBLE PRECISION   EPS, RMAX, RMIN
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAMC2 DETERMINES THE MACHINE PARAMETERS SPECIFIED IN ITS ARGUMENT
+C  LIST.
+C
+C  ARGUMENTS
+C  =========
+C
+C  BETA    (OUTPUT) INTEGER
+C          THE BASE OF THE MACHINE.
+C
+C  T       (OUTPUT) INTEGER
+C          THE NUMBER OF ( BETA ) DIGITS IN THE MANTISSA.
+C
+C  RND     (OUTPUT) LOGICAL
+C          SPECIFIES WHETHER PROPER ROUNDING  ( RND = .TRUE. )  OR
+C          CHOPPING  ( RND = .FALSE. )  OCCURS IN ADDITION. THIS MAY NOT
+C          BE A RELIABLE GUIDE TO THE WAY IN WHICH THE MACHINE PERFORMS
+C          ITS ARITHMETIC.
+C
+C  EPS     (OUTPUT) DOUBLE PRECISION
+C          THE SMALLEST POSITIVE NUMBER SUCH THAT
+C
+C             FL( 1.0 - EPS ) .LT. 1.0,
+C
+C          WHERE FL DENOTES THE COMPUTED VALUE.
+C
+C  EMIN    (OUTPUT) INTEGER
+C          THE MINIMUM EXPONENT BEFORE (GRADUAL) UNDERFLOW OCCURS.
+C
+C  RMIN    (OUTPUT) DOUBLE PRECISION
+C          THE SMALLEST NORMALIZED NUMBER FOR THE MACHINE, GIVEN BY
+C          BASE**( EMIN - 1 ), WHERE  BASE  IS THE FLOATING POINT VALUE
+C          OF BETA.
+C
+C  EMAX    (OUTPUT) INTEGER
+C          THE MAXIMUM EXPONENT BEFORE OVERFLOW OCCURS.
+C
+C  RMAX    (OUTPUT) DOUBLE PRECISION
+C          THE LARGEST POSITIVE NUMBER FOR THE MACHINE, GIVEN BY
+C          BASE**EMAX * ( 1 - EPS ), WHERE  BASE  IS THE FLOATING POINT
+C          VALUE OF BETA.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE COMPUTATION OF  EPS  IS BASED ON A ROUTINE PARANOIA BY
+C  W. KAHAN OF THE UNIVERSITY OF CALIFORNIA AT BERKELEY.
+C
+C =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      LOGICAL            FIRST, IEEE, IWARN, LIEEE1, LRND
+      INTEGER            GNMIN, GPMIN, I, LBETA, LEMAX, LEMIN, LT,
+     $                   NGNMIN, NGPMIN
+      DOUBLE PRECISION   A, B, C, HALF, LEPS, LRMAX, LRMIN, ONE, RBASE,
+     $                   SIXTH, SMALL, THIRD, TWO, ZERO
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMC3
+      EXTERNAL           DLAMC3
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           DLAMC1, DLAMC4, DLAMC5
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN
+C     ..
+C     .. SAVE STATEMENT ..
+      SAVE               FIRST, IWARN, LBETA, LEMAX, LEMIN, LEPS, LRMAX,
+     $                   LRMIN, LT
+C     ..
+C     .. DATA STATEMENTS ..
+      DATA               FIRST / .TRUE. / , IWARN / .FALSE. /
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( FIRST ) THEN
+         FIRST = .FALSE.
+         ZERO = 0
+         ONE = 1
+         TWO = 2
+C
+C        LBETA, LT, LRND, LEPS, LEMIN AND LRMIN  ARE THE LOCAL VALUES OF
+C        BETA, T, RND, EPS, EMIN AND RMIN.
+C
+C        THROUGHOUT THIS ROUTINE  WE USE THE FUNCTION  DLAMC3  TO ENSURE
+C        THAT RELEVANT VALUES ARE STORED  AND NOT HELD IN REGISTERS,  OR
+C        ARE NOT AFFECTED BY OPTIMIZERS.
+C
+C        DLAMC1 RETURNS THE PARAMETERS  LBETA, LT, LRND AND LIEEE1.
+C
+         CALL DLAMC1( LBETA, LT, LRND, LIEEE1 )
+C
+C        START TO FIND EPS.
+C
+         B = LBETA
+         A = B**( -LT )
+         LEPS = A
+C
+C        TRY SOME TRICKS TO SEE WHETHER OR NOT THIS IS THE CORRECT  EPS.
+C
+         B = TWO / 3
+         HALF = ONE / 2
+         SIXTH = DLAMC3( B, -HALF )
+         THIRD = DLAMC3( SIXTH, SIXTH )
+         B = DLAMC3( THIRD, -HALF )
+         B = DLAMC3( B, SIXTH )
+         B = ABS( B )
+         IF( B.LT.LEPS )
+     $      B = LEPS
+C
+         LEPS = 1
+C
+C+       WHILE( ( LEPS.GT.B ).AND.( B.GT.ZERO ) )LOOP
+   10    CONTINUE
+         IF( ( LEPS.GT.B ) .AND. ( B.GT.ZERO ) ) THEN
+            LEPS = B
+            C = DLAMC3( HALF*LEPS, ( TWO**5 )*( LEPS**2 ) )
+            C = DLAMC3( HALF, -C )
+            B = DLAMC3( HALF, C )
+            C = DLAMC3( HALF, -B )
+            B = DLAMC3( HALF, C )
+            GO TO 10
+         END IF
+C+       END WHILE
+C
+         IF( A.LT.LEPS )
+     $      LEPS = A
+C
+C        COMPUTATION OF EPS COMPLETE.
+C
+C        NOW FIND  EMIN.  LET A = + OR - 1, AND + OR - (1 + BASE**(-3)).
+C        KEEP DIVIDING  A BY BETA UNTIL (GRADUAL) UNDERFLOW OCCURS. THIS
+C        IS DETECTED WHEN WE CANNOT RECOVER THE PREVIOUS A.
+C
+         RBASE = ONE / LBETA
+         SMALL = ONE
+         DO 20 I = 1, 3
+            SMALL = DLAMC3( SMALL*RBASE, ZERO )
+   20    CONTINUE
+         A = DLAMC3( ONE, SMALL )
+         CALL DLAMC4( NGPMIN, ONE, LBETA )
+         CALL DLAMC4( NGNMIN, -ONE, LBETA )
+         CALL DLAMC4( GPMIN, A, LBETA )
+         CALL DLAMC4( GNMIN, -A, LBETA )
+         IEEE = .FALSE.
+C
+         IF( ( NGPMIN.EQ.NGNMIN ) .AND. ( GPMIN.EQ.GNMIN ) ) THEN
+            IF( NGPMIN.EQ.GPMIN ) THEN
+               LEMIN = NGPMIN
+C            ( NON TWOS-COMPLEMENT MACHINES, NO GRADUAL UNDERFLOW;
+C              E.G.,  VAX )
+            ELSE IF( ( GPMIN-NGPMIN ).EQ.3 ) THEN
+               LEMIN = NGPMIN - 1 + LT
+               IEEE = .TRUE.
+C            ( NON TWOS-COMPLEMENT MACHINES, WITH GRADUAL UNDERFLOW;
+C              E.G., IEEE STANDARD FOLLOWERS )
+            ELSE
+               LEMIN = MIN( NGPMIN, GPMIN )
+C            ( A GUESS; NO KNOWN MACHINE )
+               IWARN = .TRUE.
+            END IF
+C
+         ELSE IF( ( NGPMIN.EQ.GPMIN ) .AND. ( NGNMIN.EQ.GNMIN ) ) THEN
+            IF( ABS( NGPMIN-NGNMIN ).EQ.1 ) THEN
+               LEMIN = MAX( NGPMIN, NGNMIN )
+C            ( TWOS-COMPLEMENT MACHINES, NO GRADUAL UNDERFLOW;
+C              E.G., CYBER 205 )
+            ELSE
+               LEMIN = MIN( NGPMIN, NGNMIN )
+C            ( A GUESS; NO KNOWN MACHINE )
+               IWARN = .TRUE.
+            END IF
+C
+         ELSE IF( ( ABS( NGPMIN-NGNMIN ).EQ.1 ) .AND.
+     $            ( GPMIN.EQ.GNMIN ) ) THEN
+            IF( ( GPMIN-MIN( NGPMIN, NGNMIN ) ).EQ.3 ) THEN
+               LEMIN = MAX( NGPMIN, NGNMIN ) - 1 + LT
+C            ( TWOS-COMPLEMENT MACHINES WITH GRADUAL UNDERFLOW;
+C              NO KNOWN MACHINE )
+            ELSE
+               LEMIN = MIN( NGPMIN, NGNMIN )
+C            ( A GUESS; NO KNOWN MACHINE )
+               IWARN = .TRUE.
+            END IF
+C
+         ELSE
+            LEMIN = MIN( NGPMIN, NGNMIN, GPMIN, GNMIN )
+C         ( A GUESS; NO KNOWN MACHINE )
+            IWARN = .TRUE.
+         END IF
+C**
+C COMMENT OUT THIS IF BLOCK IF EMIN IS OK
+         IF( IWARN ) THEN
+            FIRST = .TRUE.
+            WRITE( 6, FMT = 9999 )LEMIN
+         END IF
+C**
+C
+C        ASSUME IEEE ARITHMETIC IF WE FOUND DENORMALISED  NUMBERS ABOVE,
+C        OR IF ARITHMETIC SEEMS TO ROUND IN THE  IEEE STYLE,  DETERMINED
+C        IN ROUTINE DLAMC1. A TRUE IEEE MACHINE SHOULD HAVE BOTH  THINGS
+C        TRUE; HOWEVER, FAULTY MACHINES MAY HAVE ONE OR THE OTHER.
+C
+         IEEE = IEEE .OR. LIEEE1
+C
+C        COMPUTE  RMIN BY SUCCESSIVE DIVISION BY  BETA. WE COULD COMPUTE
+C        RMIN AS BASE**( EMIN - 1 ),  BUT SOME MACHINES UNDERFLOW DURING
+C        THIS COMPUTATION.
+C
+         LRMIN = 1
+         DO 30 I = 1, 1 - LEMIN
+            LRMIN = DLAMC3( LRMIN*RBASE, ZERO )
+   30    CONTINUE
+C
+C        FINALLY, CALL DLAMC5 TO COMPUTE EMAX AND RMAX.
+C
+         CALL DLAMC5( LBETA, LT, LEMIN, IEEE, LEMAX, LRMAX )
+      END IF
+C
+      BETA = LBETA
+      T = LT
+      RND = LRND
+      EPS = LEPS
+      EMIN = LEMIN
+      RMIN = LRMIN
+      EMAX = LEMAX
+      RMAX = LRMAX
+C
+      RETURN
+C
+ 9999 FORMAT( / / ' WARNING. THE VALUE EMIN MAY BE INCORRECT:-',
+     $      '  EMIN = ', I8, /
+     $      ' IF, AFTER INSPECTION, THE VALUE EMIN LOOKS',
+     $      ' ACCEPTABLE PLEASE COMMENT OUT ',
+     $      / ' THE IF BLOCK AS MARKED WITHIN THE CODE OF ROUTINE',
+     $      ' DLAMC2,', / ' OTHERWISE SUPPLY EMIN EXPLICITLY.', / )
+C
+C     END OF DLAMC2
+C
+      END
+C
+C***********************************************************************
+C
+      DOUBLE PRECISION FUNCTION DLAMC3( A, B )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   A, B
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAMC3  IS INTENDED TO FORCE  A  AND  B  TO BE STORED PRIOR TO DOING
+C  THE ADDITION OF  A  AND  B ,  FOR USE IN SITUATIONS WHERE OPTIMIZERS
+C  MIGHT HOLD ONE OF THESE IN A REGISTER.
+C
+C  ARGUMENTS
+C  =========
+C
+C  A, B    (INPUT) DOUBLE PRECISION
+C          THE VALUES A AND B.
+C
+C =====================================================================
+C
+C     .. EXECUTABLE STATEMENTS ..
+C
+      DLAMC3 = A + B
+C
+      RETURN
+C
+C     END OF DLAMC3
+C
+      END
+C
+C***********************************************************************
+C
+      SUBROUTINE DLAMC4( EMIN, START, BASE )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            BASE, EMIN
+      DOUBLE PRECISION   START
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAMC4 IS A SERVICE ROUTINE FOR DLAMC2.
+C
+C  ARGUMENTS
+C  =========
+C
+C  EMIN    (OUTPUT) EMIN
+C          THE MINIMUM EXPONENT BEFORE (GRADUAL) UNDERFLOW, COMPUTED BY
+C          SETTING A = START AND DIVIDING BY BASE UNTIL THE PREVIOUS A
+C          CAN NOT BE RECOVERED.
+C
+C  START   (INPUT) DOUBLE PRECISION
+C          THE STARTING POINT FOR DETERMINING EMIN.
+C
+C  BASE    (INPUT) INTEGER
+C          THE BASE OF THE MACHINE.
+C
+C =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      INTEGER            I
+      DOUBLE PRECISION   A, B1, B2, C1, C2, D1, D2, ONE, RBASE, ZERO
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMC3
+      EXTERNAL           DLAMC3
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      A = START
+      ONE = 1
+      RBASE = ONE / BASE
+      ZERO = 0
+      EMIN = 1
+      B1 = DLAMC3( A*RBASE, ZERO )
+      C1 = A
+      C2 = A
+      D1 = A
+      D2 = A
+C+    WHILE( ( C1.EQ.A ).AND.( C2.EQ.A ).AND.
+C    $       ( D1.EQ.A ).AND.( D2.EQ.A )      )LOOP
+   10 CONTINUE
+      IF( ( C1.EQ.A ) .AND. ( C2.EQ.A ) .AND. ( D1.EQ.A ) .AND.
+     $    ( D2.EQ.A ) ) THEN
+         EMIN = EMIN - 1
+         A = B1
+         B1 = DLAMC3( A / BASE, ZERO )
+         C1 = DLAMC3( B1*BASE, ZERO )
+         D1 = ZERO
+         DO 20 I = 1, BASE
+            D1 = D1 + B1
+   20    CONTINUE
+         B2 = DLAMC3( A*RBASE, ZERO )
+         C2 = DLAMC3( B2 / RBASE, ZERO )
+         D2 = ZERO
+         DO 30 I = 1, BASE
+            D2 = D2 + B2
+   30    CONTINUE
+         GO TO 10
+      END IF
+C+    END WHILE
+C
+      RETURN
+C
+C     END OF DLAMC4
+C
+      END
+C
+C***********************************************************************
+C
+      SUBROUTINE DLAMC5( BETA, P, EMIN, IEEE, EMAX, RMAX )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      LOGICAL            IEEE
+      INTEGER            BETA, EMAX, EMIN, P
+      DOUBLE PRECISION   RMAX
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAMC5 ATTEMPTS TO COMPUTE RMAX, THE LARGEST MACHINE FLOATING-POINT
+C  NUMBER, WITHOUT OVERFLOW.  IT ASSUMES THAT EMAX + ABS(EMIN) SUM
+C  APPROXIMATELY TO A POWER OF 2.  IT WILL FAIL ON MACHINES WHERE THIS
+C  ASSUMPTION DOES NOT HOLD, FOR EXAMPLE, THE CYBER 205 (EMIN = -28625,
+C  EMAX = 28718).  IT WILL ALSO FAIL IF THE VALUE SUPPLIED FOR EMIN IS
+C  TOO LARGE (I.E. TOO CLOSE TO ZERO), PROBABLY WITH OVERFLOW.
+C
+C  ARGUMENTS
+C  =========
+C
+C  BETA    (INPUT) INTEGER
+C          THE BASE OF FLOATING-POINT ARITHMETIC.
+C
+C  P       (INPUT) INTEGER
+C          THE NUMBER OF BASE BETA DIGITS IN THE MANTISSA OF A
+C          FLOATING-POINT VALUE.
+C
+C  EMIN    (INPUT) INTEGER
+C          THE MINIMUM EXPONENT BEFORE (GRADUAL) UNDERFLOW.
+C
+C  IEEE    (INPUT) LOGICAL
+C          A LOGICAL FLAG SPECIFYING WHETHER OR NOT THE ARITHMETIC
+C          SYSTEM IS THOUGHT TO COMPLY WITH THE IEEE STANDARD.
+C
+C  EMAX    (OUTPUT) INTEGER
+C          THE LARGEST EXPONENT BEFORE OVERFLOW
+C
+C  RMAX    (OUTPUT) DOUBLE PRECISION
+C          THE LARGEST MACHINE FLOATING-POINT NUMBER.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            EXBITS, EXPSUM, I, LEXP, NBITS, TRY, UEXP
+      DOUBLE PRECISION   OLDY, RECBAS, Y, Z
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMC3
+      EXTERNAL           DLAMC3
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MOD
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     FIRST COMPUTE LEXP AND UEXP, TWO POWERS OF 2 THAT BOUND
+C     ABS(EMIN). WE THEN ASSUME THAT EMAX + ABS(EMIN) WILL SUM
+C     APPROXIMATELY TO THE BOUND THAT IS CLOSEST TO ABS(EMIN).
+C     (EMAX IS THE EXPONENT OF THE REQUIRED NUMBER RMAX).
+C
+      LEXP = 1
+      EXBITS = 1
+   10 CONTINUE
+      TRY = LEXP*2
+      IF( TRY.LE.( -EMIN ) ) THEN
+         LEXP = TRY
+         EXBITS = EXBITS + 1
+         GO TO 10
+      END IF
+      IF( LEXP.EQ.-EMIN ) THEN
+         UEXP = LEXP
+      ELSE
+         UEXP = TRY
+         EXBITS = EXBITS + 1
+      END IF
+C
+C     NOW -LEXP IS LESS THAN OR EQUAL TO EMIN, AND -UEXP IS GREATER
+C     THAN OR EQUAL TO EMIN. EXBITS IS THE NUMBER OF BITS NEEDED TO
+C     STORE THE EXPONENT.
+C
+      IF( ( UEXP+EMIN ).GT.( -LEXP-EMIN ) ) THEN
+         EXPSUM = 2*LEXP
+      ELSE
+         EXPSUM = 2*UEXP
+      END IF
+C
+C     EXPSUM IS THE EXPONENT RANGE, APPROXIMATELY EQUAL TO
+C     EMAX - EMIN + 1 .
+C
+      EMAX = EXPSUM + EMIN - 1
+      NBITS = 1 + EXBITS + P
+C
+C     NBITS IS THE TOTAL NUMBER OF BITS NEEDED TO STORE A
+C     FLOATING-POINT NUMBER.
+C
+      IF( ( MOD( NBITS, 2 ).EQ.1 ) .AND. ( BETA.EQ.2 ) ) THEN
+C
+C        EITHER THERE ARE AN ODD NUMBER OF BITS USED TO STORE A
+C        FLOATING-POINT NUMBER, WHICH IS UNLIKELY, OR SOME BITS ARE
+C        NOT USED IN THE REPRESENTATION OF NUMBERS, WHICH IS POSSIBLE,
+C        (E.G. CRAY MACHINES) OR THE MANTISSA HAS AN IMPLICIT BIT,
+C        (E.G. IEEE MACHINES, DEC VAX MACHINES), WHICH IS PERHAPS THE
+C        MOST LIKELY. WE HAVE TO ASSUME THE LAST ALTERNATIVE.
+C        IF THIS IS TRUE, THEN WE NEED TO REDUCE EMAX BY ONE BECAUSE
+C        THERE MUST BE SOME WAY OF REPRESENTING ZERO IN AN IMPLICIT-BIT
+C        SYSTEM. ON MACHINES LIKE CRAY, WE ARE REDUCING EMAX BY ONE
+C        UNNECESSARILY.
+C
+         EMAX = EMAX - 1
+      END IF
+C
+      IF( IEEE ) THEN
+C
+C        ASSUME WE ARE ON AN IEEE MACHINE WHICH RESERVES ONE EXPONENT
+C        FOR INFINITY AND NAN.
+C
+         EMAX = EMAX - 1
+      END IF
+C
+C     NOW CREATE RMAX, THE LARGEST MACHINE NUMBER, WHICH SHOULD
+C     BE EQUAL TO (1.0 - BETA**(-P)) * BETA**EMAX .
+C
+C     FIRST COMPUTE 1.0 - BETA**(-P), BEING CAREFUL THAT THE
+C     RESULT IS LESS THAN 1.0 .
+C
+      RECBAS = ONE / BETA
+      Z = BETA - ONE
+      Y = ZERO
+      DO 20 I = 1, P
+         Z = Z*RECBAS
+         IF( Y.LT.ONE )
+     $      OLDY = Y
+         Y = DLAMC3( Y, Z )
+   20 CONTINUE
+      IF( Y.GE.ONE )
+     $   Y = OLDY
+C
+C     NOW MULTIPLY BY BETA**EMAX TO GET RMAX.
+C
+      DO 30 I = 1, EMAX
+         Y = DLAMC3( Y*BETA, ZERO )
+   30 CONTINUE
+C
+      RMAX = Y
+      RETURN
+C
+C     END OF DLAMC5
+C
+      END
+C*MODULE LAPACK  *DECK ZZLANHE    EXTERNAL FUNCTION CALLED BY ZHEEV
+      SUBROUTINE ZZLANHE(ZLANHE, NORM, UPLO, N, A, LDA, WORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C  -- CONVERTED BY MWS FROM A FUNCTION TO A SUBROUTINE AS THIS
+C  -- MODIFIES ARGUMENTS A AND WORK.  DOESN'T ANYBODY UNDERSTAND
+C  -- THE CONCEPT OF A FUNCTION IN FORTRAN ANYMORE?  THE DAMNED
+C  -- C LANGUAGE HAS A LOT TO ANSWER FOR!!!
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION ZLANHE
+      CHARACTER          NORM, UPLO
+      INTEGER            LDA, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   WORK( * )
+      COMPLEX*16         A( LDA, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLANHE  RETURNS THE VALUE OF THE ONE NORM,  OR THE FROBENIUS NORM, OR
+C  THE  INFINITY NORM,  OR THE  ELEMENT OF  LARGEST ABSOLUTE VALUE  OF A
+C  COMPLEX HERMITIAN MATRIX A.
+C
+C  DESCRIPTION
+C  ===========
+C
+C  ZLANHE RETURNS THE VALUE
+C
+C     ZLANHE = ( MAX(ABS(A(I,J))), NORM = 'M' OR 'M'
+C              (
+C              ( NORM1(A),         NORM = '1', 'O' OR 'O'
+C              (
+C              ( NORMI(A),         NORM = 'I' OR 'I'
+C              (
+C              ( NORMF(A),         NORM = 'F', 'F', 'E' OR 'E'
+C
+C  WHERE  NORM1  DENOTES THE  ONE NORM OF A MATRIX (MAXIMUM COLUMN SUM),
+C  NORMI  DENOTES THE  INFINITY NORM  OF A MATRIX  (MAXIMUM ROW SUM) AND
+C  NORMF  DENOTES THE  FROBENIUS NORM OF A MATRIX (SQUARE ROOT OF SUM OF
+C  SQUARES).  NOTE THAT  MAX(ABS(A(I,J)))  IS NOT A  MATRIX NORM.
+C
+C  ARGUMENTS
+C  =========
+C
+C  NORM    (INPUT) CHARACTER*1
+C          SPECIFIES THE VALUE TO BE RETURNED IN ZLANHE AS DESCRIBED
+C          ABOVE.
+C
+C  UPLO    (INPUT) CHARACTER*1
+C          SPECIFIES WHETHER THE UPPER OR LOWER TRIANGULAR PART OF THE
+C          HERMITIAN MATRIX A IS TO BE REFERENCED.
+C          = 'U':  UPPER TRIANGULAR PART OF A IS REFERENCED
+C          = 'L':  LOWER TRIANGULAR PART OF A IS REFERENCED
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.  WHEN N = 0, ZLANHE IS
+C          SET TO ZERO.
+C
+C  A       (INPUT) COMPLEX*16 ARRAY, DIMENSION (LDA,N)
+C          THE HERMITIAN MATRIX A.  IF UPLO = 'U', THE LEADING N BY N
+C          UPPER TRIANGULAR PART OF A CONTAINS THE UPPER TRIANGULAR PART
+C          OF THE MATRIX A, AND THE STRICTLY LOWER TRIANGULAR PART OF A
+C          IS NOT REFERENCED.  IF UPLO = 'L', THE LEADING N BY N LOWER
+C          TRIANGULAR PART OF A CONTAINS THE LOWER TRIANGULAR PART OF
+C          THE MATRIX A, AND THE STRICTLY UPPER TRIANGULAR PART OF A IS
+C          NOT REFERENCED. NOTE THAT THE IMAGINARY PARTS OF THE DIAGONAL
+C          ELEMENTS NEED NOT BE SET AND ARE ASSUMED TO BE ZERO.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(N,1).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (LWORK),
+C          WHERE LWORK >= N WHEN NORM = 'I' OR '1' OR 'O'; OTHERWISE,
+C          WORK IS NOT REFERENCED.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+0, ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+      DOUBLE PRECISION   ABSA, SCALE, SUM, VALUE
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           ZLASSQ
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          ABS, DBLE, MAX, SQRT
+#else
+      INTRINSIC          ABS, DREAL, MAX, SQRT
+#endif
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( N.EQ.0 ) THEN
+         VALUE = ZERO
+      ELSE IF( LSAME( NORM, 'M' ) ) THEN
+C
+C        FIND MAX(ABS(A(I,J))).
+C
+         VALUE = ZERO
+         IF( LSAME( UPLO, 'U' ) ) THEN
+            DO 20 J = 1, N
+               DO 10 I = 1, J - 1
+                  VALUE = MAX( VALUE, ABS( A( I, J ) ) )
+   10          CONTINUE
+#if defined(SPEC_CPU)
+               VALUE = MAX( VALUE, ABS( DBLE( A( J, J ) ) ) )
+#else
+               VALUE = MAX( VALUE, ABS( DREAL( A( J, J ) ) ) )
+#endif
+   20       CONTINUE
+         ELSE
+            DO 40 J = 1, N
+#if defined(SPEC_CPU)
+               VALUE = MAX( VALUE, ABS( DBLE( A( J, J ) ) ) )
+#else
+               VALUE = MAX( VALUE, ABS( DREAL( A( J, J ) ) ) )
+#endif
+               DO 30 I = J + 1, N
+                  VALUE = MAX( VALUE, ABS( A( I, J ) ) )
+   30          CONTINUE
+   40       CONTINUE
+         END IF
+      ELSE IF( ( LSAME( NORM, 'I' ) ) .OR. ( LSAME( NORM, 'O' ) ) .OR.
+     $         ( NORM.EQ.'1' ) ) THEN
+C
+C        FIND NORMI(A) ( = NORM1(A), SINCE A IS HERMITIAN).
+C
+         VALUE = ZERO
+         IF( LSAME( UPLO, 'U' ) ) THEN
+            DO 60 J = 1, N
+               SUM = ZERO
+               DO 50 I = 1, J - 1
+                  ABSA = ABS( A( I, J ) )
+                  SUM = SUM + ABSA
+                  WORK( I ) = WORK( I ) + ABSA
+   50          CONTINUE
+#if defined(SPEC_CPU)
+               WORK( J ) = SUM + ABS( DBLE( A( J, J ) ) )
+#else
+               WORK( J ) = SUM + ABS( DREAL( A( J, J ) ) )
+#endif
+   60       CONTINUE
+            DO 70 I = 1, N
+               VALUE = MAX( VALUE, WORK( I ) )
+   70       CONTINUE
+         ELSE
+            DO 80 I = 1, N
+               WORK( I ) = ZERO
+   80       CONTINUE
+            DO 100 J = 1, N
+#if defined(SPEC_CPU)
+               SUM = WORK( J ) + ABS( DBLE( A( J, J ) ) )
+#else
+               SUM = WORK( J ) + ABS( DREAL( A( J, J ) ) )
+#endif
+               DO 90 I = J + 1, N
+                  ABSA = ABS( A( I, J ) )
+                  SUM = SUM + ABSA
+                  WORK( I ) = WORK( I ) + ABSA
+   90          CONTINUE
+               VALUE = MAX( VALUE, SUM )
+  100       CONTINUE
+         END IF
+      ELSE IF( ( LSAME( NORM, 'F' ) ) .OR. ( LSAME( NORM, 'E' ) ) ) THEN
+C
+C        FIND NORMF(A).
+C
+         SCALE = ZERO
+         SUM = ONE
+         IF( LSAME( UPLO, 'U' ) ) THEN
+            DO 110 J = 2, N
+               CALL ZLASSQ( J-1, A( 1, J ), 1, SCALE, SUM )
+  110       CONTINUE
+         ELSE
+            DO 120 J = 1, N - 1
+               CALL ZLASSQ( N-J, A( J+1, J ), 1, SCALE, SUM )
+  120       CONTINUE
+         END IF
+         SUM = 2*SUM
+         DO 130 I = 1, N
+#if defined(SPEC_CPU)
+            IF( DBLE( A( I, I ) ).NE.ZERO ) THEN
+#else
+            IF( DREAL( A( I, I ) ).NE.ZERO ) THEN
+#endif
+#if defined(SPEC_CPU)
+               ABSA = ABS( DBLE( A( I, I ) ) )
+#else
+               ABSA = ABS( DREAL( A( I, I ) ) )
+#endif
+               IF( SCALE.LT.ABSA ) THEN
+                  SUM = ONE + SUM*( SCALE / ABSA )**2
+                  SCALE = ABSA
+               ELSE
+                  SUM = SUM + ( ABSA / SCALE )**2
+               END IF
+            END IF
+  130    CONTINUE
+         VALUE = SCALE*SQRT( SUM )
+      END IF
+C
+      ZLANHE = VALUE
+      RETURN
+C
+C     END OF ZLANHE
+C
+      END
+C*MODULE LAPACK  *DECK ZLASSQ    CALLED BY ZLANHE
+      SUBROUTINE ZLASSQ( N, X, INCX, SCALE, SUMSQ )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INCX, N
+      DOUBLE PRECISION   SCALE, SUMSQ
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         X( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLASSQ RETURNS THE VALUES SCL AND SSQ SUCH THAT
+C
+C     ( SCL**2 )*SSQ = X( 1 )**2 +...+ X( N )**2 + ( SCALE**2 )*SUMSQ,
+C
+C  WHERE X( I ) = ABS( X( 1 + ( I - 1 )*INCX ) ). THE VALUE OF SUMSQ IS
+C  ASSUMED TO BE AT LEAST UNITY AND THE VALUE OF SSQ WILL THEN SATISFY
+C
+C     1.0 .LE. SSQ .LE. ( SUMSQ + 2*N ).
+C
+C  SCALE IS ASSUMED TO BE NON-NEGATIVE AND SCL RETURNS THE VALUE
+C
+C     SCL = MAX( SCALE, ABS( REAL( X( I ) ) ), ABS( AIMAG( X( I ) ) ) ),
+C            I
+C
+C  SCALE AND SUMSQ MUST BE SUPPLIED IN SCALE AND SUMSQ RESPECTIVELY.
+C  SCALE AND SUMSQ ARE OVERWRITTEN BY SCL AND SSQ RESPECTIVELY.
+C
+C  THE ROUTINE MAKES ONLY ONE PASS THROUGH THE VECTOR X.
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTS TO BE USED FROM THE VECTOR X.
+C
+C  X       (INPUT) DOUBLE PRECISION
+C          THE VECTOR X AS DESCRIBED ABOVE.
+C             X( I )  = X( 1 + ( I - 1 )*INCX ), 1 <= I <= N.
+C
+C  INCX    (INPUT) INTEGER
+C          THE INCREMENT BETWEEN SUCCESSIVE VALUES OF THE VECTOR X.
+C          INCX > 0.
+C
+C  SCALE   (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE VALUE  SCALE  IN THE EQUATION ABOVE.
+C          ON EXIT, SCALE IS OVERWRITTEN WITH THE VALUE  SCL .
+C
+C  SUMSQ   (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE VALUE  SUMSQ  IN THE EQUATION ABOVE.
+C          ON EXIT, SUMSQ IS OVERWRITTEN WITH THE VALUE  SSQ .
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            IX
+      DOUBLE PRECISION   TEMP1
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          ABS, DBLE, DIMAG
+#else
+      INTRINSIC          ABS, DREAL, DIMAG
+#endif
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( N.GT.0 ) THEN
+         DO 10 IX = 1, 1 + ( N-1 )*INCX, INCX
+#if defined(SPEC_CPU)
+            IF( DBLE( X( IX ) ).NE.ZERO ) THEN
+#else
+            IF( DREAL( X( IX ) ).NE.ZERO ) THEN
+#endif
+#if defined(SPEC_CPU)
+               TEMP1 = ABS( DBLE( X( IX ) ) )
+#else
+               TEMP1 = ABS( DREAL( X( IX ) ) )
+#endif
+               IF( SCALE.LT.TEMP1 ) THEN
+                  SUMSQ = 1 + SUMSQ*( SCALE / TEMP1 )**2
+                  SCALE = TEMP1
+               ELSE
+                  SUMSQ = SUMSQ + ( TEMP1 / SCALE )**2
+               END IF
+            END IF
+            IF( DIMAG( X( IX ) ).NE.ZERO ) THEN
+               TEMP1 = ABS( DIMAG( X( IX ) ) )
+               IF( SCALE.LT.TEMP1 ) THEN
+                  SUMSQ = 1 + SUMSQ*( SCALE / TEMP1 )**2
+                  SCALE = TEMP1
+               ELSE
+                  SUMSQ = SUMSQ + ( TEMP1 / SCALE )**2
+               END IF
+            END IF
+   10    CONTINUE
+      END IF
+C
+      RETURN
+C
+C     END OF ZLASSQ
+C
+      END
+C*MODULE LAPACK  *DECK ILAENV
+      INTEGER          FUNCTION ILAENV( ISPEC, NAME, OPTS, N1, N2, N3,
+     $                 N4 )
+C
+C  -- LAPACK AUXILIARY ROUTINE (PRELIMINARY VERSION) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 20, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER*( * )    NAME, OPTS
+      INTEGER            ISPEC, N1, N2, N3, N4
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ILAENV IS CALLED FROM THE LAPACK ROUTINES TO CHOOSE PROBLEM-DEPENDENT
+C  PARAMETERS FOR THE LOCAL ENVIRONMENT.  SEE ISPEC FOR A DESCRIPTION OF
+C  THE PARAMETERS.
+C
+C  THIS VERSION PROVIDES A SET OF PARAMETERS WHICH SHOULD GIVE GOOD,
+C  BUT NOT OPTIMAL, PERFORMANCE ON MANY OF THE CURRENTLY AVAILABLE
+C  COMPUTERS.  USERS ARE ENCOURAGED TO MODIFY THIS SUBROUTINE TO SET
+C  THE TUNING PARAMETERS FOR THEIR PARTICULAR MACHINE USING THE OPTION
+C  AND PROBLEM SIZE INFORMATION IN THE ARGUMENTS.
+C
+C  THIS ROUTINE WILL NOT FUNCTION CORRECTLY IF IT IS CONVERTED TO ALL
+C  LOWER CASE.  CONVERTING IT TO ALL UPPER CASE IS ALLOWED.
+C
+C  ARGUMENTS
+C  =========
+C
+C  ISPEC   (INPUT) INTEGER
+C          SPECIFIES THE PARAMETER TO BE RETURNED AS THE VALUE OF
+C          ILAENV.
+C          = 1: THE OPTIMAL BLOCKSIZE; IF THIS VALUE IS 1, AN UNBLOCKED
+C               ALGORITHM WILL GIVE THE BEST PERFORMANCE.
+C          = 2: THE MINIMUM BLOCK SIZE FOR WHICH THE BLOCK ROUTINE
+C               SHOULD BE USED; IF THE USABLE BLOCK SIZE IS LESS THAN
+C               THIS VALUE, AN UNBLOCKED ROUTINE SHOULD BE USED.
+C          = 3: THE CROSSOVER POINT (IN A BLOCK ROUTINE, FOR N LESS
+C               THAN THIS VALUE, AN UNBLOCKED ROUTINE SHOULD BE USED)
+C          = 4: THE NUMBER OF SHIFTS, USED IN THE NONSYMMETRIC
+C               EIGENVALUE ROUTINES
+C          = 5: THE MINIMUM COLUMN DIMENSION FOR BLOCKING TO BE USED;
+C               RECTANGULAR BLOCKS MUST HAVE DIMENSION AT LEAST K BY M,
+C               WHERE K IS GIVEN BY ILAENV(2,...) AND M BY ILAENV(5,...)
+C          = 6: THE CROSSOVER POINT FOR THE SVD (WHEN REDUCING AN M BY N
+C               MATRIX TO BIDIAGONAL FORM, IF MAX(M,N)/MIN(M,N) EXCEEDS
+C               THIS VALUE, A QR FACTORIZATION IS USED FIRST TO REDUCE
+C               THE MATRIX TO A TRIANGULAR FORM.)
+C          = 7: THE NUMBER OF PROCESSORS
+C          = 8: THE CROSSOVER POINT FOR THE MULTISHIFT QR AND QZ METHODS
+C               FOR NONSYMMETRIC EIGENVALUE PROBLEMS.
+C
+C  NAME    (INPUT) CHARACTER*(*)
+C          THE NAME OF THE CALLING SUBROUTINE, IN EITHER UPPER CASE OR
+C          LOWER CASE.
+C
+C  OPTS    (INPUT) CHARACTER*(*)
+C          THE CHARACTER OPTIONS TO THE SUBROUTINE NAME, CONCATENATED
+C          INTO A SINGLE CHARACTER STRING.  FOR EXAMPLE, UPLO = 'U',
+C          TRANS = 'T', AND DIAG = 'N' FOR A TRIANGULAR ROUTINE WOULD
+C          BE SPECIFIED AS OPTS = 'UTN'.
+C
+C  N1      (INPUT) INTEGER
+C  N2      (INPUT) INTEGER
+C  N3      (INPUT) INTEGER
+C  N4      (INPUT) INTEGER
+C          PROBLEM DIMENSIONS FOR THE SUBROUTINE NAME; THESE MAY NOT ALL
+C          BE REQUIRED.
+C
+C (ILAENV) (OUTPUT) INTEGER
+C          >= 0: THE VALUE OF THE PARAMETER SPECIFIED BY ISPEC
+C          < 0:  IF ILAENV = -K, THE K-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE FOLLOWING CONVENTIONS HAVE BEEN USED WHEN CALLING ILAENV FROM THE
+C  LAPACK ROUTINES:
+C  1)  OPTS IS A CONCATENATION OF ALL OF THE CHARACTER OPTIONS TO
+C      SUBROUTINE NAME, IN THE SAME ORDER THAT THEY APPEAR IN THE
+C      ARGUMENT LIST FOR NAME, EVEN IF THEY ARE NOT USED IN DETERMINING
+C      THE VALUE OF THE PARAMETER SPECIFIED BY ISPEC.
+C  2)  THE PROBLEM DIMENSIONS N1, N2, N3, N4 ARE SPECIFIED IN THE ORDER
+C      THAT THEY APPEAR IN THE ARGUMENT LIST FOR NAME.  N1 IS USED
+C      FIRST, N2 SECOND, AND SO ON, AND UNUSED PROBLEM DIMENSIONS ARE
+C      PASSED A VALUE OF -1.
+C  3)  THE PARAMETER VALUE RETURNED BY ILAENV IS CHECKED FOR VALIDITY IN
+C      THE CALLING SUBROUTINE.  FOR EXAMPLE, ILAENV IS USED TO RETRIEVE
+C      THE OPTIMAL BLOCKSIZE FOR STRTRI AS FOLLOWS:
+C
+C      NB = ILAENV( 1, 'STRTRI', UPLO // DIAG, N, -1, -1, -1 )
+C      IF( NB.LE.1 ) NB = MAX( 1, N )
+C
+C  =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      LOGICAL            CNAME, SNAME
+      CHARACTER*1        C1
+      CHARACTER*2        C2, C4
+      CHARACTER*3        C3
+      CHARACTER*6        SUBNAM
+      INTEGER            I, IC, IZ, NB, NBMIN, NX
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          CHAR, ICHAR, INT, MIN, REAL
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C         NEXT BIT ADDED BY MWS TO SUPPRESS FTNCHEK WARNINGS
+      IF(ISPEC.GT.8) THEN
+         WRITE(6,*) 'DUMMY MESSAGE TO USE ARGS OPTS AND N3',N3,OPTS
+      END IF
+C
+      GO TO ( 100, 100, 100, 400, 500, 600, 700, 800 ) ISPEC
+C
+C     INVALID VALUE FOR ISPEC
+C
+      ILAENV = -1
+      RETURN
+C
+  100 CONTINUE
+C
+C     CONVERT NAME TO UPPER CASE IF THE FIRST CHARACTER IS LOWER CASE.
+C
+      ILAENV = 1
+      SUBNAM = NAME
+      IC = ICHAR( SUBNAM( 1:1 ) )
+      IZ = ICHAR( 'Z' )
+      IF( IZ.EQ.90 .OR. IZ.EQ.122 ) THEN
+C
+C        ASCII CHARACTER SET
+C
+         IF( IC.GE.97 .AND. IC.LE.122 ) THEN
+            SUBNAM( 1:1 ) = CHAR( IC-32 )
+            DO 10 I = 2, 6
+               IC = ICHAR( SUBNAM( I:I ) )
+               IF( IC.GE.97 .AND. IC.LE.122 )
+     $            SUBNAM( I:I ) = CHAR( IC-32 )
+   10       CONTINUE
+         END IF
+C
+      ELSE IF( IZ.EQ.233 .OR. IZ.EQ.169 ) THEN
+C
+C        EBCDIC CHARACTER SET
+C
+         IF( ( IC.GE.129 .AND. IC.LE.137 ) .OR.
+     $       ( IC.GE.145 .AND. IC.LE.153 ) .OR.
+     $       ( IC.GE.162 .AND. IC.LE.169 ) ) THEN
+            SUBNAM( 1:1 ) = CHAR( IC+64 )
+            DO 20 I = 2, 6
+               IC = ICHAR( SUBNAM( I:I ) )
+               IF( ( IC.GE.129 .AND. IC.LE.137 ) .OR.
+     $             ( IC.GE.145 .AND. IC.LE.153 ) .OR.
+     $             ( IC.GE.162 .AND. IC.LE.169 ) )
+     $            SUBNAM( I:I ) = CHAR( IC+64 )
+   20       CONTINUE
+         END IF
+C
+      ELSE IF( IZ.EQ.218 .OR. IZ.EQ.250 ) THEN
+C
+C        PRIME MACHINES:  ASCII+128
+C
+         IF( IC.GE.225 .AND. IC.LE.250 ) THEN
+            SUBNAM( 1:1 ) = CHAR( IC-32 )
+            DO 30 I = 2, 6
+               IC = ICHAR( SUBNAM( I:I ) )
+               IF( IC.GE.225 .AND. IC.LE.250 )
+     $            SUBNAM( I:I ) = CHAR( IC-32 )
+   30       CONTINUE
+         END IF
+      END IF
+C
+      C1 = SUBNAM( 1:1 )
+      SNAME = C1.EQ.'S' .OR. C1.EQ.'D'
+      CNAME = C1.EQ.'C' .OR. C1.EQ.'Z'
+      IF( .NOT.( CNAME .OR. SNAME ) )
+     $   RETURN
+      C2 = SUBNAM( 2:3 )
+      C3 = SUBNAM( 4:6 )
+      C4 = C3( 2:3 )
+C
+      GO TO ( 110, 200, 300 ) ISPEC
+C
+  110 CONTINUE
+C
+C     ISPEC = 1:  BLOCK SIZE
+C
+C     IN THESE EXAMPLES, SEPARATE CODE IS PROVIDED FOR SETTING NB FOR
+C     REAL AND COMPLEX.  WE ASSUME THAT NB WILL TAKE THE SAME VALUE IN
+C     SINGLE OR DOUBLE PRECISION.
+C
+      NB = 1
+C
+      IF( C2.EQ.'GE' ) THEN
+         IF( C3.EQ.'TRF' ) THEN
+            IF( SNAME ) THEN
+               NB = 64
+            ELSE
+               NB = 64
+            END IF
+         ELSE IF( C3.EQ.'QRF' .OR. C3.EQ.'RQF' .OR. C3.EQ.'LQF' .OR.
+     $            C3.EQ.'QLF' ) THEN
+            IF( SNAME ) THEN
+               NB = 32
+            ELSE
+               NB = 32
+            END IF
+         ELSE IF( C3.EQ.'HRD' ) THEN
+            IF( SNAME ) THEN
+               NB = 32
+            ELSE
+               NB = 32
+            END IF
+         ELSE IF( C3.EQ.'BRD' ) THEN
+            IF( SNAME ) THEN
+               NB = 32
+            ELSE
+               NB = 32
+            END IF
+         ELSE IF( C3.EQ.'TRI' ) THEN
+            IF( SNAME ) THEN
+               NB = 64
+            ELSE
+               NB = 64
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'PO' ) THEN
+         IF( C3.EQ.'TRF' ) THEN
+            IF( SNAME ) THEN
+               NB = 64
+            ELSE
+               NB = 64
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'SY' ) THEN
+         IF( C3.EQ.'TRF' ) THEN
+            IF( SNAME ) THEN
+               NB = 64
+            ELSE
+               NB = 64
+            END IF
+         ELSE IF( SNAME .AND. C3.EQ.'TRD' ) THEN
+            NB = 1
+         ELSE IF( SNAME .AND. C3.EQ.'GST' ) THEN
+            NB = 64
+         END IF
+      ELSE IF( CNAME .AND. C2.EQ.'HE' ) THEN
+         IF( C3.EQ.'TRF' ) THEN
+            NB = 64
+         ELSE IF( C3.EQ.'TRD' ) THEN
+            NB = 1
+         ELSE IF( C3.EQ.'GST' ) THEN
+            NB = 64
+         END IF
+      ELSE IF( SNAME .AND. C2.EQ.'OR' ) THEN
+         IF( C3( 1:1 ).EQ.'G' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NB = 32
+            END IF
+         ELSE IF( C3( 1:1 ).EQ.'M' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NB = 32
+            END IF
+         END IF
+      ELSE IF( CNAME .AND. C2.EQ.'UN' ) THEN
+         IF( C3( 1:1 ).EQ.'G' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NB = 32
+            END IF
+         ELSE IF( C3( 1:1 ).EQ.'M' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NB = 32
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'GB' ) THEN
+         IF( C3.EQ.'TRF' ) THEN
+            IF( SNAME ) THEN
+               IF( N4.LE.64 ) THEN
+                  NB = 1
+               ELSE
+                  NB = 32
+               END IF
+            ELSE
+               IF( N4.LE.64 ) THEN
+                  NB = 1
+               ELSE
+                  NB = 32
+               END IF
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'PB' ) THEN
+         IF( C3.EQ.'TRF' ) THEN
+            IF( SNAME ) THEN
+               IF( N2.LE.64 ) THEN
+                  NB = 1
+               ELSE
+                  NB = 32
+               END IF
+            ELSE
+               IF( N2.LE.64 ) THEN
+                  NB = 1
+               ELSE
+                  NB = 32
+               END IF
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'TR' ) THEN
+         IF( C3.EQ.'TRI' ) THEN
+            IF( SNAME ) THEN
+               NB = 64
+            ELSE
+               NB = 64
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'LA' ) THEN
+         IF( C3.EQ.'UUM' ) THEN
+            IF( SNAME ) THEN
+               NB = 64
+            ELSE
+               NB = 64
+            END IF
+         END IF
+      ELSE IF( SNAME .AND. C2.EQ.'ST' ) THEN
+         IF( C3.EQ.'EBZ' ) THEN
+            NB = 1
+         END IF
+      END IF
+      ILAENV = NB
+      RETURN
+C
+  200 CONTINUE
+C
+C     ISPEC = 2:  MINIMUM BLOCK SIZE
+C
+      NBMIN = 2
+      IF( C2.EQ.'GE' ) THEN
+         IF( C3.EQ.'QRF' .OR. C3.EQ.'RQF' .OR. C3.EQ.'LQF' .OR.
+     $       C3.EQ.'QLF' ) THEN
+            IF( SNAME ) THEN
+               NBMIN = 2
+            ELSE
+               NBMIN = 2
+            END IF
+         ELSE IF( C3.EQ.'HRD' ) THEN
+            IF( SNAME ) THEN
+               NBMIN = 2
+            ELSE
+               NBMIN = 2
+            END IF
+         ELSE IF( C3.EQ.'BRD' ) THEN
+            IF( SNAME ) THEN
+               NBMIN = 2
+            ELSE
+               NBMIN = 2
+            END IF
+         ELSE IF( C3.EQ.'TRI' ) THEN
+            IF( SNAME ) THEN
+               NBMIN = 2
+            ELSE
+               NBMIN = 2
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'SY' ) THEN
+         IF( C3.EQ.'TRF' ) THEN
+            IF( SNAME ) THEN
+               NBMIN = 2
+            ELSE
+               NBMIN = 2
+            END IF
+         ELSE IF( SNAME .AND. C3.EQ.'TRD' ) THEN
+            NBMIN = 2
+         END IF
+      ELSE IF( CNAME .AND. C2.EQ.'HE' ) THEN
+         IF( C3.EQ.'TRD' ) THEN
+            NBMIN = 2
+         END IF
+      ELSE IF( SNAME .AND. C2.EQ.'OR' ) THEN
+         IF( C3( 1:1 ).EQ.'G' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NBMIN = 2
+            END IF
+         ELSE IF( C3( 1:1 ).EQ.'M' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NBMIN = 2
+            END IF
+         END IF
+      ELSE IF( CNAME .AND. C2.EQ.'UN' ) THEN
+         IF( C3( 1:1 ).EQ.'G' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NBMIN = 2
+            END IF
+         ELSE IF( C3( 1:1 ).EQ.'M' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NBMIN = 2
+            END IF
+         END IF
+      END IF
+      ILAENV = NBMIN
+      RETURN
+C
+  300 CONTINUE
+C
+C     ISPEC = 3:  CROSSOVER POINT
+C
+      NX = 0
+      IF( C2.EQ.'GE' ) THEN
+         IF( C3.EQ.'QRF' .OR. C3.EQ.'RQF' .OR. C3.EQ.'LQF' .OR.
+     $       C3.EQ.'QLF' ) THEN
+            IF( SNAME ) THEN
+               NX = 128
+            ELSE
+               NX = 128
+            END IF
+         ELSE IF( C3.EQ.'HRD' ) THEN
+            IF( SNAME ) THEN
+               NX = 128
+            ELSE
+               NX = 128
+            END IF
+         ELSE IF( C3.EQ.'BRD' ) THEN
+            IF( SNAME ) THEN
+               NX = 128
+            ELSE
+               NX = 128
+            END IF
+         END IF
+      ELSE IF( C2.EQ.'SY' ) THEN
+         IF( SNAME .AND. C3.EQ.'TRD' ) THEN
+            NX = 1
+         END IF
+      ELSE IF( CNAME .AND. C2.EQ.'HE' ) THEN
+         IF( C3.EQ.'TRD' ) THEN
+            NX = 1
+         END IF
+      ELSE IF( SNAME .AND. C2.EQ.'OR' ) THEN
+         IF( C3( 1:1 ).EQ.'G' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NX = 128
+            END IF
+         END IF
+      ELSE IF( CNAME .AND. C2.EQ.'UN' ) THEN
+         IF( C3( 1:1 ).EQ.'G' ) THEN
+            IF( C4.EQ.'QR' .OR. C4.EQ.'RQ' .OR. C4.EQ.'LQ' .OR.
+     $          C4.EQ.'QL' .OR. C4.EQ.'HR' .OR. C4.EQ.'TR' .OR.
+     $          C4.EQ.'BR' ) THEN
+               NX = 128
+            END IF
+         END IF
+      END IF
+      ILAENV = NX
+      RETURN
+C
+  400 CONTINUE
+C
+C     ISPEC = 4:  NUMBER OF SHIFTS (USED BY XHSEQR)
+C
+      ILAENV = 6
+      RETURN
+C
+  500 CONTINUE
+C
+C     ISPEC = 5:  MINIMUM COLUMN DIMENSION (NOT USED)
+C
+      ILAENV = 2
+      RETURN
+C
+  600 CONTINUE 
+C
+C     ISPEC = 6:  CROSSOVER POINT FOR SVD (USED BY XGELSS AND XGESVD)
+C
+      ILAENV = INT( REAL( MIN( N1, N2 ) )*1.6E0 )
+      RETURN
+C
+  700 CONTINUE
+C
+C     ISPEC = 7:  NUMBER OF PROCESSORS (NOT USED)
+C
+      ILAENV = 1
+      RETURN
+C
+  800 CONTINUE
+C
+C     ISPEC = 8:  CROSSOVER POINT FOR MULTISHIFT (USED BY XHSEQR)
+C
+      ILAENV = 50
+      RETURN
+C
+C     END OF ILAENV
+C
+      END
+C*MODULE LAPACK  *DECK ZLADIV
+      COMPLEX*16 FUNCTION ZLADIV( X, Y )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      COMPLEX*16         X, Y
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZLADIV := X / Y, WHERE X AND Y ARE COMPLEX.  THE COMPUTATION OF X / Y
+C  WILL NOT OVERFLOW ON AN INTERMEDIARY STEP UNLESS THE RESULTS
+C  OVERFLOWS.
+C
+C  ARGUMENTS
+C  =========
+C
+C  X       (INPUT) COMPLEX*16
+C  Y       (INPUT) COMPLEX*16
+C          THE COMPLEX SCALARS X AND Y.
+C
+C  =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      DOUBLE PRECISION   ZI, ZR
+C     ..
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           DLADIV
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          DBLE, DCMPLX, DIMAG
+#else
+      INTRINSIC          DREAL, DCMPLX, DIMAG
+#endif
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+#if defined(SPEC_CPU)
+      CALL DLADIV( DBLE( X ), DIMAG( X ), DBLE( Y ), DIMAG( Y ), ZR,
+#else
+      CALL DLADIV( DREAL( X ), DIMAG( X ), DREAL( Y ), DIMAG( Y ), ZR,
+#endif
+     $             ZI )
+      ZLADIV = DCMPLX( ZR, ZI )
+C
+      RETURN
+C
+C     END OF ZLADIV
+C
+      END
+C*MODULE LAPACK  *DECK DLADIV
+      SUBROUTINE DLADIV( A, B, C, D, P, Q )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   A, B, C, D, P, Q
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLADIV PERFORMS COMPLEX DIVISION IN  REAL ARITHMETIC
+C
+C                        A + I*B
+C             P + I*Q = ---------
+C                        C + I*D
+C
+C  THE ALGORITHM IS DUE TO ROBERT L. SMITH AND CAN BE FOUND
+C  IN D. KNUTH, THE ART OF COMPUTER PROGRAMMING, VOL.2, P.195
+C
+C  ARGUMENTS
+C  =========
+C
+C  A       (INPUT) DOUBLE PRECISION
+C  B       (INPUT) DOUBLE PRECISION
+C  C       (INPUT) DOUBLE PRECISION
+C  D       (INPUT) DOUBLE PRECISION
+C          THE SCALARS A, B, C, AND D IN THE ABOVE EXPRESSION.
+C
+C  P       (OUTPUT) DOUBLE PRECISION
+C  Q       (OUTPUT) DOUBLE PRECISION
+C          THE SCALARS P AND Q IN THE ABOVE EXPRESSION.
+C
+C  =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      DOUBLE PRECISION   E, F
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( ABS( D ).LT.ABS( C ) ) THEN
+         E = D / C
+         F = C + D*E
+         P = ( A+B*E ) / F
+         Q = ( B-A*E ) / F
+      ELSE
+         E = C / D
+         F = D + C*E
+         P = ( B+A*E ) / F
+         Q = ( -A+B*E ) / F
+      END IF
+C
+      RETURN
+C
+C     END OF DLADIV
+C
+      END
+C*MODULE LAPACK  *DECK DLARTG
+      SUBROUTINE DLARTG( F, G, CS, SN, R )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   CS, F, G, R, SN
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLARTG GENERATE A PLANE ROTATION SO THAT
+C
+C     [  CS  SN  ]  .  [ F ]  =  [ R ]   WHERE CS**2 + SN**2 = 1.
+C     [ -SN  CS  ]     [ G ]     [ 0 ]
+C
+C  THIS IS A FASTER VERSION OF THE BLAS1 ROUTINE DROTG, EXCEPT FOR
+C  THE FOLLOWING DIFFERENCES:
+C     F AND G ARE UNCHANGED ON RETURN.
+C     IF G=0, THEN CS=1 AND SN=0.
+C     IF F=0 AND (G .NE. 0), THEN CS=0 AND SN=1 WITHOUT DOING ANY
+C        FLOATING POINT OPERATIONS (SAVES WORK IN DBDSQR WHEN
+C        THERE ARE ZEROS ON THE DIAGONAL).
+C
+C  ARGUMENTS
+C  =========
+C
+C  F       (INPUT) DOUBLE PRECISION
+C          THE FIRST COMPONENT OF VECTOR TO BE ROTATED.
+C
+C  G       (INPUT) DOUBLE PRECISION
+C          THE SECOND COMPONENT OF VECTOR TO BE ROTATED.
+C
+C  CS      (OUTPUT) DOUBLE PRECISION
+C          THE COSINE OF THE ROTATION.
+C
+C  SN      (OUTPUT) DOUBLE PRECISION
+C          THE SINE OF THE ROTATION.
+C
+C  R       (OUTPUT) DOUBLE PRECISION
+C          THE NONZERO COMPONENT OF THE ROTATED VECTOR.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      DOUBLE PRECISION   T, TT
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( G.EQ.ZERO ) THEN
+         CS = ONE
+         SN = ZERO
+         R = F
+      ELSE IF( F.EQ.ZERO ) THEN
+         CS = ZERO
+         SN = ONE
+         R = G
+      ELSE
+         IF( ABS( F ).GT.ABS( G ) ) THEN
+            T = G / F
+            TT = SQRT( ONE+T*T )
+            CS = ONE / TT
+            SN = T*CS
+            R = F*TT
+         ELSE
+            T = F / G
+            TT = SQRT( ONE+T*T )
+            SN = ONE / TT
+            CS = T*SN
+            R = G*TT
+         END IF
+      END IF
+      RETURN
+C
+C     END OF DLARTG
+C
+      END
+C*MODULE LAPACK  *DECK DLAPY2
+      DOUBLE PRECISION FUNCTION DLAPY2( X, Y )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   X, Y
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAPY2 RETURNS SQRT(X**2+Y**2), TAKING CARE NOT TO CAUSE UNNECESSARY
+C  OVERFLOW.
+C
+C  ARGUMENTS
+C  =========
+C
+C  X       (INPUT) DOUBLE PRECISION
+C  Y       (INPUT) DOUBLE PRECISION
+C          X AND Y SPECIFY THE VALUES X AND Y.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      DOUBLE PRECISION   W, XABS, YABS, Z
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      XABS = ABS( X )
+      YABS = ABS( Y )
+      W = MAX( XABS, YABS )
+      Z = MIN( XABS, YABS )
+      IF( Z.EQ.ZERO ) THEN
+         DLAPY2 = W
+      ELSE
+         DLAPY2 = W*SQRT( ONE+( Z / W )**2 )
+      END IF
+      RETURN
+C
+C     END OF DLAPY2
+C
+      END
+C*MODULE LAPACK  *DECK DLAPY3
+      DOUBLE PRECISION FUNCTION DLAPY3( X, Y, Z )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 1.1) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   X, Y, Z
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAPY3 RETURNS SQRT(X**2+Y**2+Z**2), TAKING CARE NOT TO CAUSE
+C  UNNECESSARY OVERFLOW.
+C
+C  ARGUMENTS
+C  =========
+C
+C  X       (INPUT) DOUBLE PRECISION
+C  Y       (INPUT) DOUBLE PRECISION
+C  Z       (INPUT) DOUBLE PRECISION
+C          X, Y AND Z SPECIFY THE VALUES X, Y AND Z.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+C     ..
+C     .. LOCAL SCALARS ..
+      DOUBLE PRECISION   W, XABS, YABS, ZABS
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      XABS = ABS( X )
+      YABS = ABS( Y )
+      ZABS = ABS( Z )
+      W = MAX( XABS, YABS, ZABS )
+      IF( W.EQ.ZERO ) THEN
+         DLAPY3 = ZERO
+      ELSE
+         DLAPY3 = W*SQRT( ( XABS / W )**2+( YABS / W )**2+
+     $            ( ZABS / W )**2 )
+      END IF
+      RETURN
+C
+C     END OF DLAPY3
+C
+      END
+C*MODULE BLAS    *DECK ZDSCAL     CALLED BY ZHEEV
+      SUBROUTINE  ZDSCAL(N,DA,ZX,INCX)
+C
+C     SCALES A VECTOR BY A CONSTANT.
+C     JACK DONGARRA, 3/11/78.
+C     MODIFIED 3/93 TO RETURN IF INCX .LE. 0.
+C
+      COMPLEX*16 ZX(*)
+      DOUBLE PRECISION DA
+      INTEGER I,INCX,IX,N
+C
+      IF( N.LE.0 .OR. INCX.LE.0 )RETURN
+      IF(INCX.EQ.1)GO TO 20
+C
+C        CODE FOR INCREMENT NOT EQUAL TO 1
+C
+      IX = 1
+      DO 10 I = 1,N
+        ZX(IX) = DCMPLX(DA,0.0D+0)*ZX(IX)
+        IX = IX + INCX
+   10 CONTINUE
+      RETURN
+C
+C        CODE FOR INCREMENT EQUAL TO 1
+C
+   20 DO 30 I = 1,N
+        ZX(I) = DCMPLX(DA,0.0D+0)*ZX(I)
+   30 CONTINUE
+      RETURN
+      END
+C*MODULE BLAS    *DECK ZGEMV      CALLED BY ZLATRD
+      SUBROUTINE ZGEMV ( TRANS, M, N, ALPHA, A, LDA, X, INCX,
+     $                   BETA, Y, INCY )
+C     .. SCALAR ARGUMENTS ..
+      COMPLEX*16         ALPHA, BETA
+      INTEGER            INCX, INCY, LDA, M, N
+      CHARACTER*1        TRANS
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), X( * ), Y( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZGEMV  PERFORMS ONE OF THE MATRIX-VECTOR OPERATIONS
+C
+C     Y := ALPHA*A*X + BETA*Y,   OR   Y := ALPHA*A'*X + BETA*Y,   OR
+C
+C     Y := ALPHA*CONJG( A' )*X + BETA*Y,
+C
+C  WHERE ALPHA AND BETA ARE SCALARS, X AND Y ARE VECTORS AND A IS AN
+C  M BY N MATRIX.
+C
+C  PARAMETERS
+C  ==========
+C
+C  TRANS  - CHARACTER*1.
+C           ON ENTRY, TRANS SPECIFIES THE OPERATION TO BE PERFORMED AS
+C           FOLLOWS:
+C
+C              TRANS = 'N' OR 'N'   Y := ALPHA*A*X + BETA*Y.
+C
+C              TRANS = 'T' OR 'T'   Y := ALPHA*A'*X + BETA*Y.
+C
+C              TRANS = 'C' OR 'C'   Y := ALPHA*CONJG( A' )*X + BETA*Y.
+C
+C           UNCHANGED ON EXIT.
+C
+C  M      - INTEGER.
+C           ON ENTRY, M SPECIFIES THE NUMBER OF ROWS OF THE MATRIX A.
+C           M MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY, N SPECIFIES THE NUMBER OF COLUMNS OF THE MATRIX A.
+C           N MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  ALPHA  - COMPLEX*16      .
+C           ON ENTRY, ALPHA SPECIFIES THE SCALAR ALPHA.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, N ).
+C           BEFORE ENTRY, THE LEADING M BY N PART OF THE ARRAY A MUST
+C           CONTAIN THE MATRIX OF COEFFICIENTS.
+C           UNCHANGED ON EXIT.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM. LDA MUST BE AT LEAST
+C           MAX( 1, M ).
+C           UNCHANGED ON EXIT.
+C
+C  X      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCX ) ) WHEN TRANS = 'N' OR 'N'
+C           AND AT LEAST
+C           ( 1 + ( M - 1 )*ABS( INCX ) ) OTHERWISE.
+C           BEFORE ENTRY, THE INCREMENTED ARRAY X MUST CONTAIN THE
+C           VECTOR X.
+C           UNCHANGED ON EXIT.
+C
+C  INCX   - INTEGER.
+C           ON ENTRY, INCX SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           X. INCX MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  BETA   - COMPLEX*16      .
+C           ON ENTRY, BETA SPECIFIES THE SCALAR BETA. WHEN BETA IS
+C           SUPPLIED AS ZERO THEN Y NEED NOT BE SET ON INPUT.
+C           UNCHANGED ON EXIT.
+C
+C  Y      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( M - 1 )*ABS( INCY ) ) WHEN TRANS = 'N' OR 'N'
+C           AND AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCY ) ) OTHERWISE.
+C           BEFORE ENTRY WITH BETA NON-ZERO, THE INCREMENTED ARRAY Y
+C           MUST CONTAIN THE VECTOR Y. ON EXIT, Y IS OVERWRITTEN BY THE
+C           UPDATED VECTOR Y.
+C
+C  INCY   - INTEGER.
+C           ON ENTRY, INCY SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           Y. INCY MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 2 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 22-OCTOBER-1986.
+C     JACK DONGARRA, ARGONNE NATIONAL LAB.
+C     JEREMY DU CROZ, NAG CENTRAL OFFICE.
+C     SVEN HAMMARLING, NAG CENTRAL OFFICE.
+C     RICHARD HANSON, SANDIA NATIONAL LABS.
+C
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE
+      PARAMETER        ( ONE  = ( 1.0D+0, 0.0D+0 ) )
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     .. LOCAL SCALARS ..
+      COMPLEX*16         TEMP
+      INTEGER            I, INFO, IX, IY, J, JX, JY, KX, KY, LENX, LENY
+      LOGICAL            NOCONJ
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          DCONJG, MAX
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+      IF     ( .NOT.LSAME( TRANS, 'N' ).AND.
+     $         .NOT.LSAME( TRANS, 'T' ).AND.
+     $         .NOT.LSAME( TRANS, 'C' )      )THEN
+         INFO = 1
+      ELSE IF( M.LT.0 )THEN
+         INFO = 2
+      ELSE IF( N.LT.0 )THEN
+         INFO = 3
+      ELSE IF( LDA.LT.MAX( 1, M ) )THEN
+         INFO = 6
+      ELSE IF( INCX.EQ.0 )THEN
+         INFO = 8
+      ELSE IF( INCY.EQ.0 )THEN
+         INFO = 11
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZGEMV ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( ( M.EQ.0 ).OR.( N.EQ.0 ).OR.
+     $    ( ( ALPHA.EQ.ZERO ).AND.( BETA.EQ.ONE ) ) )
+     $   RETURN
+C
+      NOCONJ = LSAME( TRANS, 'T' )
+C
+C     SET  LENX  AND  LENY, THE LENGTHS OF THE VECTORS X AND Y, AND SET
+C     UP THE START POINTS IN  X  AND  Y.
+C
+      IF( LSAME( TRANS, 'N' ) )THEN
+         LENX = N
+         LENY = M
+      ELSE
+         LENX = M
+         LENY = N
+      END IF
+      IF( INCX.GT.0 )THEN
+         KX = 1
+      ELSE
+         KX = 1 - ( LENX - 1 )*INCX
+      END IF
+      IF( INCY.GT.0 )THEN
+         KY = 1
+      ELSE
+         KY = 1 - ( LENY - 1 )*INCY
+      END IF
+C
+C     START THE OPERATIONS. IN THIS VERSION THE ELEMENTS OF A ARE
+C     ACCESSED SEQUENTIALLY WITH ONE PASS THROUGH A.
+C
+C     FIRST FORM  Y := BETA*Y.
+C
+      IF( BETA.NE.ONE )THEN
+         IF( INCY.EQ.1 )THEN
+            IF( BETA.EQ.ZERO )THEN
+               DO 10, I = 1, LENY
+                  Y( I ) = ZERO
+   10          CONTINUE
+            ELSE
+               DO 20, I = 1, LENY
+                  Y( I ) = BETA*Y( I )
+   20          CONTINUE
+            END IF
+         ELSE
+            IY = KY
+            IF( BETA.EQ.ZERO )THEN
+               DO 30, I = 1, LENY
+                  Y( IY ) = ZERO
+                  IY      = IY   + INCY
+   30          CONTINUE
+            ELSE
+               DO 40, I = 1, LENY
+                  Y( IY ) = BETA*Y( IY )
+                  IY      = IY           + INCY
+   40          CONTINUE
+            END IF
+         END IF
+      END IF
+      IF( ALPHA.EQ.ZERO )
+     $   RETURN
+      IF( LSAME( TRANS, 'N' ) )THEN
+C
+C        FORM  Y := ALPHA*A*X + Y.
+C
+         JX = KX
+         IF( INCY.EQ.1 )THEN
+            DO 60, J = 1, N
+               IF( X( JX ).NE.ZERO )THEN
+                  TEMP = ALPHA*X( JX )
+                  DO 50, I = 1, M
+                     Y( I ) = Y( I ) + TEMP*A( I, J )
+   50             CONTINUE
+               END IF
+               JX = JX + INCX
+   60       CONTINUE
+         ELSE
+            DO 80, J = 1, N
+               IF( X( JX ).NE.ZERO )THEN
+                  TEMP = ALPHA*X( JX )
+                  IY   = KY
+                  DO 70, I = 1, M
+                     Y( IY ) = Y( IY ) + TEMP*A( I, J )
+                     IY      = IY      + INCY
+   70             CONTINUE
+               END IF
+               JX = JX + INCX
+   80       CONTINUE
+         END IF
+      ELSE
+C
+C        FORM  Y := ALPHA*A'*X + Y  OR  Y := ALPHA*CONJG( A' )*X + Y.
+C
+         JY = KY
+         IF( INCX.EQ.1 )THEN
+            DO 110, J = 1, N
+               TEMP = ZERO
+               IF( NOCONJ )THEN
+                  DO 90, I = 1, M
+                     TEMP = TEMP + A( I, J )*X( I )
+   90             CONTINUE
+               ELSE
+                  DO 100, I = 1, M
+                     TEMP = TEMP + DCONJG( A( I, J ) )*X( I )
+  100             CONTINUE
+               END IF
+               Y( JY ) = Y( JY ) + ALPHA*TEMP
+               JY      = JY      + INCY
+  110       CONTINUE
+         ELSE
+            DO 140, J = 1, N
+               TEMP = ZERO
+               IX   = KX
+               IF( NOCONJ )THEN
+                  DO 120, I = 1, M
+                     TEMP = TEMP + A( I, J )*X( IX )
+                     IX   = IX   + INCX
+  120             CONTINUE
+               ELSE
+                  DO 130, I = 1, M
+                     TEMP = TEMP + DCONJG( A( I, J ) )*X( IX )
+                     IX   = IX   + INCX
+  130             CONTINUE
+               END IF
+               Y( JY ) = Y( JY ) + ALPHA*TEMP
+               JY      = JY      + INCY
+  140       CONTINUE
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZGEMV .
+C
+      END
+C*MODULE BLAS    *DECK ZHEMV      CALLED BY ZLATRD
+      SUBROUTINE ZHEMV ( UPLO, N, ALPHA, A, LDA, X, INCX,
+     $                   BETA, Y, INCY )
+C     .. SCALAR ARGUMENTS ..
+      COMPLEX*16         ALPHA, BETA
+      INTEGER            INCX, INCY, LDA, N
+      CHARACTER*1        UPLO
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), X( * ), Y( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZHEMV  PERFORMS THE MATRIX-VECTOR  OPERATION
+C
+C     Y := ALPHA*A*X + BETA*Y,
+C
+C  WHERE ALPHA AND BETA ARE SCALARS, X AND Y ARE N ELEMENT VECTORS AND
+C  A IS AN N BY N HERMITIAN MATRIX.
+C
+C  PARAMETERS
+C  ==========
+C
+C  UPLO   - CHARACTER*1.
+C           ON ENTRY, UPLO SPECIFIES WHETHER THE UPPER OR LOWER
+C           TRIANGULAR PART OF THE ARRAY A IS TO BE REFERENCED AS
+C           FOLLOWS:
+C
+C              UPLO = 'U' OR 'U'   ONLY THE UPPER TRIANGULAR PART OF A
+C                                  IS TO BE REFERENCED.
+C
+C              UPLO = 'L' OR 'L'   ONLY THE LOWER TRIANGULAR PART OF A
+C                                  IS TO BE REFERENCED.
+C
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY, N SPECIFIES THE ORDER OF THE MATRIX A.
+C           N MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  ALPHA  - COMPLEX*16      .
+C           ON ENTRY, ALPHA SPECIFIES THE SCALAR ALPHA.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, N ).
+C           BEFORE ENTRY WITH  UPLO = 'U' OR 'U', THE LEADING N BY N
+C           UPPER TRIANGULAR PART OF THE ARRAY A MUST CONTAIN THE UPPER
+C           TRIANGULAR PART OF THE HERMITIAN MATRIX AND THE STRICTLY
+C           LOWER TRIANGULAR PART OF A IS NOT REFERENCED.
+C           BEFORE ENTRY WITH UPLO = 'L' OR 'L', THE LEADING N BY N
+C           LOWER TRIANGULAR PART OF THE ARRAY A MUST CONTAIN THE LOWER
+C           TRIANGULAR PART OF THE HERMITIAN MATRIX AND THE STRICTLY
+C           UPPER TRIANGULAR PART OF A IS NOT REFERENCED.
+C           NOTE THAT THE IMAGINARY PARTS OF THE DIAGONAL ELEMENTS NEED
+C           NOT BE SET AND ARE ASSUMED TO BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM. LDA MUST BE AT LEAST
+C           MAX( 1, N ).
+C           UNCHANGED ON EXIT.
+C
+C  X      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCX ) ).
+C           BEFORE ENTRY, THE INCREMENTED ARRAY X MUST CONTAIN THE N
+C           ELEMENT VECTOR X.
+C           UNCHANGED ON EXIT.
+C
+C  INCX   - INTEGER.
+C           ON ENTRY, INCX SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           X. INCX MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  BETA   - COMPLEX*16      .
+C           ON ENTRY, BETA SPECIFIES THE SCALAR BETA. WHEN BETA IS
+C           SUPPLIED AS ZERO THEN Y NEED NOT BE SET ON INPUT.
+C           UNCHANGED ON EXIT.
+C
+C  Y      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCY ) ).
+C           BEFORE ENTRY, THE INCREMENTED ARRAY Y MUST CONTAIN THE N
+C           ELEMENT VECTOR Y. ON EXIT, Y IS OVERWRITTEN BY THE UPDATED
+C           VECTOR Y.
+C
+C  INCY   - INTEGER.
+C           ON ENTRY, INCY SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           Y. INCY MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 2 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 22-OCTOBER-1986.
+C     JACK DONGARRA, ARGONNE NATIONAL LAB.
+C     JEREMY DU CROZ, NAG CENTRAL OFFICE.
+C     SVEN HAMMARLING, NAG CENTRAL OFFICE.
+C     RICHARD HANSON, SANDIA NATIONAL LABS.
+C
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE
+      PARAMETER        ( ONE  = ( 1.0D+0, 0.0D+0 ) )
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     .. LOCAL SCALARS ..
+      COMPLEX*16         TEMP1, TEMP2
+      INTEGER            I, INFO, IX, IY, J, JX, JY, KX, KY
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          DCONJG, MAX, DBLE
+#else
+      INTRINSIC          DCONJG, MAX, DREAL
+#endif
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+      IF     ( .NOT.LSAME( UPLO, 'U' ).AND.
+     $         .NOT.LSAME( UPLO, 'L' )      )THEN
+         INFO = 1
+      ELSE IF( N.LT.0 )THEN
+         INFO = 2
+      ELSE IF( LDA.LT.MAX( 1, N ) )THEN
+         INFO = 5
+      ELSE IF( INCX.EQ.0 )THEN
+         INFO = 7
+      ELSE IF( INCY.EQ.0 )THEN
+         INFO = 10
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZHEMV ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( ( N.EQ.0 ).OR.( ( ALPHA.EQ.ZERO ).AND.( BETA.EQ.ONE ) ) )
+     $   RETURN
+C
+C     SET UP THE START POINTS IN  X  AND  Y.
+C
+      IF( INCX.GT.0 )THEN
+         KX = 1
+      ELSE
+         KX = 1 - ( N - 1 )*INCX
+      END IF
+      IF( INCY.GT.0 )THEN
+         KY = 1
+      ELSE
+         KY = 1 - ( N - 1 )*INCY
+      END IF
+C
+C     START THE OPERATIONS. IN THIS VERSION THE ELEMENTS OF A ARE
+C     ACCESSED SEQUENTIALLY WITH ONE PASS THROUGH THE TRIANGULAR PART
+C     OF A.
+C
+C     FIRST FORM  Y := BETA*Y.
+C
+      IF( BETA.NE.ONE )THEN
+         IF( INCY.EQ.1 )THEN
+            IF( BETA.EQ.ZERO )THEN
+               DO 10, I = 1, N
+                  Y( I ) = ZERO
+   10          CONTINUE
+            ELSE
+               DO 20, I = 1, N
+                  Y( I ) = BETA*Y( I )
+   20          CONTINUE
+            END IF
+         ELSE
+            IY = KY
+            IF( BETA.EQ.ZERO )THEN
+               DO 30, I = 1, N
+                  Y( IY ) = ZERO
+                  IY      = IY   + INCY
+   30          CONTINUE
+            ELSE
+               DO 40, I = 1, N
+                  Y( IY ) = BETA*Y( IY )
+                  IY      = IY           + INCY
+   40          CONTINUE
+            END IF
+         END IF
+      END IF
+      IF( ALPHA.EQ.ZERO )
+     $   RETURN
+      IF( LSAME( UPLO, 'U' ) )THEN
+C
+C        FORM  Y  WHEN A IS STORED IN UPPER TRIANGLE.
+C
+         IF( ( INCX.EQ.1 ).AND.( INCY.EQ.1 ) )THEN
+            DO 60, J = 1, N
+               TEMP1 = ALPHA*X( J )
+               TEMP2 = ZERO
+               DO 50, I = 1, J - 1
+                  Y( I ) = Y( I ) + TEMP1*A( I, J )
+                  TEMP2  = TEMP2  + DCONJG( A( I, J ) )*X( I )
+   50          CONTINUE
+#if defined(SPEC_CPU)
+               Y( J ) = Y( J ) + TEMP1*DBLE( A( J, J ) ) + ALPHA*TEMP2
+#else
+               Y( J ) = Y( J ) + TEMP1*DREAL( A( J, J ) ) + ALPHA*TEMP2
+#endif
+   60       CONTINUE
+         ELSE
+            JX = KX
+            JY = KY
+            DO 80, J = 1, N
+               TEMP1 = ALPHA*X( JX )
+               TEMP2 = ZERO
+               IX    = KX
+               IY    = KY
+               DO 70, I = 1, J - 1
+                  Y( IY ) = Y( IY ) + TEMP1*A( I, J )
+                  TEMP2   = TEMP2   + DCONJG( A( I, J ) )*X( IX )
+                  IX      = IX      + INCX
+                  IY      = IY      + INCY
+   70          CONTINUE
+#if defined(SPEC_CPU)
+               Y( JY ) = Y( JY ) + TEMP1*DBLE(A( J, J )) + ALPHA*TEMP2
+#else
+               Y( JY ) = Y( JY ) + TEMP1*DREAL(A( J, J )) + ALPHA*TEMP2
+#endif
+               JX      = JX      + INCX
+               JY      = JY      + INCY
+   80       CONTINUE
+         END IF
+      ELSE
+C
+C        FORM  Y  WHEN A IS STORED IN LOWER TRIANGLE.
+C
+         IF( ( INCX.EQ.1 ).AND.( INCY.EQ.1 ) )THEN
+            DO 100, J = 1, N
+               TEMP1  = ALPHA*X( J )
+               TEMP2  = ZERO
+#if defined(SPEC_CPU)
+               Y( J ) = Y( J ) + TEMP1*DBLE( A( J, J ) )
+#else
+               Y( J ) = Y( J ) + TEMP1*DREAL( A( J, J ) )
+#endif
+               DO 90, I = J + 1, N
+                  Y( I ) = Y( I ) + TEMP1*A( I, J )
+                  TEMP2  = TEMP2  + DCONJG( A( I, J ) )*X( I )
+   90          CONTINUE
+               Y( J ) = Y( J ) + ALPHA*TEMP2
+  100       CONTINUE
+         ELSE
+            JX = KX
+            JY = KY
+            DO 120, J = 1, N
+               TEMP1   = ALPHA*X( JX )
+               TEMP2   = ZERO
+#if defined(SPEC_CPU)
+               Y( JY ) = Y( JY ) + TEMP1*DBLE( A( J, J ) )
+#else
+               Y( JY ) = Y( JY ) + TEMP1*DREAL( A( J, J ) )
+#endif
+               IX      = JX
+               IY      = JY
+               DO 110, I = J + 1, N
+                  IX      = IX      + INCX
+                  IY      = IY      + INCY
+                  Y( IY ) = Y( IY ) + TEMP1*A( I, J )
+                  TEMP2   = TEMP2   + DCONJG( A( I, J ) )*X( IX )
+  110          CONTINUE
+               Y( JY ) = Y( JY ) + ALPHA*TEMP2
+               JX      = JX      + INCX
+               JY      = JY      + INCY
+  120       CONTINUE
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZHEMV .
+C
+      END
+C*MODULE BLAS    *DECK ZSCAL      CALLED BY ZLATRD
+      SUBROUTINE  ZSCAL(N,ZA,ZX,INCX)
+C
+C     SCALES A VECTOR BY A CONSTANT.
+C     JACK DONGARRA, 3/11/78.
+C     MODIFIED 3/93 TO RETURN IF INCX .LE. 0.
+C
+      COMPLEX*16 ZA,ZX(1)
+      INTEGER I,INCX,IX,N
+C
+      IF( N.LE.0 .OR. INCX.LE.0 )RETURN
+      IF(INCX.EQ.1)GO TO 20
+C
+C        CODE FOR INCREMENT NOT EQUAL TO 1
+C
+      IX = 1
+      DO 10 I = 1,N
+        ZX(IX) = ZA*ZX(IX)
+        IX = IX + INCX
+   10 CONTINUE
+      RETURN
+C
+C        CODE FOR INCREMENT EQUAL TO 1
+C
+   20 DO 30 I = 1,N
+        ZX(I) = ZA*ZX(I)
+   30 CONTINUE
+      RETURN
+      END
+C*MODULE BLAS    *DECK ZAXPY      CALLED BY ZLATRD
+      SUBROUTINE ZAXPY(N,ZA,ZX,INCX,ZY,INCY)
+C
+C     CONSTANT TIMES A VECTOR PLUS A VECTOR.
+C     JACK DONGARRA, 3/11/78.
+C
+      COMPLEX*16 ZX(1),ZY(1),ZA
+      INTEGER I,INCX,INCY,IX,IY,N
+      DOUBLE PRECISION DCABS1
+      IF(N.LE.0)RETURN
+      IF (DCABS1(ZA) .EQ. 0.0D+0) RETURN
+      IF (INCX.EQ.1.AND.INCY.EQ.1)GO TO 20
+C
+C        CODE FOR UNEQUAL INCREMENTS OR EQUAL INCREMENTS
+C          NOT EQUAL TO 1
+C
+      IX = 1
+      IY = 1
+      IF(INCX.LT.0)IX = (-N+1)*INCX + 1
+      IF(INCY.LT.0)IY = (-N+1)*INCY + 1
+      DO 10 I = 1,N
+        ZY(IY) = ZY(IY) + ZA*ZX(IX)
+        IX = IX + INCX
+        IY = IY + INCY
+   10 CONTINUE
+      RETURN
+C
+C        CODE FOR BOTH INCREMENTS EQUAL TO 1
+C
+   20 DO 30 I = 1,N
+        ZY(I) = ZY(I) + ZA*ZX(I)
+   30 CONTINUE
+      RETURN
+      END
+C*MODULE BLAS    *DECK ZHER2K     CALLED BY ZHETRD
+      SUBROUTINE ZHER2K( UPLO, TRANS, N, K, ALPHA, A, LDA, B, LDB,
+     $                   BETA, C, LDC )
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER*1        UPLO, TRANS
+      INTEGER            N, K, LDA, LDB, LDC
+      DOUBLE PRECISION   BETA
+      COMPLEX*16         ALPHA
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), B( LDB, * ), C( LDC, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZHER2K  PERFORMS ONE OF THE HERMITIAN RANK 2K OPERATIONS
+C
+C     C := ALPHA*A*CONJG( B' ) + CONJG( ALPHA )*B*CONJG( A' ) + BETA*C,
+C
+C  OR
+C
+C     C := ALPHA*CONJG( A' )*B + CONJG( ALPHA )*CONJG( B' )*A + BETA*C,
+C
+C  WHERE  ALPHA AND BETA  ARE SCALARS WITH  BETA  REAL,  C IS AN  N BY N
+C  HERMITIAN MATRIX AND  A AND B  ARE  N BY K MATRICES IN THE FIRST CASE
+C  AND  K BY N  MATRICES IN THE SECOND CASE.
+C
+C  PARAMETERS
+C  ==========
+C
+C  UPLO   - CHARACTER*1.
+C           ON  ENTRY,   UPLO  SPECIFIES  WHETHER  THE  UPPER  OR  LOWER
+C           TRIANGULAR  PART  OF THE  ARRAY  C  IS TO BE  REFERENCED  AS
+C           FOLLOWS:
+C
+C              UPLO = 'U' OR 'U'   ONLY THE  UPPER TRIANGULAR PART OF  C
+C                                  IS TO BE REFERENCED.
+C
+C              UPLO = 'L' OR 'L'   ONLY THE  LOWER TRIANGULAR PART OF  C
+C                                  IS TO BE REFERENCED.
+C
+C           UNCHANGED ON EXIT.
+C
+C  TRANS  - CHARACTER*1.
+C           ON ENTRY,  TRANS  SPECIFIES THE OPERATION TO BE PERFORMED AS
+C           FOLLOWS:
+C
+C              TRANS = 'N' OR 'N'    C := ALPHA*A*CONJG( B' )          +
+C                                         CONJG( ALPHA )*B*CONJG( A' ) +
+C                                         BETA*C.
+C
+C              TRANS = 'C' OR 'C'    C := ALPHA*CONJG( A' )*B          +
+C                                         CONJG( ALPHA )*CONJG( B' )*A +
+C                                         BETA*C.
+C
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY,  N SPECIFIES THE ORDER OF THE MATRIX C.  N MUST BE
+C           AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  K      - INTEGER.
+C           ON ENTRY WITH  TRANS = 'N' OR 'N',  K  SPECIFIES  THE NUMBER
+C           OF  COLUMNS  OF THE  MATRICES  A AND B,  AND ON  ENTRY  WITH
+C           TRANS = 'C' OR 'C',  K  SPECIFIES  THE NUMBER OF ROWS OF THE
+C           MATRICES  A AND B.  K MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  ALPHA  - COMPLEX*16      .
+C           ON ENTRY, ALPHA SPECIFIES THE SCALAR ALPHA.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, KA ), WHERE KA IS
+C           K  WHEN  TRANS = 'N' OR 'N',  AND IS  N  OTHERWISE.
+C           BEFORE ENTRY WITH  TRANS = 'N' OR 'N',  THE  LEADING  N BY K
+C           PART OF THE ARRAY  A  MUST CONTAIN THE MATRIX  A,  OTHERWISE
+C           THE LEADING  K BY N  PART OF THE ARRAY  A  MUST CONTAIN  THE
+C           MATRIX A.
+C           UNCHANGED ON EXIT.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN  THE  CALLING  (SUB)  PROGRAM.   WHEN  TRANS = 'N' OR 'N'
+C           THEN  LDA MUST BE AT LEAST  MAX( 1, N ), OTHERWISE  LDA MUST
+C           BE AT LEAST  MAX( 1, K ).
+C           UNCHANGED ON EXIT.
+C
+C  B      - COMPLEX*16       ARRAY OF DIMENSION ( LDB, KB ), WHERE KB IS
+C           K  WHEN  TRANS = 'N' OR 'N',  AND IS  N  OTHERWISE.
+C           BEFORE ENTRY WITH  TRANS = 'N' OR 'N',  THE  LEADING  N BY K
+C           PART OF THE ARRAY  B  MUST CONTAIN THE MATRIX  B,  OTHERWISE
+C           THE LEADING  K BY N  PART OF THE ARRAY  B  MUST CONTAIN  THE
+C           MATRIX B.
+C           UNCHANGED ON EXIT.
+C
+C  LDB    - INTEGER.
+C           ON ENTRY, LDB SPECIFIES THE FIRST DIMENSION OF B AS DECLARED
+C           IN  THE  CALLING  (SUB)  PROGRAM.   WHEN  TRANS = 'N' OR 'N'
+C           THEN  LDB MUST BE AT LEAST  MAX( 1, N ), OTHERWISE  LDB MUST
+C           BE AT LEAST  MAX( 1, K ).
+C           UNCHANGED ON EXIT.
+C
+C  BETA   - DOUBLE PRECISION.
+C           ON ENTRY, BETA SPECIFIES THE SCALAR BETA.
+C           UNCHANGED ON EXIT.
+C
+C  C      - COMPLEX*16       ARRAY OF DIMENSION ( LDC, N ).
+C           BEFORE ENTRY  WITH  UPLO = 'U' OR 'U',  THE LEADING  N BY N
+C           UPPER TRIANGULAR PART OF THE ARRAY C MUST CONTAIN THE UPPER
+C           TRIANGULAR PART  OF THE  HERMITIAN MATRIX  AND THE STRICTLY
+C           LOWER TRIANGULAR PART OF C IS NOT REFERENCED.  ON EXIT, THE
+C           UPPER TRIANGULAR PART OF THE ARRAY  C IS OVERWRITTEN BY THE
+C           UPPER TRIANGULAR PART OF THE UPDATED MATRIX.
+C           BEFORE ENTRY  WITH  UPLO = 'L' OR 'L',  THE LEADING  N BY N
+C           LOWER TRIANGULAR PART OF THE ARRAY C MUST CONTAIN THE LOWER
+C           TRIANGULAR PART  OF THE  HERMITIAN MATRIX  AND THE STRICTLY
+C           UPPER TRIANGULAR PART OF C IS NOT REFERENCED.  ON EXIT, THE
+C           LOWER TRIANGULAR PART OF THE ARRAY  C IS OVERWRITTEN BY THE
+C           LOWER TRIANGULAR PART OF THE UPDATED MATRIX.
+C           NOTE THAT THE IMAGINARY PARTS OF THE DIAGONAL ELEMENTS NEED
+C           NOT BE SET,  THEY ARE ASSUMED TO BE ZERO,  AND ON EXIT THEY
+C           ARE SET TO ZERO.
+C
+C  LDC    - INTEGER.
+C           ON ENTRY, LDC SPECIFIES THE FIRST DIMENSION OF C AS DECLARED
+C           IN  THE  CALLING  (SUB)  PROGRAM.   LDC  MUST  BE  AT  LEAST
+C           MAX( 1, N ).
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 3 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 8-FEBRUARY-1989.
+C     JACK DONGARRA, ARGONNE NATIONAL LABORATORY.
+C     IAIN DUFF, AERE HARWELL.
+C     JEREMY DU CROZ, NUMERICAL ALGORITHMS GROUP LTD.
+C     SVEN HAMMARLING, NUMERICAL ALGORITHMS GROUP LTD.
+C
+C
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          DCONJG, MAX, DBLE
+#else
+      INTRINSIC          DCONJG, MAX, DREAL
+#endif
+C     .. LOCAL SCALARS ..
+      LOGICAL            UPPER
+      INTEGER            I, INFO, J, L, NROWA
+      COMPLEX*16         TEMP1, TEMP2
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE
+      PARAMETER        ( ONE  = 1.0D+0 )
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      IF( LSAME( TRANS, 'N' ) )THEN
+         NROWA = N
+      ELSE
+         NROWA = K
+      END IF
+      UPPER = LSAME( UPLO, 'U' )
+C
+      INFO = 0
+      IF(      ( .NOT.UPPER               ).AND.
+     $         ( .NOT.LSAME( UPLO , 'L' ) )      )THEN
+         INFO = 1
+      ELSE IF( ( .NOT.LSAME( TRANS, 'N' ) ).AND.
+     $         ( .NOT.LSAME( TRANS, 'C' ) )      )THEN
+         INFO = 2
+      ELSE IF( N  .LT.0               )THEN
+         INFO = 3
+      ELSE IF( K  .LT.0               )THEN
+         INFO = 4
+      ELSE IF( LDA.LT.MAX( 1, NROWA ) )THEN
+         INFO = 7
+      ELSE IF( LDB.LT.MAX( 1, NROWA ) )THEN
+         INFO = 9
+      ELSE IF( LDC.LT.MAX( 1, N     ) )THEN
+         INFO = 12
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZHER2K', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( ( N.EQ.0 ).OR.
+     $    ( ( ( ALPHA.EQ.ZERO ).OR.( K.EQ.0 ) ).AND.( BETA.EQ.ONE ) ) )
+     $   RETURN
+C
+C     AND WHEN  ALPHA.EQ.ZERO.
+C
+      IF( ALPHA.EQ.ZERO )THEN
+         IF( UPPER )THEN
+#if defined(SPEC_CPU)
+            IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+            IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+               DO 20, J = 1, N
+                  DO 10, I = 1, J
+                     C( I, J ) = ZERO
+   10             CONTINUE
+   20          CONTINUE
+            ELSE
+               DO 40, J = 1, N
+                  DO 30, I = 1, J - 1
+                     C( I, J ) = BETA*C( I, J )
+   30             CONTINUE
+#if defined(SPEC_CPU)
+                  C( J, J ) = BETA*DBLE( C( J, J ) )
+#else
+                  C( J, J ) = BETA*DREAL( C( J, J ) )
+#endif
+   40          CONTINUE
+            END IF
+         ELSE
+#if defined(SPEC_CPU)
+            IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+            IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+               DO 60, J = 1, N
+                  DO 50, I = J, N
+                     C( I, J ) = ZERO
+   50             CONTINUE
+   60          CONTINUE
+            ELSE
+               DO 80, J = 1, N
+#if defined(SPEC_CPU)
+                  C( J, J ) = BETA*DBLE( C( J, J ) )
+#else
+                  C( J, J ) = BETA*DREAL( C( J, J ) )
+#endif
+                  DO 70, I = J + 1, N
+                     C( I, J ) = BETA*C( I, J )
+   70             CONTINUE
+   80          CONTINUE
+            END IF
+         END IF
+         RETURN
+      END IF
+C
+C     START THE OPERATIONS.
+C
+      IF( LSAME( TRANS, 'N' ) )THEN
+C
+C        FORM  C := ALPHA*A*CONJG( B' ) + CONJG( ALPHA )*B*CONJG( A' ) +
+C                   C.
+C
+         IF( UPPER )THEN
+            DO 130, J = 1, N
+#if defined(SPEC_CPU)
+               IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+               IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+                  DO 90, I = 1, J
+                     C( I, J ) = ZERO
+   90             CONTINUE
+               ELSE IF( BETA.NE.ONE )THEN
+                  DO 100, I = 1, J - 1
+                     C( I, J ) = BETA*C( I, J )
+  100             CONTINUE
+#if defined(SPEC_CPU)
+                  C( J, J ) = BETA*DBLE( C( J, J ) )
+#else
+                  C( J, J ) = BETA*DREAL( C( J, J ) )
+#endif
+               END IF
+               DO 120, L = 1, K
+                  IF( ( A( J, L ).NE.ZERO ).OR.
+     $                ( B( J, L ).NE.ZERO )     )THEN
+                     TEMP1 = ALPHA*DCONJG( B( J, L ) )
+                     TEMP2 = DCONJG( ALPHA*A( J, L ) )
+                     DO 110, I = 1, J - 1
+                        C( I, J ) = C( I, J ) + A( I, L )*TEMP1 +
+     $                                          B( I, L )*TEMP2
+  110                CONTINUE
+#if defined(SPEC_CPU)
+                     C( J, J ) = DBLE( C( J, J ) )         +
+#else
+                     C( J, J ) = DREAL( C( J, J ) )         +
+#endif
+#if defined(SPEC_CPU)
+     $                           DBLE( A( J, L )*TEMP1 +
+#else
+     $                           DREAL( A( J, L )*TEMP1 +
+#endif
+     $                                 B( J, L )*TEMP2   )
+                  END IF
+  120          CONTINUE
+  130       CONTINUE
+         ELSE
+            DO 180, J = 1, N
+#if defined(SPEC_CPU)
+               IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+               IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+                  DO 140, I = J, N
+                     C( I, J ) = ZERO
+  140             CONTINUE
+               ELSE IF( BETA.NE.ONE )THEN
+                  DO 150, I = J + 1, N
+                     C( I, J ) = BETA*C( I, J )
+  150             CONTINUE
+#if defined(SPEC_CPU)
+                  C( J, J ) = BETA*DBLE( C( J, J ) )
+#else
+                  C( J, J ) = BETA*DREAL( C( J, J ) )
+#endif
+               END IF
+               DO 170, L = 1, K
+                  IF( ( A( J, L ).NE.ZERO ).OR.
+     $                ( B( J, L ).NE.ZERO )     )THEN
+                     TEMP1 = ALPHA*DCONJG( B( J, L ) )
+                     TEMP2 = DCONJG( ALPHA*A( J, L ) )
+                     DO 160, I = J + 1, N
+                        C( I, J ) = C( I, J ) + A( I, L )*TEMP1 +
+     $                                          B( I, L )*TEMP2
+  160                CONTINUE
+#if defined(SPEC_CPU)
+                     C( J, J ) = DBLE( C( J, J ) )         +
+#else
+                     C( J, J ) = DREAL( C( J, J ) )         +
+#endif
+#if defined(SPEC_CPU)
+     $                           DBLE( A( J, L )*TEMP1 +
+#else
+     $                           DREAL( A( J, L )*TEMP1 +
+#endif
+     $                                 B( J, L )*TEMP2   )
+                  END IF
+  170          CONTINUE
+  180       CONTINUE
+         END IF
+      ELSE
+C
+C        FORM  C := ALPHA*CONJG( A' )*B + CONJG( ALPHA )*CONJG( B' )*A +
+C                   C.
+C
+         IF( UPPER )THEN
+            DO 210, J = 1, N
+               DO 200, I = 1, J
+                  TEMP1 = ZERO
+                  TEMP2 = ZERO
+                  DO 190, L = 1, K
+                     TEMP1 = TEMP1 + DCONJG( A( L, I ) )*B( L, J )
+                     TEMP2 = TEMP2 + DCONJG( B( L, I ) )*A( L, J )
+  190             CONTINUE
+                  IF( I.EQ.J )THEN
+#if defined(SPEC_CPU)
+                     IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+                     IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+#if defined(SPEC_CPU)
+                        C( J, J ) = DBLE(         ALPHA  *TEMP1 +
+#else
+                        C( J, J ) = DREAL(         ALPHA  *TEMP1 +
+#endif
+     $                                    DCONJG( ALPHA )*TEMP2   )
+                     ELSE
+#if defined(SPEC_CPU)
+                        C( J, J ) = BETA*DBLE( C( J, J ) )         +
+#else
+                        C( J, J ) = BETA*DREAL( C( J, J ) )         +
+#endif
+#if defined(SPEC_CPU)
+     $                              DBLE(         ALPHA  *TEMP1 +
+#else
+     $                              DREAL(         ALPHA  *TEMP1 +
+#endif
+     $                                    DCONJG( ALPHA )*TEMP2   )
+                     END IF
+                  ELSE
+#if defined(SPEC_CPU)
+                     IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+                     IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+                        C( I, J ) = ALPHA*TEMP1 + DCONJG( ALPHA )*TEMP2
+                     ELSE
+                        C( I, J ) = BETA *C( I, J ) +
+     $                              ALPHA*TEMP1 + DCONJG( ALPHA )*TEMP2
+                     END IF
+                  END IF
+  200          CONTINUE
+  210       CONTINUE
+         ELSE
+            DO 240, J = 1, N
+               DO 230, I = J, N
+                  TEMP1 = ZERO
+                  TEMP2 = ZERO
+                  DO 220, L = 1, K
+                     TEMP1 = TEMP1 + DCONJG( A( L, I ) )*B( L, J )
+                     TEMP2 = TEMP2 + DCONJG( B( L, I ) )*A( L, J )
+  220             CONTINUE
+                  IF( I.EQ.J )THEN
+#if defined(SPEC_CPU)
+                     IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+                     IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+#if defined(SPEC_CPU)
+                        C( J, J ) = DBLE(         ALPHA  *TEMP1 +
+#else
+                        C( J, J ) = DREAL(         ALPHA  *TEMP1 +
+#endif
+     $                                    DCONJG( ALPHA )*TEMP2   )
+                     ELSE
+#if defined(SPEC_CPU)
+                        C( J, J ) = BETA*DBLE( C( J, J ) )         +
+#else
+                        C( J, J ) = BETA*DREAL( C( J, J ) )         +
+#endif
+#if defined(SPEC_CPU)
+     $                              DBLE(         ALPHA  *TEMP1 +
+#else
+     $                              DREAL(         ALPHA  *TEMP1 +
+#endif
+     $                                    DCONJG( ALPHA )*TEMP2   )
+                     END IF
+                  ELSE
+#if defined(SPEC_CPU)
+                     IF( BETA.EQ.DBLE( ZERO ) )THEN
+#else
+                     IF( BETA.EQ.DREAL( ZERO ) )THEN
+#endif
+                        C( I, J ) = ALPHA*TEMP1 + DCONJG( ALPHA )*TEMP2
+                     ELSE
+                        C( I, J ) = BETA *C( I, J ) +
+     $                              ALPHA*TEMP1 + DCONJG( ALPHA )*TEMP2
+                     END IF
+                  END IF
+  230          CONTINUE
+  240       CONTINUE
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZHER2K.
+C
+      END
+C*MODULE BLAS    *DECK ZHER2      CALLED BY ZHETD2
+      SUBROUTINE ZHER2 ( UPLO, N, ALPHA, X, INCX, Y, INCY, A, LDA )
+C     .. SCALAR ARGUMENTS ..
+      COMPLEX*16         ALPHA
+      INTEGER            INCX, INCY, LDA, N
+      CHARACTER*1        UPLO
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), X( * ), Y( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZHER2  PERFORMS THE HERMITIAN RANK 2 OPERATION
+C
+C     A := ALPHA*X*CONJG( Y' ) + CONJG( ALPHA )*Y*CONJG( X' ) + A,
+C
+C  WHERE ALPHA IS A SCALAR, X AND Y ARE N ELEMENT VECTORS AND A IS AN N
+C  BY N HERMITIAN MATRIX.
+C
+C  PARAMETERS
+C  ==========
+C
+C  UPLO   - CHARACTER*1.
+C           ON ENTRY, UPLO SPECIFIES WHETHER THE UPPER OR LOWER
+C           TRIANGULAR PART OF THE ARRAY A IS TO BE REFERENCED AS
+C           FOLLOWS:
+C
+C              UPLO = 'U' OR 'U'   ONLY THE UPPER TRIANGULAR PART OF A
+C                                  IS TO BE REFERENCED.
+C
+C              UPLO = 'L' OR 'L'   ONLY THE LOWER TRIANGULAR PART OF A
+C                                  IS TO BE REFERENCED.
+C
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY, N SPECIFIES THE ORDER OF THE MATRIX A.
+C           N MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  ALPHA  - COMPLEX*16      .
+C           ON ENTRY, ALPHA SPECIFIES THE SCALAR ALPHA.
+C           UNCHANGED ON EXIT.
+C
+C  X      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCX ) ).
+C           BEFORE ENTRY, THE INCREMENTED ARRAY X MUST CONTAIN THE N
+C           ELEMENT VECTOR X.
+C           UNCHANGED ON EXIT.
+C
+C  INCX   - INTEGER.
+C           ON ENTRY, INCX SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           X. INCX MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  Y      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCY ) ).
+C           BEFORE ENTRY, THE INCREMENTED ARRAY Y MUST CONTAIN THE N
+C           ELEMENT VECTOR Y.
+C           UNCHANGED ON EXIT.
+C
+C  INCY   - INTEGER.
+C           ON ENTRY, INCY SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           Y. INCY MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, N ).
+C           BEFORE ENTRY WITH  UPLO = 'U' OR 'U', THE LEADING N BY N
+C           UPPER TRIANGULAR PART OF THE ARRAY A MUST CONTAIN THE UPPER
+C           TRIANGULAR PART OF THE HERMITIAN MATRIX AND THE STRICTLY
+C           LOWER TRIANGULAR PART OF A IS NOT REFERENCED. ON EXIT, THE
+C           UPPER TRIANGULAR PART OF THE ARRAY A IS OVERWRITTEN BY THE
+C           UPPER TRIANGULAR PART OF THE UPDATED MATRIX.
+C           BEFORE ENTRY WITH UPLO = 'L' OR 'L', THE LEADING N BY N
+C           LOWER TRIANGULAR PART OF THE ARRAY A MUST CONTAIN THE LOWER
+C           TRIANGULAR PART OF THE HERMITIAN MATRIX AND THE STRICTLY
+C           UPPER TRIANGULAR PART OF A IS NOT REFERENCED. ON EXIT, THE
+C           LOWER TRIANGULAR PART OF THE ARRAY A IS OVERWRITTEN BY THE
+C           LOWER TRIANGULAR PART OF THE UPDATED MATRIX.
+C           NOTE THAT THE IMAGINARY PARTS OF THE DIAGONAL ELEMENTS NEED
+C           NOT BE SET, THEY ARE ASSUMED TO BE ZERO, AND ON EXIT THEY
+C           ARE SET TO ZERO.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM. LDA MUST BE AT LEAST
+C           MAX( 1, N ).
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 2 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 22-OCTOBER-1986.
+C     JACK DONGARRA, ARGONNE NATIONAL LAB.
+C     JEREMY DU CROZ, NAG CENTRAL OFFICE.
+C     SVEN HAMMARLING, NAG CENTRAL OFFICE.
+C     RICHARD HANSON, SANDIA NATIONAL LABS.
+C
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     .. LOCAL SCALARS ..
+      COMPLEX*16         TEMP1, TEMP2
+      INTEGER            I, INFO, IX, IY, J, JX, JY, KX, KY
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+#if defined(SPEC_CPU)
+      INTRINSIC          DCONJG, MAX, DBLE
+#else
+      INTRINSIC          DCONJG, MAX, DREAL
+#endif
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+      IF     ( .NOT.LSAME( UPLO, 'U' ).AND.
+     $         .NOT.LSAME( UPLO, 'L' )      )THEN
+         INFO = 1
+      ELSE IF( N.LT.0 )THEN
+         INFO = 2
+      ELSE IF( INCX.EQ.0 )THEN
+         INFO = 5
+      ELSE IF( INCY.EQ.0 )THEN
+         INFO = 7
+      ELSE IF( LDA.LT.MAX( 1, N ) )THEN
+         INFO = 9
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZHER2 ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( ( N.EQ.0 ).OR.( ALPHA.EQ.ZERO ) )
+     $   RETURN
+C
+C     SET UP THE START POINTS IN X AND Y IF THE INCREMENTS ARE NOT BOTH
+C     UNITY.
+C
+      IF( ( INCX.NE.1 ).OR.( INCY.NE.1 ) )THEN
+         IF( INCX.GT.0 )THEN
+            KX = 1
+         ELSE
+            KX = 1 - ( N - 1 )*INCX
+         END IF
+         IF( INCY.GT.0 )THEN
+            KY = 1
+         ELSE
+            KY = 1 - ( N - 1 )*INCY
+         END IF
+         JX = KX
+         JY = KY
+      END IF
+C
+C     START THE OPERATIONS. IN THIS VERSION THE ELEMENTS OF A ARE
+C     ACCESSED SEQUENTIALLY WITH ONE PASS THROUGH THE TRIANGULAR PART
+C     OF A.
+C
+      IF( LSAME( UPLO, 'U' ) )THEN
+C
+C        FORM  A  WHEN A IS STORED IN THE UPPER TRIANGLE.
+C
+         IF( ( INCX.EQ.1 ).AND.( INCY.EQ.1 ) )THEN
+            DO 20, J = 1, N
+               IF( ( X( J ).NE.ZERO ).OR.( Y( J ).NE.ZERO ) )THEN
+                  TEMP1 = ALPHA*DCONJG( Y( J ) )
+                  TEMP2 = DCONJG( ALPHA*X( J ) )
+                  DO 10, I = 1, J - 1
+                     A( I, J ) = A( I, J ) + X( I )*TEMP1 + Y( I )*TEMP2
+   10             CONTINUE
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) ) +
+#else
+                  A( J, J ) = DREAL( A( J, J ) ) +
+#endif
+#if defined(SPEC_CPU)
+     $                        DBLE( X( J )*TEMP1 + Y( J )*TEMP2 )
+#else
+     $                        DREAL( X( J )*TEMP1 + Y( J )*TEMP2 )
+#endif
+               ELSE
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) )
+#else
+                  A( J, J ) = DREAL( A( J, J ) )
+#endif
+               END IF
+   20       CONTINUE
+         ELSE
+            DO 40, J = 1, N
+               IF( ( X( JX ).NE.ZERO ).OR.( Y( JY ).NE.ZERO ) )THEN
+                  TEMP1 = ALPHA*DCONJG( Y( JY ) )
+                  TEMP2 = DCONJG( ALPHA*X( JX ) )
+                  IX    = KX
+                  IY    = KY
+                  DO 30, I = 1, J - 1
+                     A( I, J ) = A( I, J ) + X( IX )*TEMP1
+     $                                     + Y( IY )*TEMP2
+                     IX        = IX        + INCX
+                     IY        = IY        + INCY
+   30             CONTINUE
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) ) +
+#else
+                  A( J, J ) = DREAL( A( J, J ) ) +
+#endif
+#if defined(SPEC_CPU)
+     $                        DBLE( X( JX )*TEMP1 + Y( JY )*TEMP2 )
+#else
+     $                        DREAL( X( JX )*TEMP1 + Y( JY )*TEMP2 )
+#endif
+               ELSE
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) )
+#else
+                  A( J, J ) = DREAL( A( J, J ) )
+#endif
+               END IF
+               JX = JX + INCX
+               JY = JY + INCY
+   40       CONTINUE
+         END IF
+      ELSE
+C
+C        FORM  A  WHEN A IS STORED IN THE LOWER TRIANGLE.
+C
+         IF( ( INCX.EQ.1 ).AND.( INCY.EQ.1 ) )THEN
+            DO 60, J = 1, N
+               IF( ( X( J ).NE.ZERO ).OR.( Y( J ).NE.ZERO ) )THEN
+                  TEMP1     = ALPHA*DCONJG( Y( J ) )
+                  TEMP2     = DCONJG( ALPHA*X( J ) )
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) ) +
+#else
+                  A( J, J ) = DREAL( A( J, J ) ) +
+#endif
+#if defined(SPEC_CPU)
+     $                        DBLE( X( J )*TEMP1 + Y( J )*TEMP2 )
+#else
+     $                        DREAL( X( J )*TEMP1 + Y( J )*TEMP2 )
+#endif
+                  DO 50, I = J + 1, N
+                     A( I, J ) = A( I, J ) + X( I )*TEMP1 + Y( I )*TEMP2
+   50             CONTINUE
+               ELSE
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) )
+#else
+                  A( J, J ) = DREAL( A( J, J ) )
+#endif
+               END IF
+   60       CONTINUE
+         ELSE
+            DO 80, J = 1, N
+               IF( ( X( JX ).NE.ZERO ).OR.( Y( JY ).NE.ZERO ) )THEN
+                  TEMP1     = ALPHA*DCONJG( Y( JY ) )
+                  TEMP2     = DCONJG( ALPHA*X( JX ) )
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) ) +
+#else
+                  A( J, J ) = DREAL( A( J, J ) ) +
+#endif
+#if defined(SPEC_CPU)
+     $                        DBLE( X( JX )*TEMP1 + Y( JY )*TEMP2 )
+#else
+     $                        DREAL( X( JX )*TEMP1 + Y( JY )*TEMP2 )
+#endif
+                  IX        = JX
+                  IY        = JY
+                  DO 70, I = J + 1, N
+                     IX        = IX        + INCX
+                     IY        = IY        + INCY
+                     A( I, J ) = A( I, J ) + X( IX )*TEMP1
+     $                                     + Y( IY )*TEMP2
+   70             CONTINUE
+               ELSE
+#if defined(SPEC_CPU)
+                  A( J, J ) = DBLE( A( J, J ) )
+#else
+                  A( J, J ) = DREAL( A( J, J ) )
+#endif
+               END IF
+               JX = JX + INCX
+               JY = JY + INCY
+   80       CONTINUE
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZHER2 .
+C
+      END
+C*MODULE BLAS    *DECK ZGERC      CALLED BY ZLARF
+      SUBROUTINE ZGERC ( M, N, ALPHA, X, INCX, Y, INCY, A, LDA )
+C     .. SCALAR ARGUMENTS ..
+      COMPLEX*16         ALPHA
+      INTEGER            INCX, INCY, LDA, M, N
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), X( * ), Y( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZGERC  PERFORMS THE RANK 1 OPERATION
+C
+C     A := ALPHA*X*CONJG( Y' ) + A,
+C
+C  WHERE ALPHA IS A SCALAR, X IS AN M ELEMENT VECTOR, Y IS AN N ELEMENT
+C  VECTOR AND A IS AN M BY N MATRIX.
+C
+C  PARAMETERS
+C  ==========
+C
+C  M      - INTEGER.
+C           ON ENTRY, M SPECIFIES THE NUMBER OF ROWS OF THE MATRIX A.
+C           M MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY, N SPECIFIES THE NUMBER OF COLUMNS OF THE MATRIX A.
+C           N MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  ALPHA  - COMPLEX*16      .
+C           ON ENTRY, ALPHA SPECIFIES THE SCALAR ALPHA.
+C           UNCHANGED ON EXIT.
+C
+C  X      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( M - 1 )*ABS( INCX ) ).
+C           BEFORE ENTRY, THE INCREMENTED ARRAY X MUST CONTAIN THE M
+C           ELEMENT VECTOR X.
+C           UNCHANGED ON EXIT.
+C
+C  INCX   - INTEGER.
+C           ON ENTRY, INCX SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           X. INCX MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  Y      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCY ) ).
+C           BEFORE ENTRY, THE INCREMENTED ARRAY Y MUST CONTAIN THE N
+C           ELEMENT VECTOR Y.
+C           UNCHANGED ON EXIT.
+C
+C  INCY   - INTEGER.
+C           ON ENTRY, INCY SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           Y. INCY MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, N ).
+C           BEFORE ENTRY, THE LEADING M BY N PART OF THE ARRAY A MUST
+C           CONTAIN THE MATRIX OF COEFFICIENTS. ON EXIT, A IS
+C           OVERWRITTEN BY THE UPDATED MATRIX.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM. LDA MUST BE AT LEAST
+C           MAX( 1, M ).
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 2 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 22-OCTOBER-1986.
+C     JACK DONGARRA, ARGONNE NATIONAL LAB.
+C     JEREMY DU CROZ, NAG CENTRAL OFFICE.
+C     SVEN HAMMARLING, NAG CENTRAL OFFICE.
+C     RICHARD HANSON, SANDIA NATIONAL LABS.
+C
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     .. LOCAL SCALARS ..
+      COMPLEX*16         TEMP
+      INTEGER            I, INFO, IX, J, JY, KX
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          DCONJG, MAX
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+      IF     ( M.LT.0 )THEN
+         INFO = 1
+      ELSE IF( N.LT.0 )THEN
+         INFO = 2
+      ELSE IF( INCX.EQ.0 )THEN
+         INFO = 5
+      ELSE IF( INCY.EQ.0 )THEN
+         INFO = 7
+      ELSE IF( LDA.LT.MAX( 1, M ) )THEN
+         INFO = 9
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZGERC ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( ( M.EQ.0 ).OR.( N.EQ.0 ).OR.( ALPHA.EQ.ZERO ) )
+     $   RETURN
+C
+C     START THE OPERATIONS. IN THIS VERSION THE ELEMENTS OF A ARE
+C     ACCESSED SEQUENTIALLY WITH ONE PASS THROUGH A.
+C
+      IF( INCY.GT.0 )THEN
+         JY = 1
+      ELSE
+         JY = 1 - ( N - 1 )*INCY
+      END IF
+      IF( INCX.EQ.1 )THEN
+         DO 20, J = 1, N
+            IF( Y( JY ).NE.ZERO )THEN
+               TEMP = ALPHA*DCONJG( Y( JY ) )
+               DO 10, I = 1, M
+                  A( I, J ) = A( I, J ) + X( I )*TEMP
+   10          CONTINUE
+            END IF
+            JY = JY + INCY
+   20    CONTINUE
+      ELSE
+         IF( INCX.GT.0 )THEN
+            KX = 1
+         ELSE
+            KX = 1 - ( M - 1 )*INCX
+         END IF
+         DO 40, J = 1, N
+            IF( Y( JY ).NE.ZERO )THEN
+               TEMP = ALPHA*DCONJG( Y( JY ) )
+               IX   = KX
+               DO 30, I = 1, M
+                  A( I, J ) = A( I, J ) + X( IX )*TEMP
+                  IX        = IX        + INCX
+   30          CONTINUE
+            END IF
+            JY = JY + INCY
+   40    CONTINUE
+      END IF
+C
+      RETURN
+C
+C     END OF ZGERC .
+C
+      END
+C*MODULE BLAS    *DECK ZTRMV      CALLED BY ZLARFT
+      SUBROUTINE ZTRMV ( UPLO, TRANS, DIAG, N, A, LDA, X, INCX )
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INCX, LDA, N
+      CHARACTER*1        DIAG, TRANS, UPLO
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), X( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZTRMV  PERFORMS ONE OF THE MATRIX-VECTOR OPERATIONS
+C
+C     X := A*X,   OR   X := A'*X,   OR   X := CONJG( A' )*X,
+C
+C  WHERE X IS AN N ELEMENT VECTOR AND  A IS AN N BY N UNIT, OR NON-UNIT,
+C  UPPER OR LOWER TRIANGULAR MATRIX.
+C
+C  PARAMETERS
+C  ==========
+C
+C  UPLO   - CHARACTER*1.
+C           ON ENTRY, UPLO SPECIFIES WHETHER THE MATRIX IS AN UPPER OR
+C           LOWER TRIANGULAR MATRIX AS FOLLOWS:
+C
+C              UPLO = 'U' OR 'U'   A IS AN UPPER TRIANGULAR MATRIX.
+C
+C              UPLO = 'L' OR 'L'   A IS A LOWER TRIANGULAR MATRIX.
+C
+C           UNCHANGED ON EXIT.
+C
+C  TRANS  - CHARACTER*1.
+C           ON ENTRY, TRANS SPECIFIES THE OPERATION TO BE PERFORMED AS
+C           FOLLOWS:
+C
+C              TRANS = 'N' OR 'N'   X := A*X.
+C
+C              TRANS = 'T' OR 'T'   X := A'*X.
+C
+C              TRANS = 'C' OR 'C'   X := CONJG( A' )*X.
+C
+C           UNCHANGED ON EXIT.
+C
+C  DIAG   - CHARACTER*1.
+C           ON ENTRY, DIAG SPECIFIES WHETHER OR NOT A IS UNIT
+C           TRIANGULAR AS FOLLOWS:
+C
+C              DIAG = 'U' OR 'U'   A IS ASSUMED TO BE UNIT TRIANGULAR.
+C
+C              DIAG = 'N' OR 'N'   A IS NOT ASSUMED TO BE UNIT
+C                                  TRIANGULAR.
+C
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY, N SPECIFIES THE ORDER OF THE MATRIX A.
+C           N MUST BE AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, N ).
+C           BEFORE ENTRY WITH  UPLO = 'U' OR 'U', THE LEADING N BY N
+C           UPPER TRIANGULAR PART OF THE ARRAY A MUST CONTAIN THE UPPER
+C           TRIANGULAR MATRIX AND THE STRICTLY LOWER TRIANGULAR PART OF
+C           A IS NOT REFERENCED.
+C           BEFORE ENTRY WITH UPLO = 'L' OR 'L', THE LEADING N BY N
+C           LOWER TRIANGULAR PART OF THE ARRAY A MUST CONTAIN THE LOWER
+C           TRIANGULAR MATRIX AND THE STRICTLY UPPER TRIANGULAR PART OF
+C           A IS NOT REFERENCED.
+C           NOTE THAT WHEN  DIAG = 'U' OR 'U', THE DIAGONAL ELEMENTS OF
+C           A ARE NOT REFERENCED EITHER, BUT ARE ASSUMED TO BE UNITY.
+C           UNCHANGED ON EXIT.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM. LDA MUST BE AT LEAST
+C           MAX( 1, N ).
+C           UNCHANGED ON EXIT.
+C
+C  X      - COMPLEX*16       ARRAY OF DIMENSION AT LEAST
+C           ( 1 + ( N - 1 )*ABS( INCX ) ).
+C           BEFORE ENTRY, THE INCREMENTED ARRAY X MUST CONTAIN THE N
+C           ELEMENT VECTOR X. ON EXIT, X IS OVERWRITTEN WITH THE
+C           TRANFORMED VECTOR X.
+C
+C  INCX   - INTEGER.
+C           ON ENTRY, INCX SPECIFIES THE INCREMENT FOR THE ELEMENTS OF
+C           X. INCX MUST NOT BE ZERO.
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 2 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 22-OCTOBER-1986.
+C     JACK DONGARRA, ARGONNE NATIONAL LAB.
+C     JEREMY DU CROZ, NAG CENTRAL OFFICE.
+C     SVEN HAMMARLING, NAG CENTRAL OFFICE.
+C     RICHARD HANSON, SANDIA NATIONAL LABS.
+C
+C
+C     .. PARAMETERS ..
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     .. LOCAL SCALARS ..
+      COMPLEX*16         TEMP
+      INTEGER            I, INFO, IX, J, JX, KX
+      LOGICAL            NOCONJ, NOUNIT
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          DCONJG, MAX
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+      IF     ( .NOT.LSAME( UPLO , 'U' ).AND.
+     $         .NOT.LSAME( UPLO , 'L' )      )THEN
+         INFO = 1
+      ELSE IF( .NOT.LSAME( TRANS, 'N' ).AND.
+     $         .NOT.LSAME( TRANS, 'T' ).AND.
+     $         .NOT.LSAME( TRANS, 'C' )      )THEN
+         INFO = 2
+      ELSE IF( .NOT.LSAME( DIAG , 'U' ).AND.
+     $         .NOT.LSAME( DIAG , 'N' )      )THEN
+         INFO = 3
+      ELSE IF( N.LT.0 )THEN
+         INFO = 4
+      ELSE IF( LDA.LT.MAX( 1, N ) )THEN
+         INFO = 6
+      ELSE IF( INCX.EQ.0 )THEN
+         INFO = 8
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZTRMV ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( N.EQ.0 )
+     $   RETURN
+C
+      NOCONJ = LSAME( TRANS, 'T' )
+      NOUNIT = LSAME( DIAG , 'N' )
+C
+C     SET UP THE START POINT IN X IF THE INCREMENT IS NOT UNITY. THIS
+C     WILL BE  ( N - 1 )*INCX  TOO SMALL FOR DESCENDING LOOPS.
+C
+      IF( INCX.LE.0 )THEN
+         KX = 1 - ( N - 1 )*INCX
+      ELSE IF( INCX.NE.1 )THEN
+         KX = 1
+      END IF
+C
+C     START THE OPERATIONS. IN THIS VERSION THE ELEMENTS OF A ARE
+C     ACCESSED SEQUENTIALLY WITH ONE PASS THROUGH A.
+C
+      IF( LSAME( TRANS, 'N' ) )THEN
+C
+C        FORM  X := A*X.
+C
+         IF( LSAME( UPLO, 'U' ) )THEN
+            IF( INCX.EQ.1 )THEN
+               DO 20, J = 1, N
+                  IF( X( J ).NE.ZERO )THEN
+                     TEMP = X( J )
+                     DO 10, I = 1, J - 1
+                        X( I ) = X( I ) + TEMP*A( I, J )
+   10                CONTINUE
+                     IF( NOUNIT )
+     $                  X( J ) = X( J )*A( J, J )
+                  END IF
+   20          CONTINUE
+            ELSE
+               JX = KX
+               DO 40, J = 1, N
+                  IF( X( JX ).NE.ZERO )THEN
+                     TEMP = X( JX )
+                     IX   = KX
+                     DO 30, I = 1, J - 1
+                        X( IX ) = X( IX ) + TEMP*A( I, J )
+                        IX      = IX      + INCX
+   30                CONTINUE
+                     IF( NOUNIT )
+     $                  X( JX ) = X( JX )*A( J, J )
+                  END IF
+                  JX = JX + INCX
+   40          CONTINUE
+            END IF
+         ELSE
+            IF( INCX.EQ.1 )THEN
+               DO 60, J = N, 1, -1
+                  IF( X( J ).NE.ZERO )THEN
+                     TEMP = X( J )
+                     DO 50, I = N, J + 1, -1
+                        X( I ) = X( I ) + TEMP*A( I, J )
+   50                CONTINUE
+                     IF( NOUNIT )
+     $                  X( J ) = X( J )*A( J, J )
+                  END IF
+   60          CONTINUE
+            ELSE
+               KX = KX + ( N - 1 )*INCX
+               JX = KX
+               DO 80, J = N, 1, -1
+                  IF( X( JX ).NE.ZERO )THEN
+                     TEMP = X( JX )
+                     IX   = KX
+                     DO 70, I = N, J + 1, -1
+                        X( IX ) = X( IX ) + TEMP*A( I, J )
+                        IX      = IX      - INCX
+   70                CONTINUE
+                     IF( NOUNIT )
+     $                  X( JX ) = X( JX )*A( J, J )
+                  END IF
+                  JX = JX - INCX
+   80          CONTINUE
+            END IF
+         END IF
+      ELSE
+C
+C        FORM  X := A'*X  OR  X := CONJG( A' )*X.
+C
+         IF( LSAME( UPLO, 'U' ) )THEN
+            IF( INCX.EQ.1 )THEN
+               DO 110, J = N, 1, -1
+                  TEMP = X( J )
+                  IF( NOCONJ )THEN
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*A( J, J )
+                     DO 90, I = J - 1, 1, -1
+                        TEMP = TEMP + A( I, J )*X( I )
+   90                CONTINUE
+                  ELSE
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*DCONJG( A( J, J ) )
+                     DO 100, I = J - 1, 1, -1
+                        TEMP = TEMP + DCONJG( A( I, J ) )*X( I )
+  100                CONTINUE
+                  END IF
+                  X( J ) = TEMP
+  110          CONTINUE
+            ELSE
+               JX = KX + ( N - 1 )*INCX
+               DO 140, J = N, 1, -1
+                  TEMP = X( JX )
+                  IX   = JX
+                  IF( NOCONJ )THEN
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*A( J, J )
+                     DO 120, I = J - 1, 1, -1
+                        IX   = IX   - INCX
+                        TEMP = TEMP + A( I, J )*X( IX )
+  120                CONTINUE
+                  ELSE
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*DCONJG( A( J, J ) )
+                     DO 130, I = J - 1, 1, -1
+                        IX   = IX   - INCX
+                        TEMP = TEMP + DCONJG( A( I, J ) )*X( IX )
+  130                CONTINUE
+                  END IF
+                  X( JX ) = TEMP
+                  JX      = JX   - INCX
+  140          CONTINUE
+            END IF
+         ELSE
+            IF( INCX.EQ.1 )THEN
+               DO 170, J = 1, N
+                  TEMP = X( J )
+                  IF( NOCONJ )THEN
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*A( J, J )
+                     DO 150, I = J + 1, N
+                        TEMP = TEMP + A( I, J )*X( I )
+  150                CONTINUE
+                  ELSE
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*DCONJG( A( J, J ) )
+                     DO 160, I = J + 1, N
+                        TEMP = TEMP + DCONJG( A( I, J ) )*X( I )
+  160                CONTINUE
+                  END IF
+                  X( J ) = TEMP
+  170          CONTINUE
+            ELSE
+               JX = KX
+               DO 200, J = 1, N
+                  TEMP = X( JX )
+                  IX   = JX
+                  IF( NOCONJ )THEN
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*A( J, J )
+                     DO 180, I = J + 1, N
+                        IX   = IX   + INCX
+                        TEMP = TEMP + A( I, J )*X( IX )
+  180                CONTINUE
+                  ELSE
+                     IF( NOUNIT )
+     $                  TEMP = TEMP*DCONJG( A( J, J ) )
+                     DO 190, I = J + 1, N
+                        IX   = IX   + INCX
+                        TEMP = TEMP + DCONJG( A( I, J ) )*X( IX )
+  190                CONTINUE
+                  END IF
+                  X( JX ) = TEMP
+                  JX      = JX   + INCX
+  200          CONTINUE
+            END IF
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZTRMV .
+C
+      END
+C*MODULE BLAS    *DECK ZCOPY      CALLED BY ZLARFB
+      SUBROUTINE  ZCOPY(N,ZX,INCX,ZY,INCY)
+C
+C     COPIES A VECTOR, X, TO A VECTOR, Y.
+C     JACK DONGARRA, LINPACK, 4/11/78.
+C
+      COMPLEX*16 ZX(1),ZY(1)
+      INTEGER I,INCX,INCY,IX,IY,N
+C
+      IF(N.LE.0)RETURN
+      IF(INCX.EQ.1.AND.INCY.EQ.1)GO TO 20
+C
+C        CODE FOR UNEQUAL INCREMENTS OR EQUAL INCREMENTS
+C          NOT EQUAL TO 1
+C
+      IX = 1
+      IY = 1
+      IF(INCX.LT.0)IX = (-N+1)*INCX + 1
+      IF(INCY.LT.0)IY = (-N+1)*INCY + 1
+      DO 10 I = 1,N
+        ZY(IY) = ZX(IX)
+        IX = IX + INCX
+        IY = IY + INCY
+   10 CONTINUE
+      RETURN
+C
+C        CODE FOR BOTH INCREMENTS EQUAL TO 1
+C
+   20 DO 30 I = 1,N
+        ZY(I) = ZX(I)
+   30 CONTINUE
+      RETURN
+      END
+C*MODULE BLAS    *DECK ZTRMM      CALLED BY ZLARFB
+      SUBROUTINE ZTRMM ( SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA,
+     $                   B, LDB )
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER*1        SIDE, UPLO, TRANSA, DIAG
+      INTEGER            M, N, LDA, LDB
+      COMPLEX*16         ALPHA
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), B( LDB, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZTRMM  PERFORMS ONE OF THE MATRIX-MATRIX OPERATIONS
+C
+C     B := ALPHA*OP( A )*B,   OR   B := ALPHA*B*OP( A )
+C
+C  WHERE  ALPHA  IS A SCALAR,  B  IS AN M BY N MATRIX,  A  IS A UNIT, OR
+C  NON-UNIT,  UPPER OR LOWER TRIANGULAR MATRIX  AND  OP( A )  IS ONE  OF
+C
+C     OP( A ) = A   OR   OP( A ) = A'   OR   OP( A ) = CONJG( A' ).
+C
+C  PARAMETERS
+C  ==========
+C
+C  SIDE   - CHARACTER*1.
+C           ON ENTRY,  SIDE SPECIFIES WHETHER  OP( A ) MULTIPLIES B FROM
+C           THE LEFT OR RIGHT AS FOLLOWS:
+C
+C              SIDE = 'L' OR 'L'   B := ALPHA*OP( A )*B.
+C
+C              SIDE = 'R' OR 'R'   B := ALPHA*B*OP( A ).
+C
+C           UNCHANGED ON EXIT.
+C
+C  UPLO   - CHARACTER*1.
+C           ON ENTRY, UPLO SPECIFIES WHETHER THE MATRIX A IS AN UPPER OR
+C           LOWER TRIANGULAR MATRIX AS FOLLOWS:
+C
+C              UPLO = 'U' OR 'U'   A IS AN UPPER TRIANGULAR MATRIX.
+C
+C              UPLO = 'L' OR 'L'   A IS A LOWER TRIANGULAR MATRIX.
+C
+C           UNCHANGED ON EXIT.
+C
+C  TRANSA - CHARACTER*1.
+C           ON ENTRY, TRANSA SPECIFIES THE FORM OF OP( A ) TO BE USED IN
+C           THE MATRIX MULTIPLICATION AS FOLLOWS:
+C
+C              TRANSA = 'N' OR 'N'   OP( A ) = A.
+C
+C              TRANSA = 'T' OR 'T'   OP( A ) = A'.
+C
+C              TRANSA = 'C' OR 'C'   OP( A ) = CONJG( A' ).
+C
+C           UNCHANGED ON EXIT.
+C
+C  DIAG   - CHARACTER*1.
+C           ON ENTRY, DIAG SPECIFIES WHETHER OR NOT A IS UNIT TRIANGULAR
+C           AS FOLLOWS:
+C
+C              DIAG = 'U' OR 'U'   A IS ASSUMED TO BE UNIT TRIANGULAR.
+C
+C              DIAG = 'N' OR 'N'   A IS NOT ASSUMED TO BE UNIT
+C                                  TRIANGULAR.
+C
+C           UNCHANGED ON EXIT.
+C
+C  M      - INTEGER.
+C           ON ENTRY, M SPECIFIES THE NUMBER OF ROWS OF B. M MUST BE AT
+C           LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY, N SPECIFIES THE NUMBER OF COLUMNS OF B.  N MUST BE
+C           AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  ALPHA  - COMPLEX*16      .
+C           ON ENTRY,  ALPHA SPECIFIES THE SCALAR  ALPHA. WHEN  ALPHA IS
+C           ZERO THEN  A IS NOT REFERENCED AND  B NEED NOT BE SET BEFORE
+C           ENTRY.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, K ), WHERE K IS M
+C           WHEN  SIDE = 'L' OR 'L'  AND IS  N  WHEN  SIDE = 'R' OR 'R'.
+C           BEFORE ENTRY  WITH  UPLO = 'U' OR 'U',  THE  LEADING  K BY K
+C           UPPER TRIANGULAR PART OF THE ARRAY  A MUST CONTAIN THE UPPER
+C           TRIANGULAR MATRIX  AND THE STRICTLY LOWER TRIANGULAR PART OF
+C           A IS NOT REFERENCED.
+C           BEFORE ENTRY  WITH  UPLO = 'L' OR 'L',  THE  LEADING  K BY K
+C           LOWER TRIANGULAR PART OF THE ARRAY  A MUST CONTAIN THE LOWER
+C           TRIANGULAR MATRIX  AND THE STRICTLY UPPER TRIANGULAR PART OF
+C           A IS NOT REFERENCED.
+C           NOTE THAT WHEN  DIAG = 'U' OR 'U',  THE DIAGONAL ELEMENTS OF
+C           A  ARE NOT REFERENCED EITHER,  BUT ARE ASSUMED TO BE  UNITY.
+C           UNCHANGED ON EXIT.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM.  WHEN  SIDE = 'L' OR 'L'  THEN
+C           LDA  MUST BE AT LEAST  MAX( 1, M ),  WHEN  SIDE = 'R' OR 'R'
+C           THEN LDA MUST BE AT LEAST MAX( 1, N ).
+C           UNCHANGED ON EXIT.
+C
+C  B      - COMPLEX*16       ARRAY OF DIMENSION ( LDB, N ).
+C           BEFORE ENTRY,  THE LEADING  M BY N PART OF THE ARRAY  B MUST
+C           CONTAIN THE MATRIX  B,  AND  ON EXIT  IS OVERWRITTEN  BY THE
+C           TRANSFORMED MATRIX.
+C
+C  LDB    - INTEGER.
+C           ON ENTRY, LDB SPECIFIES THE FIRST DIMENSION OF B AS DECLARED
+C           IN  THE  CALLING  (SUB)  PROGRAM.   LDB  MUST  BE  AT  LEAST
+C           MAX( 1, M ).
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 3 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 8-FEBRUARY-1989.
+C     JACK DONGARRA, ARGONNE NATIONAL LABORATORY.
+C     IAIN DUFF, AERE HARWELL.
+C     JEREMY DU CROZ, NUMERICAL ALGORITHMS GROUP LTD.
+C     SVEN HAMMARLING, NUMERICAL ALGORITHMS GROUP LTD.
+C
+C
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          DCONJG, MAX
+C     .. LOCAL SCALARS ..
+      LOGICAL            LSIDE, NOCONJ, NOUNIT, UPPER
+      INTEGER            I, INFO, J, K, NROWA
+      COMPLEX*16         TEMP
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE
+      PARAMETER        ( ONE  = ( 1.0D+0, 0.0D+0 ) )
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      LSIDE  = LSAME( SIDE  , 'L' )
+      IF( LSIDE )THEN
+         NROWA = M
+      ELSE
+         NROWA = N
+      END IF
+      NOCONJ = LSAME( TRANSA, 'T' )
+      NOUNIT = LSAME( DIAG  , 'N' )
+      UPPER  = LSAME( UPLO  , 'U' )
+C
+      INFO   = 0
+      IF(      ( .NOT.LSIDE                ).AND.
+     $         ( .NOT.LSAME( SIDE  , 'R' ) )      )THEN
+         INFO = 1
+      ELSE IF( ( .NOT.UPPER                ).AND.
+     $         ( .NOT.LSAME( UPLO  , 'L' ) )      )THEN
+         INFO = 2
+      ELSE IF( ( .NOT.LSAME( TRANSA, 'N' ) ).AND.
+     $         ( .NOT.LSAME( TRANSA, 'T' ) ).AND.
+     $         ( .NOT.LSAME( TRANSA, 'C' ) )      )THEN
+         INFO = 3
+      ELSE IF( ( .NOT.LSAME( DIAG  , 'U' ) ).AND.
+     $         ( .NOT.LSAME( DIAG  , 'N' ) )      )THEN
+         INFO = 4
+      ELSE IF( M  .LT.0               )THEN
+         INFO = 5
+      ELSE IF( N  .LT.0               )THEN
+         INFO = 6
+      ELSE IF( LDA.LT.MAX( 1, NROWA ) )THEN
+         INFO = 9
+      ELSE IF( LDB.LT.MAX( 1, M     ) )THEN
+         INFO = 11
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZTRMM ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( N.EQ.0 )
+     $   RETURN
+C
+C     AND WHEN  ALPHA.EQ.ZERO.
+C
+      IF( ALPHA.EQ.ZERO )THEN
+         DO 20, J = 1, N
+            DO 10, I = 1, M
+               B( I, J ) = ZERO
+   10       CONTINUE
+   20    CONTINUE
+         RETURN
+      END IF
+C
+C     START THE OPERATIONS.
+C
+      IF( LSIDE )THEN
+         IF( LSAME( TRANSA, 'N' ) )THEN
+C
+C           FORM  B := ALPHA*A*B.
+C
+            IF( UPPER )THEN
+               DO 50, J = 1, N
+                  DO 40, K = 1, M
+                     IF( B( K, J ).NE.ZERO )THEN
+                        TEMP = ALPHA*B( K, J )
+                        DO 30, I = 1, K - 1
+                           B( I, J ) = B( I, J ) + TEMP*A( I, K )
+   30                   CONTINUE
+                        IF( NOUNIT )
+     $                     TEMP = TEMP*A( K, K )
+                        B( K, J ) = TEMP
+                     END IF
+   40             CONTINUE
+   50          CONTINUE
+            ELSE
+               DO 80, J = 1, N
+                  DO 70 K = M, 1, -1
+                     IF( B( K, J ).NE.ZERO )THEN
+                        TEMP      = ALPHA*B( K, J )
+                        B( K, J ) = TEMP
+                        IF( NOUNIT )
+     $                     B( K, J ) = B( K, J )*A( K, K )
+                        DO 60, I = K + 1, M
+                           B( I, J ) = B( I, J ) + TEMP*A( I, K )
+   60                   CONTINUE
+                     END IF
+   70             CONTINUE
+   80          CONTINUE
+            END IF
+         ELSE
+C
+C           FORM  B := ALPHA*B*A'   OR   B := ALPHA*B*CONJG( A' ).
+C
+            IF( UPPER )THEN
+               DO 120, J = 1, N
+                  DO 110, I = M, 1, -1
+                     TEMP = B( I, J )
+                     IF( NOCONJ )THEN
+                        IF( NOUNIT )
+     $                     TEMP = TEMP*A( I, I )
+                        DO 90, K = 1, I - 1
+                           TEMP = TEMP + A( K, I )*B( K, J )
+   90                   CONTINUE
+                     ELSE
+                        IF( NOUNIT )
+     $                     TEMP = TEMP*DCONJG( A( I, I ) )
+                        DO 100, K = 1, I - 1
+                           TEMP = TEMP + DCONJG( A( K, I ) )*B( K, J )
+  100                   CONTINUE
+                     END IF
+                     B( I, J ) = ALPHA*TEMP
+  110             CONTINUE
+  120          CONTINUE
+            ELSE
+               DO 160, J = 1, N
+                  DO 150, I = 1, M
+                     TEMP = B( I, J )
+                     IF( NOCONJ )THEN
+                        IF( NOUNIT )
+     $                     TEMP = TEMP*A( I, I )
+                        DO 130, K = I + 1, M
+                           TEMP = TEMP + A( K, I )*B( K, J )
+  130                   CONTINUE
+                     ELSE
+                        IF( NOUNIT )
+     $                     TEMP = TEMP*DCONJG( A( I, I ) )
+                        DO 140, K = I + 1, M
+                           TEMP = TEMP + DCONJG( A( K, I ) )*B( K, J )
+  140                   CONTINUE
+                     END IF
+                     B( I, J ) = ALPHA*TEMP
+  150             CONTINUE
+  160          CONTINUE
+            END IF
+         END IF
+      ELSE
+         IF( LSAME( TRANSA, 'N' ) )THEN
+C
+C           FORM  B := ALPHA*B*A.
+C
+            IF( UPPER )THEN
+               DO 200, J = N, 1, -1
+                  TEMP = ALPHA
+                  IF( NOUNIT )
+     $               TEMP = TEMP*A( J, J )
+                  DO 170, I = 1, M
+                     B( I, J ) = TEMP*B( I, J )
+  170             CONTINUE
+                  DO 190, K = 1, J - 1
+                     IF( A( K, J ).NE.ZERO )THEN
+                        TEMP = ALPHA*A( K, J )
+                        DO 180, I = 1, M
+                           B( I, J ) = B( I, J ) + TEMP*B( I, K )
+  180                   CONTINUE
+                     END IF
+  190             CONTINUE
+  200          CONTINUE
+            ELSE
+               DO 240, J = 1, N
+                  TEMP = ALPHA
+                  IF( NOUNIT )
+     $               TEMP = TEMP*A( J, J )
+                  DO 210, I = 1, M
+                     B( I, J ) = TEMP*B( I, J )
+  210             CONTINUE
+                  DO 230, K = J + 1, N
+                     IF( A( K, J ).NE.ZERO )THEN
+                        TEMP = ALPHA*A( K, J )
+                        DO 220, I = 1, M
+                           B( I, J ) = B( I, J ) + TEMP*B( I, K )
+  220                   CONTINUE
+                     END IF
+  230             CONTINUE
+  240          CONTINUE
+            END IF
+         ELSE
+C
+C           FORM  B := ALPHA*B*A'   OR   B := ALPHA*B*CONJG( A' ).
+C
+            IF( UPPER )THEN
+               DO 280, K = 1, N
+                  DO 260, J = 1, K - 1
+                     IF( A( J, K ).NE.ZERO )THEN
+                        IF( NOCONJ )THEN
+                           TEMP = ALPHA*A( J, K )
+                        ELSE
+                           TEMP = ALPHA*DCONJG( A( J, K ) )
+                        END IF
+                        DO 250, I = 1, M
+                           B( I, J ) = B( I, J ) + TEMP*B( I, K )
+  250                   CONTINUE
+                     END IF
+  260             CONTINUE
+                  TEMP = ALPHA
+                  IF( NOUNIT )THEN
+                     IF( NOCONJ )THEN
+                        TEMP = TEMP*A( K, K )
+                     ELSE
+                        TEMP = TEMP*DCONJG( A( K, K ) )
+                     END IF
+                  END IF
+                  IF( TEMP.NE.ONE )THEN
+                     DO 270, I = 1, M
+                        B( I, K ) = TEMP*B( I, K )
+  270                CONTINUE
+                  END IF
+  280          CONTINUE
+            ELSE
+               DO 320, K = N, 1, -1
+                  DO 300, J = K + 1, N
+                     IF( A( J, K ).NE.ZERO )THEN
+                        IF( NOCONJ )THEN
+                           TEMP = ALPHA*A( J, K )
+                        ELSE
+                           TEMP = ALPHA*DCONJG( A( J, K ) )
+                        END IF
+                        DO 290, I = 1, M
+                           B( I, J ) = B( I, J ) + TEMP*B( I, K )
+  290                   CONTINUE
+                     END IF
+  300             CONTINUE
+                  TEMP = ALPHA
+                  IF( NOUNIT )THEN
+                     IF( NOCONJ )THEN
+                        TEMP = TEMP*A( K, K )
+                     ELSE
+                        TEMP = TEMP*DCONJG( A( K, K ) )
+                     END IF
+                  END IF
+                  IF( TEMP.NE.ONE )THEN
+                     DO 310, I = 1, M
+                        B( I, K ) = TEMP*B( I, K )
+  310                CONTINUE
+                  END IF
+  320          CONTINUE
+            END IF
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZTRMM .
+C
+      END
+C*MODULE BLAS    *DECK ZGEMM      CALLED BY ZLARFB
+      SUBROUTINE ZGEMM ( TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB,
+     $                   BETA, C, LDC )
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER*1        TRANSA, TRANSB
+      INTEGER            M, N, K, LDA, LDB, LDC
+      COMPLEX*16         ALPHA, BETA
+C     .. ARRAY ARGUMENTS ..
+      COMPLEX*16         A( LDA, * ), B( LDB, * ), C( LDC, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  ZGEMM  PERFORMS ONE OF THE MATRIX-MATRIX OPERATIONS
+C
+C     C := ALPHA*OP( A )*OP( B ) + BETA*C,
+C
+C  WHERE  OP( X ) IS ONE OF
+C
+C     OP( X ) = X   OR   OP( X ) = X'   OR   OP( X ) = CONJG( X' ),
+C
+C  ALPHA AND BETA ARE SCALARS, AND A, B AND C ARE MATRICES, WITH OP( A )
+C  AN M BY K MATRIX,  OP( B )  A  K BY N MATRIX AND  C AN M BY N MATRIX.
+C
+C  PARAMETERS
+C  ==========
+C
+C  TRANSA - CHARACTER*1.
+C           ON ENTRY, TRANSA SPECIFIES THE FORM OF OP( A ) TO BE USED IN
+C           THE MATRIX MULTIPLICATION AS FOLLOWS:
+C
+C              TRANSA = 'N' OR 'N',  OP( A ) = A.
+C
+C              TRANSA = 'T' OR 'T',  OP( A ) = A'.
+C
+C              TRANSA = 'C' OR 'C',  OP( A ) = CONJG( A' ).
+C
+C           UNCHANGED ON EXIT.
+C
+C  TRANSB - CHARACTER*1.
+C           ON ENTRY, TRANSB SPECIFIES THE FORM OF OP( B ) TO BE USED IN
+C           THE MATRIX MULTIPLICATION AS FOLLOWS:
+C
+C              TRANSB = 'N' OR 'N',  OP( B ) = B.
+C
+C              TRANSB = 'T' OR 'T',  OP( B ) = B'.
+C
+C              TRANSB = 'C' OR 'C',  OP( B ) = CONJG( B' ).
+C
+C           UNCHANGED ON EXIT.
+C
+C  M      - INTEGER.
+C           ON ENTRY,  M  SPECIFIES  THE NUMBER  OF ROWS  OF THE  MATRIX
+C           OP( A )  AND OF THE  MATRIX  C.  M  MUST  BE AT LEAST  ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  N      - INTEGER.
+C           ON ENTRY,  N  SPECIFIES THE NUMBER  OF COLUMNS OF THE MATRIX
+C           OP( B ) AND THE NUMBER OF COLUMNS OF THE MATRIX C. N MUST BE
+C           AT LEAST ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  K      - INTEGER.
+C           ON ENTRY,  K  SPECIFIES  THE NUMBER OF COLUMNS OF THE MATRIX
+C           OP( A ) AND THE NUMBER OF ROWS OF THE MATRIX OP( B ). K MUST
+C           BE AT LEAST  ZERO.
+C           UNCHANGED ON EXIT.
+C
+C  ALPHA  - COMPLEX*16      .
+C           ON ENTRY, ALPHA SPECIFIES THE SCALAR ALPHA.
+C           UNCHANGED ON EXIT.
+C
+C  A      - COMPLEX*16       ARRAY OF DIMENSION ( LDA, KA ), WHERE KA IS
+C           K  WHEN  TRANSA = 'N' OR 'N',  AND IS  M  OTHERWISE.
+C           BEFORE ENTRY WITH  TRANSA = 'N' OR 'N',  THE LEADING  M BY K
+C           PART OF THE ARRAY  A  MUST CONTAIN THE MATRIX  A,  OTHERWISE
+C           THE LEADING  K BY M  PART OF THE ARRAY  A  MUST CONTAIN  THE
+C           MATRIX A.
+C           UNCHANGED ON EXIT.
+C
+C  LDA    - INTEGER.
+C           ON ENTRY, LDA SPECIFIES THE FIRST DIMENSION OF A AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM. WHEN  TRANSA = 'N' OR 'N' THEN
+C           LDA MUST BE AT LEAST  MAX( 1, M ), OTHERWISE  LDA MUST BE AT
+C           LEAST  MAX( 1, K ).
+C           UNCHANGED ON EXIT.
+C
+C  B      - COMPLEX*16       ARRAY OF DIMENSION ( LDB, KB ), WHERE KB IS
+C           N  WHEN  TRANSB = 'N' OR 'N',  AND IS  K  OTHERWISE.
+C           BEFORE ENTRY WITH  TRANSB = 'N' OR 'N',  THE LEADING  K BY N
+C           PART OF THE ARRAY  B  MUST CONTAIN THE MATRIX  B,  OTHERWISE
+C           THE LEADING  N BY K  PART OF THE ARRAY  B  MUST CONTAIN  THE
+C           MATRIX B.
+C           UNCHANGED ON EXIT.
+C
+C  LDB    - INTEGER.
+C           ON ENTRY, LDB SPECIFIES THE FIRST DIMENSION OF B AS DECLARED
+C           IN THE CALLING (SUB) PROGRAM. WHEN  TRANSB = 'N' OR 'N' THEN
+C           LDB MUST BE AT LEAST  MAX( 1, K ), OTHERWISE  LDB MUST BE AT
+C           LEAST  MAX( 1, N ).
+C           UNCHANGED ON EXIT.
+C
+C  BETA   - COMPLEX*16      .
+C           ON ENTRY,  BETA  SPECIFIES THE SCALAR  BETA.  WHEN  BETA  IS
+C           SUPPLIED AS ZERO THEN C NEED NOT BE SET ON INPUT.
+C           UNCHANGED ON EXIT.
+C
+C  C      - COMPLEX*16       ARRAY OF DIMENSION ( LDC, N ).
+C           BEFORE ENTRY, THE LEADING  M BY N  PART OF THE ARRAY  C MUST
+C           CONTAIN THE MATRIX  C,  EXCEPT WHEN  BETA  IS ZERO, IN WHICH
+C           CASE C NEED NOT BE SET ON ENTRY.
+C           ON EXIT, THE ARRAY  C  IS OVERWRITTEN BY THE  M BY N  MATRIX
+C           ( ALPHA*OP( A )*OP( B ) + BETA*C ).
+C
+C  LDC    - INTEGER.
+C           ON ENTRY, LDC SPECIFIES THE FIRST DIMENSION OF C AS DECLARED
+C           IN  THE  CALLING  (SUB)  PROGRAM.   LDC  MUST  BE  AT  LEAST
+C           MAX( 1, M ).
+C           UNCHANGED ON EXIT.
+C
+C
+C  LEVEL 3 BLAS ROUTINE.
+C
+C  -- WRITTEN ON 8-FEBRUARY-1989.
+C     JACK DONGARRA, ARGONNE NATIONAL LABORATORY.
+C     IAIN DUFF, AERE HARWELL.
+C     JEREMY DU CROZ, NUMERICAL ALGORITHMS GROUP LTD.
+C     SVEN HAMMARLING, NUMERICAL ALGORITHMS GROUP LTD.
+C
+C
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     .. EXTERNAL SUBROUTINES ..
+      EXTERNAL           XERBLA
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          DCONJG, MAX
+C     .. LOCAL SCALARS ..
+      LOGICAL            CONJA, CONJB, NOTA, NOTB
+      INTEGER            I, INFO, J, L, NROWA, NROWB
+      COMPLEX*16         TEMP
+C     .. PARAMETERS ..
+      COMPLEX*16         ONE
+      PARAMETER        ( ONE  = ( 1.0D+0, 0.0D+0 ) )
+      COMPLEX*16         ZERO
+      PARAMETER        ( ZERO = ( 0.0D+0, 0.0D+0 ) )
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     SET  NOTA  AND  NOTB  AS  TRUE IF  A  AND  B  RESPECTIVELY ARE NOT
+C     CONJUGATED OR TRANSPOSED, SET  CONJA AND CONJB  AS TRUE IF  A  AND
+C     B  RESPECTIVELY ARE TO BE  TRANSPOSED BUT  NOT CONJUGATED  AND SET
+C     NROWA, NROWB  AS THE NUMBER OF ROWS OF  A AND B RESPECTIVELY.
+C
+      NOTA  = LSAME( TRANSA, 'N' )
+      NOTB  = LSAME( TRANSB, 'N' )
+      CONJA = LSAME( TRANSA, 'C' )
+      CONJB = LSAME( TRANSB, 'C' )
+      IF( NOTA )THEN
+         NROWA = M
+      ELSE
+         NROWA = K
+      END IF
+      IF( NOTB )THEN
+         NROWB = K
+      ELSE
+         NROWB = N
+      END IF
+C
+C     TEST THE INPUT PARAMETERS.
+C
+      INFO = 0
+      IF(      ( .NOT.NOTA                 ).AND.
+     $         ( .NOT.CONJA                ).AND.
+     $         ( .NOT.LSAME( TRANSA, 'T' ) )      )THEN
+         INFO = 1
+      ELSE IF( ( .NOT.NOTB                 ).AND.
+     $         ( .NOT.CONJB                ).AND.
+     $         ( .NOT.LSAME( TRANSB, 'T' ) )      )THEN
+         INFO = 2
+      ELSE IF( M  .LT.0               )THEN
+         INFO = 3
+      ELSE IF( N  .LT.0               )THEN
+         INFO = 4
+      ELSE IF( K  .LT.0               )THEN
+         INFO = 5
+      ELSE IF( LDA.LT.MAX( 1, NROWA ) )THEN
+         INFO = 8
+      ELSE IF( LDB.LT.MAX( 1, NROWB ) )THEN
+         INFO = 10
+      ELSE IF( LDC.LT.MAX( 1, M     ) )THEN
+         INFO = 13
+      END IF
+      IF( INFO.NE.0 )THEN
+         CALL XERBLA( 'ZGEMM ', INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( ( M.EQ.0 ).OR.( N.EQ.0 ).OR.
+     $    ( ( ( ALPHA.EQ.ZERO ).OR.( K.EQ.0 ) ).AND.( BETA.EQ.ONE ) ) )
+     $   RETURN
+C
+C     AND WHEN  ALPHA.EQ.ZERO.
+C
+      IF( ALPHA.EQ.ZERO )THEN
+         IF( BETA.EQ.ZERO )THEN
+            DO 20, J = 1, N
+               DO 10, I = 1, M
+                  C( I, J ) = ZERO
+   10          CONTINUE
+   20       CONTINUE
+         ELSE
+            DO 40, J = 1, N
+               DO 30, I = 1, M
+                  C( I, J ) = BETA*C( I, J )
+   30          CONTINUE
+   40       CONTINUE
+         END IF
+         RETURN
+      END IF
+C
+C     START THE OPERATIONS.
+C
+      IF( NOTB )THEN
+         IF( NOTA )THEN
+C
+C           FORM  C := ALPHA*A*B + BETA*C.
+C
+            DO 90, J = 1, N
+               IF( BETA.EQ.ZERO )THEN
+                  DO 50, I = 1, M
+                     C( I, J ) = ZERO
+   50             CONTINUE
+               ELSE IF( BETA.NE.ONE )THEN
+                  DO 60, I = 1, M
+                     C( I, J ) = BETA*C( I, J )
+   60             CONTINUE
+               END IF
+               DO 80, L = 1, K
+                  IF( B( L, J ).NE.ZERO )THEN
+                     TEMP = ALPHA*B( L, J )
+                     DO 70, I = 1, M
+                        C( I, J ) = C( I, J ) + TEMP*A( I, L )
+   70                CONTINUE
+                  END IF
+   80          CONTINUE
+   90       CONTINUE
+         ELSE IF( CONJA )THEN
+C
+C           FORM  C := ALPHA*CONJG( A' )*B + BETA*C.
+C
+            DO 120, J = 1, N
+               DO 110, I = 1, M
+                  TEMP = ZERO
+                  DO 100, L = 1, K
+                     TEMP = TEMP + DCONJG( A( L, I ) )*B( L, J )
+  100             CONTINUE
+                  IF( BETA.EQ.ZERO )THEN
+                     C( I, J ) = ALPHA*TEMP
+                  ELSE
+                     C( I, J ) = ALPHA*TEMP + BETA*C( I, J )
+                  END IF
+  110          CONTINUE
+  120       CONTINUE
+         ELSE
+C
+C           FORM  C := ALPHA*A'*B + BETA*C
+C
+            DO 150, J = 1, N
+               DO 140, I = 1, M
+                  TEMP = ZERO
+                  DO 130, L = 1, K
+                     TEMP = TEMP + A( L, I )*B( L, J )
+  130             CONTINUE
+                  IF( BETA.EQ.ZERO )THEN
+                     C( I, J ) = ALPHA*TEMP
+                  ELSE
+                     C( I, J ) = ALPHA*TEMP + BETA*C( I, J )
+                  END IF
+  140          CONTINUE
+  150       CONTINUE
+         END IF
+      ELSE IF( NOTA )THEN
+         IF( CONJB )THEN
+C
+C           FORM  C := ALPHA*A*CONJG( B' ) + BETA*C.
+C
+            DO 200, J = 1, N
+               IF( BETA.EQ.ZERO )THEN
+                  DO 160, I = 1, M
+                     C( I, J ) = ZERO
+  160             CONTINUE
+               ELSE IF( BETA.NE.ONE )THEN
+                  DO 170, I = 1, M
+                     C( I, J ) = BETA*C( I, J )
+  170             CONTINUE
+               END IF
+               DO 190, L = 1, K
+                  IF( B( J, L ).NE.ZERO )THEN
+                     TEMP = ALPHA*DCONJG( B( J, L ) )
+                     DO 180, I = 1, M
+                        C( I, J ) = C( I, J ) + TEMP*A( I, L )
+  180                CONTINUE
+                  END IF
+  190          CONTINUE
+  200       CONTINUE
+         ELSE
+C
+C           FORM  C := ALPHA*A*B'          + BETA*C
+C
+            DO 250, J = 1, N
+               IF( BETA.EQ.ZERO )THEN
+                  DO 210, I = 1, M
+                     C( I, J ) = ZERO
+  210             CONTINUE
+               ELSE IF( BETA.NE.ONE )THEN
+                  DO 220, I = 1, M
+                     C( I, J ) = BETA*C( I, J )
+  220             CONTINUE
+               END IF
+               DO 240, L = 1, K
+                  IF( B( J, L ).NE.ZERO )THEN
+                     TEMP = ALPHA*B( J, L )
+                     DO 230, I = 1, M
+                        C( I, J ) = C( I, J ) + TEMP*A( I, L )
+  230                CONTINUE
+                  END IF
+  240          CONTINUE
+  250       CONTINUE
+         END IF
+      ELSE IF( CONJA )THEN
+         IF( CONJB )THEN
+C
+C           FORM  C := ALPHA*CONJG( A' )*CONJG( B' ) + BETA*C.
+C
+            DO 280, J = 1, N
+               DO 270, I = 1, M
+                  TEMP = ZERO
+                  DO 260, L = 1, K
+                     TEMP = TEMP +
+     $                      DCONJG( A( L, I ) )*DCONJG( B( J, L ) )
+  260             CONTINUE
+                  IF( BETA.EQ.ZERO )THEN
+                     C( I, J ) = ALPHA*TEMP
+                  ELSE
+                     C( I, J ) = ALPHA*TEMP + BETA*C( I, J )
+                  END IF
+  270          CONTINUE
+  280       CONTINUE
+         ELSE
+C
+C           FORM  C := ALPHA*CONJG( A' )*B' + BETA*C
+C
+            DO 310, J = 1, N
+               DO 300, I = 1, M
+                  TEMP = ZERO
+                  DO 290, L = 1, K
+                     TEMP = TEMP + DCONJG( A( L, I ) )*B( J, L )
+  290             CONTINUE
+                  IF( BETA.EQ.ZERO )THEN
+                     C( I, J ) = ALPHA*TEMP
+                  ELSE
+                     C( I, J ) = ALPHA*TEMP + BETA*C( I, J )
+                  END IF
+  300          CONTINUE
+  310       CONTINUE
+         END IF
+      ELSE
+         IF( CONJB )THEN
+C
+C           FORM  C := ALPHA*A'*CONJG( B' ) + BETA*C
+C
+            DO 340, J = 1, N
+               DO 330, I = 1, M
+                  TEMP = ZERO
+                  DO 320, L = 1, K
+                     TEMP = TEMP + A( L, I )*DCONJG( B( J, L ) )
+  320             CONTINUE
+                  IF( BETA.EQ.ZERO )THEN
+                     C( I, J ) = ALPHA*TEMP
+                  ELSE
+                     C( I, J ) = ALPHA*TEMP + BETA*C( I, J )
+                  END IF
+  330          CONTINUE
+  340       CONTINUE
+         ELSE
+C
+C           FORM  C := ALPHA*A'*B' + BETA*C
+C
+            DO 370, J = 1, N
+               DO 360, I = 1, M
+                  TEMP = ZERO
+                  DO 350, L = 1, K
+                     TEMP = TEMP + A( L, I )*B( J, L )
+  350             CONTINUE
+                  IF( BETA.EQ.ZERO )THEN
+                     C( I, J ) = ALPHA*TEMP
+                  ELSE
+                     C( I, J ) = ALPHA*TEMP + BETA*C( I, J )
+                  END IF
+  360          CONTINUE
+  370       CONTINUE
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF ZGEMM .
+C
+      END
+C*MODULE BLAS    *DECK ZSWAP      CALLED BY ZSTEQR
+      SUBROUTINE  ZSWAP (N,ZX,INCX,ZY,INCY)
+C
+C     INTERCHANGES TWO VECTORS.
+C     JACK DONGARRA, 3/11/78.
+C
+      COMPLEX*16 ZX(1),ZY(1),ZTEMP
+      INTEGER I,INCX,INCY,IX,IY,N
+C
+      IF(N.LE.0)RETURN
+      IF(INCX.EQ.1.AND.INCY.EQ.1)GO TO 20
+C
+C       CODE FOR UNEQUAL INCREMENTS OR EQUAL INCREMENTS NOT EQUAL
+C         TO 1
+C
+      IX = 1
+      IY = 1
+      IF(INCX.LT.0)IX = (-N+1)*INCX + 1
+      IF(INCY.LT.0)IY = (-N+1)*INCY + 1
+      DO 10 I = 1,N
+        ZTEMP = ZX(IX)
+        ZX(IX) = ZY(IY)
+        ZY(IY) = ZTEMP
+        IX = IX + INCX
+        IY = IY + INCY
+   10 CONTINUE
+      RETURN
+C
+C       CODE FOR BOTH INCREMENTS EQUAL TO 1
+   20 DO 30 I = 1,N
+        ZTEMP = ZX(I)
+        ZX(I) = ZY(I)
+        ZY(I) = ZTEMP
+   30 CONTINUE
+      RETURN
+      END
+C*MODULE BLAS    *DECK ZDOTC
+      COMPLEX*16 FUNCTION ZDOTC(N,ZX,INCX,ZY,INCY)
+C
+C     FORMS THE DOT PRODUCT OF A VECTOR.
+C     JACK DONGARRA, 3/11/78.
+C
+      COMPLEX*16 ZX(1),ZY(1),ZTEMP
+      INTEGER I,INCX,INCY,IX,IY,N
+      ZTEMP = (0.0D+0,0.0D+0)
+      ZDOTC = (0.0D+0,0.0D+0)
+      IF(N.LE.0)RETURN
+      IF(INCX.EQ.1.AND.INCY.EQ.1)GO TO 20
+C
+C        CODE FOR UNEQUAL INCREMENTS OR EQUAL INCREMENTS
+C          NOT EQUAL TO 1
+C
+      IX = 1
+      IY = 1
+      IF(INCX.LT.0)IX = (-N+1)*INCX + 1
+      IF(INCY.LT.0)IY = (-N+1)*INCY + 1
+      DO 10 I = 1,N
+        ZTEMP = ZTEMP + DCONJG(ZX(IX))*ZY(IY)
+        IX = IX + INCX
+        IY = IY + INCY
+   10 CONTINUE
+      ZDOTC = ZTEMP
+      RETURN
+C
+C        CODE FOR BOTH INCREMENTS EQUAL TO 1
+C
+   20 DO 30 I = 1,N
+        ZTEMP = ZTEMP + DCONJG(ZX(I))*ZY(I)
+   30 CONTINUE
+      ZDOTC = ZTEMP
+      RETURN
+      END
+#if defined(SPEC_CPU)
+      DOUBLE PRECISION FUNCTION DZNRM2( N, ZX, INCX)
+      LOGICAL IMAG, SCALE
+      INTEGER I, INCX, IX, N, NEXT
+      DOUBLE PRECISION CUTLO, CUTHI, HITEST, SUM, XMAX, ABSX, ZERO, ONE
+      COMPLEX*16      ZX(1)
+      DOUBLE PRECISION DREAL,DIMAG
+      DATA         ZERO, ONE /0.0D+0, 1.0D+0/
+C
+C     UNITARY NORM OF THE COMPLEX N-VECTOR STORED IN ZX() WITH STORAGE
+C     INCREMENT INCX .
+C     IF    N .LE. 0 RETURN WITH RESULT = 0.
+C     IF N .GE. 1 THEN INCX MUST BE .GE. 1
+C
+C           C.L.LAWSON , 1978 JAN 08
+C     MODIFIED 3/93 TO RETURN IF INCX .LE. 0.
+C
+C     FOUR PHASE METHOD     USING TWO BUILT-IN CONSTANTS THAT ARE
+C     HOPEFULLY APPLICABLE TO ALL MACHINES.
+C         CUTLO = MAXIMUM OF  SQRT(U/EPS)  OVER ALL KNOWN MACHINES.
+C         CUTHI = MINIMUM OF  SQRT(V)      OVER ALL KNOWN MACHINES.
+C     WHERE
+C         EPS = SMALLEST NO. SUCH THAT EPS + 1. .GT. 1.
+C         U   = SMALLEST POSITIVE NO.   (UNDERFLOW LIMIT)
+C         V   = LARGEST  NO.            (OVERFLOW  LIMIT)
+C
+C     BRIEF OUTLINE OF ALGORITHM..
+C
+C     PHASE 1    SCANS ZERO COMPONENTS.
+C     MOVE TO PHASE 2 WHEN A COMPONENT IS NONZERO AND .LE. CUTLO
+C     MOVE TO PHASE 3 WHEN A COMPONENT IS .GT. CUTLO
+C     MOVE TO PHASE 4 WHEN A COMPONENT IS .GE. CUTHI/M
+C     WHERE M = N FOR X() REAL AND M = 2*N FOR COMPLEX.
+C
+C     VALUES FOR CUTLO AND CUTHI..
+C     FROM THE ENVIRONMENTAL PARAMETERS LISTED IN THE IMSL CONVERTER
+C     DOCUMENT THE LIMITING VALUES ARE AS FOLLOWS..
+C     CUTLO, S.P.   U/EPS = 2**(-102) FOR  HONEYWELL.  CLOSE SECONDS ARE
+C                   UNIVAC AND DEC AT 2**(-103)
+C                   THUS CUTLO = 2**(-51) = 4.44089E-16
+C     CUTHI, S.P.   V = 2**127 FOR UNIVAC, HONEYWELL, AND DEC.
+C                   THUS CUTHI = 2**(63.5) = 1.30438E19
+C     CUTLO, D.P.   U/EPS = 2**(-67) FOR HONEYWELL AND DEC.
+C                   THUS CUTLO = 2**(-33.5) = 8.23181D-11
+C     CUTHI, D.P.   SAME AS S.P.  CUTHI = 1.30438D19
+C     DATA CUTLO, CUTHI / 8.232D-11,  1.304D19 /
+C     DATA CUTLO, CUTHI / 4.441E-16,  1.304E19 /
+      DATA CUTLO, CUTHI / 8.232D-11,  1.304D19 /
+C
+      IF(N .GT. 0 .AND. INCX.GT.0) GO TO 10
+         DZNRM2  = ZERO
+         GO TO 300
+C
+C old code... 
+C  10 ASSIGN 30 TO NEXT
+C ... replaced by new code
+   10 NEXT = 30
+C end of replacement
+      SUM = ZERO
+      I = 1
+C                                                 BEGIN MAIN LOOP
+      DO 220 IX = 1,N
+         ABSX = ABS(DBLE(ZX(I)))
+         IMAG = .FALSE.
+C old code... 
+C        GO TO NEXT,(30, 50, 70, 90, 110)
+C ... replaced by new code
+         IF (NEXT .EQ. 30) THEN
+            GOTO 30
+         ELSE IF (NEXT .EQ. 50) THEN
+            GOTO 50
+         ELSE IF (NEXT .EQ. 70) THEN
+            GOTO 70
+         ELSE IF (NEXT .EQ. 90) THEN
+            GOTO 90
+         ELSE IF (NEXT .EQ. 110) THEN
+            GOTO 110
+         END IF
+C end of replacement
+   30 IF( ABSX .GT. CUTLO) GO TO 85
+C old code... 
+C     ASSIGN 50 TO NEXT
+C ... replaced by new code
+      NEXT = 50
+C end of replacement
+      SCALE = .FALSE.
+C
+C                        PHASE 1.  SUM IS ZERO
+C
+   50 IF( ABSX .EQ. ZERO) GO TO 200
+      IF( ABSX .GT. CUTLO) GO TO 85
+C
+C                                PREPARE FOR PHASE 2.
+C old code... 
+C     ASSIGN 70 TO NEXT
+C ... replaced by new code
+      NEXT = 70
+C end of replacement
+      GO TO 105
+C
+C                                PREPARE FOR PHASE 4.
+C
+C old code... 
+C 100 ASSIGN 110 TO NEXT
+C ... replaced by new code
+  100 NEXT = 110
+C end of replacement
+      SUM = (SUM / ABSX) / ABSX
+  105 SCALE = .TRUE.
+      XMAX = ABSX
+      GO TO 115
+C
+C                   PHASE 2.  SUM IS SMALL.
+C                             SCALE TO AVOID DESTRUCTIVE UNDERFLOW.
+C
+   70 IF( ABSX .GT. CUTLO ) GO TO 75
+C
+C                     COMMON CODE FOR PHASES 2 AND 4.
+C                     IN PHASE 4 SUM IS LARGE.  SCALE TO AVOID OVERFLOW.
+C
+  110 IF( ABSX .LE. XMAX ) GO TO 115
+         SUM = ONE + SUM * (XMAX / ABSX)**2
+         XMAX = ABSX
+         GO TO 200
+C
+  115 SUM = SUM + (ABSX/XMAX)**2
+      GO TO 200
+C
+C
+C                  PREPARE FOR PHASE 3.
+C
+   75 SUM = (SUM * XMAX) * XMAX
+C
+C old code... 
+C  85 ASSIGN 90 TO NEXT
+C ... replaced by new code
+   85 NEXT = 90
+C end of replacement
+      SCALE = .FALSE.
+C
+C     FOR REAL OR D.P. SET HITEST = CUTHI/N
+C     FOR COMPLEX      SET HITEST = CUTHI/(2*N)
+C
+      HITEST = CUTHI/(2*N)
+C
+C                   PHASE 3.  SUM IS MID-RANGE.  NO SCALING.
+C
+   90 IF(ABSX .GE. HITEST) GO TO 100
+         SUM = SUM + ABSX**2
+  200 CONTINUE
+C                  CONTROL SELECTION OF REAL AND IMAGINARY PARTS.
+C
+      IF(IMAG) GO TO 210
+         ABSX = ABS(DIMAG(ZX(I)))
+         IMAG = .TRUE.
+C old code... 
+C     GO TO NEXT,(  50, 70, 90, 110 )
+C ... replaced by new code
+      IF (NEXT .EQ. 50) THEN
+         GOTO 50
+      ELSE IF (NEXT .EQ. 70) THEN
+         GOTO 70
+      ELSE IF (NEXT .EQ. 90) THEN
+         GOTO 90
+      ELSE IF (NEXT .EQ. 110) THEN
+         GOTO 110
+      END IF
+C end of replacement
+C
+  210 CONTINUE
+      I = I + INCX
+  220 CONTINUE
+C
+C              END OF MAIN LOOP.
+C              COMPUTE SQUARE ROOT AND ADJUST FOR SCALING.
+C
+      DZNRM2 = SQRT(SUM)
+      IF(SCALE) DZNRM2 = DZNRM2 * XMAX
+  300 CONTINUE
+      RETURN
+      END
+#else
+C*MODULE BLAS    *DECK DZNRM2
+      DOUBLE PRECISION FUNCTION DZNRM2( N, ZX, INCX)
+      LOGICAL IMAG, SCALE
+      INTEGER I, INCX, IX, N, NEXT
+      DOUBLE PRECISION CUTLO, CUTHI, HITEST, SUM, XMAX, ABSX, ZERO, ONE
+      COMPLEX*16      ZX(1)
+      DOUBLE PRECISION DREAL,DIMAG
+      DATA         ZERO, ONE /0.0D+0, 1.0D+0/
+C
+C     UNITARY NORM OF THE COMPLEX N-VECTOR STORED IN ZX() WITH STORAGE
+C     INCREMENT INCX .
+C     IF    N .LE. 0 RETURN WITH RESULT = 0.
+C     IF N .GE. 1 THEN INCX MUST BE .GE. 1
+C
+C           C.L.LAWSON , 1978 JAN 08
+C     MODIFIED 3/93 TO RETURN IF INCX .LE. 0.
+C
+C     FOUR PHASE METHOD     USING TWO BUILT-IN CONSTANTS THAT ARE
+C     HOPEFULLY APPLICABLE TO ALL MACHINES.
+C         CUTLO = MAXIMUM OF  SQRT(U/EPS)  OVER ALL KNOWN MACHINES.
+C         CUTHI = MINIMUM OF  SQRT(V)      OVER ALL KNOWN MACHINES.
+C     WHERE
+C         EPS = SMALLEST NO. SUCH THAT EPS + 1. .GT. 1.
+C         U   = SMALLEST POSITIVE NO.   (UNDERFLOW LIMIT)
+C         V   = LARGEST  NO.            (OVERFLOW  LIMIT)
+C
+C     BRIEF OUTLINE OF ALGORITHM..
+C
+C     PHASE 1    SCANS ZERO COMPONENTS.
+C     MOVE TO PHASE 2 WHEN A COMPONENT IS NONZERO AND .LE. CUTLO
+C     MOVE TO PHASE 3 WHEN A COMPONENT IS .GT. CUTLO
+C     MOVE TO PHASE 4 WHEN A COMPONENT IS .GE. CUTHI/M
+C     WHERE M = N FOR X() REAL AND M = 2*N FOR COMPLEX.
+C
+C     VALUES FOR CUTLO AND CUTHI..
+C     FROM THE ENVIRONMENTAL PARAMETERS LISTED IN THE IMSL CONVERTER
+C     DOCUMENT THE LIMITING VALUES ARE AS FOLLOWS..
+C     CUTLO, S.P.   U/EPS = 2**(-102) FOR  HONEYWELL.  CLOSE SECONDS ARE
+C                   UNIVAC AND DEC AT 2**(-103)
+C                   THUS CUTLO = 2**(-51) = 4.44089E-16
+C     CUTHI, S.P.   V = 2**127 FOR UNIVAC, HONEYWELL, AND DEC.
+C                   THUS CUTHI = 2**(63.5) = 1.30438E19
+C     CUTLO, D.P.   U/EPS = 2**(-67) FOR HONEYWELL AND DEC.
+C                   THUS CUTLO = 2**(-33.5) = 8.23181D-11
+C     CUTHI, D.P.   SAME AS S.P.  CUTHI = 1.30438D19
+C     DATA CUTLO, CUTHI / 8.232D-11,  1.304D19 /
+C     DATA CUTLO, CUTHI / 4.441E-16,  1.304E19 /
+      DATA CUTLO, CUTHI / 8.232D-11,  1.304D19 /
+C
+      IF(N .GT. 0 .AND. INCX.GT.0) GO TO 10
+         DZNRM2  = ZERO
+         GO TO 300
+C
+   10 ASSIGN 30 TO NEXT
+      SUM = ZERO
+      I = 1
+C                                                 BEGIN MAIN LOOP
+      DO 220 IX = 1,N
+         ABSX = ABS(DBLE(ZX(I)))
+         IMAG = .FALSE.
+         GO TO NEXT,(30, 50, 70, 90, 110)
+   30 IF( ABSX .GT. CUTLO) GO TO 85
+      ASSIGN 50 TO NEXT
+      SCALE = .FALSE.
+C
+C                        PHASE 1.  SUM IS ZERO
+C
+   50 IF( ABSX .EQ. ZERO) GO TO 200
+      IF( ABSX .GT. CUTLO) GO TO 85
+C
+C                                PREPARE FOR PHASE 2.
+      ASSIGN 70 TO NEXT
+      GO TO 105
+C
+C                                PREPARE FOR PHASE 4.
+C
+  100 ASSIGN 110 TO NEXT
+      SUM = (SUM / ABSX) / ABSX
+  105 SCALE = .TRUE.
+      XMAX = ABSX
+      GO TO 115
+C
+C                   PHASE 2.  SUM IS SMALL.
+C                             SCALE TO AVOID DESTRUCTIVE UNDERFLOW.
+C
+   70 IF( ABSX .GT. CUTLO ) GO TO 75
+C
+C                     COMMON CODE FOR PHASES 2 AND 4.
+C                     IN PHASE 4 SUM IS LARGE.  SCALE TO AVOID OVERFLOW.
+C
+  110 IF( ABSX .LE. XMAX ) GO TO 115
+         SUM = ONE + SUM * (XMAX / ABSX)**2
+         XMAX = ABSX
+         GO TO 200
+C
+  115 SUM = SUM + (ABSX/XMAX)**2
+      GO TO 200
+C
+C
+C                  PREPARE FOR PHASE 3.
+C
+   75 SUM = (SUM * XMAX) * XMAX
+C
+   85 ASSIGN 90 TO NEXT
+      SCALE = .FALSE.
+C
+C     FOR REAL OR D.P. SET HITEST = CUTHI/N
+C     FOR COMPLEX      SET HITEST = CUTHI/(2*N)
+C
+      HITEST = CUTHI/(2*N)
+C
+C                   PHASE 3.  SUM IS MID-RANGE.  NO SCALING.
+C
+   90 IF(ABSX .GE. HITEST) GO TO 100
+         SUM = SUM + ABSX**2
+  200 CONTINUE
+C                  CONTROL SELECTION OF REAL AND IMAGINARY PARTS.
+C
+      IF(IMAG) GO TO 210
+         ABSX = ABS(DIMAG(ZX(I)))
+         IMAG = .TRUE.
+      GO TO NEXT,(  50, 70, 90, 110 )
+C
+  210 CONTINUE
+      I = I + INCX
+  220 CONTINUE
+C
+C              END OF MAIN LOOP.
+C              COMPUTE SQUARE ROOT AND ADJUST FOR SCALING.
+C
+      DZNRM2 = SQRT(SUM)
+      IF(SCALE) DZNRM2 = DZNRM2 * XMAX
+  300 CONTINUE
+      RETURN
+      END
+#endif
+C*MODULE BLAS    *DECK DCABS1
+      DOUBLE PRECISION FUNCTION DCABS1(Z)
+      COMPLEX*16 Z,ZZ
+      DOUBLE PRECISION T(2)
+      EQUIVALENCE (ZZ,T(1))
+      ZZ = Z
+      DCABS1 = ABS(T(1)) + ABS(T(2))
+      RETURN
+      END

@@ -1,0 +1,3 @@
+build_base_elider-amd64-m64-gcc42-nn.0000 dir=/var/services/homes/spparmar/spec2006/benchspec/CPU2006/470.lbm/run/build_base_elider-amd64-m64-gcc42-nn.0000 ext=elider-amd64-m64-gcc42-nn lock=0 tune=base type=build username=root
+run_base_test_elider-amd64-m64-gcc42-nn.0000 dir=/var/services/homes/spparmar/spec2006/benchspec/CPU2006/470.lbm/run/run_base_test_elider-amd64-m64-gcc42-nn.0000 ext=elider-amd64-m64-gcc42-nn lock=0 mach=default size=test tune=base type=run username=root
+__END__

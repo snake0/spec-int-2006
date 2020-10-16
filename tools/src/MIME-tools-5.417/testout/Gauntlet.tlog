@@ -1,0 +1,191 @@
+1..63
+
+1: ::GOUT, ent->print [43-712 == 669]
+1: ok 1
+
+2: ::GOUT, print ent->as_string [765-1434]
+2: ok 2
+
+3: ::GOUT, ent->print_header: 
+3: ok 3
+
+4: ::GOUT, ent->print_body: 
+4: ok 4
+
+5: ::GOUT, ent->bodyhandle->print: 
+5: ok 5
+
+6: ::GOUT, print ent->bodyhandle->data: 
+6: ok 6
+
+7: BARE FH:    size ./testout/gauntlet.out (3201) == 3201?
+7: ok 7
+
+8: GLOB(0x2495df0), ent->print [43-712 == 669]
+8: ok 8
+
+9: GLOB(0x2495df0), print ent->as_string [765-1434]
+9: ok 9
+
+10: GLOB(0x2495df0), ent->print_header: 
+10: ok 10
+
+11: GLOB(0x2495df0), ent->print_body: 
+11: ok 11
+
+12: GLOB(0x2495df0), ent->bodyhandle->print: 
+12: ok 12
+
+13: GLOB(0x2495df0), print ent->bodyhandle->data: 
+13: ok 13
+
+14: GLOB ref:   size ./testout/gauntlet.out (3201) == 3201?
+14: ok 14
+
+15: FileHandle=GLOB(0x249ef40), ent->print [43-712 == 669]
+15: ok 15
+
+16: FileHandle=GLOB(0x249ef40), print ent->as_string [765-1434]
+16: ok 16
+
+17: FileHandle=GLOB(0x249ef40), ent->print_header: 
+17: ok 17
+
+18: FileHandle=GLOB(0x249ef40), ent->print_body: 
+18: ok 18
+
+19: FileHandle=GLOB(0x249ef40), ent->bodyhandle->print: 
+19: ok 19
+
+20: FileHandle=GLOB(0x249ef40), print ent->bodyhandle->data: 
+20: ok 20
+
+21: FileHandle: size ./testout/gauntlet.out (3201) == 3201?
+21: ok 21
+
+22: ::GOUT, ent->print [43-712 == 669]
+22: ok 22
+
+23: ::GOUT, print ent->as_string [765-1434]
+23: ok 23
+
+24: ::GOUT, ent->print_header: 
+24: ok 24
+
+25: ::GOUT, ent->print_body: 
+25: ok 25
+
+26: ::GOUT, ent->bodyhandle->print: 
+26: ok 26
+
+27: ::GOUT, print ent->bodyhandle->data: 
+27: ok 27
+
+28: BARE FH:    size ./testout/gauntlet.out (3201) == 3201?
+28: ok 28
+
+29: GLOB(0x2495df0), ent->print [43-712 == 669]
+29: ok 29
+
+30: GLOB(0x2495df0), print ent->as_string [765-1434]
+30: ok 30
+
+31: GLOB(0x2495df0), ent->print_header: 
+31: ok 31
+
+32: GLOB(0x2495df0), ent->print_body: 
+32: ok 32
+
+33: GLOB(0x2495df0), ent->bodyhandle->print: 
+33: ok 33
+
+34: GLOB(0x2495df0), print ent->bodyhandle->data: 
+34: ok 34
+
+35: GLOB ref:   size ./testout/gauntlet.out (3201) == 3201?
+35: ok 35
+
+36: FileHandle=GLOB(0x249f170), ent->print [43-712 == 669]
+36: ok 36
+
+37: FileHandle=GLOB(0x249f170), print ent->as_string [765-1434]
+37: ok 37
+
+38: FileHandle=GLOB(0x249f170), ent->print_header: 
+38: ok 38
+
+39: FileHandle=GLOB(0x249f170), ent->print_body: 
+39: ok 39
+
+40: FileHandle=GLOB(0x249f170), ent->bodyhandle->print: 
+40: ok 40
+
+41: FileHandle=GLOB(0x249f170), print ent->bodyhandle->data: 
+41: ok 41
+
+42: FileHandle: size ./testout/gauntlet.out (3201) == 3201?
+42: ok 42
+
+43: ::GOUT, ent->print [43-712 == 669]
+43: ok 43
+
+44: ::GOUT, print ent->as_string [765-1434]
+44: ok 44
+
+45: ::GOUT, ent->print_header: 
+45: ok 45
+
+46: ::GOUT, ent->print_body: 
+46: ok 46
+
+47: ::GOUT, ent->bodyhandle->print: 
+47: ok 47
+
+48: ::GOUT, print ent->bodyhandle->data: 
+48: ok 48
+
+49: BARE FH:    size ./testout/gauntlet.out (3201) == 3201?
+49: ok 49
+
+50: GLOB(0x2495df0), ent->print [43-712 == 669]
+50: ok 50
+
+51: GLOB(0x2495df0), print ent->as_string [765-1434]
+51: ok 51
+
+52: GLOB(0x2495df0), ent->print_header: 
+52: ok 52
+
+53: GLOB(0x2495df0), ent->print_body: 
+53: ok 53
+
+54: GLOB(0x2495df0), ent->bodyhandle->print: 
+54: ok 54
+
+55: GLOB(0x2495df0), print ent->bodyhandle->data: 
+55: ok 55
+
+56: GLOB ref:   size ./testout/gauntlet.out (3201) == 3201?
+56: ok 56
+
+57: FileHandle=GLOB(0x24967b0), ent->print [43-712 == 669]
+57: ok 57
+
+58: FileHandle=GLOB(0x24967b0), print ent->as_string [765-1434]
+58: ok 58
+
+59: FileHandle=GLOB(0x24967b0), ent->print_header: 
+59: ok 59
+
+60: FileHandle=GLOB(0x24967b0), ent->print_body: 
+60: ok 60
+
+61: FileHandle=GLOB(0x24967b0), ent->bodyhandle->print: 
+61: ok 61
+
+62: FileHandle=GLOB(0x24967b0), print ent->bodyhandle->data: 
+62: ok 62
+
+63: FileHandle: size ./testout/gauntlet.out (3201) == 3201?
+63: ok 63
+

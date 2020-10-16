@@ -1,0 +1,55 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:534: checking for gcc
+configure:647: checking whether the C compiler (gcc  -fPIC -L/var/services/homes/spparmar/spec2006/tools/output/lib  ) works
+configure:663: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:689: checking whether the C compiler (gcc  -fPIC -L/var/services/homes/spparmar/spec2006/tools/output/lib  ) is a cross-compiler
+configure:694: checking whether we are using GNU C
+configure:703: gcc -E conftest.c
+configure:722: checking whether gcc accepts -g
+configure:754: checking whether ln -s works
+configure:777: checking for ranlib
+configure:807: checking for rm
+configure:842: checking for ar
+configure:877: checking for cmp
+configure:916: checking how to run the C preprocessor
+configure:937: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:996: checking for ANSI C header files
+configure:1009: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1076: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure: In function 'main':
+configure:1071:67: warning: incompatible implicit declaration of built-in function 'exit' [enabled by default]
+configure:1103: checking for errno.h
+configure:1113: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1103: checking for fcntl.h
+configure:1113: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1103: checking for stdlib.h
+configure:1113: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1103: checking for string.h
+configure:1113: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1103: checking for unistd.h
+configure:1113: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1103: checking for utime.h
+configure:1113: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1142: checking for working const
+configure:1196: gcc -c  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1217: checking for size_t
+configure:1252: checking return type of signal handlers
+configure:1274: gcc -c  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1293: checking whether utime accepts a null argument
+configure:1314: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure: In function 'main':
+configure:1308:1: warning: incompatible implicit declaration of built-in function 'exit' [enabled by default]
+configure:1340: checking for strerror
+configure:1368: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1340: checking for strstr
+configure:1368: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1352:6: warning: conflicting types for built-in function 'strstr' [enabled by default]
+configure:1340: checking for utime
+configure:1368: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1340: checking for chown
+configure:1368: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1340: checking for malloc
+configure:1368: gcc -o conftest  -fPIC -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1352:6: warning: conflicting types for built-in function 'malloc' [enabled by default]

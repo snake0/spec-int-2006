@@ -1,0 +1,33 @@
+mpaton@imp:~/94tools> runspec -V
+runspec v4380 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+Using 'unknown' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 94
+ Benchmarks version: 94
+      Tools version: 94
+    runspec version: 4380 ($Id: runspec 4380 2006-06-09 14:47:44Z cloyce $)
+
+Tools information:
+ Tools package installed: unknown
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 1000  | 100   |  151412 | 16-Aug-2006 15:38:16 | specmake
+0755 | 1000  | 100   | 1018655 | 16-Aug-2006 15:38:16 | specperl
+0755 | 1000  | 100   |   19112 | 16-Aug-2006 15:38:16 | specinvoke
+0755 | 1000  | 100   |   21584 | 16-Aug-2006 15:38:16 | specinvoke_pm
+0775 | 1000  | 100   |   99668 | 16-Aug-2006 15:38:16 | specbzip2
+0755 | 1000  | 100   |   20748 | 16-Aug-2006 15:38:16 | specmd5sum
+0755 | 1000  | 100   |    7599 | 16-Aug-2006 15:38:17 | specdiff
+0755 | 1000  | 100   |   85732 | 16-Aug-2006 15:38:17 | specpp
+0755 | 1000  | 100   |   89814 | 16-Aug-2006 15:38:16 | runspec
+0755 | 1000  | 100   |    1143 | 26-May-2006 16:51:31 | runspec.bat
+
+Version info for specinvoke (/home/mpaton/94tools/bin/specinvoke): Version: 4205
+Version info for specmake (/home/mpaton/94tools/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/home/mpaton/94tools/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/home/mpaton/94tools/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/home/mpaton/94tools/bin/specperl): This is specperl, v5.8.7 built for i686-linux
+                           For more detail on specperl, say 'specperl -V'
+

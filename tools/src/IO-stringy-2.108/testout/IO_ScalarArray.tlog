@@ -1,0 +1,177 @@
+1..32
+
+1: OPEN: open a scalar on a ref to an array
+1: ok 1
+
+2: PRINT: able to print to IO::ScalarArray=GLOB(0x138a1b0)
+2: ok 2
+
+3: GETC: seek(0,0) and getc()
+3: ok 3
+
+4: GETLINE/SEEK3: seek(3,START) and getline() gets part of 1st line
+4:   GH: "IO::ScalarArray=GLOB(0x138a1b0)"
+4:   Got: "iner while dining at Crewe\n"
+4:   Want: "iner while dining at Crewe\n"
+4: ok 4
+
+5: GETLINE/NEXT: next getline() gets subsequent line
+5:   Got: "Found a rather large mouse in his stew\n"
+5: ok 5
+
+6: GETLINE/EOF: repeated getline() finds end of stream
+6:   Last: "undef"
+6: ok 6
+
+7: GETLINE/GETLINES: seek(0,0) and getlines() slurps in string
+7:   GotAll: "A diner while dining at Crewe\nFound a rather large mouse in his stew\n   Said the waiter, \22Don't shout,\n   And wave it about...\nor the rest will be wanting one too.\22\n"
+7:   WantAll: "A diner while dining at Crewe\nFound a rather large mouse in his stew\n   Said the waiter, \22Don't shout,\n   And wave it about...\nor the rest will be wanting one too.\22\n"
+7:   Got: "A diner while dining at Crewe\n"
+7:   Got: "Found a rather large mouse in his stew\n"
+7:   Got: "   Said the waiter, \22Don't shout,\n"
+7:   Got: "   And wave it about...\n"
+7:   Got: "or the rest will be wanting one too.\22\n"
+7: ok 7
+
+8: READ/FIRST10: reading first 10 bytes with seek(0,START) + read(10)
+8: ok 8
+
+9: READ/NEXT10: reading next 10 bytes with read(10)
+9: ok 9
+
+10: READ/TELL20: tell() the current location as 20
+10: ok 10
+
+11: READ/SLURP: seek(0,START) + read(1000) reads in whole handle
+11: ok 11
+
+12: SEEK/SET: seek(2,SET) + read(5) returns 'diner'
+12:   A: "diner"
+12:   B: "diner"
+12: ok 12
+
+13: SEEK/END: seek(-6,END) + read(3) returns 'too'
+13:   A: "too"
+13:   B: "too"
+13: ok 13
+
+14: SEEK/CUR: seek(-7,CUR) + read(7) returns 'one too'
+14:   A: "one too"
+14:   B: "one too"
+14: ok 14
+
+15: TIE/TIE: able to tie
+15:   TieClass: "IO::ScalarArray"
+15:   TieArgs: "ARRAY(0x138a2b0)"
+15: ok 15
+
+16: TIE/PRINT: printing data
+16: ok 16
+
+17: TIE/GETLINE: seek(0,0) and scalar <> get expected lines
+17:   Want: "A diner while dining at Crewe\n"
+17:   Want: "Found a rather large mouse in his stew\n"
+17:   Want: "   Said the waiter, \22Don't shout,\n"
+17:   Want: "   And wave it about...\n"
+17:   Want: "or the rest will be wanting one too.\22\n"
+17:   Gotl: "A diner while dining at Crewe\n"
+17:   Gotl: "Found a rather large mouse in his stew\n"
+17:   Gotl: "   Said the waiter, \22Don't shout,\n"
+17:   Gotl: "   And wave it about...\n"
+17:   Gotl: "or the rest will be wanting one too.\22\n"
+17:   Lines: "0..4"
+17:   Match: "5"
+17:   FDatl: "5"
+17:   FData: "A diner while dining at Crewe\n"
+17:   FData: "Found a rather large mouse in his stew\n"
+17:   FData: "   Said the waiter, \22Don't shout,\n"
+17:   FData: "   And wave it about...\n"
+17:   FData: "or the rest will be wanting one too.\22\n"
+17: ok 17
+
+18: TIE/GETLINES: seek(0,0) and array <> slurps in lines
+18:   Want: "A diner while dining at Crewe\n"
+18:   Want: "Found a rather large mouse in his stew\n"
+18:   Want: "   Said the waiter, \22Don't shout,\n"
+18:   Want: "   And wave it about...\n"
+18:   Want: "or the rest will be wanting one too.\22\n"
+18:   Gotl: "A diner while dining at Crewe\n"
+18:   Gotl: "Found a rather large mouse in his stew\n"
+18:   Gotl: "   Said the waiter, \22Don't shout,\n"
+18:   Gotl: "   And wave it about...\n"
+18:   Gotl: "or the rest will be wanting one too.\22\n"
+18:   Lines: "0..4"
+18:   Match: "5"
+18: ok 18
+
+19: RECORDSEP undef: getline slurps everything
+19:   A: "par 1, line 1\npar 1, line 2\n\n\n\n\npar 2, line 1\n\npar 3, line 1\npar 3, line 2\npar 3, line 3"
+19:   B: "par 1, line 1\npar 1, line 2\n\n\n\n\npar 2, line 1\n\npar 3, line 1\npar 3, line 2\npar 3, line 3"
+19: ok 19
+
+20: RECORDSEP undef: get first line
+20:   A: "par 1, line 1\n"
+20:   B: "par 1, line 1\n"
+20: ok 20
+
+21: RECORDSEP undef: slurp the rest
+21:   A: "par 1, line 2\n\n\n\n\npar 2, line 1\n\npar 3, line 1\npar 3, line 2\npar 3, line 3"
+21:   B: "par 1, line 2\n\n\n\n\npar 2, line 1\n\npar 3, line 1\npar 3, line 2\npar 3, line 3"
+21: ok 21
+
+22: RECORDSEP newline: rec 0
+22:   A: "par 1, line 1\n"
+22:   B: "par 1, line 1\n"
+22: ok 22
+
+23: RECORDSEP newline: rec 1
+23:   A: "par 1, line 2\n"
+23:   B: "par 1, line 2\n"
+23: ok 23
+
+24: RECORDSEP newline: rec 2
+24:   A: "\n"
+24:   B: "\n"
+24: ok 24
+
+25: RECORDSEP newline: rec 3
+25:   A: "\n"
+25:   B: "\n"
+25: ok 25
+
+26: RECORDSEP newline: rec 4
+26:   A: "\n"
+26:   B: "\n"
+26: ok 26
+
+27: RECORDSEP newline: rec 5
+27:   A: "\n"
+27:   B: "\n"
+27: ok 27
+
+28: RECORDSEP newline: rec 6
+28:   A: "par 2, line 1\n"
+28:   B: "par 2, line 1\n"
+28: ok 28
+
+29: RECORDSEP newline: rec 7
+29:   A: "\n"
+29:   B: "\n"
+29: ok 29
+
+30: RECORDSEP newline: rec 8
+30:   A: "par 3, line 1\n"
+30:   B: "par 3, line 1\n"
+30: ok 30
+
+31: RECORDSEP newline: rec 9
+31:   A: "par 3, line 2\n"
+31:   B: "par 3, line 2\n"
+31: ok 31
+
+32: RECORDSEP newline: rec 10
+32:   A: "par 3, line 3"
+32:   B: "par 3, line 3"
+32: ok 32
+
+# END

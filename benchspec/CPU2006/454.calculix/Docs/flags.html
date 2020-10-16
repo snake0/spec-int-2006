@@ -1,0 +1,1919 @@
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta name="generator" content="SPEC CPU2006 Tools  (flags v4553)" />
+<style type="text/css" id="internalScreen" media="screen">
+<!--
+body {
+  margin:  1em;
+  border:  0;
+  padding: 0;
+  background: white;
+  color:      black;
+  font-family: "Times Roman", times, serif;
+}
+
+.tt {
+  font-family: monospace;
+}
+
+div.flagClass > h2 {
+  border-bottom: 1px dotted black;
+  width: 80%;
+  font-family: sans-serif;
+}
+
+div.flagDesc {
+  clear: both;
+  background-color: rgb(255, 245, 220);
+  border: 1px solid blue; /* XXX This is for debugging */ 
+  margin: 0 auto;
+  width: 90%;
+}
+
+li.flagName {
+  font-weight: bold;
+  width: 100%;
+  border-bottom: 1px solid black;
+  display: block;
+  margin: 0.5em 0 0.5em 0;
+  font-size: 125%;
+}
+
+/* (presumably short) informationals all get grouped together near the top
+ * of the flag description block.
+ */
+.flagOrigin, .flagDescClass, .flagDescCompiler, .flagDescRE, .flagVar {
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  float: left;
+  padding: 0.25em;
+  margin: 0 0 0.25em 0;
+}
+
+.flagDescClass::before {
+  content: "Flag Class: ";
+}
+.flagDescCompiler::before {
+  content: "Compilers that recognize this flag: ";
+}
+.flagDescRE::before {
+  content: "Regular Expression: ";
+}
+.flagVar::before {
+  content: "Found In: ";
+}
+
+span.flagDescInc {
+  border-bottom: 1px solid black;
+}
+
+/* The description text stands alone. */
+.descText {
+  clear: both;
+  padding: 0.5em 1em 0.5em 1em;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  margin: 0.5em 0 0.5em 0;
+}
+
+/* This is a separate class so that in the print style sheet it can
+ * be ignored.
+ * Also, 'style="clear:both;"' is longer than 'class="clear"'
+ */
+.clear {
+  clear: both;
+}
+
+/* This is really for the link _to_ the flag report */
+li.unknown > a:link, a:visited { text-decoration: none; }
+
+.monospace {
+  font-family: Courier, "Courier New", monospace;
+}
+
+ul.flagDescList {
+  clear: both;
+  list-style-type: none;
+}
+
+/* Arrange for each flag description to have some headroom. */
+ul.flagDescList > li {
+  margin: 2em 0 0 0;
+}
+
+ul.flagDesc {
+  list-style-type: none;
+}
+
+div.flagTOC {
+  border: 1px solid white;
+  padding: 0.5em 1em;
+  margin: 0 auto;
+  width: 80%;
+}
+
+ul.flagTOC {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul.flagTOC > li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+  margin: 0;
+  padding: 0.25em 0 0.25em 0;
+  float: left;
+  display: inline-block; /* Fix IE bug; compliant browsers will ignore this */
+  width: 24.3%;
+  min-height: 1.5em;
+  overflow: hidden; /* If the table gets squeezed too much, don't let the
+                     * text overlap
+                     */
+}
+
+ul.SubMenu li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+}
+
+ul.SubMenu {
+  display: none;
+  position: absolute;
+  list-style-type: none;
+  border: 1px solid black;
+  background-color: white;
+  margin: 0 0 0 2em;
+  padding: 0.25em 5em 0.25em 0.5em;
+  white-space: nowrap;
+}
+
+li:hover > ul.SubMenu, ul.SubMenu:hover {
+  display: block;
+}
+
+ul.SubMenu > li:hover, ul.flagTOC > li:hover {
+  background-color: rgb(176, 196, 238); /* lightsteelgray... almost */
+  border: 1px solid rgb(128, 128, 128);
+}
+
+
+.resultpage a:link, .resultpage a:visited {
+  text-decoration: none;
+  border-bottom: 1px dashed black;
+  color: inherit;
+}
+
+.resultpage {
+  margin: auto;
+  padding: 0;
+  width: 800px;
+}
+
+.logo {
+  float: left;
+}
+
+.titlebarcontainer, .resultstable {
+  border: solid 1px;
+  width: 100%;
+  float: left;
+}
+
+div.logo > img {
+  vertical-align: 50%;
+  margin: auto;
+}
+
+.titlebar {
+  float: left;
+  padding: 0em 1em 0em 1em;
+  text-align: center;
+  width: 92%;
+}
+
+div.titlebar > h1, div.titlebar > p {
+  margin: 0 1em 0 1em;
+}
+
+.systembar {
+  float: left;
+  width: 65%;
+  font-size: 150%;
+  margin: 0;
+  padding: 0.1em;
+  border-right: solid 1px black;
+}
+
+.metricbar {
+  padding: 0.1em;
+  margin: 0;
+  float: right;
+  width: 33%;
+  height: 50%;
+  font-size: 120%;
+}
+
+.metricbar#base {
+  background-color: #c8c8c8;
+  color: black;
+}
+
+.metricbar#peak {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+}
+
+.metricbar p {
+  margin: 0;
+  padding: 0.2em;
+}
+
+.datebar p, .systembar p {
+  margin: 0;
+  padding: 0;
+}
+
+.datebar p {
+  float: left;
+  border-left: solid 1px black;
+}
+
+span.item {
+  float: left;
+  margin: 0;
+  padding: 0 0 0 0.1em;
+}
+
+span.value {
+  float: right;
+  padding: 0 0.1em 0 0;
+}
+
+.datebar {
+  width: 100%;
+  float: left;
+  font-size: 50%;
+  min-height: 100%;
+  border: solid 1px black;
+}
+
+p#test_sponsor {
+  width: 31%;
+}
+
+p#license_num {
+  width: 16%;
+}
+
+p#test_date {
+  width: 15%;
+}
+
+p#hw_avail, p#sw_avail {
+  width: 18%;
+}
+
+div.graph {
+  margin: auto;
+}
+
+div.infobox {
+  float: left;
+  width: 100%;
+  padding: 0;
+  border: solid 1px black;
+}
+
+div.infobox table {
+  width: 49%;
+  float: left;
+}
+
+div.infobox table tr {
+  vertical-align: top;
+}
+
+div.infobox table#Hardware {
+  width: 50%;
+  border-right: 1px solid black;
+}
+
+div.infobox thead th {
+  font-size: 200%;
+}
+
+div.infobox tbody th {
+  text-align: left;
+}
+
+.resultstable h2, div.notes h2 {
+  text-align: center;
+  margin: 0.1em;
+}
+
+div.notes h3 {
+  margin: 0.1em;
+}
+
+div.notes dd {
+  margin-bottom: 1em;
+}
+
+.resultstable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resultstable th.basecol, .resultstable th.peakcol {
+  padding: 0.1em;
+  font-size: 90%;
+}
+
+.resultstable th {
+  border: solid 2px black;
+}
+
+.resultstable td {
+  border: solid 1px #b8b8b8;
+}
+
+td.bm, th.bm { 
+  border-right: solid 2px black;
+  border-left: solid 2px black;
+}
+
+td.secs { 
+  border-left: solid 2px black;
+}
+
+td.ratio { 
+  border-right: solid 2px black;
+}
+
+.resultstable tfoot td {
+  text-align: center;
+  border: solid 2px black;
+}
+
+th.basecol {
+  background-color: #c8c8c8;
+  color: black;
+}
+td.basecol {
+  text-align: right;
+  background-color: transparent;
+  color: black;
+}
+
+th.peakcol {
+  text-align: center;
+}
+
+.peakcol {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+  text-align: right;
+}
+
+td.bm {
+  /* Basically, the benchmark name and copies columns */
+  background-color: #c8c8c8;
+  color: black;
+}
+
+span.selected {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+div.notes {
+  width: 100%;
+  float: left;
+  border: solid 1px black;
+}
+
+div.flagfooter {
+  text-align: center;
+}
+
+div.errors {
+  border: solid 2px red;
+}
+div.errors h2 {
+  background-color: transparent;
+  color: red;
+}
+
+div.footer {
+  border: none;
+}
+
+/* People find the "double underline" confusing.  And Safari 1.3 doesn't deal
+ * well with attempting to disable the border for userflag links.  So just
+ * give up and don't decorate user flags specially.
+********************
+span.userflag {
+  text-decoration: underline;
+}
+
+.userflag a:link {
+  border-bottom: 0;
+}
+********************
+*/
+/* Most of the screen-specific CSS is also the common CSS */
+
+/* Style for the non-image W3C marking at the bottom of the page, courtesy of
+ * Marek Prokop (http://www.sovavsiti.cz/css/w3c_buttons.html)
+ */
+.w3cbutton3 {
+  margin: 1em 1em 0 0;
+  width: 9em;
+  border: 1px solid #ccc;
+  font-family: helvetica,arial,sans-serif;
+  font-size: 70%;
+  font-weight: bold;
+  float: left;
+}
+.w3cbutton3 a {
+  display: block;
+  width: 100%;
+}
+.w3cbutton3 a:link,
+.w3cbutton3 a:visited,
+.w3cbutton3 a:hover {
+  background-color: #fc6;
+  color: #000;
+  text-decoration: none;
+  border-bottom: none;
+}
+.w3cbutton3 span.w3c {
+  padding: 0 0.4em;
+  background-color: #fff;
+  color: #0c479d;
+}
+
+-->
+</style>
+<style type="text/css" id="internalPrint" media="print">
+<!--
+body {
+  margin:  1em;
+  border:  0;
+  padding: 0;
+  background: white;
+  color:      black;
+  font-family: "Times Roman", times, serif;
+}
+
+.tt {
+  font-family: monospace;
+}
+
+div.flagClass > h2 {
+  border-bottom: 1px dotted black;
+  width: 80%;
+  font-family: sans-serif;
+}
+
+div.flagDesc {
+  clear: both;
+  background-color: rgb(255, 245, 220);
+  border: 1px solid blue; /* XXX This is for debugging */ 
+  margin: 0 auto;
+  width: 90%;
+}
+
+li.flagName {
+  font-weight: bold;
+  width: 100%;
+  border-bottom: 1px solid black;
+  display: block;
+  margin: 0.5em 0 0.5em 0;
+  font-size: 125%;
+}
+
+/* (presumably short) informationals all get grouped together near the top
+ * of the flag description block.
+ */
+.flagOrigin, .flagDescClass, .flagDescCompiler, .flagDescRE, .flagVar {
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  float: left;
+  padding: 0.25em;
+  margin: 0 0 0.25em 0;
+}
+
+.flagDescClass::before {
+  content: "Flag Class: ";
+}
+.flagDescCompiler::before {
+  content: "Compilers that recognize this flag: ";
+}
+.flagDescRE::before {
+  content: "Regular Expression: ";
+}
+.flagVar::before {
+  content: "Found In: ";
+}
+
+span.flagDescInc {
+  border-bottom: 1px solid black;
+}
+
+/* The description text stands alone. */
+.descText {
+  clear: both;
+  padding: 0.5em 1em 0.5em 1em;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  margin: 0.5em 0 0.5em 0;
+}
+
+/* This is a separate class so that in the print style sheet it can
+ * be ignored.
+ * Also, 'style="clear:both;"' is longer than 'class="clear"'
+ */
+.clear {
+  clear: both;
+}
+
+/* This is really for the link _to_ the flag report */
+li.unknown > a:link, a:visited { text-decoration: none; }
+
+.monospace {
+  font-family: Courier, "Courier New", monospace;
+}
+
+ul.flagDescList {
+  clear: both;
+  list-style-type: none;
+}
+
+/* Arrange for each flag description to have some headroom. */
+ul.flagDescList > li {
+  margin: 2em 0 0 0;
+}
+
+ul.flagDesc {
+  list-style-type: none;
+}
+
+div.flagTOC {
+  border: 1px solid white;
+  padding: 0.5em 1em;
+  margin: 0 auto;
+  width: 80%;
+}
+
+ul.flagTOC {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul.flagTOC > li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+  margin: 0;
+  padding: 0.25em 0 0.25em 0;
+  float: left;
+  display: inline-block; /* Fix IE bug; compliant browsers will ignore this */
+  width: 24.3%;
+  min-height: 1.5em;
+  overflow: hidden; /* If the table gets squeezed too much, don't let the
+                     * text overlap
+                     */
+}
+
+ul.SubMenu li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+}
+
+ul.SubMenu {
+  display: none;
+  position: absolute;
+  list-style-type: none;
+  border: 1px solid black;
+  background-color: white;
+  margin: 0 0 0 2em;
+  padding: 0.25em 5em 0.25em 0.5em;
+  white-space: nowrap;
+}
+
+li:hover > ul.SubMenu, ul.SubMenu:hover {
+  display: block;
+}
+
+ul.SubMenu > li:hover, ul.flagTOC > li:hover {
+  background-color: rgb(176, 196, 238); /* lightsteelgray... almost */
+  border: 1px solid rgb(128, 128, 128);
+}
+
+
+.resultpage a:link, .resultpage a:visited {
+  text-decoration: none;
+  border-bottom: 1px dashed black;
+  color: inherit;
+}
+
+.resultpage {
+  margin: auto;
+  padding: 0;
+  width: 800px;
+}
+
+.logo {
+  float: left;
+}
+
+.titlebarcontainer, .resultstable {
+  border: solid 1px;
+  width: 100%;
+  float: left;
+}
+
+div.logo > img {
+  vertical-align: 50%;
+  margin: auto;
+}
+
+.titlebar {
+  float: left;
+  padding: 0em 1em 0em 1em;
+  text-align: center;
+  width: 92%;
+}
+
+div.titlebar > h1, div.titlebar > p {
+  margin: 0 1em 0 1em;
+}
+
+.systembar {
+  float: left;
+  width: 65%;
+  font-size: 150%;
+  margin: 0;
+  padding: 0.1em;
+  border-right: solid 1px black;
+}
+
+.metricbar {
+  padding: 0.1em;
+  margin: 0;
+  float: right;
+  width: 33%;
+  height: 50%;
+  font-size: 120%;
+}
+
+.metricbar#base {
+  background-color: #c8c8c8;
+  color: black;
+}
+
+.metricbar#peak {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+}
+
+.metricbar p {
+  margin: 0;
+  padding: 0.2em;
+}
+
+.datebar p, .systembar p {
+  margin: 0;
+  padding: 0;
+}
+
+.datebar p {
+  float: left;
+  border-left: solid 1px black;
+}
+
+span.item {
+  float: left;
+  margin: 0;
+  padding: 0 0 0 0.1em;
+}
+
+span.value {
+  float: right;
+  padding: 0 0.1em 0 0;
+}
+
+.datebar {
+  width: 100%;
+  float: left;
+  font-size: 50%;
+  min-height: 100%;
+  border: solid 1px black;
+}
+
+p#test_sponsor {
+  width: 31%;
+}
+
+p#license_num {
+  width: 16%;
+}
+
+p#test_date {
+  width: 15%;
+}
+
+p#hw_avail, p#sw_avail {
+  width: 18%;
+}
+
+div.graph {
+  margin: auto;
+}
+
+div.infobox {
+  float: left;
+  width: 100%;
+  padding: 0;
+  border: solid 1px black;
+}
+
+div.infobox table {
+  width: 49%;
+  float: left;
+}
+
+div.infobox table tr {
+  vertical-align: top;
+}
+
+div.infobox table#Hardware {
+  width: 50%;
+  border-right: 1px solid black;
+}
+
+div.infobox thead th {
+  font-size: 200%;
+}
+
+div.infobox tbody th {
+  text-align: left;
+}
+
+.resultstable h2, div.notes h2 {
+  text-align: center;
+  margin: 0.1em;
+}
+
+div.notes h3 {
+  margin: 0.1em;
+}
+
+div.notes dd {
+  margin-bottom: 1em;
+}
+
+.resultstable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resultstable th.basecol, .resultstable th.peakcol {
+  padding: 0.1em;
+  font-size: 90%;
+}
+
+.resultstable th {
+  border: solid 2px black;
+}
+
+.resultstable td {
+  border: solid 1px #b8b8b8;
+}
+
+td.bm, th.bm { 
+  border-right: solid 2px black;
+  border-left: solid 2px black;
+}
+
+td.secs { 
+  border-left: solid 2px black;
+}
+
+td.ratio { 
+  border-right: solid 2px black;
+}
+
+.resultstable tfoot td {
+  text-align: center;
+  border: solid 2px black;
+}
+
+th.basecol {
+  background-color: #c8c8c8;
+  color: black;
+}
+td.basecol {
+  text-align: right;
+  background-color: transparent;
+  color: black;
+}
+
+th.peakcol {
+  text-align: center;
+}
+
+.peakcol {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+  text-align: right;
+}
+
+td.bm {
+  /* Basically, the benchmark name and copies columns */
+  background-color: #c8c8c8;
+  color: black;
+}
+
+span.selected {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+div.notes {
+  width: 100%;
+  float: left;
+  border: solid 1px black;
+}
+
+div.flagfooter {
+  text-align: center;
+}
+
+div.errors {
+  border: solid 2px red;
+}
+div.errors h2 {
+  background-color: transparent;
+  color: red;
+}
+
+div.footer {
+  border: none;
+}
+
+/* People find the "double underline" confusing.  And Safari 1.3 doesn't deal
+ * well with attempting to disable the border for userflag links.  So just
+ * give up and don't decorate user flags specially.
+********************
+span.userflag {
+  text-decoration: underline;
+}
+
+.userflag a:link {
+  border-bottom: 0;
+}
+********************
+*/
+/* Classes that contain links - useless on paper */
+.flagTOC, .SubMenu, .NoPrint {
+  display: none;
+}
+
+/* Don't decorate links - they're not clickable */
+a {
+  text-decoration: none;
+  background: inherit;
+  color: inherit;
+}
+
+.resultpage {
+  width: 100%;
+}
+
+.w3cbutton3 {
+  display: none;
+}
+-->
+</style>
+<title>454.calculix Flags</title>
+</head><body>
+<h1>454.calculix Flags</h1>
+
+
+<p>These are flags that appear in the benchmark sources, categorized as to
+whether they are portability candidates, mandatory, or forbidden.
+</p>
+
+<div class="NoPrint">
+<h3>Sections</h3>
+<p>Selecting one of the following will take you directly to that section:</p>
+<ul>
+<li><a href="#Section_portability">Portability Flags</a></li>
+<li><a href="#Section_mandatory">Mandatory Flags</a></li>
+<li><a href="#Section_forbidden">Forbidden Flags</a></li>
+</ul>
+</div>
+
+<hr />
+
+<div class="flagClass" id="portability">
+<h2><a name="Section_portability" id="Section_portability">Portability Flags</a></h2>
+<div class="flagTOC">
+<ul class="flagTOC">
+ <li><a href="#b454.calculix_DSPEC_CPU_APPEND_UNDERSCORE">-DSPEC_CPU_APPEND_UNDERSCORE</a></li>
+ <li><a href="#b454.calculix_DSPEC_CPU_NO_APPEND_UNDERSCORE">-DSPEC_CPU_NO_APPEND_UNDERSCORE</a></li>
+ <li><a href="#b454.calculix_DSPEC_CPU_NAGF95">-DSPEC_CPU_NAGF95</a></li>
+ <li><a href="#b454.calculix_DSPEC_CPU_NOZMODIFIER">-DSPEC_CPU_NOZMODIFIER</a></li>
+</ul>
+<div class="clear"></div>
+</div>
+
+<ul class="flagDescList">
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DSPEC_CPU_APPEND_UNDERSCORE" id="b454.calculix_DSPEC_CPU_APPEND_UNDERSCORE">-DSPEC_CPU_APPEND_UNDERSCORE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_APPEND_UNDERSCORE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+SPEC_CPU_APPEND_UNDERSCORE indicates that when calling Fortran 
+routines from C, an underscore needs to be appended to the 
+routine name.  This is the default on all but Windows.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DSPEC_CPU_NO_APPEND_UNDERSCORE" id="b454.calculix_DSPEC_CPU_NO_APPEND_UNDERSCORE">-DSPEC_CPU_NO_APPEND_UNDERSCORE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_NO_APPEND_UNDERSCORE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Does what you think it does.  Or what you think it does after 
+you read the description of DSPEC_CPU_APPEND_UNDERSCORE.  It's 
+the default on Windows.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DSPEC_CPU_NAGF95" id="b454.calculix_DSPEC_CPU_NAGF95">-DSPEC_CPU_NAGF95</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_NAGF95(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+SPEC_CPU_NAGF95 causes character string lengths to be appended 
+in calls, as NAG requires.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DSPEC_CPU_NOZMODIFIER" id="b454.calculix_DSPEC_CPU_NOZMODIFIER">-DSPEC_CPU_NOZMODIFIER</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_NOZMODIFIER(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+SPEC_CPU_NOZMODIFIER can be used if your compiler does not implement
+the C99 standard printf length modifier "z".  You'll know you need
+this flag if validation fails with the file SPECtestformatmodifier_z.txt
+</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+
+</div>
+<hr />
+<div class="flagClass" id="mandatory">
+<h2><a name="Section_mandatory" id="Section_mandatory">Mandatory Flags</a></h2>
+<div class="flagTOC">
+<ul class="flagTOC">
+ <li><a href="#b454.calculix_includes">-ISPOOLES</a></li>
+ <li><a href="#b454.calculix_DSPEC_CPU_WINDOWS">-DSPEC_CPU_WINDOWS</a></li>
+ <li><a href="#b454.calculix_DSPEC_CPU">-DSPEC_CPU</a></li>
+</ul>
+<div class="clear"></div>
+</div>
+
+<ul class="flagDescList">
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_includes" id="b454.calculix_includes">-ISPOOLES</a></li>
+<li class="flagDescRE"><span class="tt">-ISPOOLES\b</span></li>
+<li class="descText">
+<p>
+This flag is used to ensure that include files in the SPOOLES directory may
+be used.  It is included automatically by object.pm.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DSPEC_CPU_WINDOWS" id="b454.calculix_DSPEC_CPU_WINDOWS">-DSPEC_CPU_WINDOWS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_WINDOWS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+SPEC_CPU_WINDOWS helps us decide whether to, by default, append an underscore.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DSPEC_CPU" id="b454.calculix_DSPEC_CPU">-DSPEC_CPU</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+SPEC_CPU indicates that we are being built within the SPEC CPU harness.
+</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+
+</div>
+<hr />
+<div class="flagClass" id="forbidden">
+<h2><a name="Section_forbidden" id="Section_forbidden">Forbidden Flags</a></h2>
+<div class="flagTOC">
+<ul class="flagTOC">
+ <li><a href="#b454.calculix_DARCH">-DARCH</a></li>
+ <li><a href="#b454.calculix_DBE_CAUTIOUS">-DBE_CAUTIOUS</a></li>
+ <li><a href="#b454.calculix_DDEBUG">-DDEBUG</a></li>
+ <li><a href="#b454.calculix_DLinux">-DLinux</a></li>
+ <li><a href="#b454.calculix_DMEMORY_DEBUG">-DMEMORY_DEBUG</a></li>
+ <li><a href="#b454.calculix_DMYDEBUG">-DMYDEBUG</a></li>
+ <li><a href="#b454.calculix_DMYTRACE">-DMYTRACE</a></li>
+ <li><a href="#b454.calculix_DTHREAD_TYPE">-DTHREAD_TYPE</a></li>
+ <li><a href="#b454.calculix_DTT_NONE">-DTT_NONE</a></li>
+ <li><a href="#b454.calculix_DTT_POSIX">-DTT_POSIX</a></li>
+ <li><a href="#b454.calculix_DTT_SOLARIS">-DTT_SOLARIS</a></li>
+ <li><a href="#b454.calculix_D_A2_">-D_A2_</a></li>
+ <li><a href="#b454.calculix_D_BKL_">-D_BKL_</a></li>
+ <li><a href="#b454.calculix_D_BPG_">-D_BPG_</a></li>
+ <li><a href="#b454.calculix_D_ChvList_">-D_ChvList_</a></li>
+ <li><a href="#b454.calculix_D_ChvManager_">-D_ChvManager_</a></li>
+ <li><a href="#b454.calculix_D_Chv_">-D_Chv_</a></li>
+ <li><a href="#b454.calculix_D_Coords_">-D_Coords_</a></li>
+ <li><a href="#b454.calculix_D_DDsepInfo_">-D_DDsepInfo_</a></li>
+ <li><a href="#b454.calculix_D_DLIST_">-D_DLIST_</a></li>
+ <li><a href="#b454.calculix_D_DSTree_">-D_DSTree_</a></li>
+ <li><a href="#b454.calculix_D_DV_">-D_DV_</a></li>
+ <li><a href="#b454.calculix_D_DenseMtx_">-D_DenseMtx_</a></li>
+ <li><a href="#b454.calculix_D_Drand_">-D_Drand_</a></li>
+ <li><a href="#b454.calculix_D_ETree_">-D_ETree_</a></li>
+ <li><a href="#b454.calculix_D_FrontMtx_">-D_FrontMtx_</a></li>
+ <li><a href="#b454.calculix_D_GPart_">-D_GPart_</a></li>
+ <li><a href="#b454.calculix_D_Graph_">-D_Graph_</a></li>
+ <li><a href="#b454.calculix_D_I2Ohash_">-D_I2Ohash_</a></li>
+ <li><a href="#b454.calculix_D_IIheap_">-D_IIheap_</a></li>
+ <li><a href="#b454.calculix_D_IVL_">-D_IVL_</a></li>
+ <li><a href="#b454.calculix_D_IV_">-D_IV_</a></li>
+ <li><a href="#b454.calculix_D_Ideq_">-D_Ideq_</a></li>
+ <li><a href="#b454.calculix_D_InpMtx_">-D_InpMtx_</a></li>
+ <li><a href="#b454.calculix_D_Lock_">-D_Lock_</a></li>
+ <li><a href="#b454.calculix_D_MSMD_">-D_MSMD_</a></li>
+ <li><a href="#b454.calculix_D_Network_">-D_Network_</a></li>
+ <li><a href="#b454.calculix_D_PatchAndGoInfo_">-D_PatchAndGoInfo_</a></li>
+ <li><a href="#b454.calculix_D_Pencil_">-D_Pencil_</a></li>
+ <li><a href="#b454.calculix_D_SPOOLES_">-D_SPOOLES_</a></li>
+ <li><a href="#b454.calculix_D_SP_base">-D_SP_base</a></li>
+ <li><a href="#b454.calculix_D_SolveMap_">-D_SolveMap_</a></li>
+ <li><a href="#b454.calculix_D_SubMtxList_">-D_SubMtxList_</a></li>
+ <li><a href="#b454.calculix_D_SubMtxManager_">-D_SubMtxManager_</a></li>
+ <li><a href="#b454.calculix_D_SubMtx_">-D_SubMtx_</a></li>
+ <li><a href="#b454.calculix_D_SymbFac_">-D_SymbFac_</a></li>
+ <li><a href="#b454.calculix_D_TIMINGS_">-D_TIMINGS_</a></li>
+ <li><a href="#b454.calculix_D_Tree_">-D_Tree_</a></li>
+ <li><a href="#b454.calculix_D_UTILITIES_">-D_UTILITIES_</a></li>
+ <li><a href="#b454.calculix_D_Utilities_">-D_Utilities_</a></li>
+ <li><a href="#b454.calculix_D_ZV_">-D_ZV_</a></li>
+ <li><a href="#b454.calculix_D_cFILES_">-D_cFILES_</a></li>
+ <li><a href="#b454.calculix_D_misc_">-D_misc_</a></li>
+</ul>
+<div class="clear"></div>
+</div>
+
+<ul class="flagDescList">
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DARCH" id="b454.calculix_DARCH">-DARCH</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DARCH(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+ARCH was the program's original method of selecting options for 
+appending underscores to routine names.  When running in the 
+context of SPEC_CPU, instead use SPEC_CPU_APPEND_UNDERSCORE or 
+SPEC_CPU_NO_APPEND_UNDERSCORE
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DBE_CAUTIOUS" id="b454.calculix_DBE_CAUTIOUS">-DBE_CAUTIOUS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DBE_CAUTIOUS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+BE_CAUTIOUS may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DDEBUG" id="b454.calculix_DDEBUG">-DDEBUG</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUG(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+DEBUG may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DLinux" id="b454.calculix_DLinux">-DLinux</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DLinux(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+See the description of ARCH.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DMEMORY_DEBUG" id="b454.calculix_DMEMORY_DEBUG">-DMEMORY_DEBUG</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DMEMORY_DEBUG(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+MEMORY_DEBUG may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded define that 
+normally sets it to zero.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DMYDEBUG" id="b454.calculix_DMYDEBUG">-DMYDEBUG</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DMYDEBUG(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+MYDEBUG 
+may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DMYTRACE" id="b454.calculix_DMYTRACE">-DMYTRACE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DMYTRACE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+MYTRACE 
+may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DTHREAD_TYPE" id="b454.calculix_DTHREAD_TYPE">-DTHREAD_TYPE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DTHREAD_TYPE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+THREAD_TYPE 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DTT_NONE" id="b454.calculix_DTT_NONE">-DTT_NONE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DTT_NONE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+TT_NONE 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DTT_POSIX" id="b454.calculix_DTT_POSIX">-DTT_POSIX</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DTT_POSIX(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+TT_POSIX 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_DTT_SOLARIS" id="b454.calculix_DTT_SOLARIS">-DTT_SOLARIS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DTT_SOLARIS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+TT_SOLARIS 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_A2_" id="b454.calculix_D_A2_">-D_A2_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_A2_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_A2_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_BKL_" id="b454.calculix_D_BKL_">-D_BKL_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_BKL_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_BKL_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_BPG_" id="b454.calculix_D_BPG_">-D_BPG_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_BPG_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_BPG_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_ChvList_" id="b454.calculix_D_ChvList_">-D_ChvList_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_ChvList_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_ChvList_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_ChvManager_" id="b454.calculix_D_ChvManager_">-D_ChvManager_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_ChvManager_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_ChvManager_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Chv_" id="b454.calculix_D_Chv_">-D_Chv_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Chv_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Chv_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Coords_" id="b454.calculix_D_Coords_">-D_Coords_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Coords_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Coords_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_DDsepInfo_" id="b454.calculix_D_DDsepInfo_">-D_DDsepInfo_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_DDsepInfo_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_DDsepInfo_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_DLIST_" id="b454.calculix_D_DLIST_">-D_DLIST_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_DLIST_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_DLIST_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_DSTree_" id="b454.calculix_D_DSTree_">-D_DSTree_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_DSTree_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_DSTree_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_DV_" id="b454.calculix_D_DV_">-D_DV_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_DV_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_DV_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_DenseMtx_" id="b454.calculix_D_DenseMtx_">-D_DenseMtx_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_DenseMtx_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_DenseMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Drand_" id="b454.calculix_D_Drand_">-D_Drand_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Drand_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Drand_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_ETree_" id="b454.calculix_D_ETree_">-D_ETree_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_ETree_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_ETree_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_FrontMtx_" id="b454.calculix_D_FrontMtx_">-D_FrontMtx_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_FrontMtx_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_FrontMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_GPart_" id="b454.calculix_D_GPart_">-D_GPart_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_GPart_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_GPart_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Graph_" id="b454.calculix_D_Graph_">-D_Graph_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Graph_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Graph_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_I2Ohash_" id="b454.calculix_D_I2Ohash_">-D_I2Ohash_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_I2Ohash_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_I2Ohash_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_IIheap_" id="b454.calculix_D_IIheap_">-D_IIheap_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_IIheap_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_IIheap_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_IVL_" id="b454.calculix_D_IVL_">-D_IVL_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_IVL_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_IVL_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_IV_" id="b454.calculix_D_IV_">-D_IV_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_IV_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_IV_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Ideq_" id="b454.calculix_D_Ideq_">-D_Ideq_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Ideq_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Ideq_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_InpMtx_" id="b454.calculix_D_InpMtx_">-D_InpMtx_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_InpMtx_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_InpMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Lock_" id="b454.calculix_D_Lock_">-D_Lock_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Lock_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Lock_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_MSMD_" id="b454.calculix_D_MSMD_">-D_MSMD_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_MSMD_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_MSMD_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Network_" id="b454.calculix_D_Network_">-D_Network_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Network_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Network_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_PatchAndGoInfo_" id="b454.calculix_D_PatchAndGoInfo_">-D_PatchAndGoInfo_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_PatchAndGoInfo_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_PatchAndGoInfo_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Pencil_" id="b454.calculix_D_Pencil_">-D_Pencil_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Pencil_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Pencil_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_SPOOLES_" id="b454.calculix_D_SPOOLES_">-D_SPOOLES_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SPOOLES_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_SPOOLES_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_SP_base" id="b454.calculix_D_SP_base">-D_SP_base</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SP_base(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_SP_base 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_SolveMap_" id="b454.calculix_D_SolveMap_">-D_SolveMap_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SolveMap_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_SolveMap_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_SubMtxList_" id="b454.calculix_D_SubMtxList_">-D_SubMtxList_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SubMtxList_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_SubMtxList_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_SubMtxManager_" id="b454.calculix_D_SubMtxManager_">-D_SubMtxManager_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SubMtxManager_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_SubMtxManager_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_SubMtx_" id="b454.calculix_D_SubMtx_">-D_SubMtx_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SubMtx_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_SubMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_SymbFac_" id="b454.calculix_D_SymbFac_">-D_SymbFac_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SymbFac_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_SymbFac_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_TIMINGS_" id="b454.calculix_D_TIMINGS_">-D_TIMINGS_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_TIMINGS_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_TIMINGS_ is not used with SPEC CPU.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Tree_" id="b454.calculix_D_Tree_">-D_Tree_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Tree_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Tree_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_UTILITIES_" id="b454.calculix_D_UTILITIES_">-D_UTILITIES_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_UTILITIES_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_UTILITIES_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_Utilities_" id="b454.calculix_D_Utilities_">-D_Utilities_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_Utilities_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_Utilities_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_ZV_" id="b454.calculix_D_ZV_">-D_ZV_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_ZV_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_ZV_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_cFILES_" id="b454.calculix_D_cFILES_">-D_cFILES_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_cFILES_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_cFILES_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b454.calculix_D_misc_" id="b454.calculix_D_misc_">-D_misc_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_misc_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+_misc_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+
+</div>
+<hr />
+</body>
+</html>

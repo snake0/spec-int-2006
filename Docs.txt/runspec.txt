@@ -1,0 +1,1505 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+                             The 'runspec' Command
+
+   Updated for SPEC CPU2006 (new features are highlighted)
+
+   Last updated: 23 Jul 2006 jlh
+   (To check for possible updates to this document, please see
+   http://www.spec.org/cpu2006/Docs/.)
+
+   Contents
+
+   1 Introduction
+
+   1.1 Who Needs runspec?
+
+   1.2 About Config Files
+
+   1.2.1 Finding a config file
+
+   1.2.2 Naming your config file
+
+   1.2.3 If you change only one thing...
+
+   1.3 About Defaults
+
+   1.4 About Disk Usage and Support for Multiple Users
+
+   1.4.1 Directory tree
+
+   1.4.2 Hey! Where did all my disk space go?
+
+   1.5 Multi-user support
+
+   1.5.1 Recommended sharing method: output_root
+
+   1.5.2 Alternative sharing methods
+
+   2 Before Using runspec
+
+   2.1 Install kit
+
+   2.2 Have a config file
+
+   2.3 Undefine SPEC
+
+   2.4 Set your path: Unix
+
+   2.5 Set your path: Windows
+
+   2.6 Check your disk space
+
+   3 Using runspec
+
+   3.1 Simplest usage
+
+   3.1.1 Reportable run
+
+   3.1.2 Running selected benchmarks
+
+   3.1.3 Output files
+
+   3.2 Syntax
+
+   3.3 Actions
+
+   3.4 Commonly used options
+
+   --action --check_version --config --copies --flagsurl --help
+   --ignore_errors --iterations --loose --output_format --rate --rawformat
+   --rebuild --reportable --tune
+
+   3.5 Less commonly used options
+
+   --basepeak --nobuild --comment --define --delay --deletework --extension
+   --fake --fakereport --fakereportable --[no]feedback --[no]graph_auto
+   --graph_max --graph_min --http_proxy --http_timeout --info_wrap_column
+   --machine --make_no_clobber --maxcompares --notes_wrap_column --reportonly
+   --review --[no]setprocgroup --size --test --[no]table --undef
+   --update_flags --username --verbose --version
+
+   4 Quick reference
+
+1 Introduction
+
+  1.1 Who Needs runspec?
+
+   Everyone who uses SPEC CPU2006 needs runspec. It is the primary tool in
+   the suite. It is used to build the benchmarks, run them, and report on
+   their results. All users of CPU2006 should read this document.
+
+   If you are a beginner, please start out by reading from the beginning
+   through section 3.1 Simplest Usage. That will probably be enough to get
+   you started.
+
+  1.2 About Config Files
+
+   In order to use runspec, you need a "config file", which contains detailed
+   instructions about how to build and run the benchmarks. You may not have
+   to learn much about config files in order to get started. Typically, you
+   start off using a config file that someone else has previously written.
+
+    1.2.1 Finding a config file
+
+   Where can you find such a config file? There are various sources:
+
+    1. Look in the directory $SPEC/config/ (Unix) or %SPEC%\config\
+       (Windows). You may find that there is a already a config file there
+       with a name that indicates that it is appropriate for your system. You
+       may even find that default.cfg already contains settings that would be
+       a good starting place for your system.
+
+    2. Look at the SPEC web site (http://www.spec.org/cpu2006/) for a CPU2006
+       result submission that used your system, or a system similar to yours.
+       You can download the config file from that submission.
+
+    3. You can review the examples in
+       $SPEC/config/example*.cfg (Unix) or
+       %SPEC%\config\example*.cfg (Windows).
+    4. Alternatively, you can write your own, using the instructions in
+       config.html
+
+   Note: links to SPEC CPU2006 documents on this web page assume that you are
+   reading the page from a directory that also contains the other SPEC
+   CPU2006 documents. If by some chance you are reading this web page from a
+   location where the links do not work, try accessing the referenced
+   documents at one of the following locations:
+
+     * www.spec.org/cpu2006/Docs/
+     * The $SPEC/Docs/ (Unix) or %SPEC%\Docs\ (Windows) directory on a system
+       where SPEC CPU2006 has been installed.
+     * The Docs/ directory on your SPEC CPU2006 distribution media.
+
+    1.2.2 Naming your config file
+
+   Once you have found a config file that you would like to use as a starting
+   point, you will probably find it convenient to copy it and modify it
+   according to your needs. There are various options:
+
+     * You can copy the config file to default.cfg. Doing so means that you
+       won't even need to mention --config on your runspec command line.
+
+     * You might find it useful to name config files after the date and the
+       test attempt: jan07a.cfg, jan07b.cfg, and so forth. This is alleged to
+       make it easier to trace the history of an experiment set.
+
+     * If you are sharing a testbed with other users, it is probably wise to
+       name the config file after yourself. For example, if Yusuf is trying
+       out the new Solaris Fortran95 compiler, he might say:
+
+       cd $SPEC/config
+       cp solaris-sparc-sunstudio.cfg yusuf-newF95.cfg
+       vi yusuf-newF95.cfg
+
+       and edit the new config file to add whatever options he wishes to try
+       out in the new compiler.
+
+    1.2.3 If you change only one thing...
+
+   At first, you may hesitate to change settings in config files, until you
+   have a chance to read config.html. But there is one thing that you might
+   want to change right away. Look for a line that says:
+
+   ext=
+
+   That line determines what extension will be added to your binaries. If
+   there are comments next to that line giving instructions ("# set ext to A
+   for this, or to B for that"), then set it accordingly. But if there are no
+   such instructions, then usually you are free to set the extension to
+   whatever you like, which can be very useful to ensure that your binaries
+   are not accidentally over-written. You might add your name in the
+   extension, if you are sharing a testbed with others. Or, you may find it
+   convenient to keep binaries for a series of experiments, to facilitate
+   later analysis; if you're naming your config files with names such as
+   jan07a.cfg, you might choose to use "ext=jan07a" in the config file.
+
+  1.3 About Defaults
+
+   The SPEC tools have followed two principles regarding defaults:
+
+    1. There should always be a default for everything
+    2. It should be easy to change the defaults
+
+   This means (the good news) that something sensible will usually happen,
+   even when you are not explicit about what you want. But it also means (the
+   bad news) that if something unexpected happens, you may have to look in
+   several places in order to figure out why it behaves differently than you
+   expect.
+
+   The order of precedence for settings is:
+
+   Highest precedence: runspec command              
+   Middle:             config file                  
+   Lowest:             the tools as shipped by SPEC 
+
+   Therefore, when this document tells you that something is the default,
+   bear in mind that your config file may have changed that setting. With
+   luck, the author of the config file will tell you so (perhaps in the
+   comments to the config file).
+
+  1.4 About Disk Usage
+
+    1.4.1 Directory Tree
+
+   The structure of the CPU2006 directory tree is:
+
+ $SPEC or %SPEC% - the root directory
+    benchspec    - some suite-wide files
+       CPU2006   - the benchmarks
+    bin          - tools to run and report on the suite
+    config       - config files
+    result       - log files and reports
+    tools        - sources for the CPU2006 tools
+
+   Within each of the individual benchmarks, the structure is:
+
+ nnn.benchmark - root for this benchmark
+    Spec       - SPEC metadata about the benchmark
+    data       
+       all     - data used by all runs (if needed by the benchmark)
+       ref     - the real data set, required for all result reporting
+       test    - data for a simple test that an executable is functional
+       train   - data for feedback-directed optimization
+    exe        - compiled versions of the benchmark
+    run        - all builds and runs take place here
+    src        - the sources for the benchmark
+
+    1.4.2 Hey! Where did all my disk space go?
+
+   When you find yourself wondering "Where did all my disk space go?", the
+   answer is "The run directories." All build and run activity takes place in
+   automatically created subdirectories of $SPEC/benchspec/CPU2006/*/run/
+   (Unix) or %SPEC%\benchspec\CPU2006\*\run\ (Windows).
+
+   For example, suppose Bob has a config file that he is using to test some
+   new memory optimizations, and has set
+
+   ext=BobMemoryOpt
+
+   in his config file. In that case, the tools would create directories such
+   as these:
+
+ $ pwd
+ /Users/bob/cpu2006/benchspec/CPU2006/401.bzip2/run
+ $ ls
+ build_base_BobMemoryOpt.0001
+ build_peak_BobMemoryOpt.0001
+ list
+ run_base_test_BobMemoryOpt.0001
+ run_base_train_BobMemoryOpt.0001
+ run_base_ref_BobMemoryOpt.0001
+ run_peak_test_BobMemoryOpt.0001
+ run_peak_train_BobMemoryOpt.0001
+ run_peak_ref_BobMemoryOpt.0001
+ $
+
+   To get your disk space back, see the documentation of the various cleaning
+   options, below; or issue a command such as the following (on Unix systems;
+   Windows users can select the files with Explorer):
+
+   rm -Rf $SPEC/benchspec/C*/*/run/run*BobMemory*
+
+   The effect of the above command would be to delete all the run directories
+   associated with the benchmarks which used extension *BobMemory*. Note that
+   the command did not delete the directories where the benchmarks were built
+   (*/run/build_*); sometimes it can come in handy to keep the build
+   directories, perhaps to assist with debugging.
+
+   (New for CPU2006 is the fact that directory names include the string
+   "build" or "run" followed by the extension; in CPU2000, they simply used
+   numbers.)
+
+   (If you are not sharing a SPEC CPU2006 installation with other users, you
+   can skip ahead to section 2.)
+
+  1.5 Multi-user support
+
+   The SPEC CPU2006 toolset provides support for multiple users of a single
+   installation, but the tools also rely upon users to make appropriate
+   choices regarding setup of operating-system file protections. This section
+   describes the multi-user features and describes ways of organizing
+   protections. First, to the features that are always enabled:
+
+     * The SPEC-distributed source directories and data directories are not
+       changed during testing. Instead, working directories are created as
+       needed for builds and runs.
+
+     * Each user's build and run directories are tagged with the name of the
+       user that they belong to (in the file nnn.benchmark/run/list).
+       Directories created for one user are not re-used for a different user.
+
+     * Multiple users can run tests at the same time. (Of course, if the jobs
+       compete with each other for resources, it is likely that they will run
+       more slowly.)
+
+     * Multiple users can even run the "same" test at the same time, and they
+       will automatically be given separate run directories.
+
+   If you have more than one user of SPEC CPU2006, you can use additional
+   features and choose from several different ways to organize the on-disk
+   layout to share usage of the product. The recommended way is described
+   first.
+
+  1.5.1 Recommended sharing method: output_root
+
+   The recommended method for sharing a SPEC CPU2006 installation among
+   multiple users has 4 steps:
+
+    1. Set output_root in the config files to change the destinations of
+       nearly all the outputs. For example, if $SPEC is set to /cs403 and if
+       ext=feb27a, then normally the build directory for 456.hmmer with base
+       tuning would be:
+
+       /cs403/benchspec/CPU2006/456.hmmer/run/build_base_feb27a.001
+
+       But if the config files include (near the top, before any occurrence
+       of a section marker, such as default=base=default:)
+
+ output_root=/home/${username}/spec
+ ext=feb27a
+
+       then Alan's build directory for 456.hmmer will be
+
+       /home/alan/spec/benchspec/CPU2006/456.hmmer/run/build_base_feb27a.001
+
+       and Wendy's will be
+
+       /home/wendy/spec/benchspec/CPU2006/456.hmmer/run/build_base_feb27a.001
+
+       With the above setting of output_root, log files and reports that
+       would normally go to /cs403/result instead will go to
+       /home/alan/spec/result and /home/wendy/spec/result. Alan will find
+       hmmer executables underneath
+       /home/alan/spec/benchspec/CPU2006/456.hmmer/exe. And so forth.
+
+    2. Therefore, most of the installed CPU2006 tree can be protected
+       read-only. For example, on a Unix system, you might set protections
+       with:
+
+ chmod -R ugo-w $SPEC
+
+    3. The one exception is config files themselves, which cannot be shared.
+       The above example, then, might have been produced by the following
+       sequence of commands:
+
+       Alan enters:
+
+ cd /cs403
+ . ./shrc
+ cp config/assignment1.cfg config/alan1.cfg
+ chmod u+w config/alan1.cfg
+ runspec --config alan1 --action build 456.hmmer
+
+       Wendy enters:
+
+ cd /cs403
+ . ./shrc
+ cp config/assignment1.cfg config/wendy1.cfg
+ chmod u+w config/wendy1.cfg
+ runspec --config wendy1 --action build 456.hmmer
+
+    4. Therefore, $SPEC/config/ (Unix) or %SPEC%\config\ (Windows) needs to
+       be a read/write directory that still must be shared by all the users.
+       It is written to by users when they create config files, and by the
+       tools themselves: config files are updated after successful builds to
+       associate them with their binaries.
+
+       On Unix, the above protection command needs to be supplemented with:
+
+ chmod 1777 $SPEC/config
+
+       which will have the effect (on most Unix systems) of allowing users to
+       create config files which they can choose to protect to allow access
+       only by themselves. For example, if Alan says
+
+ cp /cs403/config/assignment1.cfg /cs403/config/alan1.cfg
+ chmod u+w alan1.cfg
+ chmod go-rw /cs403/config/alan1.cfg
+
+       then other users will not be able to access alan1.cfg.
+
+   Summary: output_root is the recommended way to separate users. Set the
+   protection on the original tree to read-only, except for the config
+   directory, which should be set to allow users to write, and protect, their
+   own config files.
+
+   (The output_root feature is new with CPU2006.)
+
+  1.5.2 Alternative sharing methods
+
+   An alternative is to keep all the files in a single directory tree. In
+   this case:
+
+     * The directory tree must be writable by each of the users, which means
+       that they have to trust each other not to modify or delete each
+       others' files.
+
+     * Directories such as result, nnn.benchmark/exe and nnn.benchmark/run
+       are not segregated by user, so you can only have one version of (for
+       example) benchspec/CPU2006/400.perlbench/exe/perlbench_base.jan07a
+
+     * Note that user names do not appear in the directory names. For
+       example, if Lizy, Aashish, and Ajay are sharing a directory tree on a
+       Windows system, and each of them runs the ref workload for 401.bzip2
+       with base tuning and a config file that sets ext=wwc9, there will be
+       three directories created:
+
+       %SPEC%\benchspec\CPU2006\401.bzip2\run\run_base_ref_wwc9.0001
+       %SPEC%\benchspec\CPU2006\401.bzip2\run\run_base_ref_wwc9.0002
+       %SPEC%\benchspec\CPU2006\401.bzip2\run\run_base_ref_wwc9.0003
+
+       To discover which 401.bzip2 run directories belong to Lizy:
+
+       F:\> cd %SPEC%\benchspec\CPU2006\401.bzip2\run
+       F:\cpu2006\benchspec\CPU2006\401.bzip2\run> findstr lizy list
+
+       To discover which result files belong to Aashish:
+
+       F:\cpu2006> cd %SPEC%\result
+       F:\cpu2006\result> findstr aashish *log
+
+       (Of course, on Unix, that would be grep instead of findstr).
+
+   Name convention: Users sharing a tree can adopt conventions to make their
+   files more readily identifiable. As mentioned above, you can set your
+   config file name to match your own name, and do the same for the
+   extension.
+
+   Expid convention: Another alternative is to tag directories with labels
+   that help to identify them based on an "experiment ID", with the config
+   file feature expid, as described in config.html. (The expid is a new
+   feature of CPU2006.)
+
+   Spend the disk space: A final alternative, of course, is to not share. You
+   can simply give each user their own copy of the entire SPEC CPU2006
+   directory tree. This may be the easiest way to ensure that there are no
+   surprises (at the expense of extra disk space.)
+
+     ----------------------------------------------------------------------
+
+2 Before Using runspec
+
+   Before using runspec, you need to:
+
+  2.1 Install CPU2006
+
+   The runspec tool uses perl version 5.8.7, which is installed as specperl
+   when you install CPU2006. If you haven't already installed the suite, then
+   please see system-requirements.html followed by:
+
+     * install-guide-unix.html or
+     * install-guide-windows.html
+
+  2.2 Find a config file
+
+   You won't get far unless you have a config file, but fortunately you can
+   get started by using a pre-existing config file. See About Config Files,
+   above.
+
+  2.3 Undefine SPEC
+
+   If the environment variable SPEC is already defined (e.g. from a run of
+   some other SPEC benchmark suite), it may be wise to undefine it first,
+   e.g. by logging out and logging in, or by using whatever commands your
+   system uses for removing definitions (such as unset).
+
+   To check whether the variable is already defined, type
+
+   echo $SPEC (Unix) or
+   echo %SPEC% (Windows)
+
+   On Unix systems, the desired output is nothing at all; on Windows systems,
+   the desired output is %SPEC%.
+
+   Similarly, if your PATH includes tools from some other SPEC suite, it may
+   be wise to remove them from your path.
+
+   Next, you need to set your path appropriately for your system type.
+   See section 2.4 for Unix or section 2.5 for Windows.
+
+  2.4 Setting the path: Unix (and Mac OSX)
+
+   If you are using a Unix system, change your current directory to the
+   top-level SPEC directory and source either shrc or cshrc:
+
+     * For example, if you are using a Bourne-compatible shell (such as ash,
+       bash, ksh, zsh), you could type:
+       users$ cd /bigdisk/myke/cpu2006
+       cpu2006$ . ./shrc     <-- that's dot-space-dot-slash-shrc
+     * If you are using a csh-compatible shell, you could type:
+       users% cd /bigdisk/bob/cpu2006
+       cpu2006% source cshrc
+       (The cshrc script is new with CPU2006)
+
+  2.5 Setting the path: Windows
+
+   If you are using a Microsoft Windows system, start a Command Prompt Window
+   (previously known as an "MSDOS window"). Change to the directory where you
+   have installed CPU2006, then edit shrc.bat, following the instructions
+   contained therein. For example:
+
+   C:\> f:
+   F:\> cd diego\cpu2006
+   F:\diego\cpu2006\> copy shrc.bat shrc.bat.orig
+   F:\diego\cpu2006\> notepad shrc.bat
+
+   and follow the instructions in shrc.bat to make the appropriate edits for
+   your compiler paths.
+
+   Caution: you may find that the lines are not correctly formatted (the text
+   appears to be all run together) when you edit this file. If so, see the
+   section "Using Text Files on Windows" in the Windows installation guide.
+
+   Then set the path using your edited shrc.bat, for example:
+
+   F:\diego\cpu2006> shrc
+
+  2.6 Make sure that you have enough disk space.
+
+   Presumably, you checked to be sure you had enough space when you read
+   system-requirements.html, but now might be a good time to double check
+   that you still have enough. Typically, you will want to have at least 8 GB
+   free disk space at the start of a run. Windows users can say "dir", and
+   will find the free space at the bottom of the directory listing. Unix
+   users can say "df -k ." to get a measure of freespace in KB.
+
+   If you have done some runs, and you are wondering where your space has
+   gone, see section 1.4.2.
+
+     ----------------------------------------------------------------------
+
+3 Using runspec
+
+  3.1 Simplest usage
+
+    3.1.1 Reportable run
+
+   It is easiest to use runspec when:
+
+     * Some kind person has already compiled the benchmarks.
+
+     * That kind person provides both the compiled images and their
+       corresponding config file (see About Config Files above).
+
+     * The config file does not change the defaults in surprising or esoteric
+       ways (see About Defaults above).
+
+   In this lucky circumstance, all that needs to be done is to name the
+   config file, select which benchmark suite is to be run: int for the
+   SPECint2006 benchmarks or fp for the SPECfp2006 benchmarks, and say
+   --reportable to attempt a full run.
+
+   For example, suppose that Wilfried wants to give Ryan a config file and
+   compiled binaries with some new integer optimizations for a Unix system.
+   Wilfried might type something like this:
+
+ [/usr/wilfried]$ cd $SPEC
+ [/bigdisk/cpu2006]$ spectar -cvf - be*/C*/*/exe/*newint* config/newint.cfg | specbzip2 > newint.tar.bz2
+
+   and then Ryan might type something like this:
+
+ ryan% cd /usr/ryan/cpu2006
+ cpu2006% bash
+ bash-2.05$ . ./shrc
+ bash-2.05$ specbzip2 -dc newint.tar.bz2 | spectar -xf -
+ bash-2.05$ runspec --config newint.cfg --nobuild --reportable int
+
+   In the example above, the --nobuild emphasizes that the tools should not
+   attempt to build the binaries; instead, the prebuilt binaries should be
+   used. If there is some reason why the tools don't like that idea (for
+   example: the config file does not match the binaries), they will complain
+   and refuse to run, but with --nobuild they won't go off and try to do a
+   build.
+
+   As a another example, suppose that Reinhold has given Kaivalya a Windows
+   config file with changes from 12 August, and Kaivalya wants to run the
+   floating point suite. He might say something like this:
+
+ F:\kaivalya\cpu2006\> shrc
+ F:\kaivalya\cpu2006\> specbzip2 -dc reinhold_aug12a.tar.bz2 | spectar -xf -
+ F:\kaivalya\cpu2006\> runspec --config reinhold_aug12a --reportable fp
+
+    3.1.2 Running selected benchmarks
+
+   If you want to run a subset of the benchmarks, rather than running the
+   whole suite, you can name them. Since a reportable run uses an entire
+   suite, you will need to turn off reportable:
+
+ [/usr/mat/cpu2006]$ runspec --config mat_dec25j.cfg --noreportable 482.sphinx3
+
+    3.1.3 Output files
+
+   Look for the output of your runspec command in the directory $SPEC/result
+   (Unix) or %SPEC%\result (Windows). There, you will find log files and
+   result files. More information about log files can be found in
+   config.html.
+
+   The format of the result files depends on what was selected in your config
+   file, but will typically include at least .txt for ASCII text, and will
+   always include .rsf, for raw (unformatted) run data. More information
+   about result formats can be found below, under --output_format. Note that
+   you can always re-generate the output, using the --rawformat option, also
+   documented below.
+
+   This concludes the section on simplest usage.
+   If simple commands such as the above are not enough to meet your needs,
+   you can find out about commonly used options by continuing to read the
+   next 3 sections (3.2, 3.3, and 3.4).
+
+  3.2 Syntax
+
+   The syntax for the runspec command is:
+
+ runspec [options] [list of benchmarks to run]
+
+   Options are described in the following sections. There, you will notice
+   that many options have both long and short names. The long names are
+   invoked using two dashes, and the short names use only a single dash. For
+   long names that take a parameter, you can optionally use an equals sign.
+   Long names can also be abbreviated, provided that you still enter enough
+   letters for uniqueness. For example, the following commands all do the
+   same thing:
+
+ runspec --config=dianne_july25a --debug=99 fp
+ runspec --config dianne_july25a --debug 99 fp
+ runspec --conf dianne_july25a   --deb 99   fp
+ runspec -c dianne_july25a       -v 99      fp
+
+   The list of benchmarks to run can be either an entire suite ("int" or
+   "fp") or one or more individual benchmarks. Individual benchmarks can be
+   named, numbered, or both; and they can be abbreviated, as long as you
+   enter enough characters for uniqueness. For example, each of the following
+   commands does the same thing:
+
+ runspec -c jason_july09d --noreportable 459.GemsFDTD 465.tonto
+ runspec -c jason_july09d --noreportable 459 465
+ runspec -c jason_july09d --noreportable GemsFDTD tonto
+ runspec -c jason_july09d --noreportable Gem ton
+
+   It is also possible to exclude a benchmark, using a hat (^, also known as
+   carat, typically found as shift-6). For example, suppose your system lacks
+   a C++ compiler, and you therefore cannot run the integer benchmarks
+   471.omnetpp, 473.astar, and 483.xalancbmk. You could run all of the
+   integer benchmarks except these by entering a command such as this one:
+
+ runspec --noreportable -c kathy_sep14c int ^omnet ^astar ^xalanc
+
+   Note that if hat has significance to your shell, you may need to protect
+   it from interpretation by the shell, for example by putting it in single
+   quotes. On Windows, you will need to use both a hat and double quotes for
+   each benchmark you want to exclude, like this:
+
+ E:\cpu2006> runspec --noreportable -c cathy_apr21b int  "^omnet"  "^astar"  "^xalanc"
+
+  3.3 Actions
+
+   Every time runspec is used, it normally takes some kind of action for the
+   set of benchmarks specified at the end of the command line (or defaulted
+   from the config file). The default action is validate, which means that
+   the benchmarks will be built if necessary, the run directories will be set
+   up, the benchmarks will be run, and reports will be generated.
+
+   If you want to cause a different action, then you can enter one of the
+   following runspec options:
+
+                       Compile the benchmarks. More information about         
+   --action build      compiling may be found in config.html, including       
+                       information about additional files that are output     
+                       during a build.                                        
+                       Set up build directories for the benchmarks, but do    
+   --action buildsetup not attempt to compile them. (The buildsetup action is 
+                       new with CPU2006)                                      
+                       Preprocess the config file and dump it to stdout       
+   --action configpp   (Config file preprocessing is a new feature of         
+                       CPU2006)                                               
+                       Run the benchmarks but do not bother to verify that    
+                       they got the correct answers. Reports are always       
+                       marked "invalid", since the correctness checks are     
+                       skipped. Therefore, this option is rarely useful, but  
+   --action onlyrun    it can be selected if, for example, you are generating 
+                       a performance trace and wish to avoid tracing some of  
+                       the tools overhead. (For CPU2000, this option was      
+                       spelled "run", but for CPU2006 the name has been       
+                       changed to clarify what it does.)                      
+   --action report     Synonym for --fakereport; see also --fakereportable.   
+                       Synonym for --action validate. (CPU2006 changes the    
+   --action run        meaning of "--action run" in an attempt to better      
+                       match what users expect "run" to do.)                  
+   --action runsetup   Set up the run directories. Copy executables and data  
+                       to work directories. (Synonym: --action setup)         
+   --action validate   Build (if needed), run, check for correct answers, and 
+                       generate reports.                                      
+
+   In addition, the following cleanup actions are available (in order by
+   level of vigor):
+
+                      Empty all run and build directories for the specified   
+                      benchmark set for the current user. For example, if the 
+                      current OS username is set to jeff and this command is  
+   --action clean     entered:                                                
+                      D:\cpu2006\> runspec --action clean --config may12a fp  
+                      then the tools will remove run directories with         
+                      username jeff (in nnn.benchmark\run\list) for fp        
+                      benchmarks generated by config file may12a.cfg.         
+   --action trash     Same as clean, but do it for all users of this SPEC     
+                      directory tree.                                         
+   --action realclean A synonym for --action trash                            
+   --action clobber   Clean + remove all executables of the current type for  
+                      the specified benchmark set.                            
+   --action scrub     Remove everybody's run and build directories and all    
+                      executables for the specified benchmark set.            
+
+   Alternative cleaning method:
+
+   If you prefer, you can clean disk space by entering commands such as the
+   following (on Unix systems):
+
+ rm -Rf $SPEC/benchspec/C*/*/run
+ rm -Rf $SPEC/benchspec/C*/*/exe
+
+   Windows users can achieve a similar effect using Windows Explorer. Notice
+   that the above commands not only empty the contents of the run and exe
+   directories; they also delete the directories themselves. That's fine; the
+   tools will re-create the run and exe directories if they are needed again
+   later on.
+
+   Or if you prefer to do all cleaning by hand (perhaps after reviewing the
+   results of each run), you can ask the tools to never touch a used run
+   directory. Do this by setting the environment variable:
+   SPEC_CPU2006_NO_RUNDIR_DEL
+
+  3.4 Commonly used options
+
+   Most users of runspec will want to become familiar with the following
+   options.
+
+    --action action
+
+     * Synonym: -a action
+     * Default: validate
+     * Meaning: One of the following actions that runspec can do for you:  
+       build, buildsetup, clean, clobber, configpp, onlyrun, realclean,
+       report, run, scrub, setup, trash, or validate. For more information,
+       see Actions, above
+
+    --check_version
+
+     * Default: check only when doing reportable runs
+     * Meaning: From time to time, SPEC may update the CPU2006 suite.
+       Typically, SPEC will not publish results at www.spec.org/cpu2006
+       unless they have been run using the most recent update. Prior to
+       investing substantial time running your tests, it is recommended that
+       you check whether your version is up to date, either by saying runspec
+       --check_version, or by adding the switch to whatever else you were
+       doing on your runspec command. Note that if you are running within a
+       firewall, you may need to add a proxy server to the command line. For
+       example:
+
+    runspec --check_version --http_proxy http://webcache.tom.spokewrenchdad.com:8080
+
+       or, equivalently, for those who prefer to abbreviate to the shortest
+       possible amount of typing:
+
+    runspec --ch --http_p http://webcache.tom.spokewrenchdad.com:8080
+
+       The command downloads a small file (~15 bytes) from www.spec.org which
+       contains information about the most recent release, and compares that
+       to your release. If your version is out of date, a warning will be
+       printed. The ability to check your version vs. www.spec.org is new
+       with CPU2006.
+
+    --config name
+
+     * Synonym: -c name
+     * Default: default.cfg
+     * Meaning: Use config file $SPEC/config/name.cfg (Unix) or
+       %SPEC%\config\name.cfg (Windows). If not specified, the tools will try
+       default.cfg
+
+    --copies number
+
+     * Synonyms: -C number
+     * Default: 1
+     * Meaning: Use number copies for a SPECrate run. See also --rate.
+
+       Note: specifying the number of copies on the command line will
+       override a config file setting of copies that occurs in the "header
+       section"; but it will not override any per-benchmark settings for
+       copies.
+
+       (In CPU2000, "--copies" was called "--users".)
+
+    --flagsurl URL
+
+     * Synonym: -F URL
+     * Default: none
+     * Meaning: A "flags file" provides information about how to interpret
+       and report on the flags (e.g. -O5, -fast, etc.) that are used in a
+       config file. The --flagsurl switch says that a flags file may be found
+       at the specified URL (such as http://myflags.com/flags.xml). URL
+       schemes supported are http, ftp, and file. A URL without a scheme is
+       assumed to be a file or path name. If you need to specify an http
+       proxy, you can do so in your config file, by using the --http_proxy
+       command line switch, or via the environment variable http_proxy.
+
+       The special value noflags may be used to cause rawformat to remove a
+       stored flags file when re-formatting a previously run result.
+
+       Flags files are required by run rule 4.2.5. If a run is marked
+       "invalid" because some flags are "unknown", you may be able to resolve
+       the invalid marking by finding, or creating, a flags file with proper
+       descriptions and entering commands such as:
+
+ cp CINT2006.559.rsf retry
+ rawformat --flagsurl myfixedflags.xml --output_format pdf,raw retry
+
+       The first command preserves the original raw file, which is always
+       recommended before doing any operations that create a new raw file.
+       The second command creates retry.rsf and retry.pdf, both of which will
+       include descriptions of flags from myfixedflags.xml. If you are
+       submitting a result to SPEC, the newly-generated rawfile is the one to
+       submit.
+
+       Note that saying rawformat is equivalent to saying runspec
+       --rawformat, as described below.
+
+       On Windows systems, the first command above would use copy instead of
+       cp. Also, if Windows refuses to accept the syntax with a comma in it,
+       you might have to generate just the rawfile as a first step, then
+       generate other format(s).
+
+       You can find out more about how to write flag description files in
+       flag-description.html.
+
+       (Flag reporting is new in CPU2006.)
+
+    --help
+
+     * Synonyms: -h | -?
+     * Default: Help text is not displayed.
+     * Meaning: Print helpful text
+
+    --ignore_errors
+
+     * Synonyms: -I | --ignoreerror
+     * Default: Stop on first error.
+     * Meaning: Continue running even if errors occur.
+
+    --iterations number
+
+     * Synonym: -n number
+     * Default: 3
+     * Meaning: How many times to run each benchmark. For a reportable run,
+       must be 3.
+
+    --loose
+
+     * Synonyms: -l | --nostrict | --noreportable
+     * Default: loose
+     * Meaning: Unset reportable. For example, suppose that you have a golden
+       config file that is used for reportable runs, which sets the config
+       file option reportable. However, you aren't ready to do a reportable
+       run, because you first want to ensure that the system under test is
+       adequately configured to run the benchmark 483.xalancbmk. Since the
+       config file sets the option reportable, the following command will
+       result in an error message:
+
+ [/usr/mwong/cpu2006]$ runspec --config golden --iterations 1 483.xalancbmk
+
+       as the SPEC tools will inform you that you cannot change the number of
+       iterations on a reportable run. But either of the following commands
+       will override the config file and just run 483.xalancbmk once:
+
+ [/usr/mwong/cpu2006]$ runspec --config golden --iterations 1 --loose 483.xalancbmk
+ [/usr/mwong/cpu2006]$ runspec --config golden --iterations 1 --noreportable 483.xalancbmk
+
+    --output_format format
+
+     * Synonym: -o format
+     * Default: HTML and text
+     * Meaning: Desired report format, one or more of the following. If more
+       than one option is used, separate them by commas. The values are not
+       case-sensitive.
+
+              all             implies all of the following except screen,     
+                              check, and mail                                 
+                              config file used for this run (e.g.             
+      cfg|config|conffile     CINT2006.030.cfg) (New for CPU2006: the config  
+       configfile|cfgfile     file is adjusted to include any changes you may 
+                              have made to fields for readers, as described   
+                              in utility.html.)                               
+                              Submission syntax check. This is automatically  
+      check|chk|subcheck|     enabled for reportable runs. (The ability to    
+          subtest|test        check syntax locally, prior to submitting a     
+                              result to SPEC, is new with CPU2006.)           
+                              Comma-separated variable (e.g.                  
+        csv|spreadsheet       CINT2006.030.csv). (The CSV format is new with  
+                              CPU2006 and is strongly recommended if you are  
+                              planning to use a spreadsheet to do analysis.)  
+            default           implies HTML and text                           
+                              Flag report (e.g. CINT2006.030.flags.html).     
+           flag|flags         Will also be produced when formats that use it  
+                              are requested (PDF, HTML). (Flag reporting is   
+                              new with CPU2006.)                              
+       html|xhtml|www|web     web page (e.g. CINT2006.030.html)               
+                              All generated reports will be sent to an        
+       mail|mailto|email      address specified in the config file. (The      
+                              ability to email reports is new with CPU2006.)  
+                              Portable Document Format (e.g.                  
+                              CINT2006.030.pdf). This format is the design    
+                              center for SPEC CPU2006 reporting. Other        
+           pdf|adobe          formats contain less information: text lacks    
+                              graphs, postscript lacks hyperlinks, and HTML   
+                              is less structured. (It does not appear as part 
+                              of "default" only because some systems may lack 
+                              the ability to read PDF.)                       
+         postscript|ps|       PostScript (e.g. CINT2006.030.ps)               
+         printer|print        
+                              raw results, e.g. CINT2006.030.rsf. Note: you   
+                              will automatically get an rsf file for commands 
+            raw|rsf           that run a test or that update a result (such   
+                              as rawformat --flagsurl). (In CPU2000, raw      
+                              results were written to ".raw" files; for       
+                              CPU2006, they are written to ".rsf" files.)     
+        screen|scr|disp|      ASCII text output to stdout. (Report generation 
+     display|terminal|term    to stdout is new with CPU2006.)                 
+                              ASCII text, e.g. CINT2006.030.txt. (For         
+       text|txt|ASCII|asc     CPU2000, ascii output went to files of type     
+                              .asc; for CPU2006, the type is .txt.)           
+   Many of the synonyms above Now, you don't have to scratch your head and    
+   are newly accepted in      try to remember whether to spell your desired   
+   CPU2006.                   output format as "ps" or as "postscript".       
+                              CPU2006 causes less dandruff than CPU2000.      
+
+    --rate [copies]
+
+     * Synonym: -r
+     * Default: speed run (i.e. non-rate)
+     * Meaning: Select rate run instead of speed. If a parameter is supplied,
+       it specifies the number of copies to run. (This is identical to
+       specifying the number of copies to run via the --copies command-line
+       switch (which see for some important additional detail). For example,
+       the following commands both would do a 4-copy SPECint_rate2006 run:
+
+ /bigdisk/cpu2006$ runspec --config tony_may12a --rate 4 int
+ /bigdisk/cpu2006$ runspec --config tony_may12a --rate --copies 4 int
+
+       If you have also entered --rawformat, then the effect of --rate is to
+       format the rawfile for rate even if it was originally a speed run.
+       That is, it is valid to report a single copy run as both speed and
+       rate. (In CPU2000, you could specify that you wanted, say, 4 copies by
+       entering "--rate --users 4"; for CPU2006 the syntax has been
+       simplified to just "--rate 4".)
+
+    --rawformat rawfiles
+
+     * Synonym: -R rawfile
+     * Default: Do not use rawformat mode.
+     * Meaning: Take an existing run and just generate the reports. This
+       option is useful if (for example) you are just doing ASCII output
+       during most of your runs, but now you would like to create additional
+       reports for one or more especially interesting runs. To create the
+       html and postscript files for experiment number 324, you could say:
+
+ runspec --rawformat --output_format html,ps $SPEC/result/CPU2006.324.rsf
+
+       You can achieve the same effect by using rawformat:
+
+ rawformat --output_format html,ps $SPEC/result/CPU2006.324.rsf
+
+       For more information about rawformat, please see utility.html
+
+    --rebuild
+
+     * Synonym: -D
+     * Default: Do not rebuild unless binary is missing or does not match the
+       config file.
+     * Meaning: Delete existing binaries and recompile. Use this if, for
+       example, you have installed a new version of your compiler and want to
+       force a rebuild of the benchmarks.
+
+    --reportable
+
+     * Synonyms: -s | --strict | --noloose
+     * Default: loose
+     * Meaning: Wherever it is practical to do so in an automated fashion,
+       enforce the CPU2006 run rules, so as to produce a result which is
+       suitable for public reporting and/or submission to SPEC. Note that
+       this option forces various other options, such as iterations =3.
+
+    --tune tuning
+
+     * Synonyms: --tuning tuning | -T tuning
+     * Default: base
+     * Meaning: Selects tuning to use: base, peak, or all. For a reportable
+       run, must be either base or all. Reportable runs do base first, then
+       (optionally) peak.
+
+  3.5 Less commonly used options
+
+    --basepeak [bench,bench,...]
+
+     * Synonym: None
+     * Default: Do not do basepeak when reformatting results.
+     * Meaning: This switch only has meaning when reformatting previously-run
+       results. When no arguments are specified, this switch will perform
+       base to peak substitution for all benchmarks in the result file. If
+       arguments are given, they must be the name of benchmarks or benchmark
+       suites, and the base results for only those benchmarks will be copied
+       over the peak results for only those benchmarks.
+       Note: Use of this option will cause rawformat to output only a raw
+       file. This is to help ensure that there is always a raw file present
+       to match any generated results.
+
+    --nobuild
+
+     * Synonym: -N
+     * Default: normally, the tools will make their own decision of whether
+       to rebuild, based on whether the binaries exist, or whether they match
+       the expected MD5 sums.
+     * Meaning: Do not build binaries, even if they don't exist or MD5 sums
+       don't match. This feature can be very handy if, for example, you have
+       a long script with multiple invocations of runspec, and you would like
+       to ensure that the build is only attempted once. (Perhaps your thought
+       process might be, "If it fails the first time, fine, just forget about
+       it until I come in Monday and look things over.") By adding --nobuild
+       --ignore_errors to all runs after the first one, no attempt will be
+       made to build the failed benchmarks after the first attempt.
+       (--nobuild is a new feature of CPU2006.)
+
+    --comment "comment text"
+
+     * Synonym: None
+     * Default: Add no comment.
+     * Meaning: Adds a comment to the log file and the stored configuration
+       file. (--comment is a new feature of CPU2006)
+
+    --define SYMBOL[=VALUE]
+
+     * Synonym: -S SYMBOL[=VALUE]
+     * Default: Do not define config file preprocessor macros.
+     * Meaning: Defines a preprocessor macro named SYMBOL (for use in your
+       config file) and optionally gives it the value VALUE. If no value is
+       specified, the macro is defined with no value. This option may be used
+       multiple times. For example if a config file says:
+
+ %ifdef %{use_sparc_v9}
+         ext            = darryl.native64
+         mach           = native64
+         ARCH_SELECT    = -xtarget=native64
+ %else
+         ext            = darryl.native32
+         mach           = default
+         ARCH_SELECT    = -xtarget=native
+ %endif
+ default=base:
+ OPTIMIZE     = -O ${ARCH_SELECT}
+
+       Then saying runspec --define use_sparc_v9=1 will cause base
+       optimization to be -O -xtarget=native64
+
+       (The ability to define symbols for use in the config file is a new
+       feature of CPU2006.)
+
+    --delay secs
+
+     * Synonym: None
+     * Default: Add no delay.
+     * Meaning: Add a delay of the specified number of seconds before and
+       after each benchmark (specinvoke) invocation. The delay is not counted
+       toward the benchmark runtime. This option is silently ignored during
+       reportable runs. (--delay is a new feature of CPU2006)
+
+    --deletework
+
+     * Synonym: -d
+     * Default: Do not delete working directories.
+     * Meaning: Delete run directories and re-populate. Use this if you
+       suspect that the run directories may have been corrupted, for example
+       due to a system crash during setup of an earlier run. You might also
+       use this if you just wish to ensure clean run directories, but note
+       that the tools will automatically provide what they deem to be a
+       sufficient level of cleaning.
+
+    --extension name[,name...]
+
+     * Synonyms: --ext name[,name...] | -e name[,name...]
+     * Default: none
+     * Meaning: Extensions to build or run. Normally used only if the config
+       file has been written to handle more than one extension. The config
+       file author should tell you what extensions to enter under which
+       circumstances. Note that if you specify multiple extensions, multiple
+       separate runs will be performed.
+       Note: The extension used may only consist of alphanumeric characters,
+       underscores, hyphens, and periods.
+       Note to Windows users: Because of the command-line preprocessing
+       performed by cmd.exe, this feature cannot be used on Windows. (The
+       ability to run more than one extension in a single invocation of
+       runspec is a new feature of CPU2006.)
+
+    --fake
+
+     * Synonyms: --dryrun | --dry-run
+     * Default: Really do the actions requested.
+     * Meaning: List, but do not execute, the commands needed to build or run
+       the benchmarks.
+          * Use --fake --action build to get a listing of the commands needed
+            to build a benchmark.
+          * Use --fake --action run to get a listing of the commands needed
+            to run a benchmark. (If the benchmark executable does not exist,
+            you will also get a listing of the needed build commands.)
+       Runspec uses specmake -n and specinvoke -n to generate these listings.
+       (Generation of fake commands via runspec is a new feature of CPU2006.)
+
+    --fakereport
+
+     * Synonyms: --action=report | --reportonly
+     * Default: Not set
+     * Meaning: Process the config file and generate output as if a run had
+       been done. The results will all be zero, but otherwise the report will
+       be correctly formatted, as if it had come from an actual run. Note
+       that if your config file or command line includes options that would
+       cause a real run to be marked invalid (for example, setting
+       iterations=1 or --size=test), then the tools will also mark the fake
+       report as invalid. If your goal is to get a preview of what the final,
+       golden run will look like, you might prefer --fakereportable.
+       (--fakereport is a new feature of CPU2006)
+
+    --fakereportable
+
+     * Synonyms: --mockup
+     * Default: Not set
+     * Meaning: Process the config file and generate output as if a
+       "reportable" run had been done. The results will all be zero, but
+       otherwise the report will be correctly formatted, as if it had come
+       from a reportable run. (--fakereportable is a new feature of CPU2006)
+
+    --[no]feedback
+
+     * Synonyms: none
+     * Default: --feedback
+     * Meaning: Normally, when any of the PASSn_xFLAGS are defined, the tools
+       do multiple-pass compilation with training runs between each pass.
+       Using --nofeedback will cause the PASSn flags to be ignored and a
+       single-pass compilation will occur. Notice that explicitly specifying
+       --feedback without having appropriate PASSn flags in the configuration
+       file will have no effect. Specifying --feedback is therefore useful
+       only as a means of overriding a previously specified --nofeedback, or
+       as a means of overriding a config file setting of feedback=0. Be
+       careful: the flag only overrides a global setting for feedback=0; it
+       will not affect individual benchmarks that have this setting. (Control
+       of the config file "feedback" variable from the runspec command line
+       is a new feature for CPU2006)
+
+    --[no]graph_auto
+
+     * Synonyms: --[no]graphauto
+     * Default: --nograph_auto
+     * Meaning: frees the tools to pick a value that they think appropriate
+       for the top and bottom of the Y axis. The maximum and minimum chosen
+       will attempt to let the viewer observe differences among the
+       benchmarks. By default, the minimum will instead be anchored to zero.
+       (Unlike CPU2000, the CPU2006 suite provides users with the ability to
+       make some choices about how graphs are drawn.)
+
+    --graph_max N
+
+     * Synonyms: --graphmax
+     * Default: big enough (plus a little)
+     * Meaning: Allows you to specify a new value for the maximum point on
+       the graph scale. (Unlike CPU2000, the CPU2006 suite provides users
+       with the ability to make some choices about how graphs are drawn.)
+
+    --graph_min N
+
+     * Synonyms: --graphmin N
+     * Default: 0
+     * Meaning: Allows you to specify a new value for the minimum point on
+       the graph scale. (Unlike CPU2000, the CPU2006 suite provides users
+       with the ability to make some choices about how graphs are drawn.)
+
+    --http_proxy proxy[:port]
+
+     * Synonyms: none
+     * Default: none
+     * Meaning: In some cases, such as when doing version checks and loading
+       flag description files, runspec will attempt to fetch a file, using
+       http. If your web browser needs a proxy server in order to access the
+       outside world, then runspec will probably want to use the same proxy
+       server. The proxy server can be set by:
+
+          * The runspec --http_proxy switch, or
+          * The environment variable http_proxy, or
+          * Using the config file http_proxy option
+
+       For example, a failure of this form:
+
+ $ runspec --rawformat --output_format txt \
+    --flagsurl http://portlandcyclers.net/evan.xml  CFP2006.007.rsf
+ ...
+ Retrieving flags file (http://portlandcyclers.net/evan.xml)...
+
+ ERROR: Specified flags URL (http://portlandcyclers.net/evan.xml) could not be retrieved.
+        The error returned was: 500 Can't connect to portlandcyclers.net:80
+        (Bad hostname 'portlandcyclers.net')
+
+       improves when a proxy is provided:
+
+ $ runspec --rawformat --output_format txt \
+    --flagsurl http://portlandcyclers.net/evan.xml  \
+    --http_proxy=http://webcache.tom.spokewrenchdad.com:8080 CFP2006.007.rsf
+
+       Note that this setting will override the value of the http_proxy
+       environment variable, as well as any setting in the config file.
+
+       By default, no proxy is used. The special value none may be used to
+       unset any proxies set in the environment or via config file. Support
+       for proxies is new with CPU2006.
+
+    --http_timeout N
+
+     * Synonyms: none
+     * Default: 30 seconds
+     * Meaning: This is the amount of time (in seconds) to wait while
+       attempting to fetch a file via HTTP. If the connection cannot be
+       established in this amount of time, the attempt will be aborted.
+       Support for http timeouts is new with CPU2006.
+
+    --info_wrap_columns N
+
+     * Synonym: --infowrap N
+     * Default: 50
+     * Meaning: When set to a value greater than 0, attempts to split
+       non-notes informational lines such that they are no longer than N
+       columns wide. Lines are split on whitespace, and newly created lines
+       are guaranteed to have at least the same indentation as the original
+       line.
+       If a line contains an item that is longer than N, a warning is logged
+       and the original line is left unchanged. (Automatic wrapping, and the
+       ability to control it, is a new feature of CPU2006.)
+
+    --machine name[,name...]
+
+     * Synonym: --mach name[,name...] | -m name[,name...]
+     * Default: none
+     * Meaning: The machines to build for or to run. Normally used only if
+       the config file has been written to handle more than one machine type.
+       The config file author should tell you what machines are supported by
+       the config file.
+
+       Important note: If you specify multiple machine types, multiple runs
+       will be performed. Because the benchmark binary names contain only the
+       extension, it is quite possible, even easy, to cause binaries built in
+       one run to be overwritten by subsequent runs. In practice, the ability
+       to specify multiple machine types should rarely be used.
+
+       Note: The machine name may only consist of alphanumerics, underscores,
+       hyphens, and periods.
+
+       Note to Windows users: Because of the command-line preprocessing
+       performed by cmd.exe, it is not possible to run more than one machine
+       type on Windows.
+
+       (The ability to run more than one machine type in a single invocation
+       of runspec is a new feature of CPU2006.)
+
+    --make_no_clobber
+
+     * Synonym: -M
+     * Default: clobber
+     * Meaning: Do not delete existing object files before attempting to
+       build. This option should only be used for troubleshooting a
+       problematic compile. It is against the run rules to use it when
+       building binaries for an actual submission.
+
+       For a better way of troubleshooting a problematic compile, see the
+       information about specmake in utility.html
+
+    --maxcompares N
+
+     * Synonym: --max_active_compares N
+     * Default: the same as number specified for --copies
+     * Meaning: Set the number of concurrent compares to N. This option is
+       useful if you have multiple CPUs and are doing a rate run. Do not
+       exceed the value that was specified for --copies.
+
+    --notes_wrap_columns N
+
+     * Synonym: --noteswrap
+     * Default: 0 (disabled)
+     * Meaning: When set to a value greater than 0, attempts to split notes
+       lines such that they are no longer than N columns wide. Lines are
+       split on whitespace, and newly created lines are guaranteed to have at
+       least the same indentation as the original line.
+       If a line contains an item that is longer than N, a warning is logged
+       and the original line is left unchanged. (Automatic wrapping, and the
+       ability to control it, is a new feature of CPU2006.)
+
+    --review, --noreview
+
+     * Synonym: none
+     * Default: --noreview
+     * Meaning: Format results for review; currently this means that flags
+       marked to be hidden will be displayed anyway (but the fact that they
+       are usually hidden will be noted.) (Formatting for review is a new
+       feature of CPU2006, as is flag reporting.)
+
+    --setprocgroup, --nosetprocgroup
+
+     * Synonyms: none
+     * Default: --setprocgroup
+     * Meaning: Attempt to create all processes in a single group. Improves
+       the chances that ^C will get the whole run, not just one of the
+       children.
+
+    --size size[,size...]
+
+     * Synonyms: -i size | --input size
+     * Default: ref
+     * Meaning: Selects size of input data to run: test, train, or ref. For
+       example, you might choose to run test while debugging a new set of
+       compilation options. Reportable runs ensure that your binaries can
+       produce correct results with the test and train workloads (this is a
+       new requirement of the CPU2006 run rules) and then run the ref
+       workload 3 times for the actual measurements. (The ability to run more
+       than one size in a single invocation of runspec is a new feature for
+       CPU2006.)
+
+    --test
+
+     * Synonyms: none
+     * Default: do not run test
+     * Meaning: Run various perl validation tests on specperl
+
+    --table, --notable
+
+     * Synonyms: none
+     * Default: --table
+     * Meaning: For ASCII reports, include a detailed table of all runs
+
+    --undef SYMBOL
+
+     * Synonym: None
+     * Default:
+     * Meaning: Removes the definition of any preprocessor macro named
+       SYMBOL.
+       This option may be used multiple times. (Config file preprocessing,
+       and symbol manipulation from the command line, is a new feature for
+       CPU2006.)
+
+    --update_flags
+
+     * Synonym: --flagupdate | --flagsupdate | --newflags | --getflags
+     * Default: do not check
+     * Meaning: Checks for updates of the benchmark flag description files at
+       www.spec.org; you would not normally use this option unless directed
+       to do so for a support problem. Its usage requires a working internet
+       connection. When this option is used, runspec will not perform any
+       other actions. (Flag reporting, and the ability to update flag
+       description files, is a new feature for CPU2006.)
+
+    --username name
+
+     * Synonym: -U name
+     * Default: same as current process
+     * Meaning: Name of user. Useful if multiple users are sharing a SPEC
+       tree. Please see About Disk Usage and Support for Multiple Users,
+       above.
+
+    --verbose n
+
+     * Synonyms: --debug n | -v n
+     * Default: 5
+     * Meaning: Set verbosity level to a level between 1 and 99. For more
+       information, see config.html
+
+    --version
+
+     * Synonym: -V
+     * Default: Print short version information.
+     * Meaning: Print detailed version information for the SPEC CPU tool
+       suite.
+
+     ----------------------------------------------------------------------
+
+4 Quick reference
+
+   (This table is organized alphabetically, without regard to upper/lower
+   case, and without regard to the presence of a leading "no").
+
+           -a           Same as --action                                         
+     --action action    Do: build|buildsetup|clean|clobber|configpp|scrub|       
+                        report|run|setup|trash|validate                          
+       --basepeak       Copy base results to peak (use with --rawformat)         
+        --nobuild       Do not attempt to build binaries                         
+           -c           Same as --config                                         
+           -C           Same as --copies                                         
+    --comment "text"    Add a comment to the log and the stored configfile.      
+      --config file     Set config file for runspec to use                       
+        --copies        Set the number of copies for a rate run                  
+           -D           Same as --rebuild                                        
+           -d           Same as --deletework                                     
+         --debug        Same as --verbose                                        
+        --define        Define a config preprocessor macro                       
+     SYMBOL[=VALUE]     
+      --delay secs      Add delay before and after benchmark invocation          
+      --deletework      Force work directories to be rebuilt                     
+        --dryrun        Same as --fake                                           
+        --dry-run       Same as --fake                                           
+           -e           Same as --extension                                      
+          --ext         Same as --extension                                      
+       --extension      Set the extensions                                       
+      ext[,ext...]      
+           -F           Same as --flagsurl                                       
+         --fake         Show what commands would be executed.                    
+      --fakereport      Generate a report without compiling codes or doing a     
+                        run.                                                     
+     --[no]feedback     Control whether builds use feedback directed             
+                        optimization                                             
+     --flagsurl url     Location (url or filespec) where to find your flags file 
+      --graph_auto      Let the tools pick minimum and maximum for the graph     
+      --graph_min N     Set the minimum for the graph                            
+      --graph_max N     Set the maximum for the graph                            
+           -h           Same as --help                                           
+         --help         Print usage message                                      
+           -I           Same as --ignore_errors                                  
+           -i           Same as --size                                           
+     --ignore_errors    Continue with benchmark runs even if some fail           
+      --ignoreerror     Same as --ignore_errors                                  
+  --info_wrap_column N  Set wrap width for non-notes informational items         
+       --infowrap       Same as --info_wrap_column                               
+         --input        Same as --size                                           
+     --iterations N     Run each benchmark N times                               
+           -l           Same as --loose                                          
+         --loose        Do not produce a reportable result                       
+        --noloose       Same as --reportable                                     
+           -m           Same as --machine                                        
+           -M           Same as --make_no_clobber                                
+         --mach         Same as --machine                                        
+        --machine       Set the machine types                                    
+     name[,name...]     
+    --make_no_clobber   Do not delete existing object files before building.     
+  --max_active_compares Same as --maxcompares                                    
+     --maxcompares N    Set the number of concurrent compares to N               
+        --mockup        Same as --fakereportable                                 
+           -n           Same as --iterations                                     
+           -N           Same as --nobuild                                        
+  --notes_wrap_column N Set wrap width for notes lines                           
+       -noteswrap       Same as --notes_wrap_column                              
+           -o           Same as --output_format                                  
+     --output_format    Generate:                                                
+   format[,format...]   all|cfg|check|csv|flags|html|mail|pdf|ps|raw|screen|text 
+           -R           Same as --rawformat                                      
+           -r           Same as --rate                                           
+       --rate [N]       Do a throughput (rate) run, or rawformat as rate         
+       --rawformat      Format raw file                                          
+        --rebuild       Force a rebuild of binaries                              
+      --reportable      Produce a reportable result                              
+     --noreportable     Same as --loose                                          
+      --reportonly      Same as --fakereport                                     
+      --[no]review      Format results for review                                
+           -s           Same as --reportable                                     
+    -S SYMBOL[=VALUE]   Same as --define                                         
+   --[no]setprocgroup   [Don't] try to create all processes in one group.        
+  --size size[,size...] Select data set(s): test|train|ref                       
+        --strict        Same as --reportable                                     
+       --nostrict       Same as --loose                                          
+           -T           Same as --tune                                           
+       --[no]table      Do [not] include a detailed table of results             
+         --]test        Run various perl validation tests on specperl            
+         --tune         Set the tuning levels to one of: base|peak|all           
+        --tuning        Same as --tune                                           
+     --undef SYMBOL     Remove any definition of this config preprocessor macro  
+           -U           Same as --username                                       
+     --update_flags     Check www.spec.org for updates to benchmark flag files   
+       --username       Name of user to tag as owner for run directories         
+           -v           Same as --verbose                                        
+        --verbose       Set verbosity level for messages to N                    
+           -V           Same as --version                                        
+        --version       Output lots of version information                       
+           -?           Same as --help                                           
+
+     ----------------------------------------------------------------------
+
+   Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+
+   All Rights Reserved

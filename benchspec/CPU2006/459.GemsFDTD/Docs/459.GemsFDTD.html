@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>459.GemsFDTD Description</title>
+</head>
+<body> 
+<h1>459.GemsFDTD<br />
+SPEC CPU2006 Benchmark Description</h1>
+
+<h2>Benchmark Name</h2>
+
+<p>459.GemsFDTD</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Ulf Andersson &lt;ulfa &#x5b;at&#x5d; nada.kth.se&gt; and others at the
+Parallel and Scientific Computing Institute (PSCI) in Sweden.</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Computational Electromagnetics (CEM)</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>GemsFDTD solves the Maxwell equations in 3D in the time domain
+using the finite-difference time-domain (FDTD) method. The radar
+cross section (RCS) of a perfectly conducting (PEC) object is
+computed. GemsFDTD is a subset of the code GemsTD developed in the
+General ElectroMagnetic Solvers (GEMS) project.</p>
+
+<p>The code consists of three steps, initialization, timestepping
+and post-processing. More than 99% of the time is spent in the
+timestepping.</p>
+
+<p>The core of the FDTD method are second-order accurate
+central-difference approximations of the Faraday's and Ampere's
+laws. These central-differences are employed on a staggered
+Cartesian grid resulting in an explicit finite-difference method.
+These updates are performed in the module update_mod. The FDTD
+method is also referred to as the Yee scheme. It is the standard
+time-domain method within CEM.</p>
+
+<p>An incident plane wave is generated using so-called Huygens'
+surfaces. This means that the computational domain is split into a
+total-field part and a scattered field part, where the scattered
+field part surrounds the total-field part. This part only takes a
+few percent of the total execution time. It uses the excite_module
+to compute the shape of the incident fields.</p>
+
+<p>The computational domain is truncated by an absorbing layer in
+order to minimize the artificial reflections at the boundary. The
+Uni-axial perfectly matched layer (UPML) by Gedney is used
+here.</p>
+
+<p>A time-domain near-to-far-field transformation computes the RCS
+according to the Martin and Pettersson. This is handled by the
+module NFT_mod. Fast Fourier transforms (FFT) are employed in the
+post-processing of the NFT_mod.</p>
+
+<p>The execution time is concentrated to five subroutines, two
+update routines, two UPML routines, and the routine NFT_store.</p>
+
+<p>The train case uses a slightly smaller computational domain and
+a thinner absorbing-boundary-condition layer. Furthermore, the
+near-to-far-field transformation is computed closer to the PEC
+sphere and for different far-field locations (angles).</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>A main input file called yee.dat is needed. A number of PRIMARY
+keyword can be given. They are always written in capital letters.
+There are a total of nine primary keywords available. With the
+exception of PROGRESS, they must all be present in yee.dat. A
+PRIMARY keyword may have one or several Secondary keyword.</p>
+
+<p>The PRIMARY keywords are used to define problem size, number of
+time steps to be taken, the cell size, and the CFL value.
+Furthermore, they are used for definitions of the excitation, an
+incident plane wave, the absorbing layer at the outer boundary, and
+the near-to-far-field transform. Finally the primary keyword PEC
+and its secondary keyword Filename are used to specify a file that
+contains a description of the PEC object.</p>
+
+<p>The order in which PRIMARY keywords appear in yee.dat is
+arbitrary. The same is true for the Secondary keywords.</p>
+
+<p>In total, there are two input files, the main input file yee.dat
+and the PEC description file.</p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>Output is an ASCII file containing the requested RCS data. The
+name of the output file is &lt;Filenamebase&gt;.nft where
+&lt;Filenamebase&gt; is given in the input file under the PRIMARY
+keyword NFTRANS_TD and the Secondary keyword Filenamebase.</p>
+
+<p>Two Matlab scripts, farfieldgemsTD.m and rcsmain.m, are included
+in 459.GemsFDTD/docs/matlab, which can be used to plot the RCS of
+the PEC object. For the PEC sphere, an analytical reference
+solution is supplied.</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>Fortran 90</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>None</p>
+
+<hr />
+
+<h2>References</h2>
+
+<p>Allen Taflove, Computational Electrodynamics: The
+Finite-Difference Time-Domain Method, Artech House, 2000</p>
+
+<p>T. Martin and L. Pettersson, IEEE Trans. Ant. Prop. Vol. 48, No.
+4, pp. 494-501, Apr. 2000.</p>
+
+<p>S. Gedney, IEEE Trans. Ant. Prop., vol. 44, no. 12, pp
+1630-1639, Dec. 1996.</p>
+
+<p>A report on a subset of GemsFDTD may be found at <a href=
+"http://www.pdc.kth.se/info/research/trita/PDC_TRITA_2002_1.pdf">http://www.pdc.kth.se/info/research/trita/PDC_TRITA_2002_1.pdf</a></p>
+
+<p><a href=
+"http://www.psci.kth.se/Programs/GEMS/">www.psci.kth.se/Programs/GEMS/</a>
+</p>
+
+<hr />
+
+<p>Last updated: 7 March 2006</p>
+
+</body>
+</html>

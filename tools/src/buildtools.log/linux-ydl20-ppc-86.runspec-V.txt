@@ -1,0 +1,31 @@
+runspec v3496 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'linux-ydl20-ppc' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 86pre
+ Benchmarks version: 86pre
+      Tools version: 86pre
+    runspec version: 3496 ($Id: runspec 3496 2005-12-16 21:11:52Z cloyce $)
+
+Tools information:
+ Tools package installed: linux-ydl20-ppc
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 22631 | 100   |  184928 | 18-Dec-2005 22:05:21 | specmake
+0755 | 22631 | 100   | 1227225 | 18-Dec-2005 22:05:21 | specperl
+0755 | 22631 | 100   |   21488 | 18-Dec-2005 22:05:32 | specinvoke
+0755 | 22631 | 100   |   24692 | 18-Dec-2005 22:05:32 | specinvoke_pm
+0755 | 22631 | 100   |   92556 | 18-Dec-2005 22:05:21 | specbzip2
+0755 | 22631 | 100   |   22704 | 18-Dec-2005 22:05:32 | specmd5sum
+0755 | 22631 | 100   |    7595 | 18-Dec-2005 22:08:58 | specdiff
+0755 | 22631 | 100   |   85728 | 18-Dec-2005 22:08:58 | specpp
+0755 | 22631 | 100   |   75047 | 18-Dec-2005 22:08:58 | runspec
+0775 | 22631 | 100   |    1520 | 06-Sep-2005 13:47:57 | runspec.bat
+
+Version info for specinvoke (/spec/cpu2006-test/bin/specinvoke): Version: 3478
+Version info for specmake (/spec/cpu2006-test/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/spec/cpu2006-test/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/spec/cpu2006-test/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/spec/cpu2006-test/bin/specperl): This is specperl, v5.8.7 built for ppc-linux
+                           For more detail on specperl, say 'specperl -V'

@@ -1,0 +1,57 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:533: checking for gcc
+configure:646: checking whether the C compiler (gcc   -L/var/services/homes/spparmar/spec2006/tools/output/lib  ) works
+configure:662: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:688: checking whether the C compiler (gcc   -L/var/services/homes/spparmar/spec2006/tools/output/lib  ) is a cross-compiler
+configure:693: checking whether we are using GNU C
+configure:702: gcc -E conftest.c
+configure:721: checking whether gcc accepts -g
+configure:783: checking for a BSD compatible install
+configure:841: checking how to run the C preprocessor
+configure:862: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:921: checking for ANSI C header files
+configure:934: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1001: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure: In function 'main':
+configure:996:67: warning: incompatible implicit declaration of built-in function 'exit' [enabled by default]
+configure:1025: checking whether time.h and sys/time.h may both be included
+configure:1039: gcc -c   -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1060: checking for sys/wait.h that is POSIX.1 compatible
+configure:1081: gcc -c   -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1105: checking for errno.h
+configure:1115: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1105: checking for fcntl.h
+configure:1115: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1105: checking for getopt.h
+configure:1115: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1105: checking for string.h
+configure:1115: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1105: checking for sys/timeb.h
+configure:1115: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1105: checking for sys/time.h
+configure:1115: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1145: checking for sys/types.h
+configure:1155: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1145: checking for sys/wait.h
+configure:1145: checking for unistd.h
+configure:1155: gcc -E -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c >/dev/null 2>conftest.out
+configure:1183: checking for working const
+configure:1237: gcc -c   -I/var/services/homes/spparmar/spec2006/tools/output/include   conftest.c 1>&5
+configure:1258: checking for pid_t
+configure:1291: checking for size_t
+configure:1324: checking for off_t
+configure:1357: checking for mode_t
+configure:1393: checking for waitpid
+configure:1421: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1393: checking for getopt
+configure:1421: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1393: checking for strerror
+configure:1421: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1393: checking for nanosleep
+configure:1421: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1393: checking for usleep
+configure:1421: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5
+configure:1393: checking for select
+configure:1421: gcc -o conftest   -I/var/services/homes/spparmar/spec2006/tools/output/include   -L/var/services/homes/spparmar/spec2006/tools/output/lib   conftest.c   1>&5

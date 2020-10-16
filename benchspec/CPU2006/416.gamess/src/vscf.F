@@ -1,0 +1,2819 @@
+C  9 DEC 03 - MWS - SYNCH COMMON BLOCK RUNOPT
+C  3 SEP 03 - CMA - SYNCH UP MP2PAR COMMON
+C 12 DEC 02 - CMA - SYNCH UP MP2PAR COMMON
+C  7 AUG 02 - JHJ - VARIOUS ROUTINES: IMPLEMENTED IMODE OPTION
+C 17 APR 02 - MWS - SYNCH UP FRGINF COMMON
+C 24 JAN 02 - CMA - PAD COMMON BLOCK MP2PAR
+C  8 OCT 01 - NM  - SOLVER REWORKED, ADDING VCI AND DPT2 FOR V=0 STATE
+C  6 SEP 01 - MWS - ADD DUMMY ARGUMENTS TO NAMEIO CALL
+C 25 JUN 01 - MWS - ALTER COMMON BLOCK SCFOPT AND WFNOPT
+C 19 NOV 00 - GMC - PRINT ATOMIC COORDINATES AT EVERY STEP
+C 15 AUG 00 - NM  - CORRECT INPUT OF VCFCT VALUE
+C 28 JUL 00 - MWS - ADD VSCFTM TO CHECK FOR TIME LIMIT
+C  1 MAY 00 - MWS - MODIFY ARGUMENT LIST FOR FGMTRX
+C 16 FEB 00 - GMC - NEW MODULE FOR VSCF/VMP2 VIBRATIONAL ANHARMONICITY
+C
+C*MODULE VSCF    *DECK VSCFX
+      SUBROUTINE VSCFX
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      LOGICAL READV,DMDR,MPDIP,GOTDDM,VDPT,CASMIN
+      LOGICAL BLANK,PROJCT
+      DIMENSION IMODE(10)
+C
+      CALL VSCFIN(NGRID,IMODE,READV,DMDR,MPDIP,NCOUP,VCFCT,
+     *            IEXC,GOTDDM,BLANK,
+     *            VDPT,ICAS1,ICAS2,ICASX,CASMIN,NDET,NDET2,SFACT,PROJCT)
+C
+      CALL VSCFM(NGRID,IMODE,READV,DMDR,MPDIP,NCOUP,VCFCT,
+     *           IEXC,GOTDDM,BLANK,
+     *           VDPT,ICAS1,ICAS2,ICASX,CASMIN,NDET,NDET2,SFACT,PROJCT)
+C
+      RETURN
+      END
+C*MODULE VSCF    *DECK VSCFIN
+      SUBROUTINE VSCFIN(NGRID,IMODE,READV,DMDR,MPDIP,NCOUP,VCFCT,IEXC,
+     *                  GOTDDM,BLANK,VDPT,ICAS1,ICAS2,ICASX,CASMIN,
+     *                  NDET,NDET2,SFACT,PROJCT)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXATM=500, MXFRG=50)
+C
+      LOGICAL READV,DMDR,GOTDDM,MPDIP
+      LOGICAL GOTEG,GOTFCM,GOPARR,DSKWRK,MASWRK,BLANK,PROJCT
+      LOGICAL VDPT,CASMIN
+C
+      COMMON /FMCOM / X(1)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /FROZNC/ IFREEZ(3*MXATM),NFRZ
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+C
+      PARAMETER (NNAM=16)
+      DIMENSION QNAM(NNAM), KQNAM(NNAM), IMODE(10)
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA VSCF/8HVSCF    /
+#else
+      CHARACTER*8 :: VSCF_STR
+      EQUIVALENCE (VSCF, VSCF_STR)
+      DATA VSCF_STR/"VSCF    "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA QNAM/8HNGRID   ,8HNCOUP   ,8HIEXC    ,8HREADV   ,
+     *          8HDMDR    ,8HMPDIP   ,8HVCFCT   ,8HBLANK   ,
+     *          8HVDPT    ,8HICAS1   ,8HICAS2   ,8HICASX   ,
+     *          8HCASMIN  ,8HSFACT   ,8HIMODE   ,8HPROJCT  /
+#else
+      CHARACTER*8 :: QNAM_STR(NNAM)
+      EQUIVALENCE (QNAM, QNAM_STR)
+      DATA QNAM_STR/"NGRID   ","NCOUP   ","IEXC    ","READV   ",
+     *          "DMDR    ","MPDIP   ","VCFCT   ","BLANK   ",
+     *          "VDPT    ","ICAS1   ","ICAS2   ","ICASX   ",
+     *          "CASMIN  ","SFACT   ","IMODE   ","PROJCT  "/
+#endif
+      DATA KQNAM/1,1,1,0, 0,0,3,0, 0,1,1,1, 0,3,101,0/
+C
+C        READ $VSCF INPUT AND $HESS AND MAYBE $DIPDR
+C
+      NGRID  = 16
+      NCOUP  = 2
+      READV  = .FALSE.
+      DMDR   = .FALSE.
+      MPDIP  = .FALSE.
+      IF(MPLEVL.EQ.2) MPDIP=.TRUE.
+      VCFCT  = 1.0D+00
+      VDPT   = .TRUE.
+      CASMIN = .TRUE.
+      SFACT  = 1.0D-05
+      NCOUP=2
+      NDET = 3*NAT - 5
+      ICAS1=1
+      ICAS2=3*NAT - 6
+      ICASX=1
+C
+C        IEXC=1 FOR FUNDAMENTALS; IEXC SHOULD NOT BE LARGER THAN NMAX
+C
+      IEXC   = 1
+C        UNDOCUMENTED OPTION TO FORCE TEMPLATE $VIBSCF RESTART PUNCHING
+      BLANK=.FALSE.
+      DO I = 1,10
+         IMODE(I) = 0
+      END DO
+      PROJCT=.FALSE.
+      IF(IFREEZ(1).NE.0)PROJCT=.TRUE.
+C
+C        READ $VSCF INPUT GROUP
+C
+      JRET=0
+      CALL NAMEIO(IR,JRET,VSCF,NNAM,QNAM,KQNAM,
+     *            NGRID,NCOUP,IEXC,READV,DMDR,MPDIP,VCFCT,BLANK,
+     *            VDPT,ICAS1,ICAS2,ICASX,CASMIN,SFACT,IMODE,PROJCT,
+     *         0,0,0,  0,0,0,0,0,
+     *     0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,
+     *     0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0)
+      IF(JRET.EQ.2) THEN
+         IF(MASWRK) WRITE(IW,*) 'ERROR IN $VSCF GROUP, CHECK INPUT'
+         CALL ABRT
+      END IF
+C
+C     ---- CALCULATE FEW THINGS FOR VIRTUAL CI -----
+C
+      IF(CASMIN) THEN                            ! FORCE TO MINIMAL VCI
+         ICAS1=1
+         ICAS2=3*NAT-6
+         ICASX=1
+      END IF
+      ICAS   = ICAS2 - ICAS1 + 1
+      NCCC   = ICAS*(ICAS-1)/2
+      IF(CASMIN) NCCC = 0
+      NDET   = ICASX*ICASX*NCCC + ICAS*ICASX + 1   !#DETERMINANTS IN VCI
+      NDET2  = NDET*(NDET+1)/2                     ! FOR VCI HAMILTONIAN
+C
+      IF(MPLEVL.EQ.0) MPDIP=.FALSE.
+      IF(DMDR) MPDIP=.FALSE.
+C
+      NC1 = 3*NAT + 6*NFRG
+      IF(IMODE(1).NE.0) THEN
+      NCOUP = 1
+      DO I = 1, 10
+         IMODE(I) = NC1 - IMODE(I) + 1
+      END DO
+      END IF
+C
+      IF(MASWRK) WRITE(IW,9000) NGRID,NCOUP,IEXC, DMDR,MPDIP,READV,
+     *                          VDPT,SFACT,VCFCT, ICASX,ICAS1,ICAS2,
+     *                          CASMIN
+C
+C        READ GRADIENT, HESSIAN, DIPOLE DERIVATIVE TENSOR
+C
+      NCOORD = 3*NAT + 6*NFRG
+      CALL VALFM(LOADFM)
+      LEG  = LOADFM + 1
+      LFCM = LEG    + NCOORD
+      LDDM = LFCM   + NCOORD*NCOORD
+      LAST = LDDM   + 3*NCOORD
+      NEED = LAST - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      CALL EGIN(X(LEG),NCOORD,GOTEG)
+      IF(.NOT.GOTEG) CALL VCLR(X(LEG),1,NCOORD)
+      CALL DAWRIT(IDAF,IODA,X(LEG),NCOORD,3,0)
+C
+      CALL FCMIN(X(LFCM),NCOORD,GOTFCM)
+      IF(GOTFCM) THEN
+         CALL DAWRIT(IDAF,IODA,X(LFCM),NCOORD*NCOORD,4,0)
+      ELSE
+         IF(MASWRK) WRITE(IW,9010)
+         CALL ABRT
+      END IF
+C
+      CALL DDMIN(X(LDDM),NCOORD,GOTDDM)
+      IF(GOTDDM) CALL DAWRIT(IDAF,IODA,X(LDDM),3*NCOORD,34,0)
+C
+      CALL RETFM(NEED)
+      RETURN
+C
+ 9000 FORMAT(/15X,21("-")/15X,'VSCF INPUT PARAMETERS'/15X,21("-")/
+     *       5X,' NGRID=',I8,'  NCOUP=',I8,'   IEXC=',I8/
+     *       5X,'  DMDR=',L8,'  MPDIP=',L8,'  READV=',L8/
+     *       5X,'  VDPT=',L8,'  SFACT=',1P,E8.1,0P,'  VCFCT=',F8.2/
+     *       5X,' ICASX=',I8,'  ICAS1=',I8,'  ICAS2=',I8/
+     *       5X,'CASMIN=',L8)
+ 9010 FORMAT(//1X,'***** ERROR *****'/
+     *       1X,'RUNTYP=VSCF REQUIRES THE INPUT OF A $HESS MATRIX.'/
+     *       1X,'PLEASE OBTAIN THIS FROM RUNTYP=HESSIAN AND INPUT IT.'/
+     *       1X,'IF POSSIBLE, PLEASE SUPPLY OPTIONAL $DIPDR AND $GRAD'/)
+      END
+C*MODULE VSCF    *DECK VSCFM
+      SUBROUTINE VSCFM(NGRID,IMODE,READV,DMDR,MPDIP,NCOUP,VCFCT,IEXC,
+     *                 GOTDDM,BLANK,VDPT,ICAS1,ICAS2,ICASX,CASMIN,
+     *                 NDET,NDET2,SFACT,PROJCT)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL READV,DMDR,MPDIP,GOTDDM,BLANK,VDPT,CASMIN
+      LOGICAL GOPARR,DSKWRK,MASWRK,LINEAR,DECOMP,PRTSCN,GOTFRQ,
+     *        PROJCT,STATPT,SCFOK
+C
+      PARAMETER (MXATM=500)
+      PARAMETER (MXFRG=50, MXPT=100, MXFGPT=MXPT*MXFRG)
+      PARAMETER (ZERO=0.0D+00)
+C
+      DIMENSION IMODE(10)
+C
+      COMMON /FMCOM / X(1)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /FRGMSS/ FPMASS(MXPT),FMASS(MXPT,MXFRG),
+     *                FPNUC(MXPT),FGNUC(MXFGPT)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /THERMD/ FREQ(3*MXATM),TEMP(10),SCLFAC,NTEMP,PRTSCN,GOTFRQ
+      COMMON /VBDCMP/ DECOMP,NROW,NDEG
+      COMMON /ZMAT  / NZMAT,NZVAR,NVAR,NSYMC,LINEAR
+C
+C        ----- ALLOCATE MEMORY AND CARRY OUT VSCF -----
+C
+C                  THIS PROGRAM WAS WRITTEN BY
+C           GALINA CHABAN, JOON JUNG, AND BENNY GERBER
+C            U.CAL.-IRVINE AND HEBREW U. OF JERUSALEM
+C           IT WAS INCLUDED INTO GAMESS IN EARLY 2000.
+C
+      NC1 = 3*NAT + 6*NFRG
+      NC2 = (NC1*NC1+NC1)/2
+      NC3 = NC1*NC1
+C
+C        NNM2 IS NO. OF PAIRS OF DIFFERENT MODES (NOT TRIANG. STORAGE)
+C
+      NNM = 3*NAT - 6
+      IF(LINEAR) NNM = 3*NAT-5
+      NNM2 = (NNM*NNM-NNM)/2
+      NNM3 = NNM*NNM
+C
+      NGRID2 = (NGRID*NGRID+NGRID)/2
+      NGRID3 = NGRID*NGRID
+C
+C        NUMBER OF VIBR. STATES FOR WHICH WAVEFUNCTIONS ARE STORED
+C
+      NST=NGRID/2
+      IF(NST.LT.4) NST=4
+C
+C        MAXIMUM EXCITATION LEVEL USED IN VIBRATIONAL MP2
+C
+      NMAX=NST-1
+C
+C        NUMBER OF VIRTUAL STATES IN MP2
+C
+      NVIRST=NMAX*NMAX*NNM2 + NMAX*NNM + 1
+C
+C              NUMBER OF TRIPLES OF DIFFERENT NORMAL MODES
+C              NO. OF VIRTUAL STATES IN MP2 INCLUDES TRIPLE EXCITATIONS
+C
+      IF (NCOUP.GT.2) THEN
+         NTR=NNM*(NNM-1)*(NNM-2)/6
+         NVIRST=NVIRST+NMAX*NMAX*NMAX*NTR
+      END IF
+C
+      CALL VALFM(LOADFM)
+C
+C         MEMORY FOR VSCF
+C     THE FIRST TWO OF THESE HOLD HARMONIC NORMAL MODES AND FREQUENCIES
+C
+      LVEC   = LOADFM + 1
+      LE     = LVEC   + NC3
+      LRQ    = LE     + NC1
+      LDX    = LRQ    + NNM*NGRID
+      LFR    = LDX    + NC1
+      LFRSCF = LFR    + NC1
+      LFRMP2 = LFRSCF + NNM
+      LC0    = LFRMP2 + NNM
+      LDIAGV = LC0    + 3*NAT
+      LCOUPV = LDIAGV + NNM*NGRID
+      LDQ    = LCOUPV + NNM3*NGRID3
+      LRQ    = LDQ    + NNM
+      LSTATE = LRQ    + NNM*NGRID
+      LTV    = LSTATE + NNM
+      LVSCF  = LTV    + NGRID
+      LVHF   = LVSCF  + NNM*NGRID
+      LENRGY = LVHF   + NGRID
+      LEDIAG = LENRGY + NNM
+      LESCF  = LEDIAG + NNM + 1
+      LEMPPT = LESCF  + NNM + 1
+      LWAVE  = LEMPPT + NNM + 1
+      LAWAVE = LWAVE  + NNM*NGRID
+      LVWAVE = LAWAVE + NNM*(NNM+1)*NGRID
+      LVIRTE = LVWAVE + NNM*NGRID*NST
+      LVST   = LVIRTE + NNM*NST
+      LPVT   = LVST   + NVIRST*NNM
+      LXX    = LPVT   + NGRID
+      LA     = LXX    + NGRID
+      LPHI   = LA     + NGRID
+      LR     = LPHI   + NGRID3
+      LRR    = LR     + NGRID3
+      LG     = LRR    + NGRID3
+      LV     = LG     + NGRID3
+      LH     = LV     + NGRID3
+      LEC    = LH     + NGRID2
+      LVECC  = LEC    + NGRID
+      LSCR1  = LVECC  + NGRID3
+      LIA1   = LSCR1  + NGRID*8
+      LGR    = LIA1   + NGRID
+      LTMP   = LGR    + NGRID3
+      LTWAVE = LTMP   + NGRID
+      LEMP0  = LTWAVE + NGRID
+      LVMP   = LEMP0  + NVIRST
+      LOVRLP = LVMP   + NVIRST*NDET      ! EXPANED TO ACC DPT
+      LVIRT  = LOVRLP + NNM
+      LREF   = LVIRT  + NVIRST*NNM
+      LINT   = LREF   + NNM
+      LDMX   = LINT   + NNM
+      LDMY   = LDMX   + NNM*NGRID
+      LDMZ   = LDMY   + NNM*NGRID
+      LDM2X  = LDMZ   + NNM*NGRID
+      LDM2Y  = LDM2X  + NNM3*NGRID3
+      LDM2Z  = LDM2Y  + NNM3*NGRID3
+      LDDM   = LDM2Z  + NNM3*NGRID3
+      LDDER  = LDDM   + 3*NC1
+      LHCI   = LDDER  + NNM                 ! VCI STARTS HERE
+      LECI   = LHCI   + NDET2
+      LVECI  = LECI   + NDET
+      LSCRCI = LVECI  + NDET*NDET
+      LIACI  = LSCRCI + NDET*8
+      LKREF  = LIACI  + NDET
+      LICAST = LKREF  + NNM
+      LIMAP  = LICAST + NDET*NNM
+      LECAS  = LIMAP  + NNM
+      LEQDPT2= LECAS  + NNM + 1
+      LAST   = LEQDPT2+ NNM + 1
+      LTRIPV = LAST
+      IF(NCOUP.GT.2) LAST = LTRIPV + NNM3*NNM*NGRID3*NGRID
+      NEED1 = LAST - LOADFM - 1
+      IF(MASWRK) WRITE(IW,9000) NEED1
+      CALL GETFM(NEED1)
+C
+      NPART = NAT
+      DO IFRG=1,NFRG
+         DO III=1,NMPTS(IFRG)
+            IF(FMASS(III,IFRG).GT.ZERO) NPART=NPART+1
+         END DO
+      END DO
+C
+C         MEMORY FOR NORMAL MODE ANALYSIS
+C
+      CALL VALFM(LOADFM)
+      LFCM   = LOADFM + 1
+      LSCR   = LFCM   + NC2
+      LIA    = LSCR   + NC1*8
+      LRM    = LIA    + NC1
+      LSVT   = LRM    + 3*NAT + 21*NFRG
+      LSVR   = LSVT   + NC1*3
+      LSVTT  = LSVR   + NC1*3
+      LSVRT  = LSVTT  + NC1
+      LCC    = LSVRT  + NC1
+      LCOM   = LCC    + NPART*3
+      LZMS   = LCOM   + NPART*3
+      LBUF1  = LZMS   + NPART
+      LBUF2  = LBUF1  + NC3
+      LAST   = LBUF2  + NC3
+      NEED2 = LAST - LOADFM - 1
+      CALL GETFM(NEED2)
+      IF(MASWRK) WRITE(IW,9010)
+C
+C        GENERATE NORMAL COORDINATES FROM INPUT HARMONIC FORCE FIELD
+C        ENFORCE A CONSISTENT PHASE CHOICE UPON THE MODES
+C
+C BUG-FIX. ANYWAY, THERE'S ANOTHER DAREAD IN FGMTRX
+C     CALL DAREAD(IDAF,IODA,X(LFCM),NC3,4,0)
+      DECOMP=.FALSE.
+C     PROJCT=.FALSE.
+      STATPT=.TRUE.
+      SCFOK =.TRUE.
+      NTEMP=1
+      TEMP(1)=298.15D+00
+      SCLFAC=1.0D+00
+      PRTSCN=.FALSE.
+      GOTFRQ=.FALSE.
+      CALL FGMTRX(X(LVEC),X(LFCM),X(LE),X(LSCR),X(LIA),X(LRM),
+     *            X(LSVT),X(LSVR),X(LSVTT),X(LSVRT),
+     *            X(LCC),X(LCOM),X(LZMS),X(LBUF1),X(LBUF2),
+     *            NC1,NC2,NPART,X(LDDM),GOTDDM,DUMMY,.FALSE.,
+     *            PROJCT,STATPT,SCFOK)
+      CALL RETFM(NEED2)
+      IF(MASWRK) WRITE(IW,9020)
+      CALL TIMIT(1)
+C
+      IF (DMDR.AND.GOTDDM.AND.IEXC.EQ.1) THEN
+         NDIPMO=0
+      ELSE
+         NDIPMO=1
+      END IF
+C
+      IF (NNM.EQ.1) NCOUP=1
+C
+C        CALCULATE DIAGONAL AND COUPLING POTENTIALS ON GRIDS
+C
+      CALL VGRID(X(LVEC),X(LE),X(LFR),X(LRQ),X(LDQ),X(LDX),
+     *           X(LC0),X(LDIAGV),X(LCOUPV),X(LTRIPV),
+     *           X(LDMX),X(LDMY),X(LDMZ),X(LDM2X),X(LDM2Y),X(LDM2Z),
+     *           READV,MPDIP,DMDR,NC1,NAT,NNM,NGRID,NCOUP,BLANK,IMODE)
+      IF (MASWRK) WRITE(IW,9060)
+      CALL TIMIT(1)
+      IF(BLANK) GO TO 800
+C
+C        PERFORM VSCF AND MP2-VSCF
+C
+      IF (MASWRK) THEN
+         CALL VSCFMP(X(LFR),X(LRQ),X(LDQ),X(LDIAGV),X(LCOUPV),
+     *               X(LSTATE),X(LTV),X(LVSCF),X(LVHF),X(LENRGY),
+     *               X(LEDIAG),X(LESCF),X(LEMPPT),X(LWAVE),X(LAWAVE),
+     *               X(LVWAVE),X(LVIRTE),X(LVST),X(LPVT),X(LXX),
+     *               X(LA),X(LPHI),X(LR),X(LRR),X(LG),X(LV),X(LH),
+     *               X(LEC),X(LVECC),X(LSCR1),X(LIA1),X(LGR),X(LTMP),
+     *               X(LTWAVE),X(LEMP0),X(LVMP),X(LOVRLP),X(LVIRT),
+     *               X(LREF),X(LFRSCF),X(LFRMP2),X(LTRIPV),VCFCT,NNM,
+     *               NGRID,NGRID2,NST,NVIRST,NCOUP,NMAX,IEXC,
+     *               X(LHCI),X(LECI),X(LVECI),X(LSCRCI),X(LIACI),
+     *               NDET,ICAS1,ICAS2,VDPT,NDET2,X(LKREF),ICASX,
+     *               X(LICAST),X(LIMAP),CASMIN,X(LECAS),
+     *               X(LEQDPT2),SFACT,IMODE)
+      END IF
+C
+C        CALCULATE IR INTENSITIES
+C
+      IF(NDIPMO.EQ.0) THEN
+         CALL DAREAD(IDAF,IODA,X(LDDM),3*NC1,34,0)
+         CALL DINTENS(X(LINT),X(LDDM),X(LDDER),X(LFRSCF),
+     *                X(LFRMP2),X(LVEC),X(LRQ),X(LDQ),X(LAWAVE),
+     *                NNM,NGRID,NC1,IMODE)
+      ELSE
+         CALL INTENS(X(LINT),X(LDMX),X(LDMY),X(LDMZ),X(LFRSCF),
+     *               X(LFRMP2),X(LDQ),X(LAWAVE),NNM,NGRID,IMODE)
+      END IF
+C
+  800 CONTINUE
+      CALL RETFM(NEED1)
+      IF (MASWRK) WRITE(IW,9070)
+      CALL TIMIT(1)
+      RETURN
+C
+ 9000 FORMAT(1X,I12,' WORDS OF MEMORY ARE NEEDED FOR VSCF STORAGE')
+ 9010 FORMAT(/1X,'HARMONIC VIBRATIONAL ANALYSIS FOR THE INPUT HESSIAN')
+ 9020 FORMAT(1X,'......DONE WITH HARMONIC NORMAL MODES.....')
+ 9060 FORMAT(1X,'......DONE WITH POTENTIALS ON GRIDS......')
+ 9070 FORMAT(1X,'......FINISHED VIBRATIONAL SCF......')
+      END
+C*MODULE VSCF    *DECK VGRID
+      SUBROUTINE VGRID(VEC,EIG,FREQ,RQ,DQ,DX,C0,DIAGV,COUPV,TRIPV,
+     *                 DM1X,DM1Y,DM1Z,DM2X,DM2Y,DM2Z,READV,MPDIP,DMDR,
+     *                 NC1,NAT1,NNM,NGRID,NCOUP,BLANK,IMODE)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,READV,MPDIP,DMDR,BLANK
+C
+      CHARACTER*5 WORD
+      CHARACTER*25 JOBTYP
+C
+      PARAMETER (MXATM=500)
+C
+      DIMENSION EIG(NC1),VEC(NC1,NC1),DX(NC1),DIAGV(NNM,NGRID)
+      DIMENSION FREQ(NC1),C0(3,NAT1),COUPV(NNM,NNM,NGRID,NGRID)
+      DIMENSION DQ(NNM),RQ(NNM,NGRID),TRIPV(NNM,NNM,NNM,
+     *                                        NGRID,NGRID,NGRID)
+      DIMENSION DM1X(NNM,NGRID),DM1Y(NNM,NGRID),DM1Z(NNM,NGRID)
+      DIMENSION DM2X(NNM,NNM,NGRID,NGRID),DM2Y(NNM,NNM,NGRID,NGRID),
+     *          DM2Z(NNM,NNM,NGRID,NGRID)
+      DIMENSION IMODE(10)
+C
+      COMMON /ELPROP/ ELDLOC,ELMLOC,ELPLOC,ELFLOC,
+     *                IEDEN,IEMOM,IEPOT,IEFLD,MODENS,
+     *                IEDOUT,IEMOUT,IEPOUT,IEFOUT,
+     *                IEDINT,IEMINT,IEPINT,IEFINT
+      COMMON /FROZNC/ IFREEZ(3*MXATM),NFRZ
+      COMMON /FUNCT / E,EG(3*MXATM)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MP2PAR/ OSPT,TOL,METHOD,NWDMP2,MPPROP,NACORE,NBCORE,
+     *                NOA,NOB,NORB,NBF,NOMIT,MOCPHF,MAXITC
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /SCFOPT/ CONVHF,MAXIT,MCONV,NPUNCH
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+      COMMON /XYZPRP/ XP,YP,ZP,
+     *                DMX,DMY,DMZ,
+     *                QXX,QYY,QZZ,QXY,QXZ,QYZ,
+     *                QMXX,QMYY,QMZZ,QMXY,QMXZ,QMYZ,
+     *                OXXX,OXXY,OXXZ,OXYY,OYYY,OYYZ,
+     *                OXZZ,OYZZ,OZZZ,OXYZ,
+     *                OMXXX,OMXXY,OMXXZ,OMXYY,OMYYY,
+     *                OMYYZ,OMXZZ,OMYZZ,OMZZZ,OMXYZ
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, FOUR=4.0D+00)
+      PARAMETER (TWO=2.0D+00, AMU=1.8229D+03)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+C     ---- DRIVER TO OBTAIN ENERGY AND DIPOLE INFORMATION ---
+C
+      NUNCVG = 0
+C
+C     OPEN THE FILE THAT RECEIVES THE RESTART INFORMATION...
+C
+      IRC=4
+      CALL SEQOPN(IRC,'IRCDATA','NEW',.FALSE.,'FORMATTED')
+C
+C        SINCE THE FINAL VSCF COMPUTATION IS DONE ONLY ON THE MASTER,
+C        THERE IS NO NEED FOR OTHER PROCESSES TO HAVE GOOD ENERGY
+C        OR DIPOLE INFORMATION, IN THE CASE OF RESTART RUNS.  HOWEVER
+C        WE MUST ENSURE THAT OTHER NODES PARTICIPATE IN ANY ENERGY
+C        EVALUATIONS, IN CASE THE RESTART INFORMATION IS INCOMPLETE.
+C
+      E   = ZERO
+      DMX = ZERO
+      DMY = ZERO
+      DMZ = ZERO
+C
+      IEOF=0
+C
+C     FREQUENCIES IN ATOMIC UNITS
+C     THE WAY WE AVOID ZERO FREQUENCY ROTATIONS AND TRANSLATIONS
+C     BELOW IS LOOPING FROM HIGHEST FREQUENCIES ON DOWN TO LOWEST
+C     TRUE VIBRATION, HERE CONVERT ONLY TRUE VIBRATIONAL FREQUENCIES
+C
+      NSTART = NC1 - NNM + 1
+      FACT=ONE/SQRT(AMU)
+      DO I=NC1,NSTART,-1
+         II=NC1+1-I
+         FREQ(II)=SQRT(EIG(I)/AMU)
+      END DO
+C
+C     WE MUST ENSURE THAT DIPOLE MOMENTS ARE ALWAYS COMPUTED, UNLESS
+C     THE USER WANTS TO USE THE HARMONIC DIPOLE DERIVATIVE TENSOR.
+C
+C     MP2 RUNS MUST PARTIALLY EXECUTE THROUGH THE MP2 GRADIENT CODE
+C     IN ORDER TO GET THE MP2 DENSITY MATRIX.
+C     UNFORTUNATELY, PARALLEL RUNS DON'T HAVE A FAST CUTOUT YET, SO
+C     FOR THIS WE GIVE SOME ADVICE ABOUT APPROXIMATING THE INTENSITIES,
+C     AND THEN PULL THE PLUG TO FORCE USER TO MAKE THE CHOICE.
+C
+               IEMOM=1
+      IF(DMDR) IEMOM=0
+                     JOBTYP='ENERGY AND DIPOLE'
+      IF(IEMOM.EQ.0) JOBTYP='ENERGY'
+C
+      IF(MPLEVL.GT.0  .AND.  IEMOM.EQ.1) THEN
+                   MPPROP=0
+         IF(MPDIP) MPPROP=1
+                         JOBTYP='MP2 ENERGY AND MP2 DIPOLE'
+         IF(MPPROP.EQ.0) JOBTYP='MP2 ENERGY AND SCF DIPOLE'
+C
+C                    THE NEXT BIT, AND THE FORMAT CAN BE DELETED
+C                    ONCE MPPROP IN $MP2 IS IMPLEMENTED IN MP2DDI.SRC
+C
+         IF(GOPARR  .AND.  MPPROP.EQ.1) THEN
+            IF(MASWRK) WRITE(IW,9200)
+            CALL ABRT
+            STOP
+         END IF
+      END IF
+C
+ 9200 FORMAT(//1X,'      * * * *     ATTENTION     * * * * *'/
+     *       1X,'UNFORTUNATELY, DISTRIBUTED MEMORY PARALLEL MP2 ENERGY'/
+     *       1X,'COMPUTATIONS CANNOT OBTAIN THE MP2 DENSITY MATRIX'/
+     *       1X,'QUICKLY.  UNTIL THIS CODE DEFECT IS REPAIRED, YOUR'/
+     *       1X,'ALTERNATIVES ARE:'/
+     *       1X,'  A) RUN THIS CALCULATION AS A SEQUENTIAL JOB, TO'/
+     *       1X,'     USE MP2 LEVEL DIPOLES WITH MP2 ENERGIES'/
+     *       1X,'  B) CHOOSE DMDR=.TRUE. TO INPUT THE HARMONIC MP2'/
+     *       1X,'     DIPOLE DERIVATIVE TENSOR FROM YOUR HESSIAN JOB.'/
+     *       1X,'  C) CHOOSE MPDIP=.FALSE. TO USE SCF LEVEL DIPOLES'/
+     *       1X,'     IN CONJUCTION WITH MP2 ENERGIES.'//)
+C
+C     START CLOCK
+C
+      CALL VSCFTM(0)
+C
+C     ----- OBTAIN ENERGY AND DIPOLE AT THE INPUT GEOMETRY -----
+C     FULL PRINTOUT SHOULD BE ON AT THIS POINT, SO NO NEED TO FORCE
+C     A DIPOLE MOMENT COMPUTATION BY AN EXPLICIT CALL TO ELMOMC.
+C
+      IF(READV) THEN
+         IF(MASWRK) CALL SEQREW(IR)
+         CALL FNDGRP(IR,' $VIBSCF',IEOF)
+         IF(IEOF.EQ.1) THEN
+            IF(MASWRK) WRITE(IW,9004)
+            CALL ABRT
+         END IF
+         IF(MASWRK) READ(IR,8100) E,DMX,DMY,DMZ
+         IF(MASWRK) WRITE(IW,9002) E,DMX,DMY,DMZ
+      ELSE IF (.NOT.BLANK) THEN
+         WRITE(IW,9006) JOBTYP
+         CALL ENERGX
+         CALL VSCFTM(1)
+      END IF
+      IF(MASWRK) WRITE(IRC,8000) ' $VIBSCF',E,DMX,DMY,DMZ
+C
+      IF(EXETYP.EQ.CHECK) RETURN
+C
+C     SAVE POTENTIAL ENERGY, DIPOLE MOMENT AND COORDS AT EQUILIBRIUM
+C
+      E0  =E
+      DMX0=DMX
+      DMY0=DMY
+      DMZ0=DMZ
+      CALL DCOPY(3*NAT1,C,1,C0,1)
+C
+C     DISPLACING ALONG NON-SYMMETRIC MODES DESTROYS POINT GROUP SYMMETRY
+C     REDUCE OUTPUT TO A MINIMUM, AS WELL.
+C
+      CALL SYMOFF
+C
+      NPRINT=-5
+      NPUNCH=0
+      IEMOUT=0
+C
+C     ----- BEGIN COMPUTATION OF POTENTIAL ALONG NORMAL MODES -----
+C
+      IF (MASWRK) WRITE(IW,9010) NGRID, NNM
+C
+      DO I=NC1,NSTART,-1
+         IM=NC1-I+1
+         IF (IMODE(1).NE.0) THEN
+            ISKIP = 1
+            DO ICNT = 1,10
+               IF (IM.EQ.IMODE(ICNT)) ISKIP = 0
+            END DO
+            IF (ISKIP.EQ.1) GO TO 111
+         END IF
+C
+         QRANGE=FOUR
+         QRANGE=QRANGE/SQRT(FREQ(IM))
+         QMIN=-QRANGE
+         DQ(IM)=(TWO*QRANGE)/(NGRID-1)
+         DO IL=1, NGRID
+            RQ(IM,IL)=QMIN+(IL-1)*DQ(IM)
+            JK= 0
+            DO J=1, NAT1
+               DO K=1, 3
+                  JK=JK+1
+                  DX(JK) = FACT*VEC(JK,I)*RQ(IM,IL)
+                  C(K,J) = C0(K,J) + DX(JK)
+C
+                  DO ICNT = 1,NFRZ
+                     IF(IFREEZ(ICNT).EQ.JK) C(K,J) = C0(K,J)
+                  END DO
+               END DO
+            END DO
+C
+            IF(READV) THEN
+               IF(MASWRK) THEN
+                  READ(IR,8110) WORD,I0,IL0
+                  CALL UPRCAS(WORD,5)
+                  IF(WORD.EQ.' $END' .OR.  WORD.EQ.'$END ') IEOF=1
+                  IF(IEOF.EQ.0) THEN
+                     IF(I0.NE.I .OR. IL0.NE.IL)             IEOF=2
+                     READ(IR,8100) DE,DMX,DMY,DMZ
+                     WRITE(IW,9012) IL,I,DE,DMX,DMY,DMZ
+                     DIAGV(IM,IL) = DE
+                     DM1X(IM,IL)  = DMX - DMX0
+                     DM1Y(IM,IL)  = DMY - DMY0
+                     DM1Z(IM,IL)  = DMZ - DMZ0
+                  END IF
+               END IF
+               CALL DDI_BCAST(820,'I',IEOF,1,MASTER)
+               IF(IEOF.EQ.1) READV=.FALSE.
+               IF(IEOF.EQ.2) THEN
+                  IF(MASWRK) WRITE(IW,9014) I,IL,I0,IL0
+                  CALL ABRT
+               END IF
+            END IF
+C
+C              COMPUTE ENERGY AND DIPOLE
+C
+            IF(.NOT.READV  .AND.  .NOT.BLANK) THEN
+               IF(MASWRK) THEN
+                  WRITE(IW,9016) JOBTYP,IL,I
+                  WRITE(IW,9050)
+                  DO IAT = 1,NAT1
+                     WRITE(IW,9060) IAT, ZAN(IAT),
+     *                     C(1,IAT),C(2,IAT),C(3,IAT)
+                  ENDDO
+               END IF
+               CALL ENERGX
+               CALL VSCFTM(1)
+               IF(E.EQ.ZERO .AND. MASWRK) WRITE(IW,9100)
+               IF(E.EQ.ZERO) NUNCVG=NUNCVG+1
+               IF(IEMOM.EQ.1) CALL ELMOMC
+C
+               DIAGV(IM,IL) = E - E0
+               DM1X(IM,IL)  = DMX - DMX0
+               DM1Y(IM,IL)  = DMY - DMY0
+               DM1Z(IM,IL)  = DMZ - DMZ0
+            END IF
+C
+            IF(MASWRK) THEN
+               WRITE(IRC,8010) I,IL,RQ(IM,IL),DIAGV(IM,IL),DMX,DMY,DMZ
+               CALL FLSHBF(IRC)
+            END IF
+         END DO
+  111 CONTINUE
+      END DO
+C
+      IF (MASWRK) WRITE(IW,9018)
+C
+C     ----- OFF-DIAGONAL PAIR-WISE MODE COUPLING POTENTIAL -----
+C
+      IF (NCOUP.LE.1) GO TO 200
+      IF (MASWRK) WRITE(IW,9020) NGRID,NGRID,(NNM*NNM-NNM)/2
+C
+      DO I=NC1,NSTART+1,-1
+         IM=NC1-I+1
+         DO J=I-1,NSTART,-1
+            JM=NC1-J+1
+            DO IL=1, NGRID
+               DO JL=1, NGRID
+                  MN=0
+                  DO M=1, NAT1
+                     DO N=1, 3
+                        MN=MN+1
+                        DX(MN)= FACT*VEC(MN,I)*RQ(IM,IL) +
+     *                          FACT*VEC(MN,J)*RQ(JM,JL)
+                        C(N,M) = C0(N,M) + DX(MN)
+                     END DO
+                  END DO
+C
+                  IF(READV) THEN
+                     IF(MASWRK) THEN
+                        READ(IR,8120) WORD,I0,J0,IL0,JL0
+                        CALL UPRCAS(WORD,5)
+                        IF(WORD.EQ.' $END' .OR.  WORD.EQ.'$END ') IEOF=1
+                        IF(IEOF.EQ.0) THEN
+                           IF(I0.NE.I .OR. IL0.NE.IL .OR.
+     *                        J0.NE.J .OR. JL0.NE.JL)             IEOF=2
+                           READ(IR,8100) DE,DMX,DMY,DMZ
+                           WRITE(IW,9022) IL,JL,I,J,DE,DMX,DMY,DMZ
+                           COUPV(IM,JM,IL,JL)= DE
+                           DM2X(IM,JM,IL,JL) = DMX - DMX0
+                           DM2Y(IM,JM,IL,JL) = DMY - DMY0
+                           DM2Z(IM,JM,IL,JL) = DMZ - DMZ0
+                        END IF
+                     END IF
+                     CALL DDI_BCAST(820,'I',IEOF,1,MASTER)
+                     IF(IEOF.EQ.1) READV=.FALSE.
+                     IF(IEOF.EQ.2) THEN
+                       IF(MASWRK) WRITE(IW,9024) I,J,IL,JL,I0,J0,IL0,JL0
+                       CALL ABRT
+                     END IF
+                  END IF
+C
+                  IF(.NOT.READV  .AND.  .NOT.BLANK) THEN
+                     IF(MASWRK) THEN
+                        WRITE(IW,9026) JOBTYP,IL,JL,I,J
+                        WRITE (IW,9050)
+                        DO IAT = 1,NAT1
+                           WRITE(IW,9060) IAT, ZAN(IAT),
+     *                           C(1,IAT),C(2,IAT),C(3,IAT)
+                        ENDDO
+                     END IF
+                     CALL ENERGX
+                     CALL VSCFTM(1)
+                     IF(E.EQ.ZERO .AND. MASWRK) WRITE(IW,9100)
+                     IF(E.EQ.ZERO) NUNCVG=NUNCVG+1
+                     IF(IEMOM.EQ.1) CALL ELMOMC
+C
+                     COUPV(IM,JM,IL,JL)= E-E0-DIAGV(IM,IL)-DIAGV(JM,JL)
+                     DM2X(IM,JM,IL,JL) = DMX - DMX0
+                     DM2Y(IM,JM,IL,JL) = DMY - DMY0
+                     DM2Z(IM,JM,IL,JL) = DMZ - DMZ0
+                  END IF
+C
+                  IF(MASWRK) THEN
+                     WRITE(IRC,8020) I,J,IL,JL,RQ(IM,IL),RQ(JM,JL),
+     *                               COUPV(IM,JM,IL,JL),DMX,DMY,DMZ
+                     CALL FLSHBF(IRC)
+                  END IF
+               END DO
+            END DO
+         END DO
+      END DO
+C
+      IF (MASWRK) WRITE(IW,9028)
+C
+C     3-BODY COUPLING POTENTIAL
+C
+  200 CONTINUE
+      IF (NCOUP.LE.2) GOTO 300
+      IF (MASWRK) WRITE(IW,9030)
+C
+C     DIPOLE WILL NOT BE USED, AND SO IS NOT COMPUTED
+C
+      IEMOM=0
+      IF(MPLEVL.EQ.2) MPPROP=0
+      DMX = ZERO
+      DMY = ZERO
+      DMZ = ZERO
+C
+      DO I=NC1,NSTART+2,-1
+        IM=NC1-I+1
+        DO J=I-1,NSTART+1,-1
+          JM=NC1-J+1
+          DO K=J-1,NSTART,-1
+            KM=NC1-K+1
+            DO IL=1, NGRID
+              DO JL=1, NGRID
+                DO KL=1, NGRID
+                  MN=0
+                  DO M=1, NAT1
+                    DO N=1, 3
+                      MN=MN+1
+                      DX(MN)= FACT*VEC(MN,I)*RQ(IM,IL) +
+     *                        FACT*VEC(MN,J)*RQ(JM,JL) +
+     *                        FACT*VEC(MN,K)*RQ(KM,KL)
+                      C(N,M) = C0(N,M) + DX(MN)
+                    END DO
+                  END DO
+C
+                  IF(READV) THEN
+                     IF(MASWRK) THEN
+                        READ(IR,8130) WORD,I0,J0,K0,IL0,JL0,KL0
+                        CALL UPRCAS(WORD,5)
+                        IF(WORD.EQ.' $END' .OR.  WORD.EQ.'$END ') IEOF=1
+                        IF(IEOF.EQ.0) THEN
+                           IF(I0.NE.I .OR. IL0.NE.IL .OR.
+     *                        J0.NE.J .OR. JL0.NE.JL .OR.
+     *                        K0.NE.K .OR. KL0.NE.KL)             IEOF=2
+                           READ(IR,8100) DE,DMX,DMY,DMZ
+                           WRITE(IW,9032) IL,JL,KL,I,J,K,DE,DMX,DMY,DMZ
+                           TRIPV(IM,JM,KM,IL,JL,KL) = DE
+                        END IF
+                     END IF
+                     CALL DDI_BCAST(820,'I',IEOF,1,MASTER)
+                     IF(IEOF.EQ.1) READV=.FALSE.
+                     IF(IEOF.EQ.2) THEN
+                       IF(MASWRK) WRITE(IW,9034)
+     *                     I,J,K,IL,JL,KL,I0,J0,K0,IL0,JL0,KL0
+                       CALL ABRT
+                     END IF
+                  END IF
+C
+                  IF(.NOT.READV  .AND.  .NOT.BLANK) THEN
+                     IF(MASWRK) THEN
+                        WRITE(IW,9036) IL,JL,KL,I,J,K
+                        WRITE (IW,9050)
+                        DO IAT = 1,NAT1
+                           WRITE(IW,9060) IAT, ZAN(IAT),
+     *                           C(1,IAT),C(2,IAT),C(3,IAT)
+                        ENDDO
+                     END IF
+                     CALL ENERGX
+                     CALL VSCFTM(1)
+                     IF(E.EQ.ZERO .AND. MASWRK) WRITE(IW,9100)
+                     IF(E.EQ.ZERO) NUNCVG=NUNCVG+1
+C
+                     TRIPV(IM,JM,KM,IL,JL,KL) =
+     *                     E - E0 -DIAGV(IM,IL) -COUPV(IM,JM,IL,JL)
+     *                            -DIAGV(JM,JL) -COUPV(IM,KM,IL,KL)
+     *                            -DIAGV(KM,KL) -COUPV(JM,KM,JL,KL)
+                  END IF
+C
+                  IF(MASWRK) THEN
+                     WRITE(IRC,8030) I,J,K,IL,JL,KL,
+     *                               RQ(IM,IL),RQ(JM,JL),RQ(KM,KL),
+     *                               TRIPV(IM,JM,KM,IL,JL,KL),
+     *                               DMX,DMY,DMZ
+                     CALL FLSHBF(IRC)
+                  END IF
+                END DO
+              END DO
+            END DO
+          END DO
+        END DO
+      END DO
+C
+      IF (MASWRK) WRITE(IW,9038)
+C
+C        RESTORE INITIAL GEOMETRY, ENERGY, COORDINATES, AND SYMMETRY.
+C
+  300 CONTINUE
+      E=E0
+      DMX = DMX0
+      DMY = DMY0
+      DMZ = DMZ0
+      CALL DCOPY(3*NAT1,C0,1,C,1)
+      CALL SYMON
+C
+      IF(NUNCVG.GT.0  .AND.  MASWRK) WRITE(IW,9110) NUNCVG
+      RETURN
+C
+C                 OUTPUT OF RESTART DATA
+ 8000 FORMAT(A8/'   E0=',F20.10,' DIPOLE=',3F13.8)
+ 8010 FORMAT('MODE=',I4,' GRID=',I4,' STEP=',F13.8/
+     *       'DIAGV=',F20.10,' DIPOLE=',3F13.8)
+ 8020 FORMAT('MODE=',2I4,' GRID=',2I4,' STEP=',2F13.8/
+     *       'COUPV=',F20.10,' DIPOLE=',3F13.8)
+ 8030 FORMAT('MODE=',3I4,' GRID=',3I4,' STEP=',3F13.8/
+     *       'TRIPV=',F20.10,' DIPOLE=',3F13.8)
+C
+C                 READ IN RESTART DATA, MUST MATCH FORMATS JUST ABOVE
+ 8100 FORMAT(6X,F20.10,8X,3F13.8)
+ 8110 FORMAT(A5, I4,6X, I4)
+ 8120 FORMAT(A5,2I4,6X,2I4)
+ 8130 FORMAT(A5,3I4,6X,3I4)
+C
+ 9002 FORMAT(//1X,'AT INPUT GEOMETRY, THE RESTART DATA IS'/
+     *       1X,'E0=',F20.10,' DIPOLE=',3F11.6)
+ 9004 FORMAT(1X,'*** ERROR, NO RESTART $VIBSCF PROVIDED ***'/
+     *       1X,'ALTHOUGH YOUR INPUT FILE SAYS READV=.TRUE.')
+ 9006 FORMAT(//1X,'VSCF: ',A,' AT INPUT GEOMETRY'//)
+C
+C                    FORMATS FOR ONE MODE
+ 9010 FORMAT(//1X,'STARTING DIAGONAL POTENTIAL ON A GRID OF ',I3,
+     *       ' POINTS FOR ',I3,' NORMAL MODES')
+ 9012 FORMAT(1X,'READ GRID POINT',I4,' FOR MODE',I4/
+     *       1X,'DE=',F20.10,' DIPOLE=',3F11.6)
+ 9014 FORMAT(1X,'*** ERROR IN $VIBSCF INPUT ***'/
+     *       1X,'EXPECTING SINGLE MODE POTENTIAL FOR I,IL=',2I4,
+     *          ' BUT FOUND I0,IL0=',2I4)
+ 9016 FORMAT(//1X,'VSCF: ',A,' FOR GRID POINT',I3,
+     *          ' ALONG MODE',I3)
+ 9018 FORMAT(/1X,'DONE WITH DIAGONAL POTENTIAL')
+C
+C                    FORMATS FOR TWO MODES
+ 9020 FORMAT(//1X,'STARTING PAIR COUPLING POTENTIAL ON A SQUARE GRID'/
+     *  ' OF',I3,' BY',I3,' POINTS FOR',I6,' PAIRS OF NORMAL MODES')
+ 9022 FORMAT(1X,'READ GRID POINTS ',2I4,' FOR MODES',2I4/
+     *       1X,'DE=',F20.10,' DIPOLE=',3F11.6)
+ 9024 FORMAT(1X,'*** ERROR IN $VIBSCF INPUT ***'/
+     *       1X,'EXPECTING MODE PAIR POTENTIAL FOR I,J,IL,JL=',4I4,
+     *          ' BUT FOUND I0,J0,IL0,JL0=',4I4)
+ 9026 FORMAT(//1X,'VSCF: ',A,' FOR GRID POINTS',2I3,
+     *          ' FOR MODE PAIR',2I3)
+ 9028 FORMAT(/1X,'DONE WITH PAIR COUPLING POTENTIAL')
+C
+C                    FORMATS FOR MODE TRIPLETS
+ 9030 FORMAT(//1X,'STARTING 3-BODY COUPLING POTENTIAL')
+ 9032 FORMAT(1X,'READ GRID POINTS ',3I4,' FOR MODES',3I4/
+     *       1X,'DE=',F20.10,' DIPOLE=',3F11.6)
+ 9034 FORMAT(1X,'*** ERROR IN $VIBSCF INPUT ***'/
+     *       1X,'EXPECTING THREE MODE POT. FOR I,J,K,IL,JL,KL=',6I4,
+     *          ' BUT FOUND I0,J0,K0,IL0,JL0,KL0=',6I4)
+ 9036 FORMAT(//1X,'VSCF: ENERGY FOR GRID POINTS',3I3,
+     *          ' FOR MODE TRIPLET',3I3)
+ 9038 FORMAT(/1X,'DONE WITH 3-BODY COUPLING POTENTIAL')
+C
+ 9050 FORMAT(/1X,'ATOM',6X,'ATOMIC',22X,'COORDINATES (BOHR)'/
+     *         11X,'CHARGE',9X,'X',19X,'Y',19X,'Z')
+ 9060 FORMAT(1X,I3,6X,F5.1,F17.10,2F20.10)
+C
+ 9100 FORMAT(1X,4("*-"),'*'/1X,'WARNING !'/1X,4("*-"),'*'/
+     *       1X,'SCF HAS NOT CONVERGED AT THIS VSCF POINT!')
+ 9110 FORMAT(////1X,51("*")/
+     *       1X,'*     VSCF COMPUTATION MAY NOT BE TRUSTWORTHY   *'/
+     *       1X,'* SINCE ',I5,' SCF COMPUTATIONS DID NOT CONVERGE *'/
+     *       1X,51(1H*))
+      END
+C
+C*MODULE VSCF    *DECK VSCFTM
+      SUBROUTINE VSCFTM(IPAR)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RESTAR/ TIMLIM,IREST,NREC,INTLOC,IST,JST,KST,LST
+      COMMON /TMVALS/ TI,TX,TIM
+      SAVE NEVALS
+C
+      IF(IPAR.EQ.0) THEN
+         NEVALS=0
+         RETURN
+      END IF
+C
+      NEVALS = NEVALS+1
+      TNEED = 1.5D+00 * TIM/NEVALS
+      IF((TIMLIM-TIM) .LT. TNEED) THEN
+         IF(MASWRK) WRITE(IW,9000) TIMLIM/60.0D+00
+         CALL ABRT
+      END IF
+      RETURN
+C
+ 9000 FORMAT(//1X,'***** FAILURE TO FINISH VSCF CALCULATION *****'/
+     *       1X,'NOT ENOUGH TIME TO DO ANOTHER POINT, TIMLIM=',F8.0,
+     *          ' MINUTES'/
+     *       1X,'PLEASE USE THE $VIBSCF GROUP TO RESTART THIS JOB.'//)
+      END
+C*MODULE VSCF    *DECK VSCFMP
+      SUBROUTINE VSCFMP(FREQ,RQ,DQ,DIAGV,COUPV,ISTATE,TV,VSCF,VHF,
+     *            E,EDIAG,ESCF,EMPPT,WAVE,ALLWAVE,VIRTWAVE,VIRTE,
+     *            IVST,IPVT,XX,A,PHI,R,RR,G,V,H,EC,VEC,SCR,IA,GR,
+     *            TEMP,TWAVE,EMP0,VMP,OVRLP,JVIRT,JREF,FRSCF,FRMP2,
+     *            TRIPV,VCFCT,NNM,NGRID,NGRID2,NST,NVST,NCOUP,NMAX,
+     *            IEXC,HCI,ECI,VECI,SCRCI,IACI,NDET,ICAS1,ICAS2,VDPT,
+     *            NDET2,KREF,ICASX,ICAST,IMP,CASMIN,ECAS,EQDPT2,
+     *            SFACT,IMODE)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,DBG,VDPT,CASMIN
+C
+      DIMENSION DIAGV(NNM,NGRID),COUPV(NNM,NNM,NGRID,NGRID)
+      DIMENSION TRIPV(NNM,NNM,NNM,NGRID,NGRID,NGRID)
+      DIMENSION FREQ(NNM),DQ(NNM),RQ(NNM,NGRID)
+      DIMENSION TV(NGRID),VSCF(NNM,NGRID),VHF(NGRID),E(NNM)
+      DIMENSION EDIAG(NNM+1), ESCF(NNM+1), EMPPT(NNM+1)
+      DIMENSION WAVE(NNM,NGRID),ALLWAVE(NNM+1,NNM,NGRID)
+      DIMENSION VIRTWAVE(NNM,NST,NGRID),VIRTE(NNM,NST)
+      DIMENSION ISTATE(NNM),IVST(NVST,NNM),IPVT(NGRID)
+      DIMENSION XX(NGRID),A(NGRID),PHI(NGRID,NGRID)
+      DIMENSION R(NGRID,NGRID),RR(NGRID,NGRID),G(NGRID,NGRID)
+      DIMENSION V(NGRID,NGRID),H(NGRID2),EC(NGRID),VEC(NGRID,NGRID)
+      DIMENSION GR(NGRID,NGRID),TEMP(NGRID),SCR(NGRID,8),IA(NGRID)
+      DIMENSION TWAVE(NGRID),EMP0(NVST),VMP(NDET,NVST)
+      DIMENSION JVIRT(NVST,NNM),JREF(NNM),OVRLP(NNM)
+      DIMENSION FRSCF(NNM),FRMP2(NNM)
+      DIMENSION HCI(NDET2),ECI(NDET),KREF(NNM)
+      DIMENSION VECI(NDET,NDET),SCRCI(NDET,8),IACI(NDET),IMP(NNM)
+      DIMENSION ECAS(NNM+1),EQDPT2(NNM+1),ICAST(NDET,NNM)
+      DIMENSION IMODE(10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+      PARAMETER (EPS=1.0D-06, CM=2.194747D+05)
+      PARAMETER (MXITER=100)
+C
+      DBG = .FALSE.
+C
+C     SCALE PAIR COUPLING POTENTIAL IF NEEDED
+C
+      WRITE(IW,9000)
+      VCFCT1=ONE
+      THISFACT=ONE
+  500 FCT=VCFCT/VCFCT1
+      THISFACT=THISFACT*FCT
+      CALL VCLR(ECAS  ,1,NNM+1)
+      CALL VCLR(EQDPT2,1,NNM+1)
+      IF (NCOUP.GT.1) THEN
+      DO I=1, NNM-1
+         DO J=I+1, NNM
+            DO L=1, NGRID
+               DO M=1, NGRID
+C
+                  IF ( (ABS(COUPV(I,J,L,M)).GE.DIAGV(I,L)).OR.
+     *                 (ABS(COUPV(I,J,L,M)).GE.DIAGV(J,M)) )
+     *               COUPV(I,J,L,M) = FCT*COUPV(I,J,L,M)
+C
+                  COUPV(J,I,M,L) = COUPV(I,J,L,M)
+C
+               END DO
+            END DO
+         END DO
+      END DO
+      END IF
+C
+C     SCALE 3-BODY COUPLING POTENTIAL IF NEEDED
+C
+      IF (NCOUP.GT.2) THEN
+      DO I=1, NNM-2
+         DO J=I+1, NNM-1
+            DO K=J+1, NNM
+               DO L1=1, NGRID
+               DO L2=1, NGRID
+               DO L3=1, NGRID
+C
+                 IF ( (ABS(TRIPV(I,J,K,L1,L2,L3)).GE.DIAGV(I,L1)).OR.
+     *                (ABS(TRIPV(I,J,K,L1,L2,L3)).GE.DIAGV(J,L2)).OR.
+     *                (ABS(TRIPV(I,J,K,L1,L2,L3)).GE.DIAGV(K,L3)) )
+     *            TRIPV(I,J,K,L1,L2,L3) = FCT*TRIPV(I,J,K,L1,L2,L3)
+C
+                  TRIPV(I,K,J,L1,L3,L2) = TRIPV(I,J,K,L1,L2,L3)
+                  TRIPV(J,I,K,L2,L1,L3) = TRIPV(I,J,K,L1,L2,L3)
+                  TRIPV(J,K,I,L2,L3,L1) = TRIPV(I,J,K,L1,L2,L3)
+                  TRIPV(K,J,I,L3,L2,L1) = TRIPV(I,J,K,L1,L2,L3)
+                  TRIPV(K,I,J,L3,L1,L2) = TRIPV(I,J,K,L1,L2,L3)
+C
+               END DO
+               END DO
+               END DO
+            END DO
+         END DO
+      END DO
+      END IF
+C
+C     START LOOP OVER STATES
+C
+      DO INDEX=0, NNM
+C
+         IF(IMODE(1).NE.0) THEN
+            IF (INDEX.EQ.0) THEN
+               CONTINUE
+            ELSE
+               ISKIP = 1
+               DO ICNT = 1,10
+                  IF (INDEX.EQ.IMODE(ICNT)) ISKIP = 0
+               END DO
+               IF (ISKIP.EQ.1) GO TO 222
+            END IF
+         END IF
+C
+C        ARRAY OF STATE INDICES
+C
+         IF(MASWRK) THEN
+            IF(INDEX.EQ.0) WRITE(IW,9060)
+            IF(INDEX.GT.0) WRITE(IW,9070) IEXC,INDEX
+         END IF
+         DO I=1, NNM
+            IF (INDEX.EQ.0) THEN
+               ISTATE(I)=0
+            ELSE IF (INDEX.EQ.I) THEN
+               ISTATE(I)=IEXC
+            ELSE
+               ISTATE(I)=0
+            END IF
+         END DO
+         WRITE(IW,9005) INDEX,(ISTATE(I),I=1,NNM)
+C
+C        INITIALIZE THE WAVEFUNCTIONS
+C
+         CALL VCLR(WAVE,1,NNM*NGRID)
+         CALL VCLR(VSCF,1,NNM*NGRID)
+C
+C        CALCULATE THE EIGENVALUES AND EIGENFUNCTIONS OF
+C        DIAGONAL POTENTIAL
+C
+         SUME=ZERO
+         DO MODE=1, NNM
+C
+            IF(IMODE(1).NE.0) THEN
+            ISKIP = 1
+            DO ICNT = 1,10
+               IF (MODE.EQ.IMODE(ICNT)) ISKIP = 0
+            END DO
+            IF (ISKIP.EQ.1) GO TO 111
+            END IF
+C
+            DO L=1, NGRID
+               TV(L)=DIAGV(MODE,L)
+            END DO
+C
+            MODEX = MODE
+            CALL COLLOCAT(MODEX,TV,TE,WAVE,ALLWAVE,VIRTWAVE,VIRTE,
+     *           IPVT,RQ,DQ,XX,A,PHI,R,RR,G,V,H,EC,VEC,SCR,IA,
+     *           GR,TEMP,TWAVE,NNM,NGRID,NGRID2,NST,ISTATE,INDEX)
+C
+            E(MODE)=TE
+            SUME=SUME+TE
+            IF (DBG  .AND.  MASWRK) WRITE(IW,*) MODE,ISTATE(MODE),TE*CM
+  111       CONTINUE
+         END DO
+         EDIAG(INDEX+1)=SUME
+         ETOT=SUME
+         EMP1=ZERO
+         IF (NCOUP.LE.1) GOTO 50
+C
+C        START SCF ITERATIONS
+C
+         WRITE(IW,9007)
+         ITER=0
+ 1000    CONTINUE
+         ITER=ITER+1
+         EPREV=ETOT
+         IF (ITER.EQ.1) EPREV=ZERO
+         ETOT=ZERO
+         SUME=ZERO
+         DO MODE=1, NNM
+C
+C           EFFECTIVE POTENTIAL
+C
+            MODEX = MODE
+            CALL VEFFECT(MODEX,VHF,WAVE,DQ,COUPV,TRIPV,NNM,NGRID,NCOUP)
+C
+            DO L=1, NGRID
+               TV(L)=VHF(L)+DIAGV(MODE,L)
+               VSCF(MODE,L)=VHF(L)
+            END DO
+C
+            CALL COLLOCAT(MODEX,TV,TE,WAVE,ALLWAVE,VIRTWAVE,VIRTE,
+     *           IPVT,RQ,DQ,XX,A,PHI,R,RR,G,V,H,EC,VEC,SCR,IA,GR,
+     *           TEMP,TWAVE,NNM,NGRID,NGRID2,NST,ISTATE,INDEX)
+C
+            IF (DBG  .AND.  MASWRK) WRITE(IW,*) MODE,ISTATE(MODE),TE*CM
+C
+            IF (TE.LT.ZERO) THEN
+               VCFCT1=FCT
+               VCFCT=VCFCT-1.0D-02
+               IF (VCFCT.LT.2.0D-01) THEN
+                  IF(MASWRK)
+     *            WRITE(IW,*) 'SCALING FACTOR IS LESS THAN 0.2'
+                  CALL ABRT
+               END IF
+               IF (MASWRK) WRITE(IW,9010) VCFCT
+               GOTO 500
+            ENDIF
+            E(MODE)=TE
+            SUME=SUME + TE
+         END DO
+         IF (DBG  .AND.  MASWRK) WRITE(IW,*) "SCF ENERGY    :", SUME*CM
+C
+C        CALCULATE THE SCF CORRECTION
+C
+         CALL SCFCORR (WAVE,EMP1,DQ,COUPV,TRIPV,NNM,NGRID,NCOUP)
+C
+         ETOT=SUME-EMP1
+         WRITE(IW,9200) ITER,SUME*CM,EMP1*CM,ETOT*CM
+         IF (DBG  .AND.  MASWRK) WRITE(IW,*)
+     *      "MP1 CORRECTION:",EMP1*CM,"TOTAL ENERGY:",ETOT*CM
+C
+         IF (ABS(ETOT-EPREV).GT.EPS .AND. ITER.LE.MXITER) GOTO 1000
+C
+C        EXIT SCF ITERATIONS
+C
+         IF (MASWRK) THEN
+            IF (ITER.LE.MXITER) THEN
+               WRITE(IW,9080) ITER
+            ELSE
+               WRITE(IW,9090) ITER
+            END IF
+         END IF
+   50    CONTINUE
+C
+C        PUNCH VSCF WAVEFUNCTIONS
+C
+         IF (MASWRK) THEN
+            IF (INDEX.EQ.0) THEN
+               WRITE(IP,9020)
+               WRITE(IP,9040) VCFCT
+            ELSE
+               WRITE(IP,9030) INDEX
+               WRITE(IP,9040) VCFCT
+            END IF
+            WRITE(IP,*)
+         END IF
+         SUME=ZERO
+         DO MODE=1, NNM
+            ISKIP = 0
+            IF(IMODE(1).NE.0) THEN
+            ISKIP = 1
+            DO ICNT = 1,10
+               IF (MODE.EQ.IMODE(ICNT)) ISKIP = 0
+            END DO
+            END IF
+            IF (ISKIP.EQ.0) THEN
+            IF (MASWRK) WRITE(IP,*) MODE,ISTATE(MODE),E(MODE)*CM
+            DO L=1, NGRID
+               IF (MASWRK) WRITE(IP,*) MODE,RQ(MODE,L),WAVE(MODE,L)
+            END DO
+            SUME=SUME+E(MODE)
+            IF (MASWRK) WRITE(IP,*)
+            END IF
+         END DO
+C
+         ETOT=SUME-EMP1
+         ESCF(INDEX+1)=ETOT
+         IF (NCOUP.LE.1) GOTO 100
+C
+C        MP2 CORRECTION
+C
+         CALL VIRTSTATE(INDEX,NNM,NMAX,NVST,IVST,NCOUP,IEXC)
+C
+         IQDPT = 1
+         SMALL = SFACT
+         CALL MPPT(EMP2,EMP0,VIRTWAVE,VMP,VIRTE,COUPV,TRIPV,VSCF,DQ,
+     *             OVRLP,NNM,NGRID,NST,NVST,IVST,ISTATE,JREF,JVIRT,
+     *             NCOUP,DBG,NDET,IQDPT,SMALL)
+C
+         ETOT=ETOT+EMP2
+         EMPPT(INDEX+1)=ETOT
+C
+C     ---- VIRTUAL CI FOLLOWED BY DEGENERATE PERTURBATION THEORY -----
+C
+         IF(VDPT) THEN
+         III = INDEX
+         CALL VIRTCI(VIRTWAVE,VIRTE,IVST,NNM,NST,NGRID,DQ,III,
+     *               NVST,HCI,COUPV,VSCF,ECI,SCRCI,VECI,IACI,
+     *               ICAS1,ICAS2,VDPT,NDET,OVRLP,JVIRT,
+     *               ISTATE,JREF,KREF,NDET2,ICASX,ICAST,IMP,
+     *               CASMIN,VMP,TRIPV,EMP0,ECAS,EQDPT2,WAVE,
+     *               SMALL,DBG,IEXC)
+         END IF
+C
+  100    CONTINUE
+C
+         IF (MASWRK) THEN
+                           WRITE(IW,9100) EDIAG(INDEX+1)*CM
+            IF(NCOUP.GT.1) WRITE(IW,9110) ESCF(INDEX+1)*CM,
+     *                                    ECAS(INDEX+1)*CM,
+     *                                    EMPPT(INDEX+1)*CM,
+     *                                    EQDPT2(INDEX+1)*CM
+         END IF
+  222    CONTINUE
+      END DO
+      WRITE(IW,9045) THISFACT
+C
+C     CALCULATE VIBRATIONAL FREQUENCIES IN CM-1 AND PRINT THEM OUT
+C
+      NSTATE=NNM+1
+      CALL ENDIFF(FREQ,FRSCF,FRMP2,EDIAG,ESCF,EMPPT,ECAS,EQDPT2,
+     *            NNM,NSTATE,NCOUP,IEXC,IMODE)
+C
+      RETURN
+C
+ 9000 FORMAT(//1X,62("-")/,1X,'VIBRATIONAL SELF-CONSISTENT FIELD',
+     *       ' AND VIBRATIONAL CORRELATIONS',/1X,62(1H-))
+ 9005 FORMAT(/1X,23("-"),/1X,'VIBRATIONAL STATE # ',I3,/1X,23("-"),
+     *       /8X,'CONFIGURATION: ',30(I1))
+ 9007 FORMAT(/2X,'ITERATION         E(SCF)           E(MP1)',
+     *        '         E(TOTAL)')
+ 9010 FORMAT(/1X,'SCALING COUPLING POTENTIAL BY ',F4.2)
+ 9020 FORMAT(/1X,'WAVEFUNCTIONS FOR THE GROUND VIBRATIONAL STATE')
+ 9030 FORMAT(/1X,'WAVEFUNCTIONS FOR THE EXCITED STATE OF MODE',I3)
+ 9040 FORMAT(1X,'(SCALING FACTOR FOR COUPLING POTENTIAL ',F4.2,')')
+ 9045 FORMAT(/1X,'(CUMULATIVE SCALING FACTOR FOR COUPLING POTENTIAL ',
+     *       F4.2,')')
+ 9060 FORMAT(/1X,'SOLVING VSCF FOR VIBRATIONAL GROUND STATE')
+ 9070 FORMAT(/1X,'SOLVING VSCF FOR',I3,' QUANTA IN MODE',I4)
+ 9080 FORMAT(1X,'VSCF CONVERGED IN',I5,' ITERATIONS')
+ 9090 FORMAT(1X,'*** VSCF DID NOT CONVERGE *** AFTER',I5,' ITERATIONS')
+ 9100 FORMAT(/1X,'E(DIAG)=',F12.2,' (WITHOUT MODE COUPLING)')
+ 9110 FORMAT(1X,'E(VSCF)=',F12.2/1X,'E(VCI )=',F12.2,
+     *      /1X,'E(VMP2)=',F12.2/1X,'E(DPT2)=',F12.2)
+ 9200 FORMAT(5X,I3,2X,4(7X,F10.2))
+C
+      END
+C
+C*MODULE VSCF    *DECK COLLOCAT
+      SUBROUTINE COLLOCAT(MODE,TV,TE,WAVE,ALLWAVE,VIRTWAVE,VIRTE,
+     *                    IPVT,X,DX,XX,A,PHI,R,RR,G,V,H,E,VEC,SCR,IA,
+     *                    GR,TEMP,TWAVE,NM,N,N2,NST,ISTATE,INDEX)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      DIMENSION ISTATE(NM)
+      DIMENSION X(NM,N),DX(NM)
+      DIMENSION WAVE(NM,N),ALLWAVE(NM+1,NM,N)
+      DIMENSION TV(N),VIRTWAVE(NM,NST,N),VIRTE(NM,NST)
+      DIMENSION IPVT(N)
+      DIMENSION XX(N),A(N),PHI(N,N)
+      DIMENSION R(N,N),RR(N,N),G(N,N),V(N,N)
+      DIMENSION H(N2),E(N),VEC(N,N)
+      DIMENSION SCR(N,8),IA(N)
+      DIMENSION GR(N,N),TEMP(N),DET(2)
+      DIMENSION TWAVE(N)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, FOUR=4.0D+00)
+      PARAMETER (TWO=2.0D+00, HALF=0.5D+00, QTR=0.25D+00)
+      PARAMETER (C=0.7D+00)
+C
+C     THIS ROUTINE USES THE COLLOCATIONS METHOD TO GENERATE
+C     THE EIGENVALUES AND WAVEFUNCTIONS:  E, WAVE
+C     REF. CPL V153, 1988 PG.98   YANG & PEET
+C
+      PI=FOUR*ATAN(ONE)
+C
+C     NORMAL COORDINATE ON A GRID
+C
+      DO L=1, N
+         XX(L)=X(MODE,L)
+      END DO
+C
+C     GENERATE THE PARAMETERS A'S
+C
+      A(1)=(C**2)/((XX(2)-XX(1))**2)
+      DO I=2, N-1
+         A(I)=(4*(C**2))/((XX(I+1)-XX(I-1))**2)
+      END DO
+      A(N)=(C**2)/((XX(N)-XX(N-1))**2)
+C
+C     GENERATE N GAUSSIAN WAVEFUNCTIONS R(I,J)
+C
+      DO I=1, N
+         FAC=(TWO*A(I)/PI)**QTR
+         DO J=1, N
+            R(I,J)=FAC*EXP(-A(I)*(XX(J)-XX(I))**2)
+            IF (ABS(R(I,J)).LT.1.0D-99) R(I,J)=ZERO
+            RR(I,J)=R(I,J)
+         END DO
+      END DO
+C
+C     GENERATE THE POTENTIAL MATRIX V(I,J)
+C
+      DO I=1, N
+         DO J=1, N
+            V(I,J)=ZERO
+            IF (J.EQ.I) V(I,J)=TV(I)
+         END DO
+      END DO
+C
+C     GENERATE THE 2ND ORDER DERIVATIVE OF WAVEFUNCTIONS
+C
+      DO I=1, N
+         DO J=1, N
+            G(I,J)=ZERO
+            DR2=(4*(A(I)**2)*((XX(J)-XX(I))**2))-2*A(I)
+            G(I,J)=(-HALF)*DR2*R(I,J)
+            IF (ABS(G(I,J)).LT.1.0D-99) G(I,J)=ZERO
+         END DO
+      END DO
+C
+C     GENERATE THE INVERSE MATRIX OF R(I,J):  R-1
+C
+      INFO=0
+      CALL DGEFA(R,N,N,IPVT,INFO)
+C
+      IF(INFO.NE.0) THEN
+         IF(MASWRK) WRITE(IW,*) 'MATRIX R IS SINGULAR'
+         CALL ABRT
+      END IF
+C
+C     OPTIONS FOR DGEDI ROUTINE
+C       JOB = 11 BOTH DETERMINANT AND INVERSE
+C       JOB = 01 INVERSE ONLY
+C       JOB = 10 DETERMINANT ONLY
+C
+      JOB=01
+      CALL DGEDI(R,N,N,IPVT,DET,TEMP,JOB)
+C
+C     MULTIPLY KINETIC ENERGY MATRIX G AND INVERSE R
+C
+      CALL MRARBR(G,N,N,N,R,N,N,GR,N)
+C
+C     GENERATE THE HAMILTONIAN TO BE DIAGONALIZED : GR-1 + V
+C     (AVERAGE THE OFF-DIAGONAL TERMS AND PUT IN TRIANGULAR
+C      FORM FOR DIAGONALIZATION)
+C
+      IJ=0
+      DO I=1, N
+        DO J=1, I
+           IJ=IJ+1
+           IF(I.EQ.J) THEN
+              H(IJ)=GR(I,J)+V(I,J)
+           ELSE
+              H(IJ)=(GR(I,J)+GR(J,I))/TWO
+           ENDIF
+        END DO
+      END DO
+C
+C     DIAGONALIZE THE PSEDOSPECTRAL MATRIX FOR EIGENVALUES AND VECTORS
+C
+      IERR = 0
+      CALL GLDIAG(N,N,N,H,SCR,E,VEC,IERR,IA)
+      IF (IERR .NE. 0) CALL ABRT
+C
+C     REARRANGE INTO DESCENDING ORDER
+C
+      CALL EIGSRT(E,VEC,N,N)
+C
+C     FIND WAVEFUNCTIONS
+C
+      DO I=1, N
+         DO J=1, N
+            PHI(I,J)=VEC(J,I)*RR(J,J)
+         END DO
+      END DO
+C
+      DO I=1, N
+         IF (I.GE.N-NST+1) THEN
+            IST=N-I+1
+C
+            AREA=ZERO
+            DO J=1, N/2
+               AREA=AREA+PHI(I,J)
+            END DO
+C
+            IF ((MOD(IST,2).EQ.1).AND.(AREA.LT.ZERO)) THEN
+               DO J=1, N
+                  TEMP(J)=-PHI(I,J)
+               END DO
+            ELSE IF ((MOD(IST,2).EQ.0).AND.(AREA.GT.ZERO)) THEN
+               DO J=1, N
+                  TEMP(J)=-PHI(I,J)
+               END DO
+            ELSE
+               DO J=1, N
+                  TEMP(J)=PHI(I,J)
+               END DO
+            END IF
+C
+            CALL NORM (MODE,TEMP,DX,NM,N)
+C
+            DO J=1, N
+               VIRTWAVE(MODE,IST,J)=TEMP(J)
+            END DO
+            VIRTE(MODE,IST)=E(I)
+C
+            IF (I.EQ.(N-ISTATE(MODE))) THEN
+               DO J=1, N
+                 TWAVE(J)=TEMP(J)
+               END DO
+               TE=E(I)
+            END IF
+         END IF
+      END DO
+C
+      DO L=1, N
+         WAVE(MODE,L)=TWAVE(L)
+         ALLWAVE(INDEX+1,MODE,L)=TWAVE(L)
+      END DO
+C
+      RETURN
+      END
+C*MODULE VSCF    *DECK NORM
+      SUBROUTINE NORM (MODE,TWAVE,DX,NM,N)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C     THIS ROUTINE NORMALIZES THE WAVEFUNCTION OBTAINED FROM THE
+C     COLLOCATION GRID POINTS FOR (I) TH MODE.
+C
+      DIMENSION DX(NM)
+      DIMENSION TWAVE(N)
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+C
+C     CALCULATE THE NORMALIZATION CONSTANTS USING THE GRID WAVEFUNCTIONS
+C
+      WNORM=ZERO
+      DO M=1, N
+         TEMP=DX(MODE)*(TWAVE(M)**2)
+         WNORM=WNORM+TEMP
+      END DO
+C
+C     NORMALIZATION OF THE WAVEFUNCTIONS ON THE GRID POINTS
+C
+      DO M=1, N
+         TWAVE(M)=(ONE/SQRT(WNORM))*TWAVE(M)
+      END DO
+C
+C     CHECK FOR NORMALIZATION:
+C
+      AREA=ZERO
+      DO L=1, N
+         AREA=AREA+DX(MODE)*(TWAVE(L)**2)
+      END DO
+C
+      RETURN
+      END
+C*MODULE VSCF    *DECK VEFFECT
+      SUBROUTINE VEFFECT (MODE,VSCF,WAVE,DX,VC,VTR,NM,N,NCOUP)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION VSCF(N)
+      DIMENSION WAVE(NM,N)
+      DIMENSION DX(NM)
+      DIMENSION VC(NM,NM,N,N)
+      DIMENSION VTR(NM,NM,NM,N,N,N)
+C
+      PARAMETER (ZERO=0.0D+00)
+C
+C     THIS ROUTINE CALCULATES THE SCF AVERAGED POTENTIAL
+C     ON THE GH-QUADRATURE GRID POINTS FOR (I) TH MODE.
+C
+      DO L=1, N
+         VSCF(L)=ZERO
+         DO J=1, NM
+            IF (J.NE.MODE) THEN
+               CALL SCFAVG(SUM,WAVE,DX,VC,MODE,J,L,NM,N)
+               VSCF(L)=VSCF(L)+SUM
+            END IF
+         END DO
+      END DO
+      IF (NCOUP.LE.2) GOTO 100
+C
+      DO L=1, N
+         DO J=1, NM-1
+            DO K=J+1, NM
+              IF (J.NE.MODE .AND. K.NE.MODE) THEN
+                 CALL SCFAVGT(SUM,WAVE,DX,VTR,MODE,J,K,L,NM,N)
+                 VSCF(L)=VSCF(L)+SUM
+              END IF
+            END DO
+         END DO
+      END DO
+C
+  100 CONTINUE
+      RETURN
+      END
+C*MODULE VSCF    *DECK SCFAVG
+      SUBROUTINE SCFAVG(SUM,WAVE,DX,VC,I,J,L,NM,N)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C     CALCULATE THE VSCF(I,L) FOR MODE I AND PT. L
+C
+      DIMENSION DX(NM)
+      DIMENSION VC(NM,NM,N,N)
+      DIMENSION WAVE(NM,N)
+C
+      PARAMETER (ZERO=0.0D+00)
+C
+      SUM=ZERO
+      DO M=1, N
+         TEMP1=DX(J)*VC(I,J,L,M)*(WAVE(J,M)**2)
+         SUM=SUM+TEMP1
+      END DO
+C
+      RETURN
+      END
+C*MODULE VSCF    *DECK SCFAVGT
+      SUBROUTINE SCFAVGT(SUM,WAVE,DX,VTR,I,J,K,L,NM,N)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C     CALCULATE THE VSCF(I,L) FOR MODE I AND PT. L
+C
+      DIMENSION DX(NM)
+      DIMENSION VTR(NM,NM,NM,N,N,N)
+      DIMENSION WAVE(NM,N)
+C
+      PARAMETER (ZERO=0.0D+00)
+C
+      SUM=ZERO
+      DO M1=1, N
+         DO M2=1, N
+            TEMP1=DX(J)*DX(K)*VTR(I,J,K,L,M1,M2)*
+     *                        (WAVE(J,M1)**2)*(WAVE(K,M2)**2)
+            SUM=SUM+TEMP1
+         END DO
+      END DO
+C
+      RETURN
+      END
+C*MODULE VSCF    *DECK SCFCORR
+      SUBROUTINE SCFCORR (WAVE,EMP1,DX,VC,VTR,NM,N,NCOUP)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C     THIS ROUTINE CALCULATES THE SCF CORRECTION
+C     ON THE GH-QUADRATURE GRID POINTS.
+C
+      DIMENSION DX(NM)
+      DIMENSION VC(NM,NM,N,N)
+      DIMENSION VTR(NM,NM,NM,N,N,N)
+      DIMENSION WAVE(NM,N)
+C
+      PARAMETER (ZERO=0.0D+00)
+C
+      EMP1=ZERO
+      DO I=1, NM-1
+        DO J=I+1, NM
+          DO L=1, N
+            DO M=1, N
+              SUM=DX(I)*DX(J)*VC(I,J,L,M)*(WAVE(I,L)**2)*(WAVE(J,M)**2)
+              EMP1=EMP1+SUM
+            END DO
+         END DO
+        END DO
+      END DO
+      IF (NCOUP.LE.2) GOTO 100
+C
+      EMP1T=ZERO
+      DO I=1, NM-2
+         DO J=I+1, NM-1
+            DO K=J+1, NM
+               DO L1=1, N
+               DO L2=1, N
+               DO L3=1, N
+                  SUM=DX(I)*DX(J)*DX(K)*VTR(I,J,K,L1,L2,L3)*
+     *                (WAVE(I,L1)**2)*(WAVE(J,L2)**2)*(WAVE(K,L3)**2)
+                  EMP1T=EMP1T+SUM
+               END DO
+               END DO
+               END DO
+            END DO
+         END DO
+      END DO
+      EMP1 = EMP1 + EMP1T*2.0D+00
+C
+  100 CONTINUE
+      RETURN
+      END
+C*MODULE VSCF    *DECK VIRTSTATE
+      SUBROUTINE VIRTSTATE (KSTATE,NM,NMAX,NVST,IVST,NCOUP,IEXC)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION IVST(NVST,NM)
+C
+      NOST=0
+C
+C     GENERATE SINGLE EXCITATIONS
+C
+      DO ISTATE=0, NMAX
+        DO I=1, NM
+          NOST=NOST+1
+          DO MODE=1, NM
+            IF (MODE.EQ.I) THEN
+              IVST(NOST,MODE)=ISTATE
+            ELSE
+              IVST(NOST,MODE)=0
+            END IF
+          END DO
+          IF (NOST.EQ.1) GO TO 1000
+        END DO
+1000  END DO
+C
+C     GENERATE DOUBLE EXCITATIONS
+C
+      DO JSTATE=1, NMAX
+         DO ISTATE=1, NMAX
+C           ISUM=ISTATE+JSTATE
+            DO I=1, NM-1
+               DO J=I+1, NM
+                  NOST=NOST+1
+                  DO MODE=1, NM
+                     IF (MODE.EQ.I) THEN
+                        IVST(NOST,MODE)=ISTATE
+                     ELSE IF (MODE.EQ.J) THEN
+                        IVST(NOST,MODE)=JSTATE
+                     ELSE IF (MODE.EQ.KSTATE) THEN
+                        IVST(NOST,MODE)=IEXC
+                     ELSE
+                        IVST(NOST,MODE)=0
+                     END IF
+                  END DO
+               END DO
+            END DO
+         END DO
+      END DO
+      IF (NCOUP.LE.2) GOTO 2000
+C
+C     TRIPLE EXCITATIONS IF 3BODY COUPLING IS INCLUDED
+C
+      DO ISTATE=1, NMAX
+         DO JSTATE=1, NMAX
+            DO LSTATE=1, NMAX
+C              ISUM=ISTATE+JSTATE+LSTATE
+               DO I=1, NM-2
+                  DO J=I+1, NM-1
+                     DO L=J+1, NM
+                        NOST=NOST+1
+                        DO MODE=1, NM
+                           IF (MODE.EQ.I) THEN
+                              IVST(NOST,MODE)=ISTATE
+                           ELSE IF (MODE.EQ.J) THEN
+                              IVST(NOST,MODE)=JSTATE
+                           ELSE IF (MODE.EQ.L) THEN
+                              IVST(NOST,MODE)=LSTATE
+                           ELSE IF (MODE.EQ.KSTATE) THEN
+                              IVST(NOST,MODE)=IEXC
+                           ELSE
+                              IVST(NOST,MODE)=0
+                           END IF
+                        END DO
+                     END DO
+                  END DO
+               END DO
+            END DO
+         END DO
+      END DO
+C
+2000  CONTINUE
+      RETURN
+      END
+C*MODULE VSCF    *DECK MPPT
+      SUBROUTINE MPPT(EMP2,EMP0,WAVE,V,E,VC,VTR,VSCF,DX,OVRLP,
+     *                NM,N,NST,NVST,IVST,IREF,JREF,JVIRT,NCOUP,DBG,
+     *                NDET,IQDPT,SMALL)
+C
+C     THIS PROGRAM CALCULATES THE 2ND ORDER MPPT ENERGY CORRECTION.
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,DBG
+C
+      DIMENSION WAVE(NM,NST,N)
+      DIMENSION VC(NM,NM,N,N)
+      DIMENSION VTR(NM,NM,NM,N,N,N)
+      DIMENSION VSCF(NM,N)
+      DIMENSION E(NM,NST)
+      DIMENSION DX(NM)
+      DIMENSION IREF(NM)
+      DIMENSION IVST(NVST,NM)
+      DIMENSION JVIRT(NVST,NM),JREF(NM)
+      DIMENSION EMP0(NVST)
+      DIMENSION V(NDET,NVST)
+      DIMENSION OVRLP(NM)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+C     PARAMETER (ZERO=0.0D+00, SMALL=5.0D-03, CM=2.194747D+05)
+      PARAMETER (ZERO=0.0D+00,                CM=2.194747D+05)
+C
+C     IF(MASWRK) WRITE(IW,9000)
+C9000 FORMAT(1X,'COMPUTING THE VMP2 CORRECTION TO VSCF ENERGY')
+C
+C     REFERENCE STATE
+C
+      DO I=1, NM
+         IREF(I)=IREF(I)+1
+      END DO
+C
+C     COMPARE VIRTUAL STATES WITH THE REFERENCE STATE
+C
+       INDEX=0
+       DO J=1, NVST
+          ISUM=0
+          EMP0(J)=ZERO
+          INDEX=INDEX+1
+          DO I=1, NM
+             JREF(I)=IVST(INDEX,I)
+             JVIRT(J,I)=JREF(I)+1
+             EMP0(J)=EMP0(J)+E(I,JVIRT(J,I))
+             IF (IREF(I).EQ.JVIRT(J,I)) ISUM=ISUM+1
+          END DO
+          IF (ISUM.EQ.NM) ISTATE=J
+       END DO
+C
+C      GENERATE THE OVERLAP BETWEEN TWO STATES I AND J
+C
+       DO J=1, NVST
+         V(IQDPT,J)=ZERO
+         DO JMODE=1, NM
+           JREF(JMODE)=JVIRT(J,JMODE)
+         END DO
+         DO K=1, NM-1
+            DO L=K+1, NM
+               CALL AVG(SUM,IREF,JREF,K,L,DX,WAVE,VC,OVRLP,NM,N,NST)
+               V(IQDPT,J)=V(IQDPT,J)+SUM
+            END DO
+         END DO
+         IF (NCOUP.GT.2) THEN
+            DO L1=1, NM-2
+              DO L2=L1+1, NM-1
+                DO L3=L2+1, NM
+                  CALL AVG3(SUM3,IREF,JREF,L1,L2,L3,DX,WAVE,VTR,
+     *                                               OVRLP,NM,N,NST)
+                  V(IQDPT,J)=V(IQDPT,J)+SUM3
+                END DO
+              END DO
+            END DO
+         END IF
+         DO K=1, NM
+            CALL AVGHF(SUM2,IREF,JREF,K,DX,WAVE,VSCF,OVRLP,NM,N,NST)
+            V(IQDPT,J)=V(IQDPT,J)-SUM2
+         END DO
+       END DO
+C
+C      ---- BAIL OUT IF ONLY NEED INTEGRALS. -----
+C
+       IF(IQDPT.GE.2) RETURN
+C
+C      1ST ORDER ENERGY CORRECTION:
+C
+       EMP1=V(IQDPT,ISTATE)
+       IF (DBG  .AND.  MASWRK) WRITE(IW,9010) ISTATE,EMP1*CM
+C
+C      2ND ORDER ENERGY CORRECTION:
+C
+       NKEEP=0
+       EMP2=ZERO
+       DO J=1, NVST    !  STATE INDEX
+         IF (J.NE.ISTATE) THEN
+            SUMV=V(IQDPT,J)*V(IQDPT,J)
+            SUME=EMP0(ISTATE)-EMP0(J)
+            IF (ABS(SUME).LT.SMALL) THEN
+               SUMV=ZERO
+            END IF
+            EMP2=EMP2+(SUMV/SUME)
+C
+C      TO CUT DOWN ON THE COMPUTATION OF COEFFICIENTS FOR
+C      2ND ORDER WAVEFUNCTION CORRECTION, SELECT ONLY THE STATES
+C      WHICH CONTRIBUTE MOST TO THE ENERGY CORRECTION AND USE THESE
+C      STATES AS THE BASIS.
+C
+            IF (ABS(SUMV/SUME).GT.1.0D-08) NKEEP=NKEEP+1
+         END IF
+       END DO
+       IF (MASWRK) THEN
+          IF(DBG) WRITE(IW,9020) ISTATE,EMP2*CM
+          WRITE(IW,9030) NVST
+          WRITE(IW,9040) NKEEP
+       ENDIF
+C
+       RETURN
+C
+ 9010 FORMAT(1X,'MP1 (',I4,') :',E14.7)
+ 9020 FORMAT(1X,'MP2 (',I4,') :',E14.7)
+ 9030 FORMAT(1X,'NUMBER OF VIRTUAL STATES IS ',I6)
+ 9040 FORMAT(1X,'NUMBER OF SELECTED STATES IS',I6)
+       END
+C
+C*MODULE VSCF    *DECK AVG
+      SUBROUTINE AVG(SUM,IREF,JREF,K,L,DX,WAVE,VC,OVRLP,NM,N,NST)
+C
+C     THIS ROUTINE CALCULATES THE
+C     AVG = < PSI | VC(K,L) | PSI >
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION IREF(NM),JREF(NM)
+      DIMENSION OVRLP(NM)
+      DIMENSION WAVE(NM,NST,N)
+      DIMENSION VC(NM,NM,N,N)
+      DIMENSION DX(NM)
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+C
+      SUM=ZERO
+      DO KL=1, N
+        SI=DX(K)*WAVE(K,IREF(K),KL)*WAVE(K,JREF(K),KL)
+        DO LL=1, N
+           SJ=DX(L)*WAVE(L,IREF(L),LL)*WAVE(L,JREF(L),LL)
+           SUM=SUM+VC(K,L,KL,LL)*SI*SJ
+        END DO
+      END DO
+C
+      SIJ=ONE
+      DO M=1, NM
+        IF ((M.EQ.K).OR.(M.EQ.L)) THEN
+           OVRLP(M)=ONE
+        ELSE
+           OVRLP(M)=ZERO
+           IF (IREF(M).EQ.JREF(M)) THEN
+             DO LL=1, N
+               OVRLP(M)=OVRLP(M)+
+     *                  DX(M)*WAVE(M,IREF(M),LL)*WAVE(M,JREF(M),LL)
+             END DO
+           ELSE
+             SIJ=ZERO
+             GOTO 1000
+           END IF
+        END IF
+        SIJ=SIJ*OVRLP(M)
+      END DO
+1000  SUM=SUM*SIJ
+      RETURN
+      END
+C*MODULE VSCF    *DECK AVG3
+      SUBROUTINE AVG3(SUM,IREF,JREF,L1,L2,L3,DX,WAVE,VTR,
+     *                                          OVRLP,NM,N,NST)
+C
+C     THIS ROUTINE CALCULATES THE
+C     AVG = < PSI | VTRIP(L1,L2,L3) | PSI >
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION IREF(NM),JREF(NM)
+      DIMENSION OVRLP(NM)
+      DIMENSION WAVE(NM,NST,N)
+      DIMENSION VTR(NM,NM,NM,N,N,N)
+      DIMENSION DX(NM)
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+C
+      SUM=ZERO
+      DO LL1=1, N
+        S1=DX(L1)*WAVE(L1,IREF(L1),LL1)*WAVE(L1,JREF(L1),LL1)
+        DO LL2=1, N
+          S2=DX(L2)*WAVE(L2,IREF(L2),LL2)*WAVE(L2,JREF(L2),LL2)
+          DO LL3=1, N
+            S3=DX(L3)*WAVE(L3,IREF(L3),LL3)*WAVE(L3,JREF(L3),LL3)
+            SUM=SUM+VTR(L1,L2,L3,LL1,LL2,LL3)*S1*S2*S3
+          END DO
+        END DO
+      END DO
+C
+      SIJ=ONE
+      DO M=1, NM
+        IF ((M.EQ.L1).OR.(M.EQ.L2).OR.(M.EQ.L3)) THEN
+           OVRLP(M)=ONE
+        ELSE
+           OVRLP(M)=ZERO
+           IF (IREF(M).EQ.JREF(M)) THEN
+             DO LL=1, N
+               OVRLP(M)=OVRLP(M)+
+     *                  DX(M)*WAVE(M,IREF(M),LL)*WAVE(M,JREF(M),LL)
+             END DO
+           ELSE
+             SIJ=ZERO
+             GOTO 1000
+           END IF
+        END IF
+        SIJ=SIJ*OVRLP(M)
+      END DO
+1000  SUM=SUM*SIJ
+      RETURN
+      END
+C*MODULE VSCF    *DECK AVGHF
+      SUBROUTINE AVGHF(SUM,IREF,JREF,K,DX,WAVE,VSCF,OVRLP,NM,N,NST)
+C
+C     THIS ROUTINE CALCULATES THE
+C     AVG = < PSI | VHF(K) | PSI >
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION IREF(NM),JREF(NM)
+      DIMENSION WAVE(NM,NST,N)
+      DIMENSION VSCF(NM,N)
+      DIMENSION DX(NM)
+      DIMENSION OVRLP(NM)
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+C
+      SUM=ZERO
+      SIJ=ONE
+      DO M=1, NM
+         IF (M.EQ.K) THEN
+           OVRLP(M)=ONE
+           DO LL=1, N
+             TEMP=DX(M)*WAVE(M,JREF(M),LL)*WAVE(M,IREF(M),LL)
+             SUM=SUM+VSCF(M,LL)*TEMP
+           END DO
+         ELSE
+           OVRLP(M)=ZERO
+           IF (IREF(M).EQ.JREF(M)) THEN
+             DO LL=1, N
+               OVRLP(M)=OVRLP(M)+
+     *              DX(M)*WAVE(M,JREF(M),LL)*WAVE(M,IREF(M),LL)
+             END DO
+           ELSE
+             SIJ=ZERO
+             GOTO 1000
+           END IF
+         END IF
+         SIJ=SIJ*OVRLP(M)
+      END DO
+1000  SUM=SUM*SIJ
+      RETURN
+      END
+C*MODULE VSCF    *DECK EIGSRT
+      SUBROUTINE EIGSRT(D,V,N,NP)
+C
+C     THIS ROUTINE RESORTS THE EIGENVALUES FROM ASCENDING
+C     TO DESCENDING ORDER, AND REARRANGES THE COLUMNS OF V
+C     CORRESPONDINGLY.
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION  D(NP),V(NP,NP)
+C
+      DO 130 I=1,N/2
+         K=N-I+1
+         P=D(K)
+         D(K)=D(I)
+         D(I)=P
+         DO 120 J=1,N
+            P=V(J,K)
+            V(J,K)=V(J,I)
+            V(J,I)=P
+  120    CONTINUE
+  130 CONTINUE
+C
+      RETURN
+      END
+C*MODULE VSCF    *DECK ENDIFF
+      SUBROUTINE ENDIFF(FREQ,FRSCF,FRMP2,DIAG,EMP1,EMP2,ECAS,EQDPT2,
+     *                  NM,NSTATE,NCOUP,IEXC,MODE)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      DIMENSION FREQ(NM), EMP1(NSTATE), EMP2(NSTATE), DIAG(NSTATE)
+      DIMENSION FRSCF(NM), FRMP2(NM),ECAS(NSTATE),EQDPT2(NSTATE)
+      DIMENSION MODE(10)
+C
+      PARAMETER (CM=2.194747D+05)
+C
+      IF(MASWRK) WRITE(IW,9000)
+C
+      IF (NCOUP.LE.1) THEN
+         IF(MASWRK) WRITE(IW,9010)
+         DO IMODE = 1, NM
+            HFR = FREQ(IMODE)*CM
+            IF (IEXC.GT.1) HFR=HFR*IEXC
+            DDIAG = (DIAG(IMODE+1) - DIAG(1))*CM
+            ISKIP = 0
+            IF(MODE(1).NE.0) THEN
+               ISKIP = 1
+               DO ICNT = 1,10
+                  IF (IMODE.EQ.MODE(ICNT)) ISKIP = 0
+               END DO
+            END IF
+            IF (ISKIP.EQ.0.AND.MASWRK) WRITE(IW,9020) IMODE, HFR, DDIAG
+            FRSCF(IMODE)=DDIAG/CM
+            FRMP2(IMODE)=FRSCF(IMODE)
+         END DO
+      ELSE
+         IF(MASWRK) WRITE(IW,9030)
+         DO IMODE = 1, NM
+            HFR = FREQ(IMODE)*CM
+            IF (IEXC.GT.1) HFR=HFR*IEXC
+            DDIAG = (DIAG(IMODE+1) - DIAG(1))*CM
+            DVSCF = (EMP1(IMODE+1) - EMP1(1))*CM
+            DEMP2 = (EMP2(IMODE+1) - EMP2(1))*CM
+            DCAS  = (ECAS(IMODE+1) - ECAS(1))*CM
+            DQDPT = (EQDPT2(IMODE+1)-EQDPT2(1))*CM
+            IF (MASWRK) WRITE(IW,9040) IMODE,HFR,DDIAG,DVSCF,DEMP2,
+     *                                 DCAS,DQDPT
+            FRSCF(IMODE)=DVSCF/CM
+            FRMP2(IMODE)=DEMP2/CM
+         END DO
+      END IF
+C
+      RETURN
+C
+ 9000 FORMAT(/1X,'RESULTS OF VIBRATIONAL SCF CALCULATION:',
+     *          ' (FREQUENCIES IN CM-1)')
+ 9010 FORMAT(1X,'MODE      HARMONIC     DIAGONAL')
+ 9020 FORMAT(2X,I2,5X,2(F10.2,3X))
+ 9030 FORMAT(1X,'MODE  HARMONIC   DIAGONAL     VSCF      ',
+     *          'PT2-VSCF   VCI-VSCF  DPT2-VSCF')
+ 9040 FORMAT(2X,I2,2X,6(F9.2,2X))
+      END
+C*MODULE VSCF    *DECK INTENS
+      SUBROUTINE INTENS(SINTSCF,UX,UY,UZ,FRSCF,FRMP2,DQ,WAVE,NM,N,IMODE)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+C     THIS ROUTINE CALCULATES IR INTENSITY FOR I-TH MODE
+C     USING THE FOLLOWING EQUATION:
+C
+C     INTENSITY(I) = |<GROUND PSI(I)| U(I) |EXCITED PSI(I)>|^2
+C
+C             WHERE   PSI(I) = WAVEFUNCTION CORRESPONDING TO MODE I
+C                     U(I)   = DIPOLE MOMENT ALONG NORMAL COORDINATE I
+C
+      DIMENSION DQ(NM)
+      DIMENSION WAVE(NM+1,NM,N)            ! VSCF WAVEFUNCTIONS
+      DIMENSION FRSCF(NM)                  ! VSCF FREQUENCIES
+      DIMENSION FRMP2(NM)                  ! VMP2 FREQUENCIES
+      DIMENSION UX(NM,N),UY(NM,N),UZ(NM,N) ! DIPOLE MOMENT COMPONENTS
+      DIMENSION SINTSCF(NM)                ! VSCF INTENSITY
+      DIMENSION IMODE(10)
+C
+      PARAMETER (ZERO=0.0D+00)
+      PARAMETER (CONST=2.5048D+00, CM=2.194747D+05)
+C
+C     CONST = 8*PI^3*NAVOGADRO*(E-18)^2*E-5/(3*H*C) IN CGS
+C
+      IF (MASWRK) WRITE(IW,9000)
+C
+      DO J=1, NM
+         SINTX = ZERO
+         SINTY = ZERO
+         SINTZ = ZERO
+         DO L=1, N
+            SINTX = SINTX +
+     *                 UX(J,L)*WAVE(1,J,L)*WAVE(J+1,J,L)*DQ(J)
+            SINTY = SINTY +
+     *                 UY(J,L)*WAVE(1,J,L)*WAVE(J+1,J,L)*DQ(J)
+            SINTZ = SINTZ +
+     *                 UZ(J,L)*WAVE(1,J,L)*WAVE(J+1,J,L)*DQ(J)
+         END DO
+         SINTSCF(J) = SINTX*SINTX+SINTY*SINTY+SINTZ*SINTZ
+         SINTSCF(J) = FRSCF(J)*CM*CONST*SINTSCF(J)
+         ISKIP = 0
+         IF(IMODE(1).NE.0) THEN
+            ISKIP = 1
+            DO ICNT = 1,10
+               IF (J.EQ.IMODE(ICNT)) ISKIP = 0
+            END DO
+         END IF
+         IF (ISKIP.EQ.0.AND.MASWRK)
+     *       WRITE(IW,9010) J, FRMP2(J)*CM, SINTSCF(J)
+      END DO
+      RETURN
+C
+ 9000 FORMAT(/1X,'IR INTENSITIES ARE CALCULATED USING DIPOLE MOMENTS'/
+     *       1X,'MODE   FREQUENCY, CM-1  INTENSITY, KM/MOL')
+ 9010 FORMAT (2X,I2,5X,F10.2,4X,F10.2)
+      END
+C*MODULE VSCF    *DECK DINTENS
+      SUBROUTINE DINTENS(SINTSCF,DDM,DDER,FRSCF,FRMP2,
+     *                   VEC,Q,DQ,WAVE,NM,N,NC,IMODE)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+C     THIS ROUTINE CALCULATES IR INTENSITY FOR I-TH MODE
+C     USING THE FOLLOWING EQUATION:
+C
+C     INTENSITY(I) = ( DU/DQ(I) |<GR. PSI(I)| Q(I) |EX. PSI(I)>| )^2
+C
+C             WHERE   DU/DQ(I) = DIPOLE DERIVATIVE AT EQUILIBRIUM
+C
+      DIMENSION DQ(NM)
+      DIMENSION Q(NM,N)
+      DIMENSION VEC(NC,NC)
+      DIMENSION WAVE(NM+1,NM,N)     ! VSCF WAVEFUNCTIONS
+      DIMENSION FRSCF(NM)           ! VSCF FREQUENCIES
+      DIMENSION FRMP2(NM)           ! VMP2 FREQUENCIES
+      DIMENSION SINTSCF(NM)         ! VSCF INTENSITY
+      DIMENSION DDM(NC*3)           ! DIPOLE DERIVATIVE IN CARTESIANS
+      DIMENSION DDER(NM)            ! SQUARE OF DIPOLE MOMENT DERIVATIVE
+      DIMENSION IMODE(10)
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00)
+      PARAMETER (AMU=1.8229D+03, CM=2.19474D+05)
+      PARAMETER (CONST=2.5048D+00, BOHR=5.2918D-01)
+C
+C     CONST = 8*PI^3*NAVOGADRO*(E-18)^2*E-5/(3*H*C) IN CGS
+C
+      IF(MASWRK) WRITE(IW,9000)
+C
+      FACT = ONE/AMU
+      NSTART=NC-NM+1
+C
+      DO I = NSTART,NC
+         IM=NC-I+1
+         DDX = DDOT(NC,VEC(1,I),1,DDM(1),3)
+         DDY = DDOT(NC,VEC(1,I),1,DDM(2),3)
+         DDZ = DDOT(NC,VEC(1,I),1,DDM(3),3)
+         DDER(IM) = DDX*DDX + DDY*DDY + DDZ*DDZ
+      ENDDO
+C
+      DO J=1, NM
+         SINTSCF(J) = ZERO
+         DO L=1, N
+            SINTSCF(J) = SINTSCF(J) +
+     *                   Q(J,L)*WAVE(1,J,L)*WAVE(J+1,J,L)*DQ(J)
+         END DO
+C
+         SINTSCF(J) = FRSCF(J)*CM*SINTSCF(J)**2
+         SINTSCF(J) = SINTSCF(J)*DDER(J)*CONST*FACT*BOHR*BOHR
+         ISKIP = 0
+         IF(IMODE(1).NE.0) THEN
+            ISKIP = 1
+            DO ICNT = 1,10
+               IF (J.EQ.IMODE(ICNT)) ISKIP = 0
+            END DO
+         END IF
+         IF (ISKIP.EQ.0.AND.MASWRK)
+     *          WRITE(IW,9010) J, FRMP2(J)*CM, SINTSCF(J)
+C
+      END DO
+C
+      RETURN
+C
+ 9000 FORMAT(/1X,'IR INTENSITIES ARE CALCULATED USING HARMONIC DIPOLE',
+     *           ' DERIVATIVES.'/
+     *       1X,'MODE   FREQUENCY, CM-1  INTENSITY, KM/MOL')
+ 9010 FORMAT (2X,I2,5X,F10.2,4X,F10.2)
+      END
+C
+C=======================================================================
+C*MODULE VSCF    *DECK VIRTCI
+      SUBROUTINE VIRTCI(VIRTWAVE,VIRTE,IVST,NM,NST,NG,DX,III,
+     *                  NVST,H,VC,VSCF,E,SCR,VEC,IA,
+     *                  ICAS1,ICAS2,VDPT,NDET,OVRLP,JVIRT,
+     *                  KREF,JREF,IREF,NDET2,ICASX,ICAST,IMP,
+     *                  CASMIN,VMP,TRIPV,EMP0,ECAS,EQDPT2,VWAVE,
+     *                  SMALL,DEBUG,IEXC)
+C=======================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL VDPT,CASMIN,DEBUG
+      DIMENSION VIRTWAVE(NM,NST,NG),DX(NM)
+      DIMENSION VIRTE(NM,NST),IVST(NVST,NM),ICAST(NDET,NM)
+      DIMENSION VC(NM,NM,NG,NG),VSCF(NM,NG),IA(NVST)
+      DIMENSION H(NDET2),E(NDET),SCR(NDET,8),VEC(NDET,NDET)
+      DIMENSION OVRLP(NM),JVIRT(NVST,NM),IMP(NM)
+      DIMENSION TRIPV(NM,NM,NM,NG,NG,NG),EMP0(NVST)
+      DIMENSION IREF(NM),JREF(NM),KREF(NM),VMP(NDET,NVST)
+      DIMENSION ECAS(NM+1),EQDPT2(NM+1),VWAVE(NM,NG)
+      PARAMETER(CM=219474.7D+00)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+C
+C     ----- DRIVER ROUTINE FOR VIRTUAL CI -----
+C           KREF = REFERENCE SCF STATE   STARTS WITH 1
+C           IREF = <BRA| VIRTUAL STATE
+C           JREF = |KET> VIRTUAL STATE
+C
+      IF(IEXC.GT.1) RETURN
+C
+      ICAS = ICAS2 - ICAS1 + 1
+      CALL VCLR(H,1,NDET2)
+C
+C     ----- PREPARE DETERMINANTS FOR SMALL CI -----
+C
+      CALL PREPD(ICAST,ICAS,ICASX,ICAS1,ICAS2,NDET,NM,III,IMP,CASMIN)
+C
+C     ----- DIAGONAL PART -----
+C       *** KREF STARTS WITH 1, NOT WITH 0 ***
+C
+      CALL VCIDIAG(VIRTE,ICAST,NM,NST,H,NDET,NDET2,IMP,DX,VIRTWAVE,
+     *             VC,TRIPV,NG,IREF,JREF,VWAVE)
+C
+      IF(DEBUG) THEN
+         WRITE(IW,*) '****** DIAGONAL HAMILTONIAN *****'
+         WRITE(IW,*) 'NM   = ',NM
+         WRITE(IW,*) 'NDET = ',NDET
+         CALL PRTRI(H,NDET)
+      END IF
+C
+C     ----- PUTING RIGHT POTENTIAL COUPLING IN CI HAMILTONIAN -----
+C
+      DO 200 I=1,NDET-1
+         DO 100 J=I+1,NDET
+            DO 80 K=1,NM
+               IREF(K) = ICAST(I,K)
+               JREF(K) = ICAST(J,K)
+   80       CONTINUE
+C
+            CALL VCIP(I,J,VIRTWAVE,VC,VSCF,NM,NST,NG,DX,NDET,
+     *                 IREF,JREF,OVRLP,NDET2,IMP,H)
+C
+  100    CONTINUE
+  200 CONTINUE
+C
+      IF(DEBUG) THEN
+         WRITE(IW,9999)
+ 9999    FORMAT(5X,'***** BACK TO VIRTCI ROUTINE *****'//,
+     *     '  HAMILTONIAN MATRIX')
+         CALL PRTRI(H,NDET)
+      END IF
+C
+C     ----- DIAGONALIZE HAMILTONIAN -----
+C
+      IERR = 0
+      CALL GLDIAG(NDET,NDET,NDET,H,SCR,E,VEC,IERR,IA)
+C
+      IF(IERR.NE.0) THEN
+         WRITE(IW,9050)
+         CALL ABRT
+      END IF
+C
+      DO I=1,NM
+         IREF(I)=0
+      END DO
+C
+      WRITE(IW,9010)
+      WRITE(IW,9060)
+      IADD = 0
+C
+C     ----- PRINT OUT EIGENVALUES AND EIGENVECTORS -----
+C
+      DO 300 I=1,NDET
+         CALL WHDET(I,VEC,IREF,ICAST,NM,NDET,IWHCH)
+         CALL REAREF(IREF,IMP,OVRLP,NM,IADD)
+         CALL REAREF(JREF,IMP,OVRLP,NM,IADD)
+         WRITE(IW,9020) I,E(I)*CM,(IREF(K),K=1,NM)
+  300 CONTINUE
+C
+      CALL WHEST(VEC,IREF,KREF,ICAST,IMP,OVRLP,NM,NDET,ITHVEC)
+      IST         = III + 1
+      ECAS(IST)   = E(ITHVEC)
+C
+C     ----- PRINT EIGENVECTORS! -----
+C
+      WRITE(IW,9040)
+      CALL PREV(VEC,E,NDET,NDET,NDET)
+      WRITE(IW,9045)
+C
+C     ----- FINALLY DO MP2 ON TOP OF CI -----
+C
+      IF(VDPT) THEN
+      CALL VCIPT(VIRTWAVE,VIRTE,VC,TRIPV,VSCF,VEC,NM,NDET,NG,DX,NST,
+     *           NVST,IREF,JREF,KREF,III,IVST,JVIRT,
+     *           OVRLP,CASMIN,IMP,ICAST,VMP,
+     *           EMP0,ECAS,EQDPT2,SMALL,DEBUG)
+      END IF
+C
+      RETURN
+C
+ 9010 FORMAT(1X,'VIBRATIONAL VIRTUAL CI EIGENVALUES')
+ 9020 FORMAT(5X,I3,1X,F12.2,2X,40I1)
+ 9040 FORMAT(/1X,'VIBRATIONAL VIRTUAL CI EIGENVECTORS')
+ 9045 FORMAT(/)
+ 9050 FORMAT(5X,'***** PROBLEM WITH DIAGONALIZATION *****')
+ 9060 FORMAT('      #    EIGENVALUE  DETERMINANT',/
+     *       '     ===   ==========  ===========')
+      END
+C
+C=====================================================================
+C*MODULE VSCF    *DECK VCIDIAG
+      SUBROUTINE VCIDIAG(VIRTE,ICAST,NM,NST,H,NDET,NDET2,IMAP,DX,WAVE,
+     *                   VC,VTR,NG,IREF,JREF,VWAVE)
+C=====================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION VIRTE(NM,NST),ICAST(NDET,NM),H(NDET2)
+      DIMENSION IMAP(NM),WAVE(NM,NST,NG),DX(NM),VWAVE(NM,NG)
+      DIMENSION IREF(NM),JREF(NM)
+      DIMENSION VC(NM,NM,NG,NG),VTR(NM,NM,NM,NG,NG,NG)
+C
+C     ----- DIAGONAL VALENCE CI -----
+C
+      IM = 0
+      NCOUP = 2
+      DO I=1,NDET
+         IM = IM + I
+C
+         DO J=1,NM
+            JM = IMAP(J)
+            IREF(J) = ICAST(I,JM) + 1
+            JREF(J) = IREF(J)
+            IRF = ICAST(I,JM) + 1
+            H(IM) = H(IM) + VIRTE(J,IRF)
+         END DO
+C
+         CALL GETWAV(WAVE,IREF,NM,NST,NG,VWAVE)
+         CALL SCFCORR(VWAVE,EMP1,DX,VC,VTR,NM,NG,NCOUP)
+         H(IM) = H(IM) - EMP1
+      END DO
+      RETURN
+      END
+C
+C=====================================================================
+C*MODULE VSCF    *DECK VCIP
+      SUBROUTINE VCIP(I,J,WAVE,VC,VSCF,NM,NST,N,DX,NDET,IREF,JREF,
+     *                OVRLP,NDET2,IMAP,H)
+C=====================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION IREF(NM),JREF(NM),H(NDET2)
+      DIMENSION WAVE(NM,NST,N),VC(NM,NM,N,N)
+      DIMENSION VSCF(NM,N),DX(NM)
+      DIMENSION OVRLP(NM),IMAP(NM)
+      PARAMETER(ZERO=0.0D+00)
+C
+C     ----- REARRANGE IREF AND KREF THAT AVG AND AVGHF UNDERSTAND ------
+C
+      IADD = 1
+      IM = 0
+      CALL REAREF(IREF,IMAP,OVRLP,NM,IADD)
+      CALL REAREF(JREF,IMAP,OVRLP,NM,IADD)
+C
+C     ----- < I | V - VSCF | J > FOR MODES ICAS1 TO ICAS2 -----
+C
+      ELEM1 =ZERO
+      ELEM2 =ZERO
+C
+C     NEED TO GENERATE DETERMINANTS CORRESPONDS TO <I| AND |J>
+C
+      DO K=1, NM-1
+         DO L=K+1, NM
+            CALL AVG(SUM,IREF,JREF,K,L,DX,WAVE,VC,OVRLP,NM,N,NST)
+            ELEM1 = ELEM1 + SUM
+         END DO
+      END DO
+C
+C     CALCULATE AVERAGED V OF HF
+C
+      DO K=1, NM
+         CALL AVGHF(SUM2,IREF,JREF,K,DX,WAVE,VSCF,OVRLP,NM,N,NST)
+         ELEM2 = ELEM2 + SUM2
+      END DO
+C
+C     ----- FIND WHICH ELEMENT <I| AND |J> CORRESPOND TO -----
+C
+      IJ = 0
+      DO IC=1,NDET
+         DO IR=1,IC
+            IJ = IJ + 1
+            IF(IR.EQ.I .AND. IC.EQ.J) IM = IJ
+         END DO
+      END DO
+C
+      H(IM) = ELEM1 - ELEM2
+C
+      RETURN
+      END
+C
+C=====================================================================
+C*MODULE VSCF    *DECK PREPD
+      SUBROUTINE PREPD(ICAST,ICAS,ICASX,ICAS1,ICAS2,NDET,NM,III,IMP,
+     *                 CASMIN)
+C=====================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL CASMIN
+      DIMENSION ICAST(NDET,NM),IMP(NM)
+C
+C     ------ GENERATION OF ALL DETERMINANTS -----
+C         ICAST = CAS STATES
+C         NMAX  = MAXIMUM EXCITATION
+C
+      NMAX = ICASX
+      CALL VCLR(ICAST,1,NDET*NM)
+C
+C     ----- MAP CAS AND NON-CAS IN IMP -----
+C
+      I = 0
+      DO J=1,NM
+         IF(J.GE.ICAS1 .AND. J.LE.ICAS2) THEN
+            IMP(J) = J - ICAS1 + 1
+         END IF
+         IF(J.LT.ICAS1) THEN
+            IMP(J) = J + ICAS
+         END IF
+         IF(J.GT.ICAS2) THEN
+            IMP(J) = J
+         END IF
+      END DO
+C
+C     ----- GET ALL POSSIBLE COMBINATION IN CAS -----
+C
+      IF(CASMIN) THEN
+         DO K=1,NDET
+            DO L=1,NM
+               IF(L.EQ.K-1) ICAST(K,L) = 1
+            END DO
+         END DO
+      ELSE
+         IEXC = 1
+         CALL VIRTSTATE (0,ICAS,NMAX,NDET,ICAST,2,IEXC)
+      END IF
+C
+C     ----- PUT NON-CAS EXCITATION -----
+C
+      IF(III.GT.0) THEN
+         IF(III.LT.ICAS1 .OR. III.GT.ICAS2) THEN
+            I = IMP(III)
+            ICAST(1,I) = 1
+         END IF
+      END IF
+C
+      RETURN
+      END
+C
+C=====================================================================
+C*MODULE VSCF    *DECK REAREF
+      SUBROUTINE REAREF(IREF,IMAP,ISCR,NM,IADD)
+C=====================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION IREF(NM),ISCR(NM),IMAP(NM)
+C
+C     ----- REARRANGE IREF AND KREF IN RIGHT ORDER -----
+C
+      CALL VCLR(ISCR,1,NM)
+      DO K=1,NM
+         ISCR(K) = IREF(K) + IADD
+      END DO
+      DO K=1,NM
+         K1 = IMAP(K)
+         IREF(K) = ISCR(K1)
+      END DO
+      CALL VCLR(ISCR,1,NM)
+C
+      RETURN
+      END
+C=======================================================================
+C*MODULE VSCF    *DECK WHDET
+      SUBROUTINE WHDET(I,VEC,IREF,ICAST,NM,NDET,IWHCH)
+C=======================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION VEC(NDET,NDET),IREF(NM),ICAST(NDET,NM)
+C
+C     ----- DETERMINE WHICH DETERMINANTS HAS THE LARGEST CI COEFF. -----
+C     GIVEN I-TH COLUMN VECTOR, PICK OUT THE CI COEFF
+C     ON RETURN, IREF IS FILLED AND IWHCH, POINTS TO THE LARGEST ROW
+C
+      TMP1 = ABS(VEC(1,I))
+      IWHCH = 1
+      DO J=2,NDET
+         TMP2 = ABS(VEC(J,I))
+         IF(TMP1.LT.TMP2) THEN
+            TMP1 = TMP2
+            IWHCH = J
+         END IF
+      END DO
+C
+      DO J=1,NM
+         IREF(J) = ICAST(IWHCH,J)
+      END DO
+C
+      RETURN
+      END
+C
+C=======================================================================
+C*MODULE VSCF    *DECK VCIPT
+      SUBROUTINE VCIPT(WAVE,VIRTE,VC,VTR,VSCF,VEC,NM,NDET,NG,DX,NST,
+     *                 NVST,IREF,JREF,KREF,III,
+     *                 IVST,JVIRT,OVRLP,CASMIN,IMP,ICAST,
+     *                 VMP,EMP0,ECAS,EQDPT2,SMALL,DBG)
+C=======================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL CASMIN,DBG
+      DIMENSION WAVE(NM,NST,NG),VIRTE(NM,NST),DX(NM),IMP(NM)
+      DIMENSION VC(NM,NM,NG,NG),VSCF(NM,NG),VTR(NM,NM,NM,NG,NG,NG)
+      DIMENSION VEC(NDET,NDET),VMP(NDET,NVST)
+      DIMENSION IVST(NVST,NM),ICAST(NDET,NM)
+      DIMENSION EMP0(NVST)
+      DIMENSION OVRLP(NM),JVIRT(NVST,NM)
+      DIMENSION IREF(NM),JREF(NM),KREF(NM)
+      DIMENSION ECAS(NM+1),EQDPT2(NM+1)
+C
+C     ===== DEGENERATE PERTURBATION THEORY =====
+C
+C     KREF = SCF REFERENCE STATE
+C
+      CASMIN = .TRUE.
+      NCOUP = 2
+C
+C     ----- DETERMINE CI EIGENSTATE OF INTEREST -----
+C
+      CALL WHEST(VEC,IREF,KREF,ICAST,IMP,OVRLP,NM,NDET,ITHVEC)
+C
+      IST         = III + 1
+C
+C     ----- SET UP MP2 -----
+C
+      DO I=1,NM
+         KREF(I) = KREF(I) - 1
+      END DO
+C
+      IF(CASMIN) THEN
+         CALL QDPT(EMP2,EMP0,WAVE,VMP,VIRTE,VC,VTR,VSCF,DX,OVRLP,
+     *           NM,NG,NST,NVST,IVST,IREF,JREF,JVIRT,NCOUP,NDET,
+     *           VEC,ICAST,III,ITHVEC,EPT2,SMALL,DBG)
+      END IF
+C
+C     ----- WRAP UP ----
+C
+      EQDPT2(IST) = ECAS(IST) + EPT2
+C
+      RETURN
+      END
+C
+C=====================================================================
+C*MODULE VSCF    *DECK GETWAV
+      SUBROUTINE GETWAV(WAVE,IREF,NM,NST,NG,VWAVE)
+C=====================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION WAVE(NM,NST,NG),IREF(NM),VWAVE(NM,NG)
+C
+      DO I=1,NM
+         IST = IREF(I)
+         DO J=1,NG
+            VWAVE(I,J) = WAVE(I,IST,J)
+         END DO
+      END DO
+      RETURN
+      END
+C
+C=====================================================================
+C*MODULE VSCF    *DECK WHEST
+      SUBROUTINE WHEST(VEC,IREF,KREF,ICAST,IMP,OVRLP,NM,NDET,ITHVEC)
+C=====================================================================
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION VEC(NDET,NDET),IREF(NM),KREF(NM),ICAST(NDET,NM)
+      DIMENSION OVRLP(NM),IMP(NM)
+C
+C     ----- DETERMINE EIGENSTATE OF INTEREST -----
+C
+      IADD = 0
+      DO I=1,NDET
+         CALL WHDET(I,VEC,IREF,ICAST,NM,NDET,IWHCH)
+         CALL REAREF(IREF,IMP,OVRLP,NM,IADD)
+         DO J=1,NM
+            KTHREF = KREF(J) - 1
+            IF(IREF(J).NE.KTHREF) GOTO 1000
+         END DO
+         GOTO 2000
+ 1000 END DO
+ 2000 CONTINUE
+      ITHVEC = I
+      RETURN
+      END
+C
+C===================================================================
+C*MODULE VSCF    *DECK FILEMP0
+      SUBROUTINE FILEMP0(IVST,ESCF,JVIRT,NVST,NM,NST,EMP0)
+C===================================================================
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION IVST(NVST,NM),JVIRT(NVST,NM)
+      DIMENSION ESCF(NM,NST),EMP0(NVST)
+      PARAMETER (ZERO=0.0D+00)
+C
+C     WRITE(6,*) ' ROUTINE FILEMP0'
+      DO J=1, NVST
+         EMP0(J)=ZERO
+         DO I=1, NM
+            JVIRT(J,I)=IVST(J,I)+1
+            EMP0(J)=EMP0(J)+ESCF(I,JVIRT(J,I))
+         END DO
+C        WRITE(6,1000)J,EMP0(J)
+C1000 FORMAT(1X,'J  EMP0 ==',I3,1X,F15.6)
+      END DO
+C
+      RETURN
+      END
+C=====================================================================
+C*MODULE VSCF    *DECK QDPT
+      SUBROUTINE QDPT(EMP2,EMP0,WAVE,VMP,ESCF,VC,VTR,VSCF,DX,OVRLP,
+     *           NM,N,NST,NVST,IVST,IREF,JREF,JVIRT,NCOUP,NDET,
+     *           CIVEC,ICAST,ISTATE,ITHVEC,EQDPT2,SMALL,DBG)
+C=====================================================================
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL DBG
+      DIMENSION WAVE(NM,NST,N),VC(NM,NM,N,N),VTR(NM,NM,NM,N,N,N)
+      DIMENSION VSCF(NM,N),ESCF(NM,NST),DX(NM),IREF(NM)
+      DIMENSION IVST(NVST,NM),JVIRT(NVST,NM),JREF(NM),VMP(NDET,NVST)
+      DIMENSION EMP0(NVST),OVRLP(NM)
+      DIMENSION CIVEC(NDET,NDET),ICAST(NDET,NM)
+      PARAMETER (ZERO=0.0D+00)
+C
+C     IWHCH = WHICH STATE OF INTEREST
+C
+      IWHCH = ISTATE + 1
+C     WRITE(6,9002) ISTATE
+C9002 FORMAT(2X,'STATE OF INTEREST = ',I3)
+      EQDPT2= ZERO
+      NKEEP = 0
+C
+C     ----- FILL EMP0 ARRAY -----
+C
+      CALL FILEMP0(IVST,ESCF,JVIRT,NVST,NM,NST,EMP0)
+C
+C     ----- DECIDE ON WHICH CI STATE WE ARE LOOKING AT -----
+C
+      DO I=1,NDET
+         CALL WHDET(I,CIVEC,IREF,ICAST,NM,NDET,IDET)
+      END DO
+C
+C     ----- DO INTEGRALS ----- FIRST SET OF INTEGRALS ARE DONE
+C
+      DO ICI=2,NDET
+         DO IMODE=1,NM
+           IREF(IMODE) = ICAST(ICI,IMODE)
+         END DO
+         IQDPT = ICI
+         CALL MPPT(EMP2,EMP0,WAVE,VMP,ESCF,VC,VTR,VSCF,DX,OVRLP,
+     *             NM,N,NST,NVST,IVST,IREF,JREF,JVIRT,NCOUP,DBG,
+     *             NDET,IQDPT,SMALL)
+      END DO
+C
+C     ----- 2ND ORDER ENERGY CORRECTION -----
+C
+         EQDPT2 = ZERO
+         SUMV = ZERO
+C
+C     ----- LOOP OVER ALL VIRTUAL STATE -----
+C
+C     DO J=1,10
+      DO J=1,NVST
+         SUMV = ZERO
+         DO I=1,NM
+            JREF(I) = IVST(J,I)
+         END DO
+C
+C     ----- SKIP IF SCF STATE BELONG TO CI SPACE -----
+C
+      DO K1=1,NDET
+         ISUM = 0
+         DO I=1,NM
+            IREF(I) = ICAST(K1,I)
+            IF(IREF(I) .EQ. JREF(I)) ISUM = ISUM + 1
+         END DO
+         IF(ISUM .EQ. NM) GOTO 5000
+      END DO
+C
+C     ----- LOOP OVER DETERMINANTS -----
+C
+      DO K1=1,NDET
+         DO I=1,NM
+            IREF(I) = ICAST(K1,I)
+         END DO
+C
+         CICOF1 = CIVEC(K1,ITHVEC)
+         VMPCI1 = VMP(K1,J)*CICOF1
+         DO K2=1,NDET
+            CICOF2 = CIVEC(K2,ITHVEC)
+            VMPCI2 = VMP(K2,J)*CICOF2
+            CIV1 = CICOF1*VMPCI1
+            CIV2 = CICOF2*VMPCI2
+            SUMV = SUMV + CIV1*CIV2
+         END DO
+      END DO
+      SUME = EMP0(IWHCH) - EMP0(J)
+      IF (ABS(SUME).LT.SMALL) THEN
+         SUMV=ZERO
+      END IF
+      EQDPT2 = EQDPT2 + (SUMV/SUME)
+      IF (ABS(SUMV/SUME).GT.1.0D-08) THEN
+         NKEEP=NKEEP+1
+      ELSE
+C        WRITE(6,*) 'SKIP J =',J
+      END IF
+C
+C     ----- END OF LOOP -----
+C
+ 5000 END DO
+C
+      RETURN
+      END

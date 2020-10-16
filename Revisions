@@ -1,0 +1,681 @@
+Revisions file for SPEC CPU2006
+
+Version 98 - 8 August 2006 ** v1.0 RELEASE **
+===========
+  1) Docs changes:
+     - README: Added (for all intents and purposes)
+     - readme1st: Clarified "minor performance changes"
+     - techsupport: Added info on making source change requests
+     - install-guide-unix: Clarified target audience, added no-DVD instructions
+     - index: Tweaked benchmark application area presentation
+     - credits: Added the names of docs proofreaders
+     - config: Improved descriptions of several parameters, variable
+         substitution and other things
+     - install-guide-windows: Added no-DVD instructions
+     - errata: Added a couple of items (#3 & #4)
+     - makevars.html: Added missed specpp variables, removed unused variables
+     - LICENSE: Updated
+  2) Config file updates:
+     - example-medium: Updated descriptive fields to pass syntax check
+     - linux32-ia32-icl: Updated descriptive fields to pass syntax check
+     - linux64-em64t-icl: Updated descriptive fields to pass syntax check
+     - windows-em64t-icl: Updated descriptive fields to pass syntax check
+     - windows-ia32-icl: Updated descriptive fields to pass syntax check
+  3) 400.perlbench: Fixed typos in benchmark description, and clarified known
+                     aliasing issues
+  4) 416.gamess: Fixed spelling in benchmark description
+  5) 429.mcf: Fixed typo in benchmark description
+  6) 433.milc: Fixed typo in benchmark description
+  7) 434.zeusmp: Fixed typo in benchmark description
+  8) 436.cactusADM: Fixed spelling in benchmark description
+  9) 437.leslie3d: Fixed spelling in benchmark description
+ 10) 454.calculix: Fixed spelling in benchmark description
+ 11) 458.sjeng: Fixed typo in benchmark description
+ 12) 459.GemsFDTD: Fixed spelling in benchmark description
+ 13) 464.h264ref: Fixed typo in benchmark description
+                  Added copyright notices for the original code
+ 14) 482.sphinx3: Fixed typo in benchmark description
+ 15) 483.xalancbmk: Fixed typo in benchmark description
+
+Version 97 - 26 July 2006 ** v1.0 RELEASE CANDIDATE 4a **
+===========
+  1) Tools changes:
+     - Purposefully reinstate accidentally deleted option -I
+  2) Config file updates:
+     - solaris-sparc-sunstudio: Added flagsurl
+
+Version 96 - 25 July 2006 ** v1.0 RELEASE CANDIDATE 4 **
+===========
+  1) Tools changes:
+     - Removed "fast" MANIFEST, as it was causing problems and not saving time
+     - Ensure that 'strict_rundir_verify' can be used to bypass ALL file
+        checksums, and that binaries used for reportable runs are always
+        built with strict checking turned on.
+     - Changed default for 'strict_rundir_verify' to 'on'
+     - Added logging for setting of environment variables
+     - Added warning for environment variable values with trailing whitespace
+     - Fixed operation guard in uninstall.sh
+     - Fixed specdiff's output of one too many error lines
+     - Protect against getting environment copies of specpp flags
+     - Fixed makesrcalt
+  2) Docs changes:
+     - config.html: Descriptions of some options updated
+     - errata.html: Expanded workaround section for errata #1
+     - runrules.html: Updated revision information
+     - runspec.html: Added convenience anchors for URL guessers
+
+Version 95 - 21 July 2006 ** v1.0 RELEASE CANDIDATE 3 **
+===========
+  1) Tools changes:
+     - Fixed relocate's handling of items not in MANIFEST
+     - Fixed bad URLs in code, outputs, and comments
+     - Fixed handling of absolute config file paths
+     - Added warnings when header-only items are set in benchmark sections
+     - Corrected "SPEC License #" in text and CSV outputs
+     - Added trademark markings and footers to human-readable outputs
+     - Allow specification of '.' as install directory on non-Windows systems
+     - Fixed problem with "bare" ampersands in flag descriptions
+     - All numbers are now presented with 3 significant digits
+     - Fixed problem with C++ flags not being properly coalesced
+     - Fixed problem with case differences in generated MANIFEST on Windows
+     - Removed undocumented 'fast_rundir_verify' config file option
+     - Tightened up syntax checks for cache lines and memory sizes
+     - Fixed tools build from install from DVD
+     - Fixed stock config file warning on Windows
+  2) Docs changes:
+     - config.html, flags: Fixed up document reference URLs
+     - runrules.html: Clarified rate/speed binary relationship in section 4.3.2
+     - tools-build.html: Clarified section on extra parameters to packagetools
+     - flags-advanced.xml: Added copyright notice and fixed HTML errors
+  3) Config file updates:
+     - example-medium: Restored MD5 section
+     - linux32-i386-gcc42: Added
+     - aix-ppc64-XL: Arranged to not send -D to Fortran compiler
+     - windows-em64t-icl: Fixed typo in compiler description
+                          Fixed suite title typos
+     - linux32-i386-gcc42: Updated descriptive fields to pass syntax check
+     - linux64-amd32-gcc42: Updated descriptive fields to pass syntax check
+     - linux64-amd64-gcc41: Updated descriptive fields to pass syntax check
+     - linux64-amd64-gcc42: Updated descriptive fields to pass syntax check
+     - macosx-ppc32-gcc40-nagf95v50: Updated descriptive fields to pass syntax
+                                       check
+     - macosx-ia32-iccifortv91: Updated descriptive fields to pass syntax check
+     - windows-ia32-icl: Fixed suite title typos
+     - linux64-em64t-icl: Fixed suite title typos
+  4) Toolset updates:
+     - linux-suse101-i386: Added
+  5) 447.dealII: Updated benchmark porting docs and benchmark description
+
+Version 94 - 13 July 2006 ** v1.0 RELEASE CANDIDATE 2 **
+===========
+  1) Tools changes:
+     - Fixed bug allowing compiler-specific flags to match where they shouldn't
+     - Fixed bug with non-mean-producing peak runs saying "Not Run"
+     - Fixed crash when running rate benchmarks with empty bind list
+     - Fixed bug that prevented $SPECCOPYNUM from being usable
+     - Fixed bug found when setting 'bind' values using a here document
+     - Flag reports should use the compiler variables that are actually set
+     - Warn when compiler-class flags have a compiler restriction
+     - Rawformat will now exit when presented with a bad flags file
+     - Make default values for hw_nchips, hw_ncores, hw_ncoresperchip, and
+         hw_nthreadspercore more obviously wrong
+     - Fixed occasional empty "SubMenu" lists in flag dumps
+     - Added hw_other, sw_other, and sw_state to the result syntax checker
+     - Improved error message when specified config file is not found
+  2) Docs changes:
+     - runspec.html: Fixed flag file update example
+     - runspec-avoidance.html: Nit fixed
+     - readme1st.html: Added topic group indicators to TOC
+     - config.html: Added info about unexpected rebuilds
+     - system-requirements.html: Nits fixed
+  3) Config file updates:
+     - solaris-amd64-sunstudio: Added all necessary descriptive fields
+     - solaris-sparc-sunstudio: Added all necessary descriptive fields
+     - HP-UX_IPF_LP64: Added all necessary descriptive fields
+     - HP-UX_IPF_ILP32: Added all necessary descriptive fields
+     - linux64-amd64-gcc41: Updated descriptive fields to pass syntax check
+     - linux64-amd64-gcc42: Updated descriptive fields to pass syntax check
+     - linux64-amd32-gcc42: Updated descriptive fields to pass syntax check
+     - windows64-amd64-pgi: Added all necessary descriptive fields
+                            Tweaked optimization options
+     - linux64-amd64-pgi: Added all necessary descriptive fields
+                          Tweaked optimization options
+     - macosx-ia32-iccifortv91: Updated descriptive fields to pass syntax check
+     - macosx-ppc32-gcc40-nagf95v50: Updated descriptive fields to pass
+                                       syntax check
+     - aix-ppc32-XL: Updated descriptive fields to pass syntax check
+     - aix-ppc64-XL: Updated descriptive fields to pass syntax check
+     - linux-ia64-icc91: Updated descriptive fields to pass syntax check
+     - linux32-ia32-icl: Updated descriptive fields to pass syntax check
+     - linux64-em64t-icl: Updated descriptive fields to pass syntax check
+     - sgi_mips32: Updated descriptive fields to pass syntax check
+     - sgi_mips64: Updated descriptive fields to pass syntax check
+     - windows-em64t-icl: Updated descriptive fields to pass syntax check
+     - windows-ia32-icl: Updated descriptive fields to pass syntax check
+     - example-medium: Updated descriptive fields to pass syntax check
+     - example-simple: Updated descriptive fields to pass syntax check
+     - linux-amd64-pathscale: Updated descriptive fields to pass syntax check
+     - solaris-sparc-pn2.4.1-fcs: Updated descriptive fields to pass
+                                    syntax check
+  4) 429.mcf: Updated contact info in benchmark description
+  5) 481.wrf: Fixed small mistake in description of SPEC_CPU_MACOSX flag
+
+Version 93 - 29 June 2006 ** v1.0 RELEASE CANDIDATE 1 **
+===========
+  1) Tools changes:
+     - Macros are now expanded in config file preprocessor warnings and errors
+     - Deal more gracefully with unspecified or wrongly-specified sizes
+     - Linked language labels
+     - Fixed config file extraction from multiple raw files
+     - Fixed "0.00" peak scores for base-only runs
+     - Added "runsetup" action as a synonym for "action"
+     - Disable env_vars for reportable runs
+     - Fixed flag parsing error that caused split flags to show up as used in
+         pass 1 only.
+     - Fixed paths in "fast" MANIFEST on Windows
+     - Fixed component size output during installation
+     - Allow binary data in CSV output
+     - Added 'exe' target to shrc's "go" and "ogo" aliases
+     - Note use (and final value) of output_root in stored config file
+     - Changed order argument for shrc's "go" and "ogo" aliases (the old order
+         will also still work)
+     - Fixed the functionality deficit for CSH users
+     - Fixed bug with double-digit pass numbers for FDO
+     - Fixed PS/PDF result table heading borders for rate runs
+     - Fixed bug collapsing flags with the same text but different descriptions
+     - Fixed PS/PDF result table number padding for rate runs
+     - Updated and re-enabled HTML output
+     - Added base (sw_base_ptrsize) and peak (sw_peak_ptrsize) pointer fields
+     - Added modified version of c-comment filter for specpp that ONLY filters
+        standard C comments.
+     - Removed underlining for user flags in HTML and PDF output
+     - Fixed bug where empty "Tested By" field would appear in HTML, PDF, and
+        PostScript results.
+     - Fixed more flag reporting bugs
+  2) Docs changes:
+     - result-fields.html: Validated and reorganized benchmark sections
+     - makevars.html: Now fully updated and HTMLized
+     - execution-without-SPEC-tools: Renamed to runspec-avoidance.html
+     - Moved all example config files into config directory
+     - legal.html and errata.html: HTMLized
+     - readme1st.html: Split into readme1st.html and index.html
+  3) Toolset updates:
+     - freebsd54-ia32: Updated description to add note about non-support
+     - openbsd38-ia32: Updated description to add note about non-support
+     - tru64-alpha: Updated description to add note about non-support
+     - freebsd60-ia32: Updated description to add note about non-support
+     - netbsd21-ia32: Updated description to add note about non-support
+     - linux-suse101-AMD64: Updated build on release version of SuSE 10.1
+  4) 401.bzip2: Removed mailto links and obfuscated email addresses
+  5) 403.gcc: Updated benchmark description
+              Reclassified '-Dalloca' in flags file
+              Added original sources to original.src
+              Tweaked some flag descriptions
+  6) 410.bwaves: Removed mailto links and obfuscated email addresses
+  7) 416.gamess: Updated benchmark description
+  8) 429.mcf: Removed mailto links and obfuscated email addresses
+  9) 433.milc: Removed mailto links and obfuscated email addresses
+ 10) 434.zeusmp: Removed mailto links and obfuscated email addresses
+ 11) 435.gromacs: Removed mailto links and obfuscated email addresses
+ 12) 436.cactusADM: Removed mailto links and obfuscated email addresses
+ 13) 437.leslie3d: Removed mailto links and obfuscated email addresses
+ 14) 444.namd: Removed mailto links and obfuscated email addresses
+ 15) 445.gobmk: Tweaked presentation in benchmark description
+                Added original sources to original.src
+ 16) 447.dealII: Fixed presentation errors in benchmark description
+ 17) 450.soplex: Tweaked address obfuscation
+ 18) 453.povray: Fixed output section of benchmark description
+ 19) 454.calculix: Removed mailto links and obfuscated email addresses
+ 20) 458.sjeng: Removed mailto links and obfuscated email addresses
+ 21) 459.GemsFDTD: Removed mailto links and obfuscated email addresses
+ 22) 462.libquantum: Removed mailto links and obfuscated email addresses
+                     Added original sources to original.src
+ 23) 464.h264ref: Removed mailto links and obfuscated email addresses
+ 24) 465.tonto: Removed mailto links and obfuscated email addresses
+ 25) 470.lbm: Removed mailto links and obfuscated email addresses
+ 26) 471.omnetpp: Removed mailto links and obfuscated email addresses
+ 27) 473.astar: Removed mailto links and obfuscated email addresses
+ 28) 481.wrf: Updated benchmark flag description
+              Updated benchmark description
+ 29) 482.sphinx3: Removed mailto links and obfuscated email addresses
+ 30) 483.xalancbmk: Removed mailto links and obfuscated email addresses
+                    Tweaked some flag descriptions
+ 31) 998.specrand: Removed mailto links and obfuscated email addresses
+ 32) 999.specrand: Removed mailto links and obfuscated email addresses
+
+
+Version 92 - 25 May 2006
+===========
+  1) Tools changes:
+     - Tweaks to ease the burden on the MPI2006 release manager
+     - Fixed output of non-display flags
+     - Fixed a few config file rewriting bugs (ConfigRewritingWarnings)
+     - Only run submission check once when it's explicitly requested
+     - Made submission check suggestions much less cryptic
+     - Restructured the SPEC-only settings to facilitate use at SPEC
+     - Removed hacks to enable formatting CPU2000 results
+     - The Fortran preprocessor was not getting EXTRA_PORTABILITY
+     - Made running of sysinfo_program more visible
+     - Allow submission check syntax file to be updated with --update_flags
+     - Patched spectar on Windows to not return failure for --help
+     - Tightened toolset suitability tests in install.sh
+     - Fixed small packagetools problem on Windows
+     - Fixed various config file rewriting errors
+     - Made flag parser more strict about unknown start tags
+     - Eliminated separate loading of standard modules to speed startup a bit
+     - Delay loading PDF generation module to speed startup
+     - Fixed module names in stored tools versions
+     - Fixed flag loading for the website formatter
+     - Fixed position of peak metric in ASCII and screen reports
+     - Fixed strange reporting of compiler invocation for ONESTEP builds
+     - Fixed another partial flag coalescing problem that would only happen
+        in very strange situations (as occurred before the ONESTEP bug above
+        was fixed)
+     - Fixed display of "0" peak means for base-only results in ASCII reports
+     - Renamed hw_parallel field to sw_auto_parallel
+     - Renamed hw_nthreads field to hw_nthreadspercore
+     - Fixed some batch file misbehavior (thanks to Diego Esteves)
+     - Un-broke multi-line (continued/appended/block quoted) submit commands
+     - Made various fixes for website results formatting
+     - Tweaked "go" and "ogo" (shrc) to act nicely when SPEC is unset
+     - Widened text output fields to accomodate large variations in runtimes
+         and ratios
+     - Fixed problem of command-line copies setting overriding per-benchmark
+         peak copies setting in config files
+     - Removed "no train validation" development feature
+     - Made getting list of variables to substitute easier
+     - Reduced the runtime penalty for using expand_notes
+     - Dealt with bad make built-in compiler name defaults
+     - Installers: file checksum errors are now fatal
+     - Fixed cshrc's handling of SPECPERLLIB
+     - Fixed module-inclusion checks in flag_dump
+     - Made inherit_from syntax a little less inflexible
+     - Added --check_version command line switch
+     - Added pause when version checking uncovers a problem
+     - Remove http_proxy values from stored configs when formatting for
+         publication at SPEC
+     - Corrected the text format's output when given multi-line hw_avail, etc.
+     - Fixed proxy usage for rawformat (thanks to John Henning)
+     - Removed no-per-benchmark bind restriction
+     - Made ext and mach setting within benchmark sections fatal
+     - Don't allow make_no_clobber binaries to be used for reportable runs
+     - Fixed problem where --basepeak would eat options that followed if no
+         benchmarks were specified
+     - Try harder to not put unprintable characters in config file rewriting
+         error messages
+     - Always present benchmarks on a per-language basis in flag sections on
+         benchmark reports
+     - Made make_no_clobber potentially useful
+     - Fixed SPEC_RUNSPEC environment variable handling
+     - Added flags file handling for the SPEC-published results
+     - Fixed rare problem where subcheck would check a non-current raw file
+     - Imposed new restrictions on cache- and memory-related fields
+     - Changed 'company_name' to 'test_sponsor' and 'tester_name' to 'tester'
+     - Changed handling of tester, test_sponsor, and hw_vendor in output
+         formats.
+  2) Toolsets updated:
+     - windows-i386
+  3) Docs changes:
+     - Filenames changed to be more consistent
+     - Many other updates
+  4) 400.perlbench: Documented missing SPEC_CPU_SOLARIS_X64 flag
+  5) 401.bzip2: Updated benchmark description
+  6) 410.bwaves: Added filename to flags file
+                 Updated benchmark description
+  7) 416.gamess: Updated benchmark description
+  8) 433.milc: Added filename to flags file
+  9) 434.zeusmp: Added filename to flags file
+                 Updated benchmark description
+ 10) 435.gromacs: Added filename to flags file
+                  Updated benchmark description
+ 11) 436.cactusADM: Added filename to flags file
+                    Updated benchmark description
+ 12) 437.leslie3d: Added filename to flags file
+                   Updated benchmark description
+ 13) 444.namd: Added filename to flags file
+               Updated benchmark description
+ 14) 445.gobmk: Updated benchmark description
+ 15) 450.soplex: Updated benchmark description
+ 16) 456.hmmer: Updated benchmark description
+ 17) 459.GemsFDTD: Updated benchmark description
+ 18) 464.h264ref: Updated benchmark description
+ 19) 471.omnetpp: Updated benchmark description
+ 20) 473.astar: Updated benchmark description
+ 21) 481.wrf: Documented some more missing flags
+              Updated benchmark description
+ 22) 483.xalancbmk: Updated benchmark description
+
+Version 91 - 11 April 2006
+===========
+  1) Tools changes:
+     - Output format changes:
+       . A results summary is now sent with mailed results
+       . A run summary (S/CE/VE/etc) is sent in the subject of mailed results
+       . The runspec invocation line now appears in the body of mailed results
+     - Use of sysinfo_program won't cause rebuilds
+     - Fixed problem of no error reports for sysinfo_program that doesn't work
+     - Tweaked buildtools to provide better error messages when building make
+     - Disabled automatic generation of compressed datasets for release
+     - Changed the name of the big suite tarball in original.src (CD/DVD only)
+     - Fixed busy wait CPU suck when select() is busted for pipes (Unix only)
+     - When installing from distribution media, attempt to provide more
+         installation progress feedback, unless SPEC_USE_UNIFIED is set in
+         the environment.
+     - Make tests for toolset compatibility a little more strict
+     - Fixed abort when per-benchmark flags are mis-classified
+     - Don't _require_ a config file for updating flags
+     - Don't write a log file for a flags update
+     - Allow HTTP proxies and timeouts to be set on the command line
+     - Fixed problem updating suite flags
+     - Fixed problem with some flags file always needing update
+     - Improved flag report appearance
+     - Shortened warning about using stock config files
+  2) Config files updated:
+     - linux64-amd64-gcc41.cfg
+     - linux64-amd64-gcc42.cfg
+     - linux64-amd32-gcc42.cfg
+     - linux64-amd64-pgi.cfg (added)
+     - windows64-amd64-pgi.cfg (added)
+     - macosx-ia32-iccifortv91.cfg
+     - macosx-ppc32-gcc40-nagf95v50.cfg
+  3) Documentation updates:
+     - flags_mandatory.xml - Added default defs for data model flags
+     - runspec.html
+  4) 400.perlbench: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+  5) 401.bzip2: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+  6) 433.milc: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+  7) 435.gromacs: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+  8) 445.gobmk: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+  9) 453.povray: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+ 10) 454.calculix: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+ 11) 462.libquantum: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+ 12) 473.astar: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+ 13) 483.xalancbmk: SPEC_CPU_WINDOWS is a mandatory flag, not portability
+                    Added files for PGI's compiler on Windows 64
+ 14) 998.specrand: Added (for coverage when int and fp base options differ)
+
+Version 90 - 3 April 2006
+===========
+  1) Tools changes:
+     - Flag parsing and reporting:
+       . Homogenized references to flags file sources
+       . ONESTEP is now noted in the flag report
+       . Allow flags to be coalesced as long as more than one set are common
+       . Prevent mailto crash when mail server is down or unreachable
+       . Fake reports now have means of "0.00"
+       . Allow the 'mail' formatter to only mail selected formats
+       . Allow the 'mail' formatter to mail log files
+       . Either output a common flags section, or per-tune sections; never both
+       . Fixed flags output crash for very simple config files
+       . Made section continuation look nicer in PostScript and PDF
+       . Do not hold out hope of correcting an invalid run unless "unknown"
+           flags are the _only_ error.
+       . Parse base flags for basepeak benchmarks in peak-only runs
+       . Disambiguate different flags with the same text (when possible)
+     - ONESTEP is now turned off for base builds (Run Rules 2.2.10)
+     - Fixed double-logging of included config files
+     - Fixed rebuild problems when prepared_by or flag_base_url is changed
+     - Made 'plain_train' the default for CPU2006
+     - Fixed problems where build for rate runs would use submit for training
+     - Remove mailto addresses from stored configs when formatting for
+         publication at SPEC
+     - Fixed config rewriting bug that would probably break settings added by
+         the tools to stored configs
+     - Fixed a BIG bug in included config files; now things should work as if
+         they really are inserted in place of the include directive.
+     - Added EXTRA_*OPTIMIZE flags, which come immediately after the flags in
+         OPTIMIZE (or the language-specific variant)
+     - Fixed bug that kept language-specific LDFLAGS from being used
+     - Allow ogo's environment variable warning to be disabled
+     - Add '-S' synonym for runspec's --define
+     - Added irritating warning for using "stock" config files
+     - Reworked the logging system yet again so that it's harder to fool into
+         making overly long output lines.
+     - install.sh now deals gracefully with missing benchspec or bin
+     - Makefile Variable Rationalization Project
+     - Validate workload sizes specified on the command line
+     - When an option mistake is made, only print a pointer to the help
+     - Now deal gracefully with exec() failure (it can happen!)
+     - Skip results generation when no runs happen and nobuild is set
+     - Fixed display of results for basepeak benchmarks in peak-only runs
+     - Fixed --fake and made teeout work (after a fashion) on Windows
+     - For --fake runs, only do 1 iteration and also show the build commands
+     - Made --fake output a little nicer
+     - Start rundir numbering at 0, so that dir # _may_ match copy # for rate
+  2) Documentation updates:
+     - makevars (some updates; not yet complete)
+  3) Config file updates
+     - HP-UX_IPF_ILP32.cfg
+     - HP-UX_IPF_LP64.cfg
+     - aix-ppc32-XL.cfg
+     - aix-ppc64-XL.cfg
+     - linux-amd64-gcc40.cfg (removed)
+     - linux-amd64-pathscale.cfg
+     - linux-ia64-icc91.cfg
+     - linux32-ia32-icl.cfg
+     - linux64-amd64-pgi.cfg (removed)
+     - linux64-amd64-gcc41.cfg (formerly linux64-amd64-gcc40.cfg)
+     - linux64-amd64-gcc42.cfg (added)
+     - linux64-amd32-gcc42.cfg (added)
+     - linux64-em64t-icl.cfg
+     - macosx-ia32-iccifortv91.cfg
+     - macosx-ppc32-gcc40-nagf95v50.cfg
+     - sgi_mips32.cfg
+     - sgi_mips64.cfg
+     - solaris-amd64-sunstudio.cfg
+     - solaris-sparc-pn2.4.1-fcs.cfg
+     - solaris-sparc-sunstudio.cfg
+     - windows-em64t-icl.cfg
+     - windows-ia32-icl.cfg
+     - windows64-amd64-pgi.cfg (removed)
+  4) 447.dealII: Disable BOOST_NO_EXCEPTIONS for everyone
+  5) 458.sjeng: Avoid warning about doubly-defined NDEBUG symbol
+  6) 481.wrf: Remove check for "known" Fortran compilers
+              Add flag (SPEC_CPU_LOGICAL_STRICT) for systems that don't
+                automatically get it.
+              Add data files with 8-byte headers
+              Updated flags description file
+
+
+Version 89 - 17 March 2006
+===========
+  1) Tools changes:
+     - Flag parsing and reporting:
+       . Fixed compiler-specific flag matching
+       . Fixed problems with peak (basepeak) numbers and flags in base-only runs
+       . Fixed problems with textual flag substitution
+       . Make sure that per-flag compiler restrictions refer to existing flags
+       . Put a section TOC at the tops of flag dumps
+       . Flags included by name may now also carry along parameters
+       . Fixed substitution of backreferences into flag description text
+       . Improved error messages for "should never happen" tools errors
+       . Fixed flag crash on flags (like "g++") that contain regexp metachars
+       . Fixed flag storage and parsing errors on mixed-language benchmarks
+       . Changed header class "system" to its own element: platform_settings
+       . Flag description text will now be enclosed in <p> in the absence of
+          other markup
+       . Allow only correct class names for <header> sections in flag files
+       . Flags are now presented with as little redundancy as possible
+       . Made flag "splitters" in flag descriptions work as documented
+       . Tweaked default regular expression construction for flag descriptions
+       . Fixed problems with stored compile options on Windows
+       . Fixed problem removing "bad" flag descriptions that match 100+ times
+       . Fixed problems with --review and non-display flags
+       . Mark results with unknown flags as invalid
+       . Recognize and reject empty flag regexps
+       . Disallow compiler-class flags from appearing in non-compiler variables
+       . Disallow portability flags from appearing in non-portability variables
+       . Removed phase (compilation/link) markings from flags
+       . Removed commas from flag lists
+       . Added debug output for flag substitutions
+       . Made flag substitutions happen in-place
+       . Added more vertical whitespace to the flag lists
+       . Broke up sections by tuning level, where applicable
+       . Fixed link-section options output for mixed-language benchmarks
+       . Reduced options output for non-FDO ONESTEP builds
+       . Fixed flag parsing for ONESTEP builds
+       . Reworked per-language section headers
+       . Removed misleading file/line number information from XML parser error
+          messages
+       . Corrected erroneous flag merging for different flags with the same
+          flag text
+       . Merge flags across tuning levels on a per-benchmark as well as per-
+          language basis
+     - Formatter and results output:
+       . Fixed formatter crash when only one benchmark of a particular
+           langauge is run
+       . Fixed output of peak-only results in CSV
+       . Fixed config file rewriting problems with included files
+       . Fixed --fake build output on Windows
+       . Fixed "accessor not found" warnings for build failures
+       . Fix headers on generated HTML so that IE doesn't barf on it
+       . The submission check "formatter" will only run for actual reportable
+           runs, or if explicitly requested
+       . Finished PostScript and PDF outputs
+       . Made --graph_min and --graph_max absolute
+       . Added --graph_auto for reasonable graph scales (not the default)
+       . 'reportable' is only enforced for actual runs
+       . Made text and HTML the default output formats; "all" is unchanged
+       . Auto-link URLs in errors section in PDF output
+       . Fixed --reportable's interaction with --fakereport
+       . Add --mockup/--fakereportable to generate fake reportable results
+       . Abort (not crash) when benchmark languages don't match in base and peak
+     - Install-time changes:
+       . Fixed WinZip munge check and bogus "Installation completed!" messages 
+          for Windows install
+       . Provided a time estimate for installs on Windows
+       . Fixed WinZip munge check for installs on Windows
+       . Improved the "shrc isn't writable" error message
+       . Fixed hang with uninstall.sh when running on an uninstalled tree
+       . install.sh now deals with output from ls aliased to 'ls -F'
+     - Runspec will print the iteration number for multi-iteration runs
+     - Fixed problem with hw_ncpu field not being generated for runs
+     - Add notice when attempting to access version check URL
+     - Included username in log file header
+     - Fixed detail in messages from check_exe()
+     - Fixed placement of log file separator lines during build phase
+     - Fixed up "go" aliases in *shrc
+     - Fixed bogus accessor warning when n-pass compile fails
+     - Revised the runspec usage message (--help)
+     - Now the version files are "clickable" for Windows users
+     - Require extensions to refer to config file sections by default; setting
+         allow_extension_override=1 gives back the old behavior
+     - Runspec can now run an un-relocated specdiff
+     - Added ability to stuff all files (executables, run dirs, results, logs)
+         into a subdirectory of their normal homes (set with expid)
+     - Added ability to do all writes (except config files) to a separate
+         tree (set with output_root)
+     - Made --username act as expected
+     - Resolved several problems in Makefile.defaults:
+       1. The comments and contents of LDLANGFLAGS were incorrect
+       2. Several unused variables (per-language LDOPT) were removed
+       3. User-settable variables were not cleared; this could allow
+          environment variables to pollute the build environment.
+     - Added check for illegal characters in settings for ext and mach
+     - shrc: Added "ogo", a variant of "go"
+     - Fixed cleaning actions (clean, trash, clobber, nuke)
+     - 'nuke' action is now 'scrub'
+     - SPEC_CPU2006_NO_RUNDIR_NUKE is now SPEC_CPU2006_NO_RUNDIR_DEL
+     - extract_compopts: Added ability to dump options from config files
+     - Replaced "run" action with "only_run" (run without validation)
+     - Made "run" action synonymous with "validate" (normal run with validation)
+     - Made no-validation runs not an error
+     - Fixed mis-ordered output at the top of the log file
+     - Keep '--fake --rebuild' runs from removing built binaries
+     - Make sure that output from --fake is always produced
+     - Abort early if not all benchmarks are available for a --reportable
+       --nobuild run
+     - Quieted --reportable warnings
+     - cshrc: Functionality tweaks to bring it closer to shrc
+     - NDEBUG is defined for all C and C++ benchmarks
+     - Changed per-benchmark basepeak from lowest median to just 'base' scores
+     - Only enforce "no individual benchmark selection" rule for reportable
+        runs when the action is 'validate', 'run', or 'report'
+     - Corrected addition of unwanted newlines in log output
+     - Added supplemental warning for possibly wrongly split config file lines
+     - Log config file reads
+     - Fixed log line wrapping bugs (for both screen and log file) logging
+  2) Documentation changes:
+     - flag_description.html
+     - cpuflags1.dtd - Removed deprecated 'precedence' flag attribute
+     - flags-simple.xml - Simple user flags file (added)
+     - flags-advanced.xml - Advanced user flags file (added)
+     - config.html
+     - utility.html - Notes about "go" and "ogo" vs output_root
+     - install_guide_windows.html
+     - runrules.html
+     - runspec.html
+  3) Toolset updates:
+     - linux-suse101-AMD64 (added)
+  4) Config file updates:
+     - default.cfg (removed)
+     - sgi_mips32.cfg
+     - sgi_mips64.cfg
+     - HP-UX_IPF_ILP32.cfg
+     - HP-UX_IPF_LP64.cfg
+     - aix-ppc32-XL.cfg
+     - aix-ppc64-XL.cfg
+     - linux-amd64-pathscale.cfg
+     - linux-ia64-icc91.cfg
+     - linux32-ia32-icl.cfg
+     - linux64-amd64-pgi.cfg
+     - linux64-em64t-icl.cfg
+     - macosx-ia32-iccifortv91.cfg (added)
+     - macosx-ppc32-gcc40-nagf95v50.cfg
+     - solaris-amd64-sunstudio.cfg (added)
+     - solaris-sparc-pn2.4.1-fcs.cfg
+     - solaris-sparc-sunstudio.cfg
+     - windows-em64t-icl.cfg
+     - windows-ia32-icl.cfg
+     - windows64-amd64-pgi.cfg
+  5) 400.perlbench: Updated benchmark description
+                    Fixed type of Off_t on 32-bit Windows
+                    Removed last Windows library dependency
+                    Fixed problem with large system time on Windows
+  6) 401.bzip2: Updated benchmark description
+  7) 403.gcc: Updated benchmark description
+              Remove special treatment for GCC wrt memcpy and 'inline'
+              Updated flags description file
+  8) 410.bwaves: Updated benchmark description
+  9) 416.gamess: Updated benchmark description
+                 Fixed some instances of out-of-bounds array access
+ 10) 429.mcf: Updated benchmark description
+ 11) 433.milc: Updated benchmark description
+ 12) 434.zeusmp: Updated benchmark description
+ 13) 435.gromacs: Updated benchmark description
+ 14) 436.cactusADM: Eliminate output to stderr on valid runs
+                    Updated benchmark description
+                    Enable use of SPEC_CPU_P64
+ 15) 437.leslie3d: Updated benchmark description
+ 16) 444.namd: Updated benchmark description
+ 17) 445.gobmk: Updated benchmark description
+                Removed inclusion of time.h and Windows-specific code
+ 18) 447.dealII: Updated benchmark description
+                 Disabled thread code in BOOST (avoids linking with libpthread)
+ 19) 450.soplex: Updated benchmark description
+ 20) 453.povray: Updated benchmark description
+ 21) 454.calculix: Updated benchmark description
+ 22) 456.hmmer: Renamed internal qsort so as to not conflict with library qsort
+                Updated benchmark description
+ 23) 458.sjeng: Updated benchmark description
+ 24) 459.GemsFDTD: Updated benchmark description
+ 25) 462.libquantum: Updated benchmark description
+ 26) 464.h264ref: Updated benchmark description
+ 27) 465.tonto: Restricted matching of specpp flags to FPP lines
+                Updated benchmark description
+ 28) 470.lbm: Updated benchmark description
+ 29) 471.omnetpp: Updated benchmark description
+ 30) 473.astar: Updated benchmark description
+ 31) 481.wrf: Restricted matching of specpp flags to FPP lines
+              Added NetCDF original source tarball to original.src
+              Updated benchmark description
+              Removed necessity for SPEC_CPU_LP64 on AIX
+ 32) 482.sphinx3: Updated benchmark description
+                  Eliminated more output to stderr
+ 33) 483.xalancbmk: Updated benchmark description
+                    Everyone gets the same transcoder now
+ 34) 999.specrand: Updated benchmark description
+
+For revisions history prior to this point, please see
+cpu2006.Revisions.pre-89.txt in the CPU2006 section of the SPEC Member
+website.

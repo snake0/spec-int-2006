@@ -1,0 +1,107 @@
+runspec v4662 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+Using 'x86_64-linux' tools
+Reading MANIFEST... 17857 files
+Loading runspec modules...............
+Locating benchmarks...found 31 benchmarks in 12 benchsets.
+Locating output formats: ASCII, config, CSV, flags, HTML, mail, PDF, PostScript, raw, Screen, Submission Check
+Reading config file '/var/services/homes/spparmar/spec2006/config/default.cfg'
+Benchmarks selected: 470.lbm
+
+%% You have selected --fake: commands will be echoed but not actually
+%% executed.  (You can search for "%%" to find the beginning and end
+%% of each command section.)
+
+Compiling Binaries
+  Building 470.lbm test base elider-amd64-m64-gcc42-nn default: (build_base_elider-amd64-m64-gcc42-nn.0000)
+specmake -n clean 2> make.clean.err | tee make.clean.out
+
+%% Fake commands from make.clean (specmake -n clean):
+specmake: Warning: File `Makefile.deps' has modification time 4.5 s in the future
+rm -rf lbm lbm.exe *.o  *.fppized.f*
+find . \( -name \*.o -o -name '*.fppized.f*' \) -print | xargs rm -rf
+rm -rf core 
+specmake: warning:  Clock skew detected.  Your build may be incomplete.
+%% End of fake output from make.clean (specmake -n clean)
+
+specmake -n build 2> make.err | tee make.out
+
+%% Fake commands from make (specmake -n build):
+specmake: Warning: File `Makefile.deps' has modification time 4.5 s in the future
+/usr/bin/gcc -c -o lbm.o -DSPEC_CPU -DNDEBUG    -O2       -DSPEC_CPU_LP64         lbm.c
+/usr/bin/gcc -c -o main.o -DSPEC_CPU -DNDEBUG    -O2       -DSPEC_CPU_LP64         main.c
+/usr/bin/gcc   -O2  -DSPEC_CPU_LP64        lbm.o main.o             -lm        -o lbm
+specmake: warning:  Clock skew detected.  Your build may be incomplete.
+%% End of fake output from make (specmake -n build)
+
+specmake -n options 2> options.err | tee options.out
+
+%% Fake commands from options (specmake -n options):
+specmake: Warning: File `Makefile.deps' has modification time 4.5 s in the future
+echo "COMP: /usr/bin/gcc -c -o options.o -DSPEC_CPU -DNDEBUG    -O2       -DSPEC_CPU_LP64         <source>"
+echo "C: CC=\"/usr/bin/gcc\""
+echo "C: COBJOPT=\"-c -o options\""
+echo "P: CPUFLAGS=\"-DSPEC_CPU -DNDEBUG\""
+echo "P: BENCH_FLAGS=\"\""
+echo "P: BENCH_CFLAGS=\"\""
+echo "O: OPTIMIZE=\"\""
+echo "O: COPTIMIZE=\"-O2\""
+echo "P: PORTABILITY=\"-DSPEC_CPU_LP64\""
+echo "P: CPORTABILITY=\"\""
+echo "O: EXTRA_CFLAGS=\"\""
+echo "O: EXTRA_OPTIMIZE=\"\""
+echo "O: EXTRA_COPTIMIZE=\"\""
+echo "P: EXTRA_PORTABILITY=\"\""
+echo "P: EXTRA_CPORTABILITY=\"\""
+echo "LINK: /usr/bin/gcc   -O2  -DSPEC_CPU_LP64        <objects>   -lm        -o options"
+echo "C: LD=\"/usr/bin/gcc\""
+echo "O: COPTIMIZE=\"-O2\""
+echo "P: PORTABILITY=\"-DSPEC_CPU_LP64\""
+echo "C: MATH_LIBS=\"-lm\""
+echo "C: LDOUT=\"-o options\""
+specmake: warning:  Clock skew detected.  Your build may be incomplete.
+%% End of fake output from options (specmake -n options)
+
+
+
+
+
+Build successes: 470.lbm(base)
+
+Parsing Flags
+  Looking at 470.lbm base elider-amd64-m64-gcc42-nn default: done
+Flag Parsing Complete
+
+Setting Up Run Directories
+  Setting up 470.lbm test base elider-amd64-m64-gcc42-nn default: existing (run_base_test_elider-amd64-m64-gcc42-nn.0000)
+Running Benchmarks
+  Running 470.lbm test base elider-amd64-m64-gcc42-nn default
+
+Benchmark invocation
+--------------------
+/var/services/homes/spparmar/spec2006/bin/specinvoke -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/470.lbm/run/run_base_test_elider-amd64-m64-gcc42-nn.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -nn -C 2> benchmark_run.err | tee benchmark_run.out
+
+%% Fake commands from benchmark_run (/var/services/homes/spparmar/spec2006/bi...):
+# Starting run for copy #0
+cd /var/services/homes/spparmar/spec2006/benchspec/CPU2006/470.lbm/run/run_base_test_elider-amd64-m64-gcc42-nn.0000
+../run_base_test_elider-amd64-m64-gcc42-nn.0000/lbm_base.elider-amd64-m64-gcc42-nn 20 reference.dat 0 1 100_100_130_cf_a.of > lbm.out 2>> lbm.err
+%% End of fake output from benchmark_run (/var/services/homes/spparmar/spec2006/bi...)
+
+
+Benchmark verification
+----------------------
+/var/services/homes/spparmar/spec2006/bin/specinvoke -E -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/470.lbm/run/run_base_test_elider-amd64-m64-gcc42-nn.0000 -c 1 -e compare.err -o compare.stdout -f compare.cmd -nn 2> compare_run.err | tee compare_run.out
+
+%% Fake commands from compare_run (/var/services/homes/spparmar/spec2006/bi...):
+# Starting run for copy #0
+cd /var/services/homes/spparmar/spec2006/benchspec/CPU2006/470.lbm/run/run_base_test_elider-amd64-m64-gcc42-nn.0000
+specperl /var/services/homes/spparmar/spec2006/bin/specdiff -m -l 10  --abstol 1e-07 /var/services/homes/spparmar/spec2006/benchspec/CPU2006/470.lbm/data/test/output/lbm.out lbm.out > lbm.out.cmp
+%% End of fake output from compare_run (/var/services/homes/spparmar/spec2006/bi...)
+
+
+
+
+Success: 1x470.lbm
+
+The log for this run is in /var/services/homes/spparmar/spec2006/result/CPU2006.007.log
+
+runspec finished at Thu Apr 17 21:38:19 2014; 6 total seconds elapsed

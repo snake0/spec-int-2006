@@ -1,0 +1,7297 @@
+C 16 JUN 03 - MWS - LAPACK DIAGONALIZATION OF GENERAL MATRIX
+C
+C*MODULE DGEEV   *DECK DGEEV
+      SUBROUTINE DGEEV( JOBVL, JOBVR, N, A, LDA, WR, WI, VL, LDVL, VR,
+     $                  LDVR, WORK, LWORK, INFO )
+C
+C  -- LAPACK DRIVER ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     DECEMBER 8, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          JOBVL, JOBVR
+      INTEGER            INFO, LDA, LDVL, LDVR, LWORK, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), VL( LDVL, * ), VR( LDVR, * ),
+     $                   WI( * ), WORK( * ), WR( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DGEEV COMPUTES FOR AN N-BY-N REAL NONSYMMETRIC MATRIX A, THE
+C  EIGENVALUES AND, OPTIONALLY, THE LEFT AND/OR RIGHT EIGENVECTORS.
+C
+C  THE RIGHT EIGENVECTOR V(J) OF A SATISFIES
+C                   A * V(J) = LAMBDA(J) * V(J)
+C  WHERE LAMBDA(J) IS ITS EIGENVALUE.
+C  THE LEFT EIGENVECTOR U(J) OF A SATISFIES
+C                U(J)**H * A = LAMBDA(J) * U(J)**H
+C  WHERE U(J)**H DENOTES THE CONJUGATE TRANSPOSE OF U(J).
+C
+C  THE COMPUTED EIGENVECTORS ARE NORMALIZED TO HAVE EUCLIDEAN NORM
+C  EQUAL TO 1 AND LARGEST COMPONENT REAL.
+C
+C  ARGUMENTS
+C  =========
+C
+C  JOBVL   (INPUT) CHARACTER*1
+C          = 'N': LEFT EIGENVECTORS OF A ARE NOT COMPUTED;
+C          = 'V': LEFT EIGENVECTORS OF A ARE COMPUTED.
+C
+C  JOBVR   (INPUT) CHARACTER*1
+C          = 'N': RIGHT EIGENVECTORS OF A ARE NOT COMPUTED;
+C          = 'V': RIGHT EIGENVECTORS OF A ARE COMPUTED.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A. N >= 0.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE N-BY-N MATRIX A.
+C          ON EXIT, A HAS BEEN OVERWRITTEN.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  WR      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C  WI      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          WR AND WI CONTAIN THE REAL AND IMAGINARY PARTS,
+C          RESPECTIVELY, OF THE COMPUTED EIGENVALUES.  COMPLEX
+C          CONJUGATE PAIRS OF EIGENVALUES APPEAR CONSECUTIVELY
+C          WITH THE EIGENVALUE HAVING THE POSITIVE IMAGINARY PART
+C          FIRST.
+C
+C  VL      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDVL,N)
+C          IF JOBVL = 'V', THE LEFT EIGENVECTORS U(J) ARE STORED ONE
+C          AFTER ANOTHER IN THE COLUMNS OF VL, IN THE SAME ORDER
+C          AS THEIR EIGENVALUES.
+C          IF JOBVL = 'N', VL IS NOT REFERENCED.
+C          IF THE J-TH EIGENVALUE IS REAL, THEN U(J) = VL(:,J),
+C          THE J-TH COLUMN OF VL.
+C          IF THE J-TH AND (J+1)-ST EIGENVALUES FORM A COMPLEX
+C          CONJUGATE PAIR, THEN U(J) = VL(:,J) + I*VL(:,J+1) AND
+C          U(J+1) = VL(:,J) - I*VL(:,J+1).
+C
+C  LDVL    (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY VL.  LDVL >= 1; IF
+C          JOBVL = 'V', LDVL >= N.
+C
+C  VR      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDVR,N)
+C          IF JOBVR = 'V', THE RIGHT EIGENVECTORS V(J) ARE STORED ONE
+C          AFTER ANOTHER IN THE COLUMNS OF VR, IN THE SAME ORDER
+C          AS THEIR EIGENVALUES.
+C          IF JOBVR = 'N', VR IS NOT REFERENCED.
+C          IF THE J-TH EIGENVALUE IS REAL, THEN V(J) = VR(:,J),
+C          THE J-TH COLUMN OF VR.
+C          IF THE J-TH AND (J+1)-ST EIGENVALUES FORM A COMPLEX
+C          CONJUGATE PAIR, THEN V(J) = VR(:,J) + I*VR(:,J+1) AND
+C          V(J+1) = VR(:,J) - I*VR(:,J+1).
+C
+C  LDVR    (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY VR.  LDVR >= 1; IF
+C          JOBVR = 'V', LDVR >= N.
+C
+C  WORK    (WORKSPACE/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK.  LWORK >= MAX(1,3*N), AND
+C          IF JOBVL = 'V' OR JOBVR = 'V', LWORK >= 4*N.  FOR GOOD
+C          PERFORMANCE, LWORK MUST GENERALLY BE LARGER.
+C
+C          IF LWORK = -1, THEN A WORKSPACE QUERY IS ASSUMED; THE ROUTINE
+C          ONLY CALCULATES THE OPTIMAL SIZE OF THE WORK ARRAY, RETURNS
+C          THIS VALUE AS THE FIRST ENTRY OF THE WORK ARRAY, AND NO ERROR
+C          MESSAGE RELATED TO LWORK IS ISSUED BY XERBLA.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C          > 0:  IF INFO = I, THE QR ALGORITHM FAILED TO COMPUTE ALL THE
+C                EIGENVALUES, AND NO EIGENVECTORS HAVE BEEN COMPUTED;
+C                ELEMENTS I+1:N OF WR AND WI CONTAIN EIGENVALUES WHICH
+C                HAVE CONVERGED.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            LQUERY, SCALEA, WANTVL, WANTVR
+      CHARACTER          SIDE
+      INTEGER            HSWORK, I, IBAL, IERR, IHI, ILO, ITAU, IWRK, K,
+     $                   MAXB, MAXWRK, MINWRK, NOUT
+      DOUBLE PRECISION   ANRM, BIGNUM, CS, CSCALE, EPS, R, SCL, SMLNUM,
+     $                   SN
+C     ..
+C     .. LOCAL ARRAYS ..
+      LOGICAL            SELECT( 1 )
+      DOUBLE PRECISION   DUM( 1 )
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DGEBAK, DGEBAL, DGEHRD, DHSEQR, DLACPY, DLARTG,
+     $                   DLASCL, DORGHR, DROT, DSCAL, DTREVC, XERBLA
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      INTEGER            IDAMAX, ILAENV
+      DOUBLE PRECISION   DLAMCH, DLAPY2, DNRM2
+      EXTERNAL           LSAME, IDAMAX, ILAENV, DLAMCH, DLAPY2,
+     $                   DNRM2
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      LQUERY = ( LWORK.EQ.-1 )
+      WANTVL = LSAME( JOBVL, 'V' )
+      WANTVR = LSAME( JOBVR, 'V' )
+      IF( ( .NOT.WANTVL ) .AND. ( .NOT.LSAME( JOBVL, 'N' ) ) ) THEN
+         INFO = -1
+      ELSE IF( ( .NOT.WANTVR ) .AND. ( .NOT.LSAME( JOBVR, 'N' ) ) ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      ELSE IF( LDVL.LT.1 .OR. ( WANTVL .AND. LDVL.LT.N ) ) THEN
+         INFO = -9
+      ELSE IF( LDVR.LT.1 .OR. ( WANTVR .AND. LDVR.LT.N ) ) THEN
+         INFO = -11
+      END IF
+C
+C     COMPUTE WORKSPACE
+C      (NOTE: COMMENTS IN THE CODE BEGINNING "WORKSPACE:" DESCRIBE THE
+C       MINIMAL AMOUNT OF WORKSPACE NEEDED AT THAT POINT IN THE CODE,
+C       AS WELL AS THE PREFERRED AMOUNT FOR GOOD PERFORMANCE.
+C       NB REFERS TO THE OPTIMAL BLOCK SIZE FOR THE IMMEDIATELY
+C       FOLLOWING ROUTINE, AS RETURNED BY ILAENV.
+C       HSWORK REFERS TO THE WORKSPACE PREFERRED BY DHSEQR, AS
+C       CALCULATED BELOW. HSWORK IS COMPUTED ASSUMING ILO=1 AND IHI=N,
+C       THE WORST CASE.)
+C
+      MINWRK = 1
+      IF( INFO.EQ.0 .AND. ( LWORK.GE.1 .OR. LQUERY ) ) THEN
+         MAXWRK = 2*N + N*ILAENV( 1, 'DGEHRD', ' ', N, 1, N, 0 )
+         IF( ( .NOT.WANTVL ) .AND. ( .NOT.WANTVR ) ) THEN
+            MINWRK = MAX( 1, 3*N )
+            MAXB = MAX( ILAENV( 8, 'DHSEQR', 'EN', N, 1, N, -1 ), 2 )
+            K = MIN( MAXB, N, MAX( 2, ILAENV( 4, 'DHSEQR', 'EN', N, 1,
+     $          N, -1 ) ) )
+            HSWORK = MAX( K*( K+2 ), 2*N )
+            MAXWRK = MAX( MAXWRK, N+1, N+HSWORK )
+         ELSE
+            MINWRK = MAX( 1, 4*N )
+            MAXWRK = MAX( MAXWRK, 2*N+( N-1 )*
+     $               ILAENV( 1, 'DORGHR', ' ', N, 1, N, -1 ) )
+            MAXB = MAX( ILAENV( 8, 'DHSEQR', 'SV', N, 1, N, -1 ), 2 )
+            K = MIN( MAXB, N, MAX( 2, ILAENV( 4, 'DHSEQR', 'SV', N, 1,
+     $          N, -1 ) ) )
+            HSWORK = MAX( K*( K+2 ), 2*N )
+            MAXWRK = MAX( MAXWRK, N+1, N+HSWORK )
+            MAXWRK = MAX( MAXWRK, 4*N )
+         END IF
+         WORK( 1 ) = MAXWRK
+      END IF
+      IF( LWORK.LT.MINWRK .AND. .NOT.LQUERY ) THEN
+         INFO = -13
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEEV ', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 )
+     $   RETURN
+C
+C     GET MACHINE CONSTANTS
+C
+      EPS = DLAMCH( 'P' )
+      SMLNUM = DLAMCH( 'S' )
+      BIGNUM = ONE / SMLNUM
+      CALL DLABAD( SMLNUM, BIGNUM )
+      SMLNUM = SQRT( SMLNUM ) / EPS
+      BIGNUM = ONE / SMLNUM
+C
+C     SCALE A IF MAX ELEMENT OUTSIDE RANGE [SMLNUM,BIGNUM]
+C
+      DUM(1) = 0.0D+00
+      CALL SUBR_DLANGE(ANRM, 'M', N, N, A, LDA, DUM )
+      SCALEA = .FALSE.
+      IF( ANRM.GT.ZERO .AND. ANRM.LT.SMLNUM ) THEN
+         SCALEA = .TRUE.
+         CSCALE = SMLNUM
+      ELSE IF( ANRM.GT.BIGNUM ) THEN
+         SCALEA = .TRUE.
+         CSCALE = BIGNUM
+      END IF
+      IF( SCALEA )
+     $   CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
+C
+C     BALANCE THE MATRIX
+C     (WORKSPACE: NEED N)
+C
+      IBAL = 1
+      CALL DGEBAL( 'B', N, A, LDA, ILO, IHI, WORK( IBAL ), IERR )
+C
+C     REDUCE TO UPPER HESSENBERG FORM
+C     (WORKSPACE: NEED 3*N, PREFER 2*N+N*NB)
+C
+      ITAU = IBAL + N
+      IWRK = ITAU + N
+      CALL DGEHRD( N, ILO, IHI, A, LDA, WORK( ITAU ), WORK( IWRK ),
+     $             LWORK-IWRK+1, IERR )
+C
+      IF( WANTVL ) THEN
+C
+C        WANT LEFT EIGENVECTORS
+C        COPY HOUSEHOLDER VECTORS TO VL
+C
+         SIDE = 'L'
+         CALL DLACPY( 'L', N, N, A, LDA, VL, LDVL )
+C
+C        GENERATE ORTHOGONAL MATRIX IN VL
+C        (WORKSPACE: NEED 3*N-1, PREFER 2*N+(N-1)*NB)
+C
+         CALL DORGHR( N, ILO, IHI, VL, LDVL, WORK( ITAU ), WORK( IWRK ),
+     $                LWORK-IWRK+1, IERR )
+C
+C        PERFORM QR ITERATION, ACCUMULATING SCHUR VECTORS IN VL
+C        (WORKSPACE: NEED N+1, PREFER N+HSWORK (SEE COMMENTS) )
+C
+         IWRK = ITAU
+         CALL DHSEQR( 'S', 'V', N, ILO, IHI, A, LDA, WR, WI, VL, LDVL,
+     $                WORK( IWRK ), LWORK-IWRK+1, INFO )
+C
+         IF( WANTVR ) THEN
+C
+C           WANT LEFT AND RIGHT EIGENVECTORS
+C           COPY SCHUR VECTORS TO VR
+C
+            SIDE = 'B'
+            CALL DLACPY( 'F', N, N, VL, LDVL, VR, LDVR )
+         END IF
+C
+      ELSE IF( WANTVR ) THEN
+C
+C        WANT RIGHT EIGENVECTORS
+C        COPY HOUSEHOLDER VECTORS TO VR
+C
+         SIDE = 'R'
+         CALL DLACPY( 'L', N, N, A, LDA, VR, LDVR )
+C
+C        GENERATE ORTHOGONAL MATRIX IN VR
+C        (WORKSPACE: NEED 3*N-1, PREFER 2*N+(N-1)*NB)
+C
+         CALL DORGHR( N, ILO, IHI, VR, LDVR, WORK( ITAU ), WORK( IWRK ),
+     $                LWORK-IWRK+1, IERR )
+C
+C        PERFORM QR ITERATION, ACCUMULATING SCHUR VECTORS IN VR
+C        (WORKSPACE: NEED N+1, PREFER N+HSWORK (SEE COMMENTS) )
+C
+         IWRK = ITAU
+         CALL DHSEQR( 'S', 'V', N, ILO, IHI, A, LDA, WR, WI, VR, LDVR,
+     $                WORK( IWRK ), LWORK-IWRK+1, INFO )
+C
+      ELSE
+C
+C        COMPUTE EIGENVALUES ONLY
+C        (WORKSPACE: NEED N+1, PREFER N+HSWORK (SEE COMMENTS) )
+C
+         IWRK = ITAU
+         CALL DHSEQR( 'E', 'N', N, ILO, IHI, A, LDA, WR, WI, VR, LDVR,
+     $                WORK( IWRK ), LWORK-IWRK+1, INFO )
+      END IF
+C
+C     IF INFO > 0 FROM DHSEQR, THEN QUIT
+C
+      IF( INFO.GT.0 )
+     $   GO TO 50
+C
+      IF( WANTVL .OR. WANTVR ) THEN
+C
+C        COMPUTE LEFT AND/OR RIGHT EIGENVECTORS
+C        (WORKSPACE: NEED 4*N)
+C
+         CALL DTREVC( SIDE, 'B', SELECT, N, A, LDA, VL, LDVL, VR, LDVR,
+     $                N, NOUT, WORK( IWRK ), IERR )
+      END IF
+C
+      IF( WANTVL ) THEN
+C
+C        UNDO BALANCING OF LEFT EIGENVECTORS
+C        (WORKSPACE: NEED N)
+C
+         CALL DGEBAK( 'B', 'L', N, ILO, IHI, WORK( IBAL ), N, VL, LDVL,
+     $                IERR )
+C
+C        NORMALIZE LEFT EIGENVECTORS AND MAKE LARGEST COMPONENT REAL
+C
+         DO 20 I = 1, N
+            IF( WI( I ).EQ.ZERO ) THEN
+               SCL = ONE / DNRM2( N, VL( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VL( 1, I ), 1 )
+            ELSE IF( WI( I ).GT.ZERO ) THEN
+               SCL = ONE / DLAPY2( DNRM2( N, VL( 1, I ), 1 ),
+     $               DNRM2( N, VL( 1, I+1 ), 1 ) )
+               CALL DSCAL( N, SCL, VL( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VL( 1, I+1 ), 1 )
+               DO 10 K = 1, N
+                  WORK( IWRK+K-1 ) = VL( K, I )**2 + VL( K, I+1 )**2
+   10          CONTINUE
+               K = IDAMAX( N, WORK( IWRK ), 1 )
+               CALL DLARTG( VL( K, I ), VL( K, I+1 ), CS, SN, R )
+               CALL DROT( N, VL( 1, I ), 1, VL( 1, I+1 ), 1, CS, SN )
+               VL( K, I+1 ) = ZERO
+            END IF
+   20    CONTINUE
+      END IF
+C
+      IF( WANTVR ) THEN
+C
+C        UNDO BALANCING OF RIGHT EIGENVECTORS
+C        (WORKSPACE: NEED N)
+C
+         CALL DGEBAK( 'B', 'R', N, ILO, IHI, WORK( IBAL ), N, VR, LDVR,
+     $                IERR )
+C
+C        NORMALIZE RIGHT EIGENVECTORS AND MAKE LARGEST COMPONENT REAL
+C
+         DO 40 I = 1, N
+            IF( WI( I ).EQ.ZERO ) THEN
+               SCL = ONE / DNRM2( N, VR( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VR( 1, I ), 1 )
+            ELSE IF( WI( I ).GT.ZERO ) THEN
+               SCL = ONE / DLAPY2( DNRM2( N, VR( 1, I ), 1 ),
+     $               DNRM2( N, VR( 1, I+1 ), 1 ) )
+               CALL DSCAL( N, SCL, VR( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VR( 1, I+1 ), 1 )
+               DO 30 K = 1, N
+                  WORK( IWRK+K-1 ) = VR( K, I )**2 + VR( K, I+1 )**2
+   30          CONTINUE
+               K = IDAMAX( N, WORK( IWRK ), 1 )
+               CALL DLARTG( VR( K, I ), VR( K, I+1 ), CS, SN, R )
+               CALL DROT( N, VR( 1, I ), 1, VR( 1, I+1 ), 1, CS, SN )
+               VR( K, I+1 ) = ZERO
+            END IF
+   40    CONTINUE
+      END IF
+C
+C     UNDO SCALING IF NECESSARY
+C
+   50 CONTINUE
+      IF( SCALEA ) THEN
+         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, N-INFO, 1, WR( INFO+1 ),
+     $                MAX( N-INFO, 1 ), IERR )
+         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, N-INFO, 1, WI( INFO+1 ),
+     $                MAX( N-INFO, 1 ), IERR )
+         IF( INFO.GT.0 ) THEN
+            CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WR, N,
+     $                   IERR )
+            CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WI, N,
+     $                   IERR )
+         END IF
+      END IF
+C
+      WORK( 1 ) = MAXWRK
+      RETURN
+C
+C     END OF DGEEV
+C
+      END
+C*MODULE DGEEV   *DECK DGEBAK
+      SUBROUTINE DGEBAK( JOB, SIDE, N, ILO, IHI, SCALE, M, V, LDV,
+     $                   INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     SEPTEMBER 30, 1994
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          JOB, SIDE
+      INTEGER            IHI, ILO, INFO, LDV, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   SCALE( * ), V( LDV, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DGEBAK FORMS THE RIGHT OR LEFT EIGENVECTORS OF A REAL GENERAL MATRIX
+C  BY BACKWARD TRANSFORMATION ON THE COMPUTED EIGENVECTORS OF THE
+C  BALANCED MATRIX OUTPUT BY DGEBAL.
+C
+C  ARGUMENTS
+C  =========
+C
+C  JOB     (INPUT) CHARACTER*1
+C          SPECIFIES THE TYPE OF BACKWARD TRANSFORMATION REQUIRED:
+C          = 'N', DO NOTHING, RETURN IMMEDIATELY;
+C          = 'P', DO BACKWARD TRANSFORMATION FOR PERMUTATION ONLY;
+C          = 'S', DO BACKWARD TRANSFORMATION FOR SCALING ONLY;
+C          = 'B', DO BACKWARD TRANSFORMATIONS FOR BOTH PERMUTATION AND
+C                 SCALING.
+C          JOB MUST BE THE SAME AS THE ARGUMENT JOB SUPPLIED TO DGEBAL.
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          = 'R':  V CONTAINS RIGHT EIGENVECTORS;
+C          = 'L':  V CONTAINS LEFT EIGENVECTORS.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX V.  N >= 0.
+C
+C  ILO     (INPUT) INTEGER
+C  IHI     (INPUT) INTEGER
+C          THE INTEGERS ILO AND IHI DETERMINED BY DGEBAL.
+C          1 <= ILO <= IHI <= N, IF N > 0; ILO=1 AND IHI=0, IF N=0.
+C
+C  SCALE   (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          DETAILS OF THE PERMUTATION AND SCALING FACTORS, AS RETURNED
+C          BY DGEBAL.
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX V.  M >= 0.
+C
+C  V       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDV,M)
+C          ON ENTRY, THE MATRIX OF RIGHT OR LEFT EIGENVECTORS TO BE
+C          TRANSFORMED, AS RETURNED BY DHSEIN OR DTREVC.
+C          ON EXIT, V IS OVERWRITTEN BY THE TRANSFORMED EIGENVECTORS.
+C
+C  LDV     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY V. LDV >= MAX(1,N).
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            LEFTV, RIGHTV
+      INTEGER            I, II, K
+      DOUBLE PRECISION   S
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DSCAL, DSWAP, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     DECODE AND TEST THE INPUT PARAMETERS
+C
+      RIGHTV = LSAME( SIDE, 'R' )
+      LEFTV = LSAME( SIDE, 'L' )
+C
+      INFO = 0
+      IF( .NOT.LSAME( JOB, 'N' ) .AND. .NOT.LSAME( JOB, 'P' ) .AND.
+     $    .NOT.LSAME( JOB, 'S' ) .AND. .NOT.LSAME( JOB, 'B' ) ) THEN
+         INFO = -1
+      ELSE IF( .NOT.RIGHTV .AND. .NOT.LEFTV ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -4
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -5
+      ELSE IF( M.LT.0 ) THEN
+         INFO = -7
+      ELSE IF( LDV.LT.MAX( 1, N ) ) THEN
+         INFO = -9
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEBAK', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 )
+     $   RETURN
+      IF( M.EQ.0 )
+     $   RETURN
+      IF( LSAME( JOB, 'N' ) )
+     $   RETURN
+C
+      IF( ILO.EQ.IHI )
+     $   GO TO 30
+C
+C     BACKWARD BALANCE
+C
+      IF( LSAME( JOB, 'S' ) .OR. LSAME( JOB, 'B' ) ) THEN
+C
+         IF( RIGHTV ) THEN
+            DO 10 I = ILO, IHI
+               S = SCALE( I )
+               CALL DSCAL( M, S, V( I, 1 ), LDV )
+   10       CONTINUE
+         END IF
+C
+         IF( LEFTV ) THEN
+            DO 20 I = ILO, IHI
+               S = ONE / SCALE( I )
+               CALL DSCAL( M, S, V( I, 1 ), LDV )
+   20       CONTINUE
+         END IF
+C
+      END IF
+C
+C     BACKWARD PERMUTATION
+C
+C     FOR  I = ILO-1 STEP -1 UNTIL 1,
+C              IHI+1 STEP 1 UNTIL N DO --
+C
+   30 CONTINUE
+      IF( LSAME( JOB, 'P' ) .OR. LSAME( JOB, 'B' ) ) THEN
+         IF( RIGHTV ) THEN
+            DO 40 II = 1, N
+               I = II
+               IF( I.GE.ILO .AND. I.LE.IHI )
+     $            GO TO 40
+               IF( I.LT.ILO )
+     $            I = ILO - II
+               K = INT(SCALE( I ))
+               IF( K.EQ.I )
+     $            GO TO 40
+               CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
+   40       CONTINUE
+         END IF
+C
+         IF( LEFTV ) THEN
+            DO 50 II = 1, N
+               I = II
+               IF( I.GE.ILO .AND. I.LE.IHI )
+     $            GO TO 50
+               IF( I.LT.ILO )
+     $            I = ILO - II
+               K = INT(SCALE( I ))
+               IF( K.EQ.I )
+     $            GO TO 50
+               CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
+   50       CONTINUE
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF DGEBAK
+C
+      END
+C*MODULE DGEEV   *DECK DGEBAL
+      SUBROUTINE DGEBAL( JOB, N, A, LDA, ILO, IHI, SCALE, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          JOB
+      INTEGER            IHI, ILO, INFO, LDA, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), SCALE( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DGEBAL BALANCES A GENERAL REAL MATRIX A.  THIS INVOLVES, FIRST,
+C  PERMUTING A BY A SIMILARITY TRANSFORMATION TO ISOLATE EIGENVALUES
+C  IN THE FIRST 1 TO ILO-1 AND LAST IHI+1 TO N ELEMENTS ON THE
+C  DIAGONAL; AND SECOND, APPLYING A DIAGONAL SIMILARITY TRANSFORMATION
+C  TO ROWS AND COLUMNS ILO TO IHI TO MAKE THE ROWS AND COLUMNS AS
+C  CLOSE IN NORM AS POSSIBLE.  BOTH STEPS ARE OPTIONAL.
+C
+C  BALANCING MAY REDUCE THE 1-NORM OF THE MATRIX, AND IMPROVE THE
+C  ACCURACY OF THE COMPUTED EIGENVALUES AND/OR EIGENVECTORS.
+C
+C  ARGUMENTS
+C  =========
+C
+C  JOB     (INPUT) CHARACTER*1
+C          SPECIFIES THE OPERATIONS TO BE PERFORMED ON A:
+C          = 'N':  NONE:  SIMPLY SET ILO = 1, IHI = N, SCALE(I) = 1.0
+C                  FOR I = 1,...,N;
+C          = 'P':  PERMUTE ONLY;
+C          = 'S':  SCALE ONLY;
+C          = 'B':  BOTH PERMUTE AND SCALE.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE INPUT MATRIX A.
+C          ON EXIT,  A IS OVERWRITTEN BY THE BALANCED MATRIX.
+C          IF JOB = 'N', A IS NOT REFERENCED.
+C          SEE FURTHER DETAILS.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  ILO     (OUTPUT) INTEGER
+C  IHI     (OUTPUT) INTEGER
+C          ILO AND IHI ARE SET TO INTEGERS SUCH THAT ON EXIT
+C          A(I,J) = 0 IF I > J AND J = 1,...,ILO-1 OR I = IHI+1,...,N.
+C          IF JOB = 'N' OR 'S', ILO = 1 AND IHI = N.
+C
+C  SCALE   (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          DETAILS OF THE PERMUTATIONS AND SCALING FACTORS APPLIED TO
+C          A.  IF P(J) IS THE INDEX OF THE ROW AND COLUMN INTERCHANGED
+C          WITH ROW AND COLUMN J AND D(J) IS THE SCALING FACTOR
+C          APPLIED TO ROW AND COLUMN J, THEN
+C          SCALE(J) = P(J)    FOR J = 1,...,ILO-1
+C                   = D(J)    FOR J = ILO,...,IHI
+C                   = P(J)    FOR J = IHI+1,...,N.
+C          THE ORDER IN WHICH THE INTERCHANGES ARE MADE IS N TO IHI+1,
+C          THEN 1 TO ILO-1.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT.
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE PERMUTATIONS CONSIST OF ROW AND COLUMN INTERCHANGES WHICH PUT
+C  THE MATRIX IN THE FORM
+C
+C             ( T1   X   Y  )
+C     P A P = (  0   B   Z  )
+C             (  0   0   T2 )
+C
+C  WHERE T1 AND T2 ARE UPPER TRIANGULAR MATRICES WHOSE EIGENVALUES LIE
+C  ALONG THE DIAGONAL.  THE COLUMN INDICES ILO AND IHI MARK THE STARTING
+C  AND ENDING COLUMNS OF THE SUBMATRIX B. BALANCING CONSISTS OF APPLYING
+C  A DIAGONAL SIMILARITY TRANSFORMATION INV(D) * B * D TO MAKE THE
+C  1-NORMS OF EACH ROW OF B AND ITS CORRESPONDING COLUMN NEARLY EQUAL.
+C  THE OUTPUT MATRIX IS
+C
+C     ( T1     X*D          Y    )
+C     (  0  INV(D)*B*D  INV(D)*Z ).
+C     (  0      0           T2   )
+C
+C  INFORMATION ABOUT THE PERMUTATIONS P AND THE DIAGONAL MATRIX D IS
+C  RETURNED IN THE VECTOR SCALE.
+C
+C  THIS ROUTINE IS BASED ON THE EISPACK ROUTINE BALANC.
+C
+C  MODIFIED BY TZU-YI CHEN, COMPUTER SCIENCE DIVISION, UNIVERSITY OF
+C    CALIFORNIA AT BERKELEY, USA
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+      DOUBLE PRECISION   SCLFAC
+      PARAMETER          ( SCLFAC = 0.8D+01 )
+      DOUBLE PRECISION   FACTOR
+      PARAMETER          ( FACTOR = 0.95D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            NOCONV
+      INTEGER            I, ICA, IEXC, IRA, J, K, L, M
+      DOUBLE PRECISION   C, CA, F, G, R, RA, S, SFMAX1, SFMAX2, SFMIN1,
+     $                   SFMIN2
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      INTEGER            IDAMAX
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           LSAME, IDAMAX, DLAMCH
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DSCAL, DSWAP, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS
+C
+      INFO = 0
+      IF( .NOT.LSAME( JOB, 'N' ) .AND. .NOT.LSAME( JOB, 'P' ) .AND.
+     $    .NOT.LSAME( JOB, 'S' ) .AND. .NOT.LSAME( JOB, 'B' ) ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -2
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -4
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEBAL', -INFO )
+         RETURN
+      END IF
+C
+      K = 1
+      L = N
+C
+      IF( N.EQ.0 )
+     $   GO TO 210
+C
+      IF( LSAME( JOB, 'N' ) ) THEN
+         DO 10 I = 1, N
+            SCALE( I ) = ONE
+   10    CONTINUE
+         GO TO 210
+      END IF
+C
+      IF( LSAME( JOB, 'S' ) )
+     $   GO TO 120
+C
+C     PERMUTATION TO ISOLATE EIGENVALUES IF POSSIBLE
+C
+      J=0
+      M=0
+      IEXC=0   ! THESE THREE ADDED TO MAKE FTNCHEK HAPPY
+      GO TO 50
+C
+C     ROW AND COLUMN EXCHANGE.
+C
+   20 CONTINUE
+      SCALE( M ) = J
+      IF( J.EQ.M )
+     $   GO TO 30
+C
+      CALL DSWAP( L, A( 1, J ), 1, A( 1, M ), 1 )
+      CALL DSWAP( N-K+1, A( J, K ), LDA, A( M, K ), LDA )
+C
+   30 CONTINUE
+      GO TO ( 40, 80 ) IEXC
+C
+C     SEARCH FOR ROWS ISOLATING AN EIGENVALUE AND PUSH THEM DOWN.
+C
+   40 CONTINUE
+      IF( L.EQ.1 )
+     $   GO TO 210
+      L = L - 1
+C
+   50 CONTINUE
+      DO 70 J = L, 1, -1
+C
+         DO 60 I = 1, L
+            IF( I.EQ.J )
+     $         GO TO 60
+            IF( A( J, I ).NE.ZERO )
+     $         GO TO 70
+   60    CONTINUE
+C
+         M = L
+         IEXC = 1
+         GO TO 20
+   70 CONTINUE
+C
+      GO TO 90
+C
+C     SEARCH FOR COLUMNS ISOLATING AN EIGENVALUE AND PUSH THEM LEFT.
+C
+   80 CONTINUE
+      K = K + 1
+C
+   90 CONTINUE
+      DO 110 J = K, L
+C
+         DO 100 I = K, L
+            IF( I.EQ.J )
+     $         GO TO 100
+            IF( A( I, J ).NE.ZERO )
+     $         GO TO 110
+  100    CONTINUE
+C
+         M = K
+         IEXC = 2
+         GO TO 20
+  110 CONTINUE
+C
+  120 CONTINUE
+      DO 130 I = K, L
+         SCALE( I ) = ONE
+  130 CONTINUE
+C
+      IF( LSAME( JOB, 'P' ) )
+     $   GO TO 210
+C
+C     BALANCE THE SUBMATRIX IN ROWS K TO L.
+C
+C     ITERATIVE LOOP FOR NORM REDUCTION
+C
+      SFMIN1 = DLAMCH( 'S' ) / DLAMCH( 'P' )
+      SFMAX1 = ONE / SFMIN1
+      SFMIN2 = SFMIN1*SCLFAC
+      SFMAX2 = ONE / SFMIN2
+  140 CONTINUE
+      NOCONV = .FALSE.
+C
+      DO 200 I = K, L
+         C = ZERO
+         R = ZERO
+C
+         DO 150 J = K, L
+            IF( J.EQ.I )
+     $         GO TO 150
+            C = C + ABS( A( J, I ) )
+            R = R + ABS( A( I, J ) )
+  150    CONTINUE
+         ICA = IDAMAX( L, A( 1, I ), 1 )
+         CA = ABS( A( ICA, I ) )
+         IRA = IDAMAX( N-K+1, A( I, K ), LDA )
+         RA = ABS( A( I, IRA+K-1 ) )
+C
+C        GUARD AGAINST ZERO C OR R DUE TO UNDERFLOW.
+C
+         IF( C.EQ.ZERO .OR. R.EQ.ZERO )
+     $      GO TO 200
+         G = R / SCLFAC
+         F = ONE
+         S = C + R
+  160    CONTINUE
+         IF( C.GE.G .OR. MAX( F, C, CA ).GE.SFMAX2 .OR.
+     $       MIN( R, G, RA ).LE.SFMIN2 )GO TO 170
+         F = F*SCLFAC
+         C = C*SCLFAC
+         CA = CA*SCLFAC
+         R = R / SCLFAC
+         G = G / SCLFAC
+         RA = RA / SCLFAC
+         GO TO 160
+C
+  170    CONTINUE
+         G = C / SCLFAC
+  180    CONTINUE
+         IF( G.LT.R .OR. MAX( R, RA ).GE.SFMAX2 .OR.
+     $       MIN( F, C, G, CA ).LE.SFMIN2 )GO TO 190
+         F = F / SCLFAC
+         C = C / SCLFAC
+         G = G / SCLFAC
+         CA = CA / SCLFAC
+         R = R*SCLFAC
+         RA = RA*SCLFAC
+         GO TO 180
+C
+C        NOW BALANCE.
+C
+  190    CONTINUE
+         IF( ( C+R ).GE.FACTOR*S )
+     $      GO TO 200
+         IF( F.LT.ONE .AND. SCALE( I ).LT.ONE ) THEN
+            IF( F*SCALE( I ).LE.SFMIN1 )
+     $         GO TO 200
+         END IF
+         IF( F.GT.ONE .AND. SCALE( I ).GT.ONE ) THEN
+            IF( SCALE( I ).GE.SFMAX1 / F )
+     $         GO TO 200
+         END IF
+         G = ONE / F
+         SCALE( I ) = SCALE( I )*F
+         NOCONV = .TRUE.
+C
+         CALL DSCAL( N-K+1, G, A( I, K ), LDA )
+         CALL DSCAL( L, F, A( 1, I ), 1 )
+C
+  200 CONTINUE
+C
+      IF( NOCONV )
+     $   GO TO 140
+C
+  210 CONTINUE
+      ILO = K
+      IHI = L
+C
+      RETURN
+C
+C     END OF DGEBAL
+C
+      END
+C*MODULE DGEEV   *DECK DGEHD2
+      SUBROUTINE DGEHD2( N, ILO, IHI, A, LDA, TAU, WORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            IHI, ILO, INFO, LDA, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DGEHD2 REDUCES A REAL GENERAL MATRIX A TO UPPER HESSENBERG FORM H BY
+C  AN ORTHOGONAL SIMILARITY TRANSFORMATION:  Q' * A * Q = H .
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.
+C
+C  ILO     (INPUT) INTEGER
+C  IHI     (INPUT) INTEGER
+C          IT IS ASSUMED THAT A IS ALREADY UPPER TRIANGULAR IN ROWS
+C          AND COLUMNS 1:ILO-1 AND IHI+1:N. ILO AND IHI ARE NORMALLY
+C          SET BY A PREVIOUS CALL TO DGEBAL; OTHERWISE THEY SHOULD BE
+C          SET TO 1 AND N RESPECTIVELY. SEE FURTHER DETAILS.
+C          1 <= ILO <= IHI <= MAX(1,N).
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE N BY N GENERAL MATRIX TO BE REDUCED.
+C          ON EXIT, THE UPPER TRIANGLE AND THE FIRST SUBDIAGONAL OF A
+C          ARE OVERWRITTEN WITH THE UPPER HESSENBERG MATRIX H, AND THE
+C          ELEMENTS BELOW THE FIRST SUBDIAGONAL, WITH THE ARRAY TAU,
+C          REPRESENT THE ORTHOGONAL MATRIX Q AS A PRODUCT OF ELEMENTARY
+C          REFLECTORS. SEE FURTHER DETAILS.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  TAU     (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          THE SCALAR FACTORS OF THE ELEMENTARY REFLECTORS (SEE FURTHER
+C          DETAILS).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT.
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE MATRIX Q IS REPRESENTED AS A PRODUCT OF (IHI-ILO) ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(ILO) H(ILO+1) . . . H(IHI-1).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A REAL SCALAR, AND V IS A REAL VECTOR WITH
+C  V(1:I) = 0, V(I+1) = 1 AND V(IHI+1:N) = 0; V(I+2:IHI) IS STORED ON
+C  EXIT IN A(I+2:IHI,I), AND TAU IN TAU(I).
+C
+C  THE CONTENTS OF A ARE ILLUSTRATED BY THE FOLLOWING EXAMPLE, WITH
+C  N = 7, ILO = 2 AND IHI = 6:
+C
+C  ON ENTRY,                        ON EXIT,
+C
+C  ( A   A   A   A   A   A   A )    (  A   A   H   H   H   H   A )
+C  (     A   A   A   A   A   A )    (      A   H   H   H   H   A )
+C  (     A   A   A   A   A   A )    (      H   H   H   H   H   H )
+C  (     A   A   A   A   A   A )    (      V2  H   H   H   H   H )
+C  (     A   A   A   A   A   A )    (      V2  V3  H   H   H   H )
+C  (     A   A   A   A   A   A )    (      V2  V3  V4  H   H   H )
+C  (                         A )    (                          A )
+C
+C  WHERE A DENOTES AN ELEMENT OF THE ORIGINAL MATRIX A, H DENOTES A
+C  MODIFIED ELEMENT OF THE UPPER HESSENBERG MATRIX H, AND VI DENOTES AN
+C  ELEMENT OF THE VECTOR DEFINING H(I).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I
+      DOUBLE PRECISION   AII
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DLARF, DLARFG, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS
+C
+      INFO = 0
+      IF( N.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -2
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEHD2', -INFO )
+         RETURN
+      END IF
+C
+      DO 10 I = ILO, IHI - 1
+C
+C        COMPUTE ELEMENTARY REFLECTOR H(I) TO ANNIHILATE A(I+2:IHI,I)
+C
+         CALL DLARFG( IHI-I, A( I+1, I ), A( MIN( I+2, N ), I ), 1,
+     $                TAU( I ) )
+         AII = A( I+1, I )
+         A( I+1, I ) = ONE
+C
+C        APPLY H(I) TO A(1:IHI,I+1:IHI) FROM THE RIGHT
+C
+         CALL DLARF( 'RIGHT', IHI, IHI-I, A( I+1, I ), 1, TAU( I ),
+     $               A( 1, I+1 ), LDA, WORK )
+C
+C        APPLY H(I) TO A(I+1:IHI,I+1:N) FROM THE LEFT
+C
+         CALL DLARF( 'LEFT', IHI-I, N-I, A( I+1, I ), 1, TAU( I ),
+     $               A( I+1, I+1 ), LDA, WORK )
+C
+         A( I+1, I ) = AII
+   10 CONTINUE
+C
+      RETURN
+C
+C     END OF DGEHD2
+C
+      END
+C*MODULE DGEEV   *DECK DGEHRD
+      SUBROUTINE DGEHRD( N, ILO, IHI, A, LDA, TAU, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            IHI, ILO, INFO, LDA, LWORK, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DGEHRD REDUCES A REAL GENERAL MATRIX A TO UPPER HESSENBERG FORM H BY
+C  AN ORTHOGONAL SIMILARITY TRANSFORMATION:  Q' * A * Q = H .
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.
+C
+C  ILO     (INPUT) INTEGER
+C  IHI     (INPUT) INTEGER
+C          IT IS ASSUMED THAT A IS ALREADY UPPER TRIANGULAR IN ROWS
+C          AND COLUMNS 1:ILO-1 AND IHI+1:N. ILO AND IHI ARE NORMALLY
+C          SET BY A PREVIOUS CALL TO DGEBAL; OTHERWISE THEY SHOULD BE
+C          SET TO 1 AND N RESPECTIVELY. SEE FURTHER DETAILS.
+C          1 <= ILO <= IHI <= N, IF N > 0; ILO=1 AND IHI=0, IF N=0.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE N-BY-N GENERAL MATRIX TO BE REDUCED.
+C          ON EXIT, THE UPPER TRIANGLE AND THE FIRST SUBDIAGONAL OF A
+C          ARE OVERWRITTEN WITH THE UPPER HESSENBERG MATRIX H, AND THE
+C          ELEMENTS BELOW THE FIRST SUBDIAGONAL, WITH THE ARRAY TAU,
+C          REPRESENT THE ORTHOGONAL MATRIX Q AS A PRODUCT OF ELEMENTARY
+C          REFLECTORS. SEE FURTHER DETAILS.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  TAU     (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          THE SCALAR FACTORS OF THE ELEMENTARY REFLECTORS (SEE FURTHER
+C          DETAILS). ELEMENTS 1:ILO-1 AND IHI:N-1 OF TAU ARE SET TO
+C          ZERO.
+C
+C  WORK    (WORKSPACE/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE LENGTH OF THE ARRAY WORK.  LWORK >= MAX(1,N).
+C          FOR OPTIMUM PERFORMANCE LWORK >= N*NB, WHERE NB IS THE
+C          OPTIMAL BLOCKSIZE.
+C
+C          IF LWORK = -1, THEN A WORKSPACE QUERY IS ASSUMED; THE ROUTINE
+C          ONLY CALCULATES THE OPTIMAL SIZE OF THE WORK ARRAY, RETURNS
+C          THIS VALUE AS THE FIRST ENTRY OF THE WORK ARRAY, AND NO ERROR
+C          MESSAGE RELATED TO LWORK IS ISSUED BY XERBLA.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE MATRIX Q IS REPRESENTED AS A PRODUCT OF (IHI-ILO) ELEMENTARY
+C  REFLECTORS
+C
+C     Q = H(ILO) H(ILO+1) . . . H(IHI-1).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A REAL SCALAR, AND V IS A REAL VECTOR WITH
+C  V(1:I) = 0, V(I+1) = 1 AND V(IHI+1:N) = 0; V(I+2:IHI) IS STORED ON
+C  EXIT IN A(I+2:IHI,I), AND TAU IN TAU(I).
+C
+C  THE CONTENTS OF A ARE ILLUSTRATED BY THE FOLLOWING EXAMPLE, WITH
+C  N = 7, ILO = 2 AND IHI = 6:
+C
+C  ON ENTRY,                        ON EXIT,
+C
+C  ( A   A   A   A   A   A   A )    (  A   A   H   H   H   H   A )
+C  (     A   A   A   A   A   A )    (      A   H   H   H   H   A )
+C  (     A   A   A   A   A   A )    (      H   H   H   H   H   H )
+C  (     A   A   A   A   A   A )    (      V2  H   H   H   H   H )
+C  (     A   A   A   A   A   A )    (      V2  V3  H   H   H   H )
+C  (     A   A   A   A   A   A )    (      V2  V3  V4  H   H   H )
+C  (                         A )    (                          A )
+C
+C  WHERE A DENOTES AN ELEMENT OF THE ORIGINAL MATRIX A, H DENOTES A
+C  MODIFIED ELEMENT OF THE UPPER HESSENBERG MATRIX H, AND VI DENOTES AN
+C  ELEMENT OF THE VECTOR DEFINING H(I).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      INTEGER            NBMAX, LDT
+      PARAMETER          ( NBMAX = 64, LDT = NBMAX+1 )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            LQUERY
+      INTEGER            I, IB, IINFO, IWS, LDWORK, LWKOPT, NB, NBMIN,
+     $                   NH, NX
+      DOUBLE PRECISION   EI
+C     ..
+C     .. LOCAL ARRAYS ..
+      DOUBLE PRECISION   T( LDT, NBMAX )
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DGEHD2, DGEMM, DLAHRD, DLARFB, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT PARAMETERS
+C
+      INFO = 0
+      NB = MIN( NBMAX, ILAENV( 1, 'DGEHRD', ' ', N, ILO, IHI, -1 ) )
+      LWKOPT = N*NB
+      WORK( 1 ) = LWKOPT
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( N.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -2
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, N ) .AND. .NOT.LQUERY ) THEN
+         INFO = -8
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEHRD', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+C
+C     SET ELEMENTS 1:ILO-1 AND IHI:N-1 OF TAU TO ZERO
+C
+      DO 10 I = 1, ILO - 1
+         TAU( I ) = ZERO
+   10 CONTINUE
+      DO 20 I = MAX( 1, IHI ), N - 1
+         TAU( I ) = ZERO
+   20 CONTINUE
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      NH = IHI - ILO + 1
+      IF( NH.LE.1 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+C     DETERMINE THE BLOCK SIZE.
+C
+      NB = MIN( NBMAX, ILAENV( 1, 'DGEHRD', ' ', N, ILO, IHI, -1 ) )
+      NBMIN = 2
+      IWS = 1
+      IF( NB.GT.1 .AND. NB.LT.NH ) THEN
+C
+C        DETERMINE WHEN TO CROSS OVER FROM BLOCKED TO UNBLOCKED CODE
+C        (LAST BLOCK IS ALWAYS HANDLED BY UNBLOCKED CODE).
+C
+         NX = MAX( NB, ILAENV( 3, 'DGEHRD', ' ', N, ILO, IHI, -1 ) )
+         IF( NX.LT.NH ) THEN
+C
+C           DETERMINE IF WORKSPACE IS LARGE ENOUGH FOR BLOCKED CODE.
+C
+            IWS = N*NB
+            IF( LWORK.LT.IWS ) THEN
+C
+C              NOT ENOUGH WORKSPACE TO USE OPTIMAL NB:  DETERMINE THE
+C              MINIMUM VALUE OF NB, AND REDUCE NB OR FORCE USE OF
+C              UNBLOCKED CODE.
+C
+               NBMIN = MAX( 2, ILAENV( 2, 'DGEHRD', ' ', N, ILO, IHI,
+     $                 -1 ) )
+               IF( LWORK.GE.N*NBMIN ) THEN
+                  NB = LWORK / N
+               ELSE
+                  NB = 1
+               END IF
+            END IF
+         END IF
+      END IF
+      LDWORK = N
+C
+      IF( NB.LT.NBMIN .OR. NB.GE.NH ) THEN
+C
+C        USE UNBLOCKED CODE BELOW
+C
+         I = ILO
+C
+      ELSE
+C
+C        USE BLOCKED CODE
+C
+         DO 30 I = ILO, IHI - 1 - NX, NB
+            IB = MIN( NB, IHI-I )
+C
+C           REDUCE COLUMNS I:I+IB-1 TO HESSENBERG FORM, RETURNING THE
+C           MATRICES V AND T OF THE BLOCK REFLECTOR H = I - V*T*V'
+C           WHICH PERFORMS THE REDUCTION, AND ALSO THE MATRIX Y = A*V*T
+C
+            CALL DLAHRD( IHI, I, IB, A( 1, I ), LDA, TAU( I ), T, LDT,
+     $                   WORK, LDWORK )
+C
+C           APPLY THE BLOCK REFLECTOR H TO A(1:IHI,I+IB:IHI) FROM THE
+C           RIGHT, COMPUTING  A := A - Y * V'. V(I+IB,IB-1) MUST BE SET
+C           TO 1.
+C
+            EI = A( I+IB, I+IB-1 )
+            A( I+IB, I+IB-1 ) = ONE
+            CALL DGEMM( 'NO TRANSPOSE', 'TRANSPOSE', IHI, IHI-I-IB+1,
+     $                  IB, -ONE, WORK, LDWORK, A( I+IB, I ), LDA, ONE,
+     $                  A( 1, I+IB ), LDA )
+            A( I+IB, I+IB-1 ) = EI
+C
+C           APPLY THE BLOCK REFLECTOR H TO A(I+1:IHI,I+IB:N) FROM THE
+C           LEFT
+C
+            CALL DLARFB( 'LEFT', 'TRANSPOSE', 'FORWARD', 'COLUMNWISE',
+     $                   IHI-I, N-I-IB+1, IB, A( I+1, I ), LDA, T, LDT,
+     $                   A( I+1, I+IB ), LDA, WORK, LDWORK )
+   30    CONTINUE
+      END IF
+C
+C     USE UNBLOCKED CODE TO REDUCE THE REST OF THE MATRIX
+C
+      CALL DGEHD2( N, I, IHI, A, LDA, TAU, WORK, IINFO )
+      WORK( 1 ) = IWS
+C
+      RETURN
+C
+C     END OF DGEHRD
+C
+      END
+C*MODULE DGEEV   *DECK DHSEQR
+      SUBROUTINE DHSEQR( JOB, COMPZ, N, ILO, IHI, H, LDH, WR, WI, Z,
+     $                   LDZ, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          COMPZ, JOB
+      INTEGER            IHI, ILO, INFO, LDH, LDZ, LWORK, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   H( LDH, * ), WI( * ), WORK( * ), WR( * ),
+     $                   Z( LDZ, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DHSEQR COMPUTES THE EIGENVALUES OF A REAL UPPER HESSENBERG MATRIX H
+C  AND, OPTIONALLY, THE MATRICES T AND Z FROM THE SCHUR DECOMPOSITION
+C  H = Z T Z**T, WHERE T IS AN UPPER QUASI-TRIANGULAR MATRIX (THE SCHUR
+C  FORM), AND Z IS THE ORTHOGONAL MATRIX OF SCHUR VECTORS.
+C
+C  OPTIONALLY Z MAY BE POSTMULTIPLIED INTO AN INPUT ORTHOGONAL MATRIX Q,
+C  SO THAT THIS ROUTINE CAN GIVE THE SCHUR FACTORIZATION OF A MATRIX A
+C  WHICH HAS BEEN REDUCED TO THE HESSENBERG FORM H BY THE ORTHOGONAL
+C  MATRIX Q:  A = Q*H*Q**T = (QZ)*T*(QZ)**T.
+C
+C  ARGUMENTS
+C  =========
+C
+C  JOB     (INPUT) CHARACTER*1
+C          = 'E':  COMPUTE EIGENVALUES ONLY;
+C          = 'S':  COMPUTE EIGENVALUES AND THE SCHUR FORM T.
+C
+C  COMPZ   (INPUT) CHARACTER*1
+C          = 'N':  NO SCHUR VECTORS ARE COMPUTED;
+C          = 'I':  Z IS INITIALIZED TO THE UNIT MATRIX AND THE MATRIX Z
+C                  OF SCHUR VECTORS OF H IS RETURNED;
+C          = 'V':  Z MUST CONTAIN AN ORTHOGONAL MATRIX Q ON ENTRY, AND
+C                  THE PRODUCT Q*Z IS RETURNED.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX H.  N >= 0.
+C
+C  ILO     (INPUT) INTEGER
+C  IHI     (INPUT) INTEGER
+C          IT IS ASSUMED THAT H IS ALREADY UPPER TRIANGULAR IN ROWS
+C          AND COLUMNS 1:ILO-1 AND IHI+1:N. ILO AND IHI ARE NORMALLY
+C          SET BY A PREVIOUS CALL TO DGEBAL, AND THEN PASSED TO SGEHRD
+C          WHEN THE MATRIX OUTPUT BY DGEBAL IS REDUCED TO HESSENBERG
+C          FORM. OTHERWISE ILO AND IHI SHOULD BE SET TO 1 AND N
+C          RESPECTIVELY.
+C          1 <= ILO <= IHI <= N, IF N > 0; ILO=1 AND IHI=0, IF N=0.
+C
+C  H       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDH,N)
+C          ON ENTRY, THE UPPER HESSENBERG MATRIX H.
+C          ON EXIT, IF JOB = 'S', H CONTAINS THE UPPER QUASI-TRIANGULAR
+C          MATRIX T FROM THE SCHUR DECOMPOSITION (THE SCHUR FORM);
+C          2-BY-2 DIAGONAL BLOCKS (CORRESPONDING TO COMPLEX CONJUGATE
+C          PAIRS OF EIGENVALUES) ARE RETURNED IN STANDARD FORM, WITH
+C          H(I,I) = H(I+1,I+1) AND H(I+1,I)*H(I,I+1) < 0. IF JOB = 'E',
+C          THE CONTENTS OF H ARE UNSPECIFIED ON EXIT.
+C
+C  LDH     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY H. LDH >= MAX(1,N).
+C
+C  WR      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C  WI      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          THE REAL AND IMAGINARY PARTS, RESPECTIVELY, OF THE COMPUTED
+C          EIGENVALUES. IF TWO EIGENVALUES ARE COMPUTED AS A COMPLEX
+C          CONJUGATE PAIR, THEY ARE STORED IN CONSECUTIVE ELEMENTS OF
+C          WR AND WI, SAY THE I-TH AND (I+1)TH, WITH WI(I) > 0 AND
+C          WI(I+1) < 0. IF JOB = 'S', THE EIGENVALUES ARE STORED IN THE
+C          SAME ORDER AS ON THE DIAGONAL OF THE SCHUR FORM RETURNED IN
+C          H, WITH WR(I) = H(I,I) AND, IF H(I:I+1,I:I+1) IS A 2-BY-2
+C          DIAGONAL BLOCK, WI(I) = SQRT(H(I+1,I)*H(I,I+1)) AND
+C          WI(I+1) = -WI(I).
+C
+C  Z       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDZ,N)
+C          IF COMPZ = 'N': Z IS NOT REFERENCED.
+C          IF COMPZ = 'I': ON ENTRY, Z NEED NOT BE SET, AND ON EXIT, Z
+C          CONTAINS THE ORTHOGONAL MATRIX Z OF THE SCHUR VECTORS OF H.
+C          IF COMPZ = 'V': ON ENTRY Z MUST CONTAIN AN N-BY-N MATRIX Q,
+C          WHICH IS ASSUMED TO BE EQUAL TO THE UNIT MATRIX EXCEPT FOR
+C          THE SUBMATRIX Z(ILO:IHI,ILO:IHI); ON EXIT Z CONTAINS Q*Z.
+C          NORMALLY Q IS THE ORTHOGONAL MATRIX GENERATED BY DORGHR AFTER
+C          THE CALL TO DGEHRD WHICH FORMED THE HESSENBERG MATRIX H.
+C
+C  LDZ     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY Z.
+C          LDZ >= MAX(1,N) IF COMPZ = 'I' OR 'V'; LDZ >= 1 OTHERWISE.
+C
+C  WORK    (WORKSPACE/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK.  LWORK >= MAX(1,N).
+C
+C          IF LWORK = -1, THEN A WORKSPACE QUERY IS ASSUMED; THE ROUTINE
+C          ONLY CALCULATES THE OPTIMAL SIZE OF THE WORK ARRAY, RETURNS
+C          THIS VALUE AS THE FIRST ENTRY OF THE WORK ARRAY, AND NO ERROR
+C          MESSAGE RELATED TO LWORK IS ISSUED BY XERBLA.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C          > 0:  IF INFO = I, DHSEQR FAILED TO COMPUTE ALL OF THE
+C                EIGENVALUES IN A TOTAL OF 30*(IHI-ILO+1) ITERATIONS;
+C                ELEMENTS 1:ILO-1 AND I+1:N OF WR AND WI CONTAIN THOSE
+C                EIGENVALUES WHICH HAVE BEEN SUCCESSFULLY COMPUTED.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE, TWO
+      PARAMETER          ( ZERO=0.0D+00, ONE=1.0D+00, TWO=2.0D+00 )
+      DOUBLE PRECISION   CONST
+      PARAMETER          ( CONST = 1.5D+00 )
+      INTEGER            NSMAX, LDS
+      PARAMETER          ( NSMAX = 15, LDS = NSMAX )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            INITZ, LQUERY, WANTT, WANTZ
+      INTEGER            I, I1, I2, IERR, II, ITEMP, ITN, ITS, J, K, L,
+     $                   MAXB, NH, NR, NS, NV
+      DOUBLE PRECISION   ABSW, OVFL, SMLNUM, TAU, TEMP, TST1, ULP, UNFL
+C     ..
+C     .. LOCAL ARRAYS ..
+      DOUBLE PRECISION   S( LDS, NSMAX ), V( NSMAX+1 ), VV( NSMAX+1 )
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      INTEGER            IDAMAX, ILAENV
+      DOUBLE PRECISION   DLAMCH, DLAPY2
+      EXTERNAL           LSAME, IDAMAX, ILAENV, DLAMCH, DLAPY2
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DCOPY, DGEMV, DLACPY, DLAHQR, DLARFG, DLARFX,
+     $                   DLASET, DSCAL, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     DECODE AND TEST THE INPUT PARAMETERS
+C
+      WANTT = LSAME( JOB, 'S' )
+      INITZ = LSAME( COMPZ, 'I' )
+      WANTZ = INITZ .OR. LSAME( COMPZ, 'V' )
+C
+      INFO = 0
+      WORK( 1 ) = MAX( 1, N )
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( .NOT.LSAME( JOB, 'E' ) .AND. .NOT.WANTT ) THEN
+         INFO = -1
+      ELSE IF( .NOT.LSAME( COMPZ, 'N' ) .AND. .NOT.WANTZ ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -4
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -5
+      ELSE IF( LDH.LT.MAX( 1, N ) ) THEN
+         INFO = -7
+      ELSE IF( LDZ.LT.1 .OR. WANTZ .AND. LDZ.LT.MAX( 1, N ) ) THEN
+         INFO = -11
+      ELSE IF( LWORK.LT.MAX( 1, N ) .AND. .NOT.LQUERY ) THEN
+         INFO = -13
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DHSEQR', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+C
+C     INITIALIZE Z, IF NECESSARY
+C
+      IF( INITZ )
+     $   CALL DLASET( 'FULL', N, N, ZERO, ONE, Z, LDZ )
+C
+C     STORE THE EIGENVALUES ISOLATED BY DGEBAL.
+C
+      DO 10 I = 1, ILO - 1
+         WR( I ) = H( I, I )
+         WI( I ) = ZERO
+   10 CONTINUE
+      DO 20 I = IHI + 1, N
+         WR( I ) = H( I, I )
+         WI( I ) = ZERO
+   20 CONTINUE
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( N.EQ.0 )
+     $   RETURN
+      IF( ILO.EQ.IHI ) THEN
+         WR( ILO ) = H( ILO, ILO )
+         WI( ILO ) = ZERO
+         RETURN
+      END IF
+C
+C     SET ROWS AND COLUMNS ILO TO IHI TO ZERO BELOW THE FIRST
+C     SUBDIAGONAL.
+C
+      DO 40 J = ILO, IHI - 2
+         DO 30 I = J + 2, N
+            H( I, J ) = ZERO
+   30    CONTINUE
+   40 CONTINUE
+      NH = IHI - ILO + 1
+C
+C     DETERMINE THE ORDER OF THE MULTI-SHIFT QR ALGORITHM TO BE USED.
+C
+      NS = ILAENV( 4, 'DHSEQR', JOB // COMPZ, N, ILO, IHI, -1 )
+      MAXB = ILAENV( 8, 'DHSEQR', JOB // COMPZ, N, ILO, IHI, -1 )
+      IF( NS.LE.2 .OR. NS.GT.NH .OR. MAXB.GE.NH ) THEN
+C
+C        USE THE STANDARD DOUBLE-SHIFT ALGORITHM
+C
+         CALL DLAHQR( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI, ILO,
+     $                IHI, Z, LDZ, INFO )
+         RETURN
+      END IF
+      MAXB = MAX( 3, MAXB )
+      NS = MIN( NS, MAXB, NSMAX )
+C
+C     NOW 2 < NS <= MAXB < NH.
+C
+C     SET MACHINE-DEPENDENT CONSTANTS FOR THE STOPPING CRITERION.
+C     IF NORM(H) <= SQRT(OVFL), OVERFLOW SHOULD NOT OCCUR.
+C
+      UNFL = DLAMCH( 'SAFE MINIMUM' )
+      OVFL = ONE / UNFL
+      CALL DLABAD( UNFL, OVFL )
+      ULP = DLAMCH( 'PRECISION' )
+      SMLNUM = UNFL*( NH / ULP )
+C
+C     I1 AND I2 ARE THE INDICES OF THE FIRST ROW AND LAST COLUMN OF H
+C     TO WHICH TRANSFORMATIONS MUST BE APPLIED. IF EIGENVALUES ONLY ARE
+C     BEING COMPUTED, I1 AND I2 ARE SET INSIDE THE MAIN LOOP.
+C
+      IF( WANTT ) THEN
+         I1 = 1
+         I2 = N
+      END IF
+C
+C     ITN IS THE TOTAL NUMBER OF MULTIPLE-SHIFT QR ITERATIONS ALLOWED.
+C
+      ITN = 30*NH
+C
+C     THE MAIN LOOP BEGINS HERE. I IS THE LOOP INDEX AND DECREASES FROM
+C     IHI TO ILO IN STEPS OF AT MOST MAXB. EACH ITERATION OF THE LOOP
+C     WORKS WITH THE ACTIVE SUBMATRIX IN ROWS AND COLUMNS L TO I.
+C     EIGENVALUES I+1 TO IHI HAVE ALREADY CONVERGED. EITHER L = ILO OR
+C     H(L,L-1) IS NEGLIGIBLE SO THAT THE MATRIX SPLITS.
+C
+      I = IHI
+   50 CONTINUE
+      L = ILO
+      IF( I.LT.ILO )
+     $   GO TO 170
+C
+C     PERFORM MULTIPLE-SHIFT QR ITERATIONS ON ROWS AND COLUMNS ILO TO I
+C     UNTIL A SUBMATRIX OF ORDER AT MOST MAXB SPLITS OFF AT THE BOTTOM
+C     BECAUSE A SUBDIAGONAL ELEMENT HAS BECOME NEGLIGIBLE.
+C
+      DO 150 ITS = 0, ITN
+C
+C        LOOK FOR A SINGLE SMALL SUBDIAGONAL ELEMENT.
+C
+         DO 60 K = I, L + 1, -1
+            TST1 = ABS( H( K-1, K-1 ) ) + ABS( H( K, K ) )
+            IF( TST1.EQ.ZERO )
+     *         CALL SUBR_DLANHS(TST1,'1',I-L+1,H( L,L ),LDH,WORK)
+            IF( ABS( H( K, K-1 ) ).LE.MAX( ULP*TST1, SMLNUM ) )
+     $         GO TO 70
+   60    CONTINUE
+   70    CONTINUE
+         L = K
+         IF( L.GT.ILO ) THEN
+C
+C           H(L,L-1) IS NEGLIGIBLE.
+C
+            H( L, L-1 ) = ZERO
+         END IF
+C
+C        EXIT FROM LOOP IF A SUBMATRIX OF ORDER <= MAXB HAS SPLIT OFF.
+C
+         IF( L.GE.I-MAXB+1 )
+     $      GO TO 160
+C
+C        NOW THE ACTIVE SUBMATRIX IS IN ROWS AND COLUMNS L TO I. IF
+C        EIGENVALUES ONLY ARE BEING COMPUTED, ONLY THE ACTIVE SUBMATRIX
+C        NEED BE TRANSFORMED.
+C
+         IF( .NOT.WANTT ) THEN
+            I1 = L
+            I2 = I
+         END IF
+C
+         IF( ITS.EQ.20 .OR. ITS.EQ.30 ) THEN
+C
+C           EXCEPTIONAL SHIFTS.
+C
+            DO 80 II = I - NS + 1, I
+               WR( II ) = CONST*( ABS( H( II, II-1 ) )+
+     $                    ABS( H( II, II ) ) )
+               WI( II ) = ZERO
+   80       CONTINUE
+         ELSE
+C
+C           USE EIGENVALUES OF TRAILING SUBMATRIX OF ORDER NS AS SHIFTS.
+C
+            CALL DLACPY( 'FULL', NS, NS, H( I-NS+1, I-NS+1 ), LDH, S,
+     $                   LDS )
+            CALL DLAHQR( .FALSE., .FALSE., NS, 1, NS, S, LDS,
+     $                   WR( I-NS+1 ), WI( I-NS+1 ), 1, NS, Z, LDZ,
+     $                   IERR )
+            IF( IERR.GT.0 ) THEN
+C
+C              IF DLAHQR FAILED TO COMPUTE ALL NS EIGENVALUES, USE THE
+C              UNCONVERGED DIAGONAL ELEMENTS AS THE REMAINING SHIFTS.
+C
+               DO 90 II = 1, IERR
+                  WR( I-NS+II ) = S( II, II )
+                  WI( I-NS+II ) = ZERO
+   90          CONTINUE
+            END IF
+         END IF
+C
+C        FORM THE FIRST COLUMN OF (G-W(1)) (G-W(2)) . . . (G-W(NS))
+C        WHERE G IS THE HESSENBERG SUBMATRIX H(L:I,L:I) AND W IS
+C        THE VECTOR OF SHIFTS (STORED IN WR AND WI). THE RESULT IS
+C        STORED IN THE LOCAL ARRAY V.
+C
+         V( 1 ) = ONE
+         DO 100 II = 2, NS + 1
+            V( II ) = ZERO
+  100    CONTINUE
+         NV = 1
+         DO 120 J = I - NS + 1, I
+            IF( WI( J ).GE.ZERO ) THEN
+               IF( WI( J ).EQ.ZERO ) THEN
+C
+C                 REAL SHIFT
+C
+                  CALL DCOPY( NV+1, V, 1, VV, 1 )
+                  CALL DGEMV( 'NO TRANSPOSE', NV+1, NV, ONE, H( L, L ),
+     $                        LDH, VV, 1, -WR( J ), V, 1 )
+                  NV = NV + 1
+               ELSE IF( WI( J ).GT.ZERO ) THEN
+C
+C                 COMPLEX CONJUGATE PAIR OF SHIFTS
+C
+                  CALL DCOPY( NV+1, V, 1, VV, 1 )
+                  CALL DGEMV( 'NO TRANSPOSE', NV+1, NV, ONE, H( L, L ),
+     $                        LDH, V, 1, -TWO*WR( J ), VV, 1 )
+                  ITEMP = IDAMAX( NV+1, VV, 1 )
+                  TEMP = ONE / MAX( ABS( VV( ITEMP ) ), SMLNUM )
+                  CALL DSCAL( NV+1, TEMP, VV, 1 )
+                  ABSW = DLAPY2( WR( J ), WI( J ) )
+                  TEMP = ( TEMP*ABSW )*ABSW
+                  CALL DGEMV( 'NO TRANSPOSE', NV+2, NV+1, ONE,
+     $                        H( L, L ), LDH, VV, 1, TEMP, V, 1 )
+                  NV = NV + 2
+               END IF
+C
+C              SCALE V(1:NV) SO THAT MAX(ABS(V(I))) = 1. IF V IS ZERO,
+C              RESET IT TO THE UNIT VECTOR.
+C
+               ITEMP = IDAMAX( NV, V, 1 )
+               TEMP = ABS( V( ITEMP ) )
+               IF( TEMP.EQ.ZERO ) THEN
+                  V( 1 ) = ONE
+                  DO 110 II = 2, NV
+                     V( II ) = ZERO
+  110             CONTINUE
+               ELSE
+                  TEMP = MAX( TEMP, SMLNUM )
+                  CALL DSCAL( NV, ONE / TEMP, V, 1 )
+               END IF
+            END IF
+  120    CONTINUE
+C
+C        MULTIPLE-SHIFT QR STEP
+C
+         DO 140 K = L, I - 1
+C
+C           THE FIRST ITERATION OF THIS LOOP DETERMINES A REFLECTION G
+C           FROM THE VECTOR V AND APPLIES IT FROM LEFT AND RIGHT TO H,
+C           THUS CREATING A NONZERO BULGE BELOW THE SUBDIAGONAL.
+C
+C           EACH SUBSEQUENT ITERATION DETERMINES A REFLECTION G TO
+C           RESTORE THE HESSENBERG FORM IN THE (K-1)TH COLUMN, AND THUS
+C           CHASES THE BULGE ONE STEP TOWARD THE BOTTOM OF THE ACTIVE
+C           SUBMATRIX. NR IS THE ORDER OF G.
+C
+            NR = MIN( NS+1, I-K+1 )
+            IF( K.GT.L )
+     $         CALL DCOPY( NR, H( K, K-1 ), 1, V, 1 )
+            CALL DLARFG( NR, V( 1 ), V( 2 ), 1, TAU )
+            IF( K.GT.L ) THEN
+               H( K, K-1 ) = V( 1 )
+               DO 130 II = K + 1, I
+                  H( II, K-1 ) = ZERO
+  130          CONTINUE
+            END IF
+            V( 1 ) = ONE
+C
+C           APPLY G FROM THE LEFT TO TRANSFORM THE ROWS OF THE MATRIX IN
+C           COLUMNS K TO I2.
+C
+            CALL DLARFX( 'LEFT', NR, I2-K+1, V, TAU, H( K, K ), LDH,
+     $                   WORK )
+C
+C           APPLY G FROM THE RIGHT TO TRANSFORM THE COLUMNS OF THE
+C           MATRIX IN ROWS I1 TO MIN(K+NR,I).
+C
+            CALL DLARFX( 'RIGHT', MIN( K+NR, I )-I1+1, NR, V, TAU,
+     $                   H( I1, K ), LDH, WORK )
+C
+            IF( WANTZ ) THEN
+C
+C              ACCUMULATE TRANSFORMATIONS IN THE MATRIX Z
+C
+               CALL DLARFX( 'RIGHT', NH, NR, V, TAU, Z( ILO, K ), LDZ,
+     $                      WORK )
+            END IF
+  140    CONTINUE
+C
+  150 CONTINUE
+C
+C     FAILURE TO CONVERGE IN REMAINING NUMBER OF ITERATIONS
+C
+      INFO = I
+      RETURN
+C
+  160 CONTINUE
+C
+C     A SUBMATRIX OF ORDER <= MAXB IN ROWS AND COLUMNS L TO I HAS SPLIT
+C     OFF. USE THE DOUBLE-SHIFT QR ALGORITHM TO HANDLE IT.
+C
+      CALL DLAHQR( WANTT, WANTZ, N, L, I, H, LDH, WR, WI, ILO, IHI, Z,
+     $             LDZ, INFO )
+      IF( INFO.GT.0 )
+     $   RETURN
+C
+C     DECREMENT NUMBER OF REMAINING ITERATIONS, AND RETURN TO START OF
+C     THE MAIN LOOP WITH A NEW VALUE OF I.
+C
+      ITN = ITN - ITS
+      I = L - 1
+      GO TO 50
+C
+  170 CONTINUE
+      WORK( 1 ) = MAX( 1, N )
+      RETURN
+C
+C     END OF DHSEQR
+C
+      END
+C*MODULE DGEEV   *DECK DLABAD
+      SUBROUTINE DLABAD( SMALL, LARGE )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   LARGE, SMALL
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLABAD TAKES AS INPUT THE VALUES COMPUTED BY DLAMCH FOR UNDERFLOW AND
+C  OVERFLOW, AND RETURNS THE SQUARE ROOT OF EACH OF THESE VALUES IF THE
+C  LOG OF LARGE IS SUFFICIENTLY LARGE.  THIS ROUTINE IS INTENDED TO
+C  IDENTIFY MACHINES WITH A LARGE EXPONENT RANGE, SUCH AS THE CRAYS, AND
+C  REDEFINE THE UNDERFLOW AND OVERFLOW LIMITS TO BE THE SQUARE ROOTS OF
+C  THE VALUES COMPUTED BY DLAMCH.  THIS ROUTINE IS NEEDED BECAUSE
+C  DLAMCH DOES NOT COMPENSATE FOR POOR ARITHMETIC IN THE UPPER HALF OF
+C  THE EXPONENT RANGE, AS IS FOUND ON A CRAY.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SMALL   (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE UNDERFLOW THRESHOLD AS COMPUTED BY DLAMCH.
+C          ON EXIT, IF LOG10(LARGE) IS SUFFICIENTLY LARGE, THE SQUARE
+C          ROOT OF SMALL, OTHERWISE UNCHANGED.
+C
+C  LARGE   (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE OVERFLOW THRESHOLD AS COMPUTED BY DLAMCH.
+C          ON EXIT, IF LOG10(LARGE) IS SUFFICIENTLY LARGE, THE SQUARE
+C          ROOT OF LARGE, OTHERWISE UNCHANGED.
+C
+C  =====================================================================
+C
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          LOG10, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     IF IT LOOKS LIKE WE'RE ON A CRAY, TAKE THE SQUARE ROOT OF
+C     SMALL AND LARGE TO AVOID OVERFLOW AND UNDERFLOW PROBLEMS.
+C
+      IF( LOG10( LARGE ).GT.2000.0D+00 ) THEN
+         SMALL = SQRT( SMALL )
+         LARGE = SQRT( LARGE )
+      END IF
+C
+      RETURN
+C
+C     END OF DLABAD
+C
+      END
+C*MODULE DGEEV   *DECK DLACPY
+      SUBROUTINE DLACPY( UPLO, M, N, A, LDA, B, LDB )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          UPLO
+      INTEGER            LDA, LDB, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), B( LDB, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLACPY COPIES ALL OR PART OF A TWO-DIMENSIONAL MATRIX A TO ANOTHER
+C  MATRIX B.
+C
+C  ARGUMENTS
+C  =========
+C
+C  UPLO    (INPUT) CHARACTER*1
+C          SPECIFIES THE PART OF THE MATRIX A TO BE COPIED TO B.
+C          = 'U':      UPPER TRIANGULAR PART
+C          = 'L':      LOWER TRIANGULAR PART
+C          OTHERWISE:  ALL OF THE MATRIX A
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX A.  M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX A.  N >= 0.
+C
+C  A       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          THE M BY N MATRIX A.  IF UPLO = 'U', ONLY THE UPPER TRIANGLE
+C          OR TRAPEZOID IS ACCESSED; IF UPLO = 'L', ONLY THE LOWER
+C          TRIANGLE OR TRAPEZOID IS ACCESSED.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,M).
+C
+C  B       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDB,N)
+C          ON EXIT, B = A IN THE LOCATIONS SPECIFIED BY UPLO.
+C
+C  LDB     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY B.  LDB >= MAX(1,M).
+C
+C  =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( LSAME( UPLO, 'U' ) ) THEN
+         DO 20 J = 1, N
+            DO 10 I = 1, MIN( J, M )
+               B( I, J ) = A( I, J )
+   10       CONTINUE
+   20    CONTINUE
+      ELSE IF( LSAME( UPLO, 'L' ) ) THEN
+         DO 40 J = 1, N
+            DO 30 I = J, M
+               B( I, J ) = A( I, J )
+   30       CONTINUE
+   40    CONTINUE
+      ELSE
+         DO 60 J = 1, N
+            DO 50 I = 1, M
+               B( I, J ) = A( I, J )
+   50       CONTINUE
+   60    CONTINUE
+      END IF
+      RETURN
+C
+C     END OF DLACPY
+C
+      END
+C*MODULE DGEEV   *DECK DLAHQR
+      SUBROUTINE DLAHQR( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI,
+     $                   ILOZ, IHIZ, Z, LDZ, INFO )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      LOGICAL            WANTT, WANTZ
+      INTEGER            IHI, IHIZ, ILO, ILOZ, INFO, LDH, LDZ, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   H( LDH, * ), WI( * ), WR( * ), Z( LDZ, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAHQR IS AN AUXILIARY ROUTINE CALLED BY DHSEQR TO UPDATE THE
+C  EIGENVALUES AND SCHUR DECOMPOSITION ALREADY COMPUTED BY DHSEQR, BY
+C  DEALING WITH THE HESSENBERG SUBMATRIX IN ROWS AND COLUMNS ILO TO IHI.
+C
+C  ARGUMENTS
+C  =========
+C
+C  WANTT   (INPUT) LOGICAL
+C          = .TRUE. : THE FULL SCHUR FORM T IS REQUIRED;
+C          = .FALSE.: ONLY EIGENVALUES ARE REQUIRED.
+C
+C  WANTZ   (INPUT) LOGICAL
+C          = .TRUE. : THE MATRIX OF SCHUR VECTORS Z IS REQUIRED;
+C          = .FALSE.: SCHUR VECTORS ARE NOT REQUIRED.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX H.  N >= 0.
+C
+C  ILO     (INPUT) INTEGER
+C  IHI     (INPUT) INTEGER
+C          IT IS ASSUMED THAT H IS ALREADY UPPER QUASI-TRIANGULAR IN
+C          ROWS AND COLUMNS IHI+1:N, AND THAT H(ILO,ILO-1) = 0 (UNLESS
+C          ILO = 1). DLAHQR WORKS PRIMARILY WITH THE HESSENBERG
+C          SUBMATRIX IN ROWS AND COLUMNS ILO TO IHI, BUT APPLIES
+C          TRANSFORMATIONS TO ALL OF H IF WANTT IS .TRUE..
+C          1 <= ILO <= MAX(1,IHI); IHI <= N.
+C
+C  H       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDH,N)
+C          ON ENTRY, THE UPPER HESSENBERG MATRIX H.
+C          ON EXIT, IF WANTT IS .TRUE., H IS UPPER QUASI-TRIANGULAR IN
+C          ROWS AND COLUMNS ILO:IHI, WITH ANY 2-BY-2 DIAGONAL BLOCKS IN
+C          STANDARD FORM. IF WANTT IS .FALSE., THE CONTENTS OF H ARE
+C          UNSPECIFIED ON EXIT.
+C
+C  LDH     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY H. LDH >= MAX(1,N).
+C
+C  WR      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C  WI      (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          THE REAL AND IMAGINARY PARTS, RESPECTIVELY, OF THE COMPUTED
+C          EIGENVALUES ILO TO IHI ARE STORED IN THE CORRESPONDING
+C          ELEMENTS OF WR AND WI. IF TWO EIGENVALUES ARE COMPUTED AS A
+C          COMPLEX CONJUGATE PAIR, THEY ARE STORED IN CONSECUTIVE
+C          ELEMENTS OF WR AND WI, SAY THE I-TH AND (I+1)TH, WITH
+C          WI(I) > 0 AND WI(I+1) < 0. IF WANTT IS .TRUE., THE
+C          EIGENVALUES ARE STORED IN THE SAME ORDER AS ON THE DIAGONAL
+C          OF THE SCHUR FORM RETURNED IN H, WITH WR(I) = H(I,I), AND, IF
+C          H(I:I+1,I:I+1) IS A 2-BY-2 DIAGONAL BLOCK,
+C          WI(I) = SQRT(H(I+1,I)*H(I,I+1)) AND WI(I+1) = -WI(I).
+C
+C  ILOZ    (INPUT) INTEGER
+C  IHIZ    (INPUT) INTEGER
+C          SPECIFY THE ROWS OF Z TO WHICH TRANSFORMATIONS MUST BE
+C          APPLIED IF WANTZ IS .TRUE..
+C          1 <= ILOZ <= ILO; IHI <= IHIZ <= N.
+C
+C  Z       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDZ,N)
+C          IF WANTZ IS .TRUE., ON ENTRY Z MUST CONTAIN THE CURRENT
+C          MATRIX Z OF TRANSFORMATIONS ACCUMULATED BY DHSEQR, AND ON
+C          EXIT Z HAS BEEN UPDATED; TRANSFORMATIONS ARE APPLIED ONLY TO
+C          THE SUBMATRIX Z(ILOZ:IHIZ,ILO:IHI).
+C          IF WANTZ IS .FALSE., Z IS NOT REFERENCED.
+C
+C  LDZ     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY Z. LDZ >= MAX(1,N).
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0: SUCCESSFUL EXIT
+C          > 0: DLAHQR FAILED TO COMPUTE ALL THE EIGENVALUES ILO TO IHI
+C               IN A TOTAL OF 30*(IHI-ILO+1) ITERATIONS; IF INFO = I,
+C               ELEMENTS I+1:IHI OF WR AND WI CONTAIN THOSE EIGENVALUES
+C               WHICH HAVE BEEN SUCCESSFULLY COMPUTED.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  2-96 BASED ON MODIFICATIONS BY
+C     DAVID DAY, SANDIA NATIONAL LABORATORY, USA
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE, HALF
+      PARAMETER          ( ZERO=0.0D+00, ONE=1.0D+00, HALF=0.5D+00)
+      DOUBLE PRECISION   DAT1, DAT2
+      PARAMETER          ( DAT1 = 0.75D+00, DAT2 = -0.4375D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, I1, I2, ITN, ITS, J, K, L, M, NH, NR, NZ
+      DOUBLE PRECISION   AVE, CS, DISC, H00, H10, H11, H12, H21, H22,
+     $                   H33, H33S, H43H34, H44, H44S, OVFL, S, SMLNUM,
+     $                   SN, SUM, T1, T2, T3, TST1, ULP, UNFL, V1, V2,
+     $                   V3
+C     ..
+C     .. LOCAL ARRAYS ..
+      DOUBLE PRECISION   V( 3 ), WORK( 1 )
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           DLAMCH
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DCOPY, DLANV2, DLARFG, DROT
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN, SIGN, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      INFO = 0
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 )
+     $   RETURN
+      IF( ILO.EQ.IHI ) THEN
+         WR( ILO ) = H( ILO, ILO )
+         WI( ILO ) = ZERO
+         RETURN
+      END IF
+C
+      NH = IHI - ILO + 1
+      NZ = IHIZ - ILOZ + 1
+C
+C     SET MACHINE-DEPENDENT CONSTANTS FOR THE STOPPING CRITERION.
+C     IF NORM(H) <= SQRT(OVFL), OVERFLOW SHOULD NOT OCCUR.
+C
+      UNFL = DLAMCH( 'SAFE MINIMUM' )
+      OVFL = ONE / UNFL
+      CALL DLABAD( UNFL, OVFL )
+      ULP = DLAMCH( 'PRECISION' )
+      SMLNUM = UNFL*( NH / ULP )
+C
+C     I1 AND I2 ARE THE INDICES OF THE FIRST ROW AND LAST COLUMN OF H
+C     TO WHICH TRANSFORMATIONS MUST BE APPLIED. IF EIGENVALUES ONLY ARE
+C     BEING COMPUTED, I1 AND I2 ARE SET INSIDE THE MAIN LOOP.
+C
+      IF( WANTT ) THEN
+         I1 = 1
+         I2 = N
+      END IF
+C
+C     ITN IS THE TOTAL NUMBER OF QR ITERATIONS ALLOWED.
+C
+      ITN = 30*NH
+C
+C     THE MAIN LOOP BEGINS HERE. I IS THE LOOP INDEX AND DECREASES FROM
+C     IHI TO ILO IN STEPS OF 1 OR 2. EACH ITERATION OF THE LOOP WORKS
+C     WITH THE ACTIVE SUBMATRIX IN ROWS AND COLUMNS L TO I.
+C     EIGENVALUES I+1 TO IHI HAVE ALREADY CONVERGED. EITHER L = ILO OR
+C     H(L,L-1) IS NEGLIGIBLE SO THAT THE MATRIX SPLITS.
+C
+      I = IHI
+   10 CONTINUE
+      L = ILO
+      IF( I.LT.ILO )
+     $   GO TO 150
+C
+C     PERFORM QR ITERATIONS ON ROWS AND COLUMNS ILO TO I UNTIL A
+C     SUBMATRIX OF ORDER 1 OR 2 SPLITS OFF AT THE BOTTOM BECAUSE A
+C     SUBDIAGONAL ELEMENT HAS BECOME NEGLIGIBLE.
+C
+      WORK(1) = 0.0D+00
+      DO 130 ITS = 0, ITN
+C
+C        LOOK FOR A SINGLE SMALL SUBDIAGONAL ELEMENT.
+C
+         DO 20 K = I, L + 1, -1
+            TST1 = ABS( H( K-1, K-1 ) ) + ABS( H( K, K ) )
+            IF( TST1.EQ.ZERO )
+     *         CALL SUBR_DLANHS(TST1,'1',I-L+1,H( L,L ),LDH,WORK)
+            IF( ABS( H( K, K-1 ) ).LE.MAX( ULP*TST1, SMLNUM ) )
+     $         GO TO 30
+   20    CONTINUE
+   30    CONTINUE
+         L = K
+         IF( L.GT.ILO ) THEN
+C
+C           H(L,L-1) IS NEGLIGIBLE
+C
+            H( L, L-1 ) = ZERO
+         END IF
+C
+C        EXIT FROM LOOP IF A SUBMATRIX OF ORDER 1 OR 2 HAS SPLIT OFF.
+C
+         IF( L.GE.I-1 )
+     $      GO TO 140
+C
+C        NOW THE ACTIVE SUBMATRIX IS IN ROWS AND COLUMNS L TO I. IF
+C        EIGENVALUES ONLY ARE BEING COMPUTED, ONLY THE ACTIVE SUBMATRIX
+C        NEED BE TRANSFORMED.
+C
+         IF( .NOT.WANTT ) THEN
+            I1 = L
+            I2 = I
+         END IF
+C
+         IF( ITS.EQ.10 .OR. ITS.EQ.20 ) THEN
+C
+C           EXCEPTIONAL SHIFT.
+C
+            S = ABS( H( I, I-1 ) ) + ABS( H( I-1, I-2 ) )
+            H44 = DAT1*S + H( I, I )
+            H33 = H44
+            H43H34 = DAT2*S*S
+         ELSE
+C
+C           PREPARE TO USE FRANCIS' DOUBLE SHIFT
+C           (I.E. 2ND DEGREE GENERALIZED RAYLEIGH QUOTIENT)
+C
+            H44 = H( I, I )
+            H33 = H( I-1, I-1 )
+            H43H34 = H( I, I-1 )*H( I-1, I )
+            S = H( I-1, I-2 )*H( I-1, I-2 )
+            DISC = ( H33-H44 )*HALF
+            DISC = DISC*DISC + H43H34
+            IF( DISC.GT.ZERO ) THEN
+C
+C              REAL ROOTS: USE WILKINSON'S SHIFT TWICE
+C
+               DISC = SQRT( DISC )
+               AVE = HALF*( H33+H44 )
+               IF( ABS( H33 )-ABS( H44 ).GT.ZERO ) THEN
+                  H33 = H33*H44 - H43H34
+                  H44 = H33 / ( SIGN( DISC, AVE )+AVE )
+               ELSE
+                  H44 = SIGN( DISC, AVE ) + AVE
+               END IF
+               H33 = H44
+               H43H34 = ZERO
+            END IF
+         END IF
+C
+C        LOOK FOR TWO CONSECUTIVE SMALL SUBDIAGONAL ELEMENTS.
+C
+         DO 40 M = I - 2, L, -1
+C           DETERMINE THE EFFECT OF STARTING THE DOUBLE-SHIFT QR
+C           ITERATION AT ROW M, AND SEE IF THIS WOULD MAKE H(M,M-1)
+C           NEGLIGIBLE.
+C
+            H11 = H( M, M )
+            H22 = H( M+1, M+1 )
+            H21 = H( M+1, M )
+            H12 = H( M, M+1 )
+            H44S = H44 - H11
+            H33S = H33 - H11
+            V1 = ( H33S*H44S-H43H34 ) / H21 + H12
+            V2 = H22 - H11 - H33S - H44S
+            V3 = H( M+2, M+1 )
+            S = ABS( V1 ) + ABS( V2 ) + ABS( V3 )
+            V1 = V1 / S
+            V2 = V2 / S
+            V3 = V3 / S
+            V( 1 ) = V1
+            V( 2 ) = V2
+            V( 3 ) = V3
+            IF( M.EQ.L )
+     $         GO TO 50
+            H00 = H( M-1, M-1 )
+            H10 = H( M, M-1 )
+            TST1 = ABS( V1 )*( ABS( H00 )+ABS( H11 )+ABS( H22 ) )
+            IF( ABS( H10 )*( ABS( V2 )+ABS( V3 ) ).LE.ULP*TST1 )
+     $         GO TO 50
+   40    CONTINUE
+   50    CONTINUE
+C
+C        DOUBLE-SHIFT QR STEP
+C
+         DO 120 K = M, I - 1
+C
+C           THE FIRST ITERATION OF THIS LOOP DETERMINES A REFLECTION G
+C           FROM THE VECTOR V AND APPLIES IT FROM LEFT AND RIGHT TO H,
+C           THUS CREATING A NONZERO BULGE BELOW THE SUBDIAGONAL.
+C
+C           EACH SUBSEQUENT ITERATION DETERMINES A REFLECTION G TO
+C           RESTORE THE HESSENBERG FORM IN THE (K-1)TH COLUMN, AND THUS
+C           CHASES THE BULGE ONE STEP TOWARD THE BOTTOM OF THE ACTIVE
+C           SUBMATRIX. NR IS THE ORDER OF G.
+C
+            NR = MIN( 3, I-K+1 )
+            IF( K.GT.M )
+     $         CALL DCOPY( NR, H( K, K-1 ), 1, V, 1 )
+            CALL DLARFG( NR, V( 1 ), V( 2 ), 1, T1 )
+            IF( K.GT.M ) THEN
+               H( K, K-1 ) = V( 1 )
+               H( K+1, K-1 ) = ZERO
+               IF( K.LT.I-1 )
+     $            H( K+2, K-1 ) = ZERO
+            ELSE IF( M.GT.L ) THEN
+               H( K, K-1 ) = -H( K, K-1 )
+            END IF
+            V2 = V( 2 )
+            T2 = T1*V2
+            IF( NR.EQ.3 ) THEN
+               V3 = V( 3 )
+               T3 = T1*V3
+C
+C              APPLY G FROM THE LEFT TO TRANSFORM THE ROWS OF THE MATRIX
+C              IN COLUMNS K TO I2.
+C
+               DO 60 J = K, I2
+                  SUM = H( K, J ) + V2*H( K+1, J ) + V3*H( K+2, J )
+                  H( K, J ) = H( K, J ) - SUM*T1
+                  H( K+1, J ) = H( K+1, J ) - SUM*T2
+                  H( K+2, J ) = H( K+2, J ) - SUM*T3
+   60          CONTINUE
+C
+C              APPLY G FROM THE RIGHT TO TRANSFORM THE COLUMNS OF THE
+C              MATRIX IN ROWS I1 TO MIN(K+3,I).
+C
+               DO 70 J = I1, MIN( K+3, I )
+                  SUM = H( J, K ) + V2*H( J, K+1 ) + V3*H( J, K+2 )
+                  H( J, K ) = H( J, K ) - SUM*T1
+                  H( J, K+1 ) = H( J, K+1 ) - SUM*T2
+                  H( J, K+2 ) = H( J, K+2 ) - SUM*T3
+   70          CONTINUE
+C
+               IF( WANTZ ) THEN
+C
+C                 ACCUMULATE TRANSFORMATIONS IN THE MATRIX Z
+C
+                  DO 80 J = ILOZ, IHIZ
+                     SUM = Z( J, K ) + V2*Z( J, K+1 ) + V3*Z( J, K+2 )
+                     Z( J, K ) = Z( J, K ) - SUM*T1
+                     Z( J, K+1 ) = Z( J, K+1 ) - SUM*T2
+                     Z( J, K+2 ) = Z( J, K+2 ) - SUM*T3
+   80             CONTINUE
+               END IF
+            ELSE IF( NR.EQ.2 ) THEN
+C
+C              APPLY G FROM THE LEFT TO TRANSFORM THE ROWS OF THE MATRIX
+C              IN COLUMNS K TO I2.
+C
+               DO 90 J = K, I2
+                  SUM = H( K, J ) + V2*H( K+1, J )
+                  H( K, J ) = H( K, J ) - SUM*T1
+                  H( K+1, J ) = H( K+1, J ) - SUM*T2
+   90          CONTINUE
+C
+C              APPLY G FROM THE RIGHT TO TRANSFORM THE COLUMNS OF THE
+C              MATRIX IN ROWS I1 TO MIN(K+3,I).
+C
+               DO 100 J = I1, I
+                  SUM = H( J, K ) + V2*H( J, K+1 )
+                  H( J, K ) = H( J, K ) - SUM*T1
+                  H( J, K+1 ) = H( J, K+1 ) - SUM*T2
+  100          CONTINUE
+C
+               IF( WANTZ ) THEN
+C
+C                 ACCUMULATE TRANSFORMATIONS IN THE MATRIX Z
+C
+                  DO 110 J = ILOZ, IHIZ
+                     SUM = Z( J, K ) + V2*Z( J, K+1 )
+                     Z( J, K ) = Z( J, K ) - SUM*T1
+                     Z( J, K+1 ) = Z( J, K+1 ) - SUM*T2
+  110             CONTINUE
+               END IF
+            END IF
+  120    CONTINUE
+C
+  130 CONTINUE
+C
+C     FAILURE TO CONVERGE IN REMAINING NUMBER OF ITERATIONS
+C
+      INFO = I
+      RETURN
+C
+  140 CONTINUE
+C
+      IF( L.EQ.I ) THEN
+C
+C        H(I,I-1) IS NEGLIGIBLE: ONE EIGENVALUE HAS CONVERGED.
+C
+         WR( I ) = H( I, I )
+         WI( I ) = ZERO
+      ELSE IF( L.EQ.I-1 ) THEN
+C
+C        H(I-1,I-2) IS NEGLIGIBLE: A PAIR OF EIGENVALUES HAVE CONVERGED.
+C
+C        TRANSFORM THE 2-BY-2 SUBMATRIX TO STANDARD SCHUR FORM,
+C        AND COMPUTE AND STORE THE EIGENVALUES.
+C
+         CALL DLANV2( H( I-1, I-1 ), H( I-1, I ), H( I, I-1 ),
+     $                H( I, I ), WR( I-1 ), WI( I-1 ), WR( I ), WI( I ),
+     $                CS, SN )
+C
+         IF( WANTT ) THEN
+C
+C           APPLY THE TRANSFORMATION TO THE REST OF H.
+C
+            IF( I2.GT.I )
+     $         CALL DROT( I2-I, H( I-1, I+1 ), LDH, H( I, I+1 ), LDH,
+     $                    CS, SN )
+            CALL DROT( I-I1-1, H( I1, I-1 ), 1, H( I1, I ), 1, CS, SN )
+         END IF
+         IF( WANTZ ) THEN
+C
+C           APPLY THE TRANSFORMATION TO Z.
+C
+            CALL DROT( NZ, Z( ILOZ, I-1 ), 1, Z( ILOZ, I ), 1, CS, SN )
+         END IF
+      END IF
+C
+C     DECREMENT NUMBER OF REMAINING ITERATIONS, AND RETURN TO START OF
+C     THE MAIN LOOP WITH NEW VALUE OF I.
+C
+      ITN = ITN - ITS
+      I = L - 1
+      GO TO 10
+C
+  150 CONTINUE
+      RETURN
+C
+C     END OF DLAHQR
+C
+      END
+C*MODULE DGEEV   *DECK DLAHRD
+      SUBROUTINE DLAHRD( N, K, NB, A, LDA, TAU, T, LDT, Y, LDY )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            K, LDA, LDT, LDY, N, NB
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), T( LDT, NB ), TAU( NB ),
+     $                   Y( LDY, NB )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLAHRD REDUCES THE FIRST NB COLUMNS OF A REAL GENERAL N-BY-(N-K+1)
+C  MATRIX A SO THAT ELEMENTS BELOW THE K-TH SUBDIAGONAL ARE ZERO. THE
+C  REDUCTION IS PERFORMED BY AN ORTHOGONAL SIMILARITY TRANSFORMATION
+C  Q' * A * Q. THE ROUTINE RETURNS THE MATRICES V AND T WHICH DETERMINE
+C  Q AS A BLOCK REFLECTOR I - V*T*V', AND ALSO THE MATRIX Y = A * V * T.
+C
+C  THIS IS AN AUXILIARY ROUTINE CALLED BY DGEHRD.
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.
+C
+C  K       (INPUT) INTEGER
+C          THE OFFSET FOR THE REDUCTION. ELEMENTS BELOW THE K-TH
+C          SUBDIAGONAL IN THE FIRST NB COLUMNS ARE REDUCED TO ZERO.
+C
+C  NB      (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS TO BE REDUCED.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N-K+1)
+C          ON ENTRY, THE N-BY-(N-K+1) GENERAL MATRIX A.
+C          ON EXIT, THE ELEMENTS ON AND ABOVE THE K-TH SUBDIAGONAL IN
+C          THE FIRST NB COLUMNS ARE OVERWRITTEN WITH THE CORRESPONDING
+C          ELEMENTS OF THE REDUCED MATRIX; THE ELEMENTS BELOW THE K-TH
+C          SUBDIAGONAL, WITH THE ARRAY TAU, REPRESENT THE MATRIX Q AS A
+C          PRODUCT OF ELEMENTARY REFLECTORS. THE OTHER COLUMNS OF A ARE
+C          UNCHANGED. SEE FURTHER DETAILS.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,N).
+C
+C  TAU     (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (NB)
+C          THE SCALAR FACTORS OF THE ELEMENTARY REFLECTORS. SEE FURTHER
+C          DETAILS.
+C
+C  T       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDT,NB)
+C          THE UPPER TRIANGULAR MATRIX T.
+C
+C  LDT     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY T.  LDT >= NB.
+C
+C  Y       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDY,NB)
+C          THE N-BY-NB MATRIX Y.
+C
+C  LDY     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY Y. LDY >= N.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE MATRIX Q IS REPRESENTED AS A PRODUCT OF NB ELEMENTARY REFLECTORS
+C
+C     Q = H(1) H(2) . . . H(NB).
+C
+C  EACH H(I) HAS THE FORM
+C
+C     H(I) = I - TAU * V * V'
+C
+C  WHERE TAU IS A REAL SCALAR, AND V IS A REAL VECTOR WITH
+C  V(1:I+K-1) = 0, V(I+K) = 1; V(I+K+1:N) IS STORED ON EXIT IN
+C  A(I+K+1:N,I), AND TAU IN TAU(I).
+C
+C  THE ELEMENTS OF THE VECTORS V TOGETHER FORM THE (N-K+1)-BY-NB MATRIX
+C  V WHICH IS NEEDED, WITH T AND Y, TO APPLY THE TRANSFORMATION TO THE
+C  UNREDUCED PART OF THE MATRIX, USING AN UPDATE OF THE FORM:
+C  A := (I - V*T*V') * (A - Y*V').
+C
+C  THE CONTENTS OF A ON EXIT ARE ILLUSTRATED BY THE FOLLOWING EXAMPLE
+C  WITH N = 7, K = 3 AND NB = 2:
+C
+C     ( A   H   A   A   A )
+C     ( A   H   A   A   A )
+C     ( A   H   A   A   A )
+C     ( H   H   A   A   A )
+C     ( V1  H   A   A   A )
+C     ( V1  V2  A   A   A )
+C     ( V1  V2  A   A   A )
+C
+C  WHERE A DENOTES AN ELEMENT OF THE ORIGINAL MATRIX A, H DENOTES A
+C  MODIFIED ELEMENT OF THE UPPER HESSENBERG MATRIX H, AND VI DENOTES AN
+C  ELEMENT OF THE VECTOR DEFINING H(I).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I
+      DOUBLE PRECISION   EI
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DAXPY, DCOPY, DGEMV, DLARFG, DSCAL, DTRMV
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.1 )
+     $   RETURN
+C
+      EI = 0.0D+00
+C
+      DO 10 I = 1, NB
+         IF( I.GT.1 ) THEN
+C
+C           UPDATE A(1:N,I)
+C
+C           COMPUTE I-TH COLUMN OF A - Y * V'
+C
+            CALL DGEMV( 'NO TRANSPOSE', N, I-1, -ONE, Y, LDY,
+     $                  A( K+I-1, 1 ), LDA, ONE, A( 1, I ), 1 )
+C
+C           APPLY I - V * T' * V' TO THIS COLUMN (CALL IT B) FROM THE
+C           LEFT, USING THE LAST COLUMN OF T AS WORKSPACE
+C
+C           LET  V = ( V1 )   AND   B = ( B1 )   (FIRST I-1 ROWS)
+C                    ( V2 )             ( B2 )
+C
+C           WHERE V1 IS UNIT LOWER TRIANGULAR
+C
+C           W := V1' * B1
+C
+            CALL DCOPY( I-1, A( K+1, I ), 1, T( 1, NB ), 1 )
+            CALL DTRMV( 'LOWER', 'TRANSPOSE', 'UNIT', I-1, A( K+1, 1 ),
+     $                  LDA, T( 1, NB ), 1 )
+C
+C           W := W + V2'*B2
+C
+            CALL DGEMV( 'TRANSPOSE', N-K-I+1, I-1, ONE, A( K+I, 1 ),
+     $                  LDA, A( K+I, I ), 1, ONE, T( 1, NB ), 1 )
+C
+C           W := T'*W
+C
+            CALL DTRMV( 'UPPER', 'TRANSPOSE', 'NON-UNIT', I-1, T, LDT,
+     $                  T( 1, NB ), 1 )
+C
+C           B2 := B2 - V2*W
+C
+            CALL DGEMV( 'NO TRANSPOSE', N-K-I+1, I-1, -ONE, A( K+I, 1 ),
+     $                  LDA, T( 1, NB ), 1, ONE, A( K+I, I ), 1 )
+C
+C           B1 := B1 - V1*W
+C
+            CALL DTRMV( 'LOWER', 'NO TRANSPOSE', 'UNIT', I-1,
+     $                  A( K+1, 1 ), LDA, T( 1, NB ), 1 )
+            CALL DAXPY( I-1, -ONE, T( 1, NB ), 1, A( K+1, I ), 1 )
+C
+            A( K+I-1, I-1 ) = EI
+         END IF
+C
+C        GENERATE THE ELEMENTARY REFLECTOR H(I) TO ANNIHILATE
+C        A(K+I+1:N,I)
+C
+         CALL DLARFG( N-K-I+1, A( K+I, I ), A( MIN( K+I+1, N ), I ), 1,
+     $                TAU( I ) )
+         EI = A( K+I, I )
+         A( K+I, I ) = ONE
+C
+C        COMPUTE  Y(1:N,I)
+C
+         CALL DGEMV( 'NO TRANSPOSE', N, N-K-I+1, ONE, A( 1, I+1 ), LDA,
+     $               A( K+I, I ), 1, ZERO, Y( 1, I ), 1 )
+         CALL DGEMV( 'TRANSPOSE', N-K-I+1, I-1, ONE, A( K+I, 1 ), LDA,
+     $               A( K+I, I ), 1, ZERO, T( 1, I ), 1 )
+         CALL DGEMV( 'NO TRANSPOSE', N, I-1, -ONE, Y, LDY, T( 1, I ), 1,
+     $               ONE, Y( 1, I ), 1 )
+         CALL DSCAL( N, TAU( I ), Y( 1, I ), 1 )
+C
+C        COMPUTE T(1:I,I)
+C
+         CALL DSCAL( I-1, -TAU( I ), T( 1, I ), 1 )
+         CALL DTRMV( 'UPPER', 'NO TRANSPOSE', 'NON-UNIT', I-1, T, LDT,
+     $               T( 1, I ), 1 )
+         T( I, I ) = TAU( I )
+C
+   10 CONTINUE
+      A( K+NB, NB ) = EI
+C
+      RETURN
+C
+C     END OF DLAHRD
+C
+      END
+C*MODULE DGEEV   *DECK DLALN2
+      SUBROUTINE DLALN2( LTRANS, NA, NW, SMIN, CA, A, LDA, D1, D2, B,
+     $                   LDB, WR, WI, X, LDX, SCALE, XNORM, INFO )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      LOGICAL            LTRANS
+      INTEGER            INFO, LDA, LDB, LDX, NA, NW
+      DOUBLE PRECISION   CA, D1, D2, SCALE, SMIN, WI, WR, XNORM
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), B( LDB, * ), X( LDX, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLALN2 SOLVES A SYSTEM OF THE FORM  (CA A - W D ) X = S B
+C  OR (CA A' - W D) X = S B   WITH POSSIBLE SCALING ("S") AND
+C  PERTURBATION OF A.  (A' MEANS A-TRANSPOSE.)
+C
+C  A IS AN NA X NA REAL MATRIX, CA IS A REAL SCALAR, D IS AN NA X NA
+C  REAL DIAGONAL MATRIX, W IS A REAL OR COMPLEX VALUE, AND X AND B ARE
+C  NA X 1 MATRICES -- REAL IF W IS REAL, COMPLEX IF W IS COMPLEX.  NA
+C  MAY BE 1 OR 2.
+C
+C  IF W IS COMPLEX, X AND B ARE REPRESENTED AS NA X 2 MATRICES,
+C  THE FIRST COLUMN OF EACH BEING THE REAL PART AND THE SECOND
+C  BEING THE IMAGINARY PART.
+C
+C  "S" IS A SCALING FACTOR (.LE. 1), COMPUTED BY DLALN2, WHICH IS
+C  SO CHOSEN THAT X CAN BE COMPUTED WITHOUT OVERFLOW.  X IS FURTHER
+C  SCALED IF NECESSARY TO ASSURE THAT NORM(CA A - W D)*NORM(X) IS LESS
+C  THAN OVERFLOW.
+C
+C  IF BOTH SINGULAR VALUES OF (CA A - W D) ARE LESS THAN SMIN,
+C  SMIN*IDENTITY WILL BE USED INSTEAD OF (CA A - W D).  IF ONLY ONE
+C  SINGULAR VALUE IS LESS THAN SMIN, ONE ELEMENT OF (CA A - W D) WILL BE
+C  PERTURBED ENOUGH TO MAKE THE SMALLEST SINGULAR VALUE ROUGHLY SMIN.
+C  IF BOTH SINGULAR VALUES ARE AT LEAST SMIN, (CA A - W D) WILL NOT BE
+C  PERTURBED.  IN ANY CASE, THE PERTURBATION WILL BE AT MOST SOME SMALL
+C  MULTIPLE OF MAX( SMIN, ULP*NORM(CA A - W D) ).  THE SINGULAR VALUES
+C  ARE COMPUTED BY INFINITY-NORM APPROXIMATIONS, AND THUS WILL ONLY BE
+C  CORRECT TO A FACTOR OF 2 OR SO.
+C
+C  NOTE: ALL INPUT QUANTITIES ARE ASSUMED TO BE SMALLER THAN OVERFLOW
+C  BY A REASONABLE FACTOR.  (SEE BIGNUM.)
+C
+C  ARGUMENTS
+C  ==========
+C
+C  LTRANS  (INPUT) LOGICAL
+C          =.TRUE.:  A-TRANSPOSE WILL BE USED.
+C          =.FALSE.: A WILL BE USED (NOT TRANSPOSED.)
+C
+C  NA      (INPUT) INTEGER
+C          THE SIZE OF THE MATRIX A.  IT MAY (ONLY) BE 1 OR 2.
+C
+C  NW      (INPUT) INTEGER
+C          1 IF "W" IS REAL, 2 IF "W" IS COMPLEX.  IT MAY ONLY BE 1
+C          OR 2.
+C
+C  SMIN    (INPUT) DOUBLE PRECISION
+C          THE DESIRED LOWER BOUND ON THE SINGULAR VALUES OF A.  THIS
+C          SHOULD BE A SAFE DISTANCE AWAY FROM UNDERFLOW OR OVERFLOW,
+C          SAY, BETWEEN (UNDERFLOW/MACHINE PRECISION) AND  (MACHINE
+C          PRECISION * OVERFLOW ).  (SEE BIGNUM AND ULP.)
+C
+C  CA      (INPUT) DOUBLE PRECISION
+C          THE COEFFICIENT C, WHICH A IS MULTIPLIED BY.
+C
+C  A       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,NA)
+C          THE NA X NA MATRIX A.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF A.  IT MUST BE AT LEAST NA.
+C
+C  D1      (INPUT) DOUBLE PRECISION
+C          THE 1,1 ELEMENT IN THE DIAGONAL MATRIX D.
+C
+C  D2      (INPUT) DOUBLE PRECISION
+C          THE 2,2 ELEMENT IN THE DIAGONAL MATRIX D.  NOT USED IF NW=1.
+C
+C  B       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDB,NW)
+C          THE NA X NW MATRIX B (RIGHT-HAND SIDE).  IF NW=2 ("W" IS
+C          COMPLEX), COLUMN 1 CONTAINS THE REAL PART OF B AND COLUMN 2
+C          CONTAINS THE IMAGINARY PART.
+C
+C  LDB     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF B.  IT MUST BE AT LEAST NA.
+C
+C  WR      (INPUT) DOUBLE PRECISION
+C          THE REAL PART OF THE SCALAR "W".
+C
+C  WI      (INPUT) DOUBLE PRECISION
+C          THE IMAGINARY PART OF THE SCALAR "W".  NOT USED IF NW=1.
+C
+C  X       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDX,NW)
+C          THE NA X NW MATRIX X (UNKNOWNS), AS COMPUTED BY DLALN2.
+C          IF NW=2 ("W" IS COMPLEX), ON EXIT, COLUMN 1 WILL CONTAIN
+C          THE REAL PART OF X AND COLUMN 2 WILL CONTAIN THE IMAGINARY
+C          PART.
+C
+C  LDX     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF X.  IT MUST BE AT LEAST NA.
+C
+C  SCALE   (OUTPUT) DOUBLE PRECISION
+C          THE SCALE FACTOR THAT B MUST BE MULTIPLIED BY TO INSURE
+C          THAT OVERFLOW DOES NOT OCCUR WHEN COMPUTING X.  THUS,
+C          (CA A - W D) X  WILL BE SCALE*B, NOT B (IGNORING
+C          PERTURBATIONS OF A.)  IT WILL BE AT MOST 1.
+C
+C  XNORM   (OUTPUT) DOUBLE PRECISION
+C          THE INFINITY-NORM OF X, WHEN X IS REGARDED AS AN NA X NW
+C          REAL MATRIX.
+C
+C  INFO    (OUTPUT) INTEGER
+C          AN ERROR FLAG.  IT WILL BE SET TO ZERO IF NO ERROR OCCURS,
+C          A NEGATIVE NUMBER IF AN ARGUMENT IS IN ERROR, OR A POSITIVE
+C          NUMBER IF  CA A - W D  HAD TO BE PERTURBED.
+C          THE POSSIBLE VALUES ARE:
+C          = 0: NO ERROR OCCURRED, AND (CA A - W D) DID NOT HAVE TO BE
+C                 PERTURBED.
+C          = 1: (CA A - W D) HAD TO BE PERTURBED TO MAKE ITS SMALLEST
+C               (OR ONLY) SINGULAR VALUE GREATER THAN SMIN.
+C          NOTE: IN THE INTERESTS OF SPEED, THIS ROUTINE DOES NOT
+C                CHECK THE INPUTS FOR ERRORS.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+000, ONE = 1.0D+00 )
+      DOUBLE PRECISION   TWO
+      PARAMETER          ( TWO = 2.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            ICMAX, J
+      DOUBLE PRECISION   BBND, BI1, BI2, BIGNUM, BNORM, BR1, BR2, CI21,
+     $                   CI22, CMAX, CNORM, CR21, CR22, CSI, CSR, LI21,
+     $                   LR21, SMINI, SMLNUM, TEMP, U22ABS, UI11, UI11R,
+     $                   UI12, UI12S, UI22, UR11, UR11R, UR12, UR12S,
+     $                   UR22, XI1, XI2, XR1, XR2
+C     ..
+C     .. LOCAL ARRAYS ..
+      LOGICAL            RSWAP( 4 ), ZSWAP( 4 )
+      INTEGER            IPIVOT( 4, 4 )
+      DOUBLE PRECISION   CI( 2, 2 ), CIV( 4 ), CR( 2, 2 ), CRV( 4 )
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           DLAMCH
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DLADIV
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX
+C     ..
+C     .. EQUIVALENCES ..
+      EQUIVALENCE        ( CI( 1, 1 ), CIV( 1 ) ),
+     $                   ( CR( 1, 1 ), CRV( 1 ) )
+C     ..
+C     .. DATA STATEMENTS ..
+      DATA               ZSWAP / .FALSE., .FALSE., .TRUE., .TRUE. /
+      DATA               RSWAP / .FALSE., .TRUE., .FALSE., .TRUE. /
+      DATA               IPIVOT / 1, 2, 3, 4, 2, 1, 4, 3, 3, 4, 1, 2, 4,
+     $                   3, 2, 1 /
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     COMPUTE BIGNUM
+C
+      SMLNUM = TWO*DLAMCH( 'SAFE MINIMUM' )
+      BIGNUM = ONE / SMLNUM
+      SMINI = MAX( SMIN, SMLNUM )
+C
+C     DON'T CHECK FOR INPUT ERRORS
+C
+      INFO = 0
+C
+C     STANDARD INITIALIZATIONS
+C
+      SCALE = ONE
+C
+      IF( NA.EQ.1 ) THEN
+C
+C        1 X 1  (I.E., SCALAR) SYSTEM   C X = B
+C
+         IF( NW.EQ.1 ) THEN
+C
+C           REAL 1X1 SYSTEM.
+C
+C           C = CA A - W D
+C
+            CSR = CA*A( 1, 1 ) - WR*D1
+            CNORM = ABS( CSR )
+C
+C           IF | C | < SMINI, USE C = SMINI
+C
+            IF( CNORM.LT.SMINI ) THEN
+               CSR = SMINI
+               CNORM = SMINI
+               INFO = 1
+            END IF
+C
+C           CHECK SCALING FOR  X = B / C
+C
+            BNORM = ABS( B( 1, 1 ) )
+            IF( CNORM.LT.ONE .AND. BNORM.GT.ONE ) THEN
+               IF( BNORM.GT.BIGNUM*CNORM )
+     $            SCALE = ONE / BNORM
+            END IF
+C
+C           COMPUTE X
+C
+            X( 1, 1 ) = ( B( 1, 1 )*SCALE ) / CSR
+            XNORM = ABS( X( 1, 1 ) )
+         ELSE
+C
+C           COMPLEX 1X1 SYSTEM (W IS COMPLEX)
+C
+C           C = CA A - W D
+C
+            CSR = CA*A( 1, 1 ) - WR*D1
+            CSI = -WI*D1
+            CNORM = ABS( CSR ) + ABS( CSI )
+C
+C           IF | C | < SMINI, USE C = SMINI
+C
+            IF( CNORM.LT.SMINI ) THEN
+               CSR = SMINI
+               CSI = ZERO
+               CNORM = SMINI
+               INFO = 1
+            END IF
+C
+C           CHECK SCALING FOR  X = B / C
+C
+            BNORM = ABS( B( 1, 1 ) ) + ABS( B( 1, 2 ) )
+            IF( CNORM.LT.ONE .AND. BNORM.GT.ONE ) THEN
+               IF( BNORM.GT.BIGNUM*CNORM )
+     $            SCALE = ONE / BNORM
+            END IF
+C
+C           COMPUTE X
+C
+            CALL DLADIV( SCALE*B( 1, 1 ), SCALE*B( 1, 2 ), CSR, CSI,
+     $                   X( 1, 1 ), X( 1, 2 ) )
+            XNORM = ABS( X( 1, 1 ) ) + ABS( X( 1, 2 ) )
+         END IF
+C
+      ELSE
+C
+C        2X2 SYSTEM
+C
+C        COMPUTE THE REAL PART OF  C = CA A - W D  (OR  CA A' - W D )
+C
+         CR( 1, 1 ) = CA*A( 1, 1 ) - WR*D1
+         CR( 2, 2 ) = CA*A( 2, 2 ) - WR*D2
+         IF( LTRANS ) THEN
+            CR( 1, 2 ) = CA*A( 2, 1 )
+            CR( 2, 1 ) = CA*A( 1, 2 )
+         ELSE
+            CR( 2, 1 ) = CA*A( 2, 1 )
+            CR( 1, 2 ) = CA*A( 1, 2 )
+         END IF
+C
+         IF( NW.EQ.1 ) THEN
+C
+C           REAL 2X2 SYSTEM  (W IS REAL)
+C
+C           FIND THE LARGEST ELEMENT IN C
+C
+            CMAX = ZERO
+            ICMAX = 0
+C
+            DO 10 J = 1, 4
+               IF( ABS( CRV( J ) ).GT.CMAX ) THEN
+                  CMAX = ABS( CRV( J ) )
+                  ICMAX = J
+               END IF
+   10       CONTINUE
+C
+C           IF NORM(C) < SMINI, USE SMINI*IDENTITY.
+C
+            IF( CMAX.LT.SMINI ) THEN
+               BNORM = MAX( ABS( B( 1, 1 ) ), ABS( B( 2, 1 ) ) )
+               IF( SMINI.LT.ONE .AND. BNORM.GT.ONE ) THEN
+                  IF( BNORM.GT.BIGNUM*SMINI )
+     $               SCALE = ONE / BNORM
+               END IF
+               TEMP = SCALE / SMINI
+               X( 1, 1 ) = TEMP*B( 1, 1 )
+               X( 2, 1 ) = TEMP*B( 2, 1 )
+               XNORM = TEMP*BNORM
+               INFO = 1
+               RETURN
+            END IF
+C
+C           GAUSSIAN ELIMINATION WITH COMPLETE PIVOTING.
+C
+            UR11 = CRV( ICMAX )
+            CR21 = CRV( IPIVOT( 2, ICMAX ) )
+            UR12 = CRV( IPIVOT( 3, ICMAX ) )
+            CR22 = CRV( IPIVOT( 4, ICMAX ) )
+            UR11R = ONE / UR11
+            LR21 = UR11R*CR21
+            UR22 = CR22 - UR12*LR21
+C
+C           IF SMALLER PIVOT < SMINI, USE SMINI
+C
+            IF( ABS( UR22 ).LT.SMINI ) THEN
+               UR22 = SMINI
+               INFO = 1
+            END IF
+            IF( RSWAP( ICMAX ) ) THEN
+               BR1 = B( 2, 1 )
+               BR2 = B( 1, 1 )
+            ELSE
+               BR1 = B( 1, 1 )
+               BR2 = B( 2, 1 )
+            END IF
+            BR2 = BR2 - LR21*BR1
+            BBND = MAX( ABS( BR1*( UR22*UR11R ) ), ABS( BR2 ) )
+            IF( BBND.GT.ONE .AND. ABS( UR22 ).LT.ONE ) THEN
+               IF( BBND.GE.BIGNUM*ABS( UR22 ) )
+     $            SCALE = ONE / BBND
+            END IF
+C
+            XR2 = ( BR2*SCALE ) / UR22
+            XR1 = ( SCALE*BR1 )*UR11R - XR2*( UR11R*UR12 )
+            IF( ZSWAP( ICMAX ) ) THEN
+               X( 1, 1 ) = XR2
+               X( 2, 1 ) = XR1
+            ELSE
+               X( 1, 1 ) = XR1
+               X( 2, 1 ) = XR2
+            END IF
+            XNORM = MAX( ABS( XR1 ), ABS( XR2 ) )
+C
+C           FURTHER SCALING IF  NORM(A) NORM(X) > OVERFLOW
+C
+            IF( XNORM.GT.ONE .AND. CMAX.GT.ONE ) THEN
+               IF( XNORM.GT.BIGNUM / CMAX ) THEN
+                  TEMP = CMAX / BIGNUM
+                  X( 1, 1 ) = TEMP*X( 1, 1 )
+                  X( 2, 1 ) = TEMP*X( 2, 1 )
+                  XNORM = TEMP*XNORM
+                  SCALE = TEMP*SCALE
+               END IF
+            END IF
+         ELSE
+C
+C           COMPLEX 2X2 SYSTEM  (W IS COMPLEX)
+C
+C           FIND THE LARGEST ELEMENT IN C
+C
+            CI( 1, 1 ) = -WI*D1
+            CI( 2, 1 ) = ZERO
+            CI( 1, 2 ) = ZERO
+            CI( 2, 2 ) = -WI*D2
+            CMAX = ZERO
+            ICMAX = 0
+C
+            DO 20 J = 1, 4
+               IF( ABS( CRV( J ) )+ABS( CIV( J ) ).GT.CMAX ) THEN
+                  CMAX = ABS( CRV( J ) ) + ABS( CIV( J ) )
+                  ICMAX = J
+               END IF
+   20       CONTINUE
+C
+C           IF NORM(C) < SMINI, USE SMINI*IDENTITY.
+C
+            IF( CMAX.LT.SMINI ) THEN
+               BNORM = MAX( ABS( B( 1, 1 ) )+ABS( B( 1, 2 ) ),
+     $                 ABS( B( 2, 1 ) )+ABS( B( 2, 2 ) ) )
+               IF( SMINI.LT.ONE .AND. BNORM.GT.ONE ) THEN
+                  IF( BNORM.GT.BIGNUM*SMINI )
+     $               SCALE = ONE / BNORM
+               END IF
+               TEMP = SCALE / SMINI
+               X( 1, 1 ) = TEMP*B( 1, 1 )
+               X( 2, 1 ) = TEMP*B( 2, 1 )
+               X( 1, 2 ) = TEMP*B( 1, 2 )
+               X( 2, 2 ) = TEMP*B( 2, 2 )
+               XNORM = TEMP*BNORM
+               INFO = 1
+               RETURN
+            END IF
+C
+C           GAUSSIAN ELIMINATION WITH COMPLETE PIVOTING.
+C
+            UR11 = CRV( ICMAX )
+            UI11 = CIV( ICMAX )
+            CR21 = CRV( IPIVOT( 2, ICMAX ) )
+            CI21 = CIV( IPIVOT( 2, ICMAX ) )
+            UR12 = CRV( IPIVOT( 3, ICMAX ) )
+            UI12 = CIV( IPIVOT( 3, ICMAX ) )
+            CR22 = CRV( IPIVOT( 4, ICMAX ) )
+            CI22 = CIV( IPIVOT( 4, ICMAX ) )
+            IF( ICMAX.EQ.1 .OR. ICMAX.EQ.4 ) THEN
+C
+C              CODE WHEN OFF-DIAGONALS OF PIVOTED C ARE REAL
+C
+               IF( ABS( UR11 ).GT.ABS( UI11 ) ) THEN
+                  TEMP = UI11 / UR11
+                  UR11R = ONE / ( UR11*( ONE+TEMP**2 ) )
+                  UI11R = -TEMP*UR11R
+               ELSE
+                  TEMP = UR11 / UI11
+                  UI11R = -ONE / ( UI11*( ONE+TEMP**2 ) )
+                  UR11R = -TEMP*UI11R
+               END IF
+               LR21 = CR21*UR11R
+               LI21 = CR21*UI11R
+               UR12S = UR12*UR11R
+               UI12S = UR12*UI11R
+               UR22 = CR22 - UR12*LR21
+               UI22 = CI22 - UR12*LI21
+            ELSE
+C
+C              CODE WHEN DIAGONALS OF PIVOTED C ARE REAL
+C
+               UR11R = ONE / UR11
+               UI11R = ZERO
+               LR21 = CR21*UR11R
+               LI21 = CI21*UR11R
+               UR12S = UR12*UR11R
+               UI12S = UI12*UR11R
+               UR22 = CR22 - UR12*LR21 + UI12*LI21
+               UI22 = -UR12*LI21 - UI12*LR21
+            END IF
+            U22ABS = ABS( UR22 ) + ABS( UI22 )
+C
+C           IF SMALLER PIVOT < SMINI, USE SMINI
+C
+            IF( U22ABS.LT.SMINI ) THEN
+               UR22 = SMINI
+               UI22 = ZERO
+               INFO = 1
+            END IF
+            IF( RSWAP( ICMAX ) ) THEN
+               BR2 = B( 1, 1 )
+               BR1 = B( 2, 1 )
+               BI2 = B( 1, 2 )
+               BI1 = B( 2, 2 )
+            ELSE
+               BR1 = B( 1, 1 )
+               BR2 = B( 2, 1 )
+               BI1 = B( 1, 2 )
+               BI2 = B( 2, 2 )
+            END IF
+            BR2 = BR2 - LR21*BR1 + LI21*BI1
+            BI2 = BI2 - LI21*BR1 - LR21*BI1
+            BBND = MAX( ( ABS( BR1 )+ABS( BI1 ) )*
+     $             ( U22ABS*( ABS( UR11R )+ABS( UI11R ) ) ),
+     $             ABS( BR2 )+ABS( BI2 ) )
+            IF( BBND.GT.ONE .AND. U22ABS.LT.ONE ) THEN
+               IF( BBND.GE.BIGNUM*U22ABS ) THEN
+                  SCALE = ONE / BBND
+                  BR1 = SCALE*BR1
+                  BI1 = SCALE*BI1
+                  BR2 = SCALE*BR2
+                  BI2 = SCALE*BI2
+               END IF
+            END IF
+C
+            CALL DLADIV( BR2, BI2, UR22, UI22, XR2, XI2 )
+            XR1 = UR11R*BR1 - UI11R*BI1 - UR12S*XR2 + UI12S*XI2
+            XI1 = UI11R*BR1 + UR11R*BI1 - UI12S*XR2 - UR12S*XI2
+            IF( ZSWAP( ICMAX ) ) THEN
+               X( 1, 1 ) = XR2
+               X( 2, 1 ) = XR1
+               X( 1, 2 ) = XI2
+               X( 2, 2 ) = XI1
+            ELSE
+               X( 1, 1 ) = XR1
+               X( 2, 1 ) = XR2
+               X( 1, 2 ) = XI1
+               X( 2, 2 ) = XI2
+            END IF
+            XNORM = MAX( ABS( XR1 )+ABS( XI1 ), ABS( XR2 )+ABS( XI2 ) )
+C
+C           FURTHER SCALING IF  NORM(A) NORM(X) > OVERFLOW
+C
+            IF( XNORM.GT.ONE .AND. CMAX.GT.ONE ) THEN
+               IF( XNORM.GT.BIGNUM / CMAX ) THEN
+                  TEMP = CMAX / BIGNUM
+                  X( 1, 1 ) = TEMP*X( 1, 1 )
+                  X( 2, 1 ) = TEMP*X( 2, 1 )
+                  X( 1, 2 ) = TEMP*X( 1, 2 )
+                  X( 2, 2 ) = TEMP*X( 2, 2 )
+                  XNORM = TEMP*XNORM
+                  SCALE = TEMP*SCALE
+               END IF
+            END IF
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF DLALN2
+C
+      END
+C*MODULE DGEEV   *DECK DLANGE
+      SUBROUTINE SUBR_DLANGE(DLANGE, NORM, M, N, A, LDA, WORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          NORM
+      INTEGER            LDA, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), WORK( * )
+      DOUBLE PRECISION DLANGE
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLANGE  RETURNS THE VALUE OF THE ONE NORM,  OR THE FROBENIUS NORM, OR
+C  THE  INFINITY NORM,  OR THE  ELEMENT OF  LARGEST ABSOLUTE VALUE  OF A
+C  REAL MATRIX A.
+C
+C  DESCRIPTION
+C  ===========
+C
+C  DLANGE RETURNS THE VALUE
+C
+C     DLANGE = ( MAX(ABS(A(I,J))), NORM = 'M' OR 'M'
+C              (
+C              ( NORM1(A),         NORM = '1', 'O' OR 'O'
+C              (
+C              ( NORMI(A),         NORM = 'I' OR 'I'
+C              (
+C              ( NORMF(A),         NORM = 'F', 'F', 'E' OR 'E'
+C
+C  WHERE  NORM1  DENOTES THE  ONE NORM OF A MATRIX (MAXIMUM COLUMN SUM),
+C  NORMI  DENOTES THE  INFINITY NORM  OF A MATRIX  (MAXIMUM ROW SUM) AND
+C  NORMF  DENOTES THE  FROBENIUS NORM OF A MATRIX (SQUARE ROOT OF SUM OF
+C  SQUARES).  NOTE THAT  MAX(ABS(A(I,J)))  IS NOT A  MATRIX NORM.
+C
+C  ARGUMENTS
+C  =========
+C
+C  NORM    (INPUT) CHARACTER*1
+C          SPECIFIES THE VALUE TO BE RETURNED IN DLANGE AS DESCRIBED
+C          ABOVE.
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX A.  M >= 0.  WHEN M = 0,
+C          DLANGE IS SET TO ZERO.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX A.  N >= 0.  WHEN N = 0,
+C          DLANGE IS SET TO ZERO.
+C
+C  A       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          THE M BY N MATRIX A.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(M,1).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (LWORK),
+C          WHERE LWORK >= M WHEN NORM = 'I'; OTHERWISE, WORK IS NOT
+C          REFERENCED.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+00, ZERO = 0.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+      DOUBLE PRECISION   SCALE, SUM, VALUE
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DLASSQ
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( MIN( M, N ).EQ.0 ) THEN
+         VALUE = ZERO
+      ELSE IF( LSAME( NORM, 'M' ) ) THEN
+C
+C        FIND MAX(ABS(A(I,J))).
+C
+         VALUE = ZERO
+         DO 20 J = 1, N
+            DO 10 I = 1, M
+               VALUE = MAX( VALUE, ABS( A( I, J ) ) )
+   10       CONTINUE
+   20    CONTINUE
+      ELSE IF( ( LSAME( NORM, 'O' ) ) .OR. ( NORM.EQ.'1' ) ) THEN
+C
+C        FIND NORM1(A).
+C
+         VALUE = ZERO
+         DO 40 J = 1, N
+            SUM = ZERO
+            DO 30 I = 1, M
+               SUM = SUM + ABS( A( I, J ) )
+   30       CONTINUE
+            VALUE = MAX( VALUE, SUM )
+   40    CONTINUE
+      ELSE IF( LSAME( NORM, 'I' ) ) THEN
+C
+C        FIND NORMI(A).
+C
+         DO 50 I = 1, M
+            WORK( I ) = ZERO
+   50    CONTINUE
+         DO 70 J = 1, N
+            DO 60 I = 1, M
+               WORK( I ) = WORK( I ) + ABS( A( I, J ) )
+   60       CONTINUE
+   70    CONTINUE
+         VALUE = ZERO
+         DO 80 I = 1, M
+            VALUE = MAX( VALUE, WORK( I ) )
+   80    CONTINUE
+      ELSE IF( ( LSAME( NORM, 'F' ) ) .OR. ( LSAME( NORM, 'E' ) ) ) THEN
+C
+C        FIND NORMF(A).
+C
+         SCALE = ZERO
+         SUM = ONE
+         DO 90 J = 1, N
+            CALL DLASSQ( M, A( 1, J ), 1, SCALE, SUM )
+   90    CONTINUE
+         VALUE = SCALE*SQRT( SUM )
+      END IF
+C
+      DLANGE = VALUE
+      RETURN
+      END
+C*MODULE DGEEV   *DECK DLANHS
+      SUBROUTINE SUBR_DLANHS( DLANHS, NORM, N, A, LDA, WORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          NORM
+      INTEGER            LDA, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), WORK( * ), DLANHS
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLANHS  RETURNS THE VALUE OF THE ONE NORM,  OR THE FROBENIUS NORM, OR
+C  THE  INFINITY NORM,  OR THE  ELEMENT OF  LARGEST ABSOLUTE VALUE  OF A
+C  HESSENBERG MATRIX A.
+C
+C  DESCRIPTION
+C  ===========
+C
+C  DLANHS RETURNS THE VALUE
+C
+C     DLANHS = ( MAX(ABS(A(I,J))), NORM = 'M' OR 'M'
+C              (
+C              ( NORM1(A),         NORM = '1', 'O' OR 'O'
+C              (
+C              ( NORMI(A),         NORM = 'I' OR 'I'
+C              (
+C              ( NORMF(A),         NORM = 'F', 'F', 'E' OR 'E'
+C
+C  WHERE  NORM1  DENOTES THE  ONE NORM OF A MATRIX (MAXIMUM COLUMN SUM),
+C  NORMI  DENOTES THE  INFINITY NORM  OF A MATRIX  (MAXIMUM ROW SUM) AND
+C  NORMF  DENOTES THE  FROBENIUS NORM OF A MATRIX (SQUARE ROOT OF SUM OF
+C  SQUARES).  NOTE THAT  MAX(ABS(A(I,J)))  IS NOT A  MATRIX NORM.
+C
+C  ARGUMENTS
+C  =========
+C
+C  NORM    (INPUT) CHARACTER*1
+C          SPECIFIES THE VALUE TO BE RETURNED IN DLANHS AS DESCRIBED
+C          ABOVE.
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX A.  N >= 0.  WHEN N = 0, DLANHS IS
+C          SET TO ZERO.
+C
+C  A       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          THE N BY N UPPER HESSENBERG MATRIX A; THE PART OF A BELOW THE
+C          FIRST SUB-DIAGONAL IS NOT REFERENCED.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(N,1).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (LWORK),
+C          WHERE LWORK >= N WHEN NORM = 'I'; OTHERWISE, WORK IS NOT
+C          REFERENCED.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+00, ZERO = 0.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+      DOUBLE PRECISION   SCALE, SUM, VALUE
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DLASSQ
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( N.EQ.0 ) THEN
+         VALUE = ZERO
+      ELSE IF( LSAME( NORM, 'M' ) ) THEN
+C
+C        FIND MAX(ABS(A(I,J))).
+C
+         VALUE = ZERO
+         DO 20 J = 1, N
+            DO 10 I = 1, MIN( N, J+1 )
+               VALUE = MAX( VALUE, ABS( A( I, J ) ) )
+   10       CONTINUE
+   20    CONTINUE
+      ELSE IF( ( LSAME( NORM, 'O' ) ) .OR. ( NORM.EQ.'1' ) ) THEN
+C
+C        FIND NORM1(A).
+C
+         VALUE = ZERO
+         DO 40 J = 1, N
+            SUM = ZERO
+            DO 30 I = 1, MIN( N, J+1 )
+               SUM = SUM + ABS( A( I, J ) )
+   30       CONTINUE
+            VALUE = MAX( VALUE, SUM )
+   40    CONTINUE
+      ELSE IF( LSAME( NORM, 'I' ) ) THEN
+C
+C        FIND NORMI(A).
+C
+         DO 50 I = 1, N
+            WORK( I ) = ZERO
+   50    CONTINUE
+         DO 70 J = 1, N
+            DO 60 I = 1, MIN( N, J+1 )
+               WORK( I ) = WORK( I ) + ABS( A( I, J ) )
+   60       CONTINUE
+   70    CONTINUE
+         VALUE = ZERO
+         DO 80 I = 1, N
+            VALUE = MAX( VALUE, WORK( I ) )
+   80    CONTINUE
+      ELSE IF( ( LSAME( NORM, 'F' ) ) .OR. ( LSAME( NORM, 'E' ) ) ) THEN
+C
+C        FIND NORMF(A).
+C
+         SCALE = ZERO
+         SUM = ONE
+         DO 90 J = 1, N
+            CALL DLASSQ( MIN( N, J+1 ), A( 1, J ), 1, SCALE, SUM )
+   90    CONTINUE
+         VALUE = SCALE*SQRT( SUM )
+      END IF
+C
+      DLANHS = VALUE
+      RETURN
+C
+      END
+C*MODULE DGEEV   *DECK DLALV2
+      SUBROUTINE DLANV2( A, B, C, D, RT1R, RT1I, RT2R, RT2I, CS, SN )
+C
+C  -- LAPACK DRIVER ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      DOUBLE PRECISION   A, B, C, CS, D, RT1I, RT1R, RT2I, RT2R, SN
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLANV2 COMPUTES THE SCHUR FACTORIZATION OF A REAL 2-BY-2 NONSYMMETRIC
+C  MATRIX IN STANDARD FORM:
+C
+C       [ A  B ] = [ CS -SN ] [ AA  BB ] [ CS  SN ]
+C       [ C  D ]   [ SN  CS ] [ CC  DD ] [-SN  CS ]
+C
+C  WHERE EITHER
+C  1) CC = 0 SO THAT AA AND DD ARE REAL EIGENVALUES OF THE MATRIX, OR
+C  2) AA = DD AND BB*CC < 0, SO THAT AA + OR - SQRT(BB*CC) ARE COMPLEX
+C  CONJUGATE EIGENVALUES.
+C
+C  ARGUMENTS
+C  =========
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION
+C  B       (INPUT/OUTPUT) DOUBLE PRECISION
+C  C       (INPUT/OUTPUT) DOUBLE PRECISION
+C  D       (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE ELEMENTS OF THE INPUT MATRIX.
+C          ON EXIT, THEY ARE OVERWRITTEN BY THE ELEMENTS OF THE
+C          STANDARDISED SCHUR FORM.
+C
+C  RT1R    (OUTPUT) DOUBLE PRECISION
+C  RT1I    (OUTPUT) DOUBLE PRECISION
+C  RT2R    (OUTPUT) DOUBLE PRECISION
+C  RT2I    (OUTPUT) DOUBLE PRECISION
+C          THE REAL AND IMAGINARY PARTS OF THE EIGENVALUES. IF THE
+C          EIGENVALUES ARE A COMPLEX CONJUGATE PAIR, RT1I > 0.
+C
+C  CS      (OUTPUT) DOUBLE PRECISION
+C  SN      (OUTPUT) DOUBLE PRECISION
+C          PARAMETERS OF THE ROTATION MATRIX.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  MODIFIED BY V. SIMA, RESEARCH INSTITUTE FOR INFORMATICS, BUCHAREST,
+C  ROMANIA, TO REDUCE THE RISK OF CANCELLATION ERRORS,
+C  WHEN COMPUTING REAL EIGENVALUES, AND TO ENSURE, IF POSSIBLE, THAT
+C  ABS(RT1R) >= ABS(RT2R).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, HALF, ONE
+      PARAMETER          ( ZERO=0.0D+00, HALF=0.5D+00, ONE=1.0D+00 )
+      DOUBLE PRECISION   MULTPL
+      PARAMETER          ( MULTPL = 4.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      DOUBLE PRECISION   AA, BB, BCMAX, BCMIS, CC, CS1, DD, EPS, P, SAB,
+     $                   SAC, SCALE, SIGMA, SN1, TAU, TEMP, Z
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMCH, DLAPY2
+      EXTERNAL           DLAMCH, DLAPY2
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN, SIGN, SQRT
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      EPS = DLAMCH( 'P' )
+      IF( C.EQ.ZERO ) THEN
+         CS = ONE
+         SN = ZERO
+         GO TO 10
+C
+      ELSE IF( B.EQ.ZERO ) THEN
+C
+C        SWAP ROWS AND COLUMNS
+C
+         CS = ZERO
+         SN = ONE
+         TEMP = D
+         D = A
+         A = TEMP
+         B = -C
+         C = ZERO
+         GO TO 10
+      ELSE IF( ( A-D ).EQ.ZERO .AND. SIGN( ONE, B ).NE.SIGN( ONE, C ) )
+     $          THEN
+         CS = ONE
+         SN = ZERO
+         GO TO 10
+      ELSE
+C
+         TEMP = A - D
+         P = HALF*TEMP
+         BCMAX = MAX( ABS( B ), ABS( C ) )
+         BCMIS = MIN( ABS( B ), ABS( C ) )*SIGN( ONE, B )*SIGN( ONE, C )
+         SCALE = MAX( ABS( P ), BCMAX )
+         Z = ( P / SCALE )*P + ( BCMAX / SCALE )*BCMIS
+C
+C        IF Z IS OF THE ORDER OF THE MACHINE ACCURACY, POSTPONE THE
+C        DECISION ON THE NATURE OF EIGENVALUES
+C
+         IF( Z.GE.MULTPL*EPS ) THEN
+C
+C           REAL EIGENVALUES. COMPUTE A AND D.
+C
+            Z = P + SIGN( SQRT( SCALE )*SQRT( Z ), P )
+            A = D + Z
+            D = D - ( BCMAX / Z )*BCMIS
+C
+C           COMPUTE B AND THE ROTATION MATRIX
+C
+            TAU = DLAPY2( C, Z )
+            CS = Z / TAU
+            SN = C / TAU
+            B = B - C
+            C = ZERO
+         ELSE
+C
+C           COMPLEX EIGENVALUES, OR REAL (ALMOST) EQUAL EIGENVALUES.
+C           MAKE DIAGONAL ELEMENTS EQUAL.
+C
+            SIGMA = B + C
+            TAU = DLAPY2( SIGMA, TEMP )
+            CS = SQRT( HALF*( ONE+ABS( SIGMA ) / TAU ) )
+            SN = -( P / ( TAU*CS ) )*SIGN( ONE, SIGMA )
+C
+C           COMPUTE [ AA  BB ] = [ A  B ] [ CS -SN ]
+C                   [ CC  DD ]   [ C  D ] [ SN  CS ]
+C
+            AA = A*CS + B*SN
+            BB = -A*SN + B*CS
+            CC = C*CS + D*SN
+            DD = -C*SN + D*CS
+C
+C           COMPUTE [ A  B ] = [ CS  SN ] [ AA  BB ]
+C                   [ C  D ]   [-SN  CS ] [ CC  DD ]
+C
+            A = AA*CS + CC*SN
+            B = BB*CS + DD*SN
+            C = -AA*SN + CC*CS
+            D = -BB*SN + DD*CS
+C
+            TEMP = HALF*( A+D )
+            A = TEMP
+            D = TEMP
+C
+            IF( C.NE.ZERO ) THEN
+               IF( B.NE.ZERO ) THEN
+                  IF( SIGN( ONE, B ).EQ.SIGN( ONE, C ) ) THEN
+C
+C                    REAL EIGENVALUES: REDUCE TO UPPER TRIANGULAR FORM
+C
+                     SAB = SQRT( ABS( B ) )
+                     SAC = SQRT( ABS( C ) )
+                     P = SIGN( SAB*SAC, C )
+                     TAU = ONE / SQRT( ABS( B+C ) )
+                     A = TEMP + P
+                     D = TEMP - P
+                     B = B - C
+                     C = ZERO
+                     CS1 = SAB*TAU
+                     SN1 = SAC*TAU
+                     TEMP = CS*CS1 - SN*SN1
+                     SN = CS*SN1 + SN*CS1
+                     CS = TEMP
+                  END IF
+               ELSE
+                  B = -C
+                  C = ZERO
+                  TEMP = CS
+                  CS = -SN
+                  SN = TEMP
+               END IF
+            END IF
+         END IF
+C
+      END IF
+C
+   10 CONTINUE
+C
+C     STORE EIGENVALUES IN (RT1R,RT1I) AND (RT2R,RT2I).
+C
+      RT1R = A
+      RT2R = D
+      IF( C.EQ.ZERO ) THEN
+         RT1I = ZERO
+         RT2I = ZERO
+      ELSE
+         RT1I = SQRT( ABS( B ) )*SQRT( ABS( C ) )
+         RT2I = -RT1I
+      END IF
+      RETURN
+C
+C     END OF DLANV2
+C
+      END
+C*MODULE DGEEV   *DECK DLARF
+      SUBROUTINE DLARF( SIDE, M, N, V, INCV, TAU, C, LDC, WORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          SIDE
+      INTEGER            INCV, LDC, M, N
+      DOUBLE PRECISION   TAU
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   C( LDC, * ), V( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLARF APPLIES A REAL ELEMENTARY REFLECTOR H TO A REAL M BY N MATRIX
+C  C, FROM EITHER THE LEFT OR THE RIGHT. H IS REPRESENTED IN THE FORM
+C
+C        H = I - TAU * V * V'
+C
+C  WHERE TAU IS A REAL SCALAR AND V IS A REAL VECTOR.
+C
+C  IF TAU = 0, THEN H IS TAKEN TO BE THE UNIT MATRIX.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          = 'L': FORM  H * C
+C          = 'R': FORM  C * H
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX C.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX C.
+C
+C  V       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION
+C                     (1 + (M-1)*ABS(INCV)) IF SIDE = 'L'
+C                  OR (1 + (N-1)*ABS(INCV)) IF SIDE = 'R'
+C          THE VECTOR V IN THE REPRESENTATION OF H. V IS NOT USED IF
+C          TAU = 0.
+C
+C  INCV    (INPUT) INTEGER
+C          THE INCREMENT BETWEEN ELEMENTS OF V. INCV <> 0.
+C
+C  TAU     (INPUT) DOUBLE PRECISION
+C          THE VALUE TAU IN THE REPRESENTATION OF H.
+C
+C  C       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDC,N)
+C          ON ENTRY, THE M BY N MATRIX C.
+C          ON EXIT, C IS OVERWRITTEN BY THE MATRIX H * C IF SIDE = 'L',
+C          OR C * H IF SIDE = 'R'.
+C
+C  LDC     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY C. LDC >= MAX(1,M).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION
+C                         (N) IF SIDE = 'L'
+C                      OR (M) IF SIDE = 'R'
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+00, ZERO = 0.0D+00 )
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DGEMV, DGER
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C        FORM  H * C
+C
+         IF( TAU.NE.ZERO ) THEN
+C
+C           W := C' * V
+C
+            CALL DGEMV( 'TRANSPOSE', M, N, ONE, C, LDC, V, INCV, ZERO,
+     $                  WORK, 1 )
+C
+C           C := C - V * W'
+C
+            CALL DGER( M, N, -TAU, V, INCV, WORK, 1, C, LDC )
+         END IF
+      ELSE
+C
+C        FORM  C * H
+C
+         IF( TAU.NE.ZERO ) THEN
+C
+C           W := C * V
+C
+            CALL DGEMV( 'NO TRANSPOSE', M, N, ONE, C, LDC, V, INCV,
+     $                  ZERO, WORK, 1 )
+C
+C           C := C - W * V'
+C
+            CALL DGER( M, N, -TAU, WORK, 1, V, INCV, C, LDC )
+         END IF
+      END IF
+      RETURN
+C
+C     END OF DLARF
+C
+      END
+C*MODULE DGEEV   *DECK DLARFB
+      SUBROUTINE DLARFB( SIDE, TRANS, DIRECT, STOREV, M, N, K, V, LDV,
+     $                   T, LDT, C, LDC, WORK, LDWORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          DIRECT, SIDE, STOREV, TRANS
+      INTEGER            K, LDC, LDT, LDV, LDWORK, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   C( LDC, * ), T( LDT, * ), V( LDV, * ),
+     $                   WORK( LDWORK, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLARFB APPLIES A REAL BLOCK REFLECTOR H OR ITS TRANSPOSE H' TO A
+C  REAL M BY N MATRIX C, FROM EITHER THE LEFT OR THE RIGHT.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          = 'L': APPLY H OR H' FROM THE LEFT
+C          = 'R': APPLY H OR H' FROM THE RIGHT
+C
+C  TRANS   (INPUT) CHARACTER*1
+C          = 'N': APPLY H (NO TRANSPOSE)
+C          = 'T': APPLY H' (TRANSPOSE)
+C
+C  DIRECT  (INPUT) CHARACTER*1
+C          INDICATES HOW H IS FORMED FROM A PRODUCT OF ELEMENTARY
+C          REFLECTORS
+C          = 'F': H = H(1) H(2) . . . H(K) (FORWARD)
+C          = 'B': H = H(K) . . . H(2) H(1) (BACKWARD)
+C
+C  STOREV  (INPUT) CHARACTER*1
+C          INDICATES HOW THE VECTORS WHICH DEFINE THE ELEMENTARY
+C          REFLECTORS ARE STORED:
+C          = 'C': COLUMNWISE
+C          = 'R': ROWWISE
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX C.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX C.
+C
+C  K       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX T (= THE NUMBER OF ELEMENTARY
+C          REFLECTORS WHOSE PRODUCT DEFINES THE BLOCK REFLECTOR).
+C
+C  V       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION
+C                                (LDV,K) IF STOREV = 'C'
+C                                (LDV,M) IF STOREV = 'R' AND SIDE = 'L'
+C                                (LDV,N) IF STOREV = 'R' AND SIDE = 'R'
+C          THE MATRIX V. SEE FURTHER DETAILS.
+C
+C  LDV     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY V.
+C          IF STOREV = 'C' AND SIDE = 'L', LDV >= MAX(1,M);
+C          IF STOREV = 'C' AND SIDE = 'R', LDV >= MAX(1,N);
+C          IF STOREV = 'R', LDV >= K.
+C
+C  T       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDT,K)
+C          THE TRIANGULAR K BY K MATRIX T IN THE REPRESENTATION OF THE
+C          BLOCK REFLECTOR.
+C
+C  LDT     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY T. LDT >= K.
+C
+C  C       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDC,N)
+C          ON ENTRY, THE M BY N MATRIX C.
+C          ON EXIT, C IS OVERWRITTEN BY H*C OR H'*C OR C*H OR C*H'.
+C
+C  LDC     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY C. LDA >= MAX(1,M).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (LDWORK,K)
+C
+C  LDWORK  (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY WORK.
+C          IF SIDE = 'L', LDWORK >= MAX(1,N);
+C          IF SIDE = 'R', LDWORK >= MAX(1,M).
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      CHARACTER          TRANST
+      INTEGER            I, J
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DCOPY, DGEMM, DTRMM
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( M.LE.0 .OR. N.LE.0 )
+     $   RETURN
+C
+      IF( LSAME( TRANS, 'N' ) ) THEN
+         TRANST = 'T'
+      ELSE
+         TRANST = 'N'
+      END IF
+C
+      IF( LSAME( STOREV, 'C' ) ) THEN
+C
+         IF( LSAME( DIRECT, 'F' ) ) THEN
+C
+C           LET  V =  ( V1 )    (FIRST K ROWS)
+C                     ( V2 )
+C           WHERE  V1  IS UNIT LOWER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V  =  (C1'*V1 + C2'*V2)  (STORED IN WORK)
+C
+C              W := C1'
+C
+               DO 10 J = 1, K
+                  CALL DCOPY( N, C( J, 1 ), LDC, WORK( 1, J ), 1 )
+   10          CONTINUE
+C
+C              W := W * V1
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C2'*V2
+C
+                  CALL DGEMM( 'TRANSPOSE', 'NO TRANSPOSE', N, K, M-K,
+     $                        ONE, C( K+1, 1 ), LDC, V( K+1, 1 ), LDV,
+     $                        ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C2 := C2 - V2 * W'
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'TRANSPOSE', M-K, N, K,
+     $                        -ONE, V( K+1, 1 ), LDV, WORK, LDWORK, ONE,
+     $                        C( K+1, 1 ), LDC )
+               END IF
+C
+C              W := W * V1'
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'TRANSPOSE', 'UNIT', N, K,
+     $                     ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W'
+C
+               DO 30 J = 1, K
+                  DO 20 I = 1, N
+                     C( J, I ) = C( J, I ) - WORK( I, J )
+   20             CONTINUE
+   30          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V  =  (C1*V1 + C2*V2)  (STORED IN WORK)
+C
+C              W := C1
+C
+               DO 40 J = 1, K
+                  CALL DCOPY( M, C( 1, J ), 1, WORK( 1, J ), 1 )
+   40          CONTINUE
+C
+C              W := W * V1
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C2 * V2
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, K, N-K,
+     $                        ONE, C( 1, K+1 ), LDC, V( K+1, 1 ), LDV,
+     $                        ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V'
+C
+               IF( N.GT.K ) THEN
+C
+C                 C2 := C2 - W * V2'
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'TRANSPOSE', M, N-K, K,
+     $                        -ONE, WORK, LDWORK, V( K+1, 1 ), LDV, ONE,
+     $                        C( 1, K+1 ), LDC )
+               END IF
+C
+C              W := W * V1'
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'TRANSPOSE', 'UNIT', M, K,
+     $                     ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W
+C
+               DO 60 J = 1, K
+                  DO 50 I = 1, M
+                     C( I, J ) = C( I, J ) - WORK( I, J )
+   50             CONTINUE
+   60          CONTINUE
+            END IF
+C
+         ELSE
+C
+C           LET  V =  ( V1 )
+C                     ( V2 )    (LAST K ROWS)
+C           WHERE  V2  IS UNIT UPPER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V  =  (C1'*V1 + C2'*V2)  (STORED IN WORK)
+C
+C              W := C2'
+C
+               DO 70 J = 1, K
+                  CALL DCOPY( N, C( M-K+J, 1 ), LDC, WORK( 1, J ), 1 )
+   70          CONTINUE
+C
+C              W := W * V2
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V( M-K+1, 1 ), LDV, WORK, LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C1'*V1
+C
+                  CALL DGEMM( 'TRANSPOSE', 'NO TRANSPOSE', N, K, M-K,
+     $                        ONE, C, LDC, V, LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C1 := C1 - V1 * W'
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'TRANSPOSE', M-K, N, K,
+     $                        -ONE, V, LDV, WORK, LDWORK, ONE, C, LDC )
+               END IF
+C
+C              W := W * V2'
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'TRANSPOSE', 'UNIT', N, K,
+     $                     ONE, V( M-K+1, 1 ), LDV, WORK, LDWORK )
+C
+C              C2 := C2 - W'
+C
+               DO 90 J = 1, K
+                  DO 80 I = 1, N
+                     C( M-K+J, I ) = C( M-K+J, I ) - WORK( I, J )
+   80             CONTINUE
+   90          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V  =  (C1*V1 + C2*V2)  (STORED IN WORK)
+C
+C              W := C2
+C
+               DO 100 J = 1, K
+                  CALL DCOPY( M, C( 1, N-K+J ), 1, WORK( 1, J ), 1 )
+  100          CONTINUE
+C
+C              W := W * V2
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V( N-K+1, 1 ), LDV, WORK, LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C1 * V1
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, K, N-K,
+     $                        ONE, C, LDC, V, LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V'
+C
+               IF( N.GT.K ) THEN
+C
+C                 C1 := C1 - W * V1'
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'TRANSPOSE', M, N-K, K,
+     $                        -ONE, WORK, LDWORK, V, LDV, ONE, C, LDC )
+               END IF
+C
+C              W := W * V2'
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'TRANSPOSE', 'UNIT', M, K,
+     $                     ONE, V( N-K+1, 1 ), LDV, WORK, LDWORK )
+C
+C              C2 := C2 - W
+C
+               DO 120 J = 1, K
+                  DO 110 I = 1, M
+                     C( I, N-K+J ) = C( I, N-K+J ) - WORK( I, J )
+  110             CONTINUE
+  120          CONTINUE
+            END IF
+         END IF
+C
+      ELSE IF( LSAME( STOREV, 'R' ) ) THEN
+C
+         IF( LSAME( DIRECT, 'F' ) ) THEN
+C
+C           LET  V =  ( V1  V2 )    (V1: FIRST K COLUMNS)
+C           WHERE  V1  IS UNIT UPPER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V'  =  (C1'*V1' + C2'*V2') (STORED IN WORK)
+C
+C              W := C1'
+C
+               DO 130 J = 1, K
+                  CALL DCOPY( N, C( J, 1 ), LDC, WORK( 1, J ), 1 )
+  130          CONTINUE
+C
+C              W := W * V1'
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'TRANSPOSE', 'UNIT', N, K,
+     $                     ONE, V, LDV, WORK, LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C2'*V2'
+C
+                  CALL DGEMM( 'TRANSPOSE', 'TRANSPOSE', N, K, M-K, ONE,
+     $                        C( K+1, 1 ), LDC, V( 1, K+1 ), LDV, ONE,
+     $                        WORK, LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V' * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C2 := C2 - V2' * W'
+C
+                  CALL DGEMM( 'TRANSPOSE', 'TRANSPOSE', M-K, N, K, -ONE,
+     $                        V( 1, K+1 ), LDV, WORK, LDWORK, ONE,
+     $                        C( K+1, 1 ), LDC )
+               END IF
+C
+C              W := W * V1
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W'
+C
+               DO 150 J = 1, K
+                  DO 140 I = 1, N
+                     C( J, I ) = C( J, I ) - WORK( I, J )
+  140             CONTINUE
+  150          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V'  =  (C1*V1' + C2*V2')  (STORED IN WORK)
+C
+C              W := C1
+C
+               DO 160 J = 1, K
+                  CALL DCOPY( M, C( 1, J ), 1, WORK( 1, J ), 1 )
+  160          CONTINUE
+C
+C              W := W * V1'
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'TRANSPOSE', 'UNIT', M, K,
+     $                     ONE, V, LDV, WORK, LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C2 * V2'
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'TRANSPOSE', M, K, N-K,
+     $                        ONE, C( 1, K+1 ), LDC, V( 1, K+1 ), LDV,
+     $                        ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V
+C
+               IF( N.GT.K ) THEN
+C
+C                 C2 := C2 - W * V2
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, N-K, K,
+     $                        -ONE, WORK, LDWORK, V( 1, K+1 ), LDV, ONE,
+     $                        C( 1, K+1 ), LDC )
+               END IF
+C
+C              W := W * V1
+C
+               CALL DTRMM( 'RIGHT', 'UPPER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V, LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W
+C
+               DO 180 J = 1, K
+                  DO 170 I = 1, M
+                     C( I, J ) = C( I, J ) - WORK( I, J )
+  170             CONTINUE
+  180          CONTINUE
+C
+            END IF
+C
+         ELSE
+C
+C           LET  V =  ( V1  V2 )    (V2: LAST K COLUMNS)
+C           WHERE  V2  IS UNIT LOWER TRIANGULAR.
+C
+            IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C              FORM  H * C  OR  H' * C  WHERE  C = ( C1 )
+C                                                  ( C2 )
+C
+C              W := C' * V'  =  (C1'*V1' + C2'*V2') (STORED IN WORK)
+C
+C              W := C2'
+C
+               DO 190 J = 1, K
+                  CALL DCOPY( N, C( M-K+J, 1 ), LDC, WORK( 1, J ), 1 )
+  190          CONTINUE
+C
+C              W := W * V2'
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'TRANSPOSE', 'UNIT', N, K,
+     $                     ONE, V( 1, M-K+1 ), LDV, WORK, LDWORK )
+               IF( M.GT.K ) THEN
+C
+C                 W := W + C1'*V1'
+C
+                  CALL DGEMM( 'TRANSPOSE', 'TRANSPOSE', N, K, M-K, ONE,
+     $                        C, LDC, V, LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T'  OR  W * T
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', TRANST, 'NON-UNIT', N, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - V' * W'
+C
+               IF( M.GT.K ) THEN
+C
+C                 C1 := C1 - V1' * W'
+C
+                  CALL DGEMM( 'TRANSPOSE', 'TRANSPOSE', M-K, N, K, -ONE,
+     $                        V, LDV, WORK, LDWORK, ONE, C, LDC )
+               END IF
+C
+C              W := W * V2
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', N,
+     $                     K, ONE, V( 1, M-K+1 ), LDV, WORK, LDWORK )
+C
+C              C2 := C2 - W'
+C
+               DO 210 J = 1, K
+                  DO 200 I = 1, N
+                     C( M-K+J, I ) = C( M-K+J, I ) - WORK( I, J )
+  200             CONTINUE
+  210          CONTINUE
+C
+            ELSE IF( LSAME( SIDE, 'R' ) ) THEN
+C
+C              FORM  C * H  OR  C * H'  WHERE  C = ( C1  C2 )
+C
+C              W := C * V'  =  (C1*V1' + C2*V2')  (STORED IN WORK)
+C
+C              W := C2
+C
+               DO 220 J = 1, K
+                  CALL DCOPY( M, C( 1, N-K+J ), 1, WORK( 1, J ), 1 )
+  220          CONTINUE
+C
+C              W := W * V2'
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'TRANSPOSE', 'UNIT', M, K,
+     $                     ONE, V( 1, N-K+1 ), LDV, WORK, LDWORK )
+               IF( N.GT.K ) THEN
+C
+C                 W := W + C1 * V1'
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'TRANSPOSE', M, K, N-K,
+     $                        ONE, C, LDC, V, LDV, ONE, WORK, LDWORK )
+               END IF
+C
+C              W := W * T  OR  W * T'
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', TRANS, 'NON-UNIT', M, K,
+     $                     ONE, T, LDT, WORK, LDWORK )
+C
+C              C := C - W * V
+C
+               IF( N.GT.K ) THEN
+C
+C                 C1 := C1 - W * V1
+C
+                  CALL DGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', M, N-K, K,
+     $                        -ONE, WORK, LDWORK, V, LDV, ONE, C, LDC )
+               END IF
+C
+C              W := W * V2
+C
+               CALL DTRMM( 'RIGHT', 'LOWER', 'NO TRANSPOSE', 'UNIT', M,
+     $                     K, ONE, V( 1, N-K+1 ), LDV, WORK, LDWORK )
+C
+C              C1 := C1 - W
+C
+               DO 240 J = 1, K
+                  DO 230 I = 1, M
+                     C( I, N-K+J ) = C( I, N-K+J ) - WORK( I, J )
+  230             CONTINUE
+  240          CONTINUE
+C
+            END IF
+C
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF DLARFB
+C
+      END
+C*MODULE DGEEV   *DECK DLARFG
+      SUBROUTINE DLARFG( N, ALPHA, X, INCX, TAU )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     SEPTEMBER 30, 1994
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INCX, N
+      DOUBLE PRECISION   ALPHA, TAU
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   X( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLARFG GENERATES A REAL ELEMENTARY REFLECTOR H OF ORDER N, SUCH
+C  THAT
+C
+C        H * ( ALPHA ) = ( BETA ),   H' * H = I.
+C            (   X   )   (   0  )
+C
+C  WHERE ALPHA AND BETA ARE SCALARS, AND X IS AN (N-1)-ELEMENT REAL
+C  VECTOR. H IS REPRESENTED IN THE FORM
+C
+C        H = I - TAU * ( 1 ) * ( 1 V' ) ,
+C                      ( V )
+C
+C  WHERE TAU IS A REAL SCALAR AND V IS A REAL (N-1)-ELEMENT
+C  VECTOR.
+C
+C  IF THE ELEMENTS OF X ARE ALL ZERO, THEN TAU = 0 AND H IS TAKEN TO BE
+C  THE UNIT MATRIX.
+C
+C  OTHERWISE  1 <= TAU <= 2.
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE ELEMENTARY REFLECTOR.
+C
+C  ALPHA   (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE VALUE ALPHA.
+C          ON EXIT, IT IS OVERWRITTEN WITH THE VALUE BETA.
+C
+C  X       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION
+C                         (1+(N-2)*ABS(INCX))
+C          ON ENTRY, THE VECTOR X.
+C          ON EXIT, IT IS OVERWRITTEN WITH THE VECTOR V.
+C
+C  INCX    (INPUT) INTEGER
+C          THE INCREMENT BETWEEN ELEMENTS OF X. INCX > 0.
+C
+C  TAU     (OUTPUT) DOUBLE PRECISION
+C          THE VALUE TAU.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+00, ZERO = 0.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            J, KNT
+      DOUBLE PRECISION   BETA, RSAFMN, SAFMIN, XNORM
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      DOUBLE PRECISION   DLAMCH, DLAPY2, DNRM2
+      EXTERNAL           DLAMCH, DLAPY2, DNRM2
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, SIGN
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DSCAL
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( N.LE.1 ) THEN
+         TAU = ZERO
+         RETURN
+      END IF
+C
+      XNORM = DNRM2( N-1, X, INCX )
+C
+      IF( XNORM.EQ.ZERO ) THEN
+C
+C        H  =  I
+C
+         TAU = ZERO
+      ELSE
+C
+C        GENERAL CASE
+C
+         BETA = -SIGN( DLAPY2( ALPHA, XNORM ), ALPHA )
+         SAFMIN = DLAMCH( 'S' ) / DLAMCH( 'E' )
+         IF( ABS( BETA ).LT.SAFMIN ) THEN
+C
+C           XNORM, BETA MAY BE INACCURATE; SCALE X AND RECOMPUTE THEM
+C
+            RSAFMN = ONE / SAFMIN
+            KNT = 0
+   10       CONTINUE
+            KNT = KNT + 1
+            CALL DSCAL( N-1, RSAFMN, X, INCX )
+            BETA = BETA*RSAFMN
+            ALPHA = ALPHA*RSAFMN
+            IF( ABS( BETA ).LT.SAFMIN )
+     $         GO TO 10
+C
+C           NEW BETA IS AT MOST 1, AT LEAST SAFMIN
+C
+            XNORM = DNRM2( N-1, X, INCX )
+            BETA = -SIGN( DLAPY2( ALPHA, XNORM ), ALPHA )
+            TAU = ( BETA-ALPHA ) / BETA
+            CALL DSCAL( N-1, ONE / ( ALPHA-BETA ), X, INCX )
+C
+C           IF ALPHA IS SUBNORMAL, IT MAY LOSE RELATIVE ACCURACY
+C
+            ALPHA = BETA
+            DO 20 J = 1, KNT
+               ALPHA = ALPHA*SAFMIN
+   20       CONTINUE
+         ELSE
+            TAU = ( BETA-ALPHA ) / BETA
+            CALL DSCAL( N-1, ONE / ( ALPHA-BETA ), X, INCX )
+            ALPHA = BETA
+         END IF
+      END IF
+C
+      RETURN
+C
+C     END OF DLARFG
+C
+      END
+C*MODULE DGEEV   *DECK DLARFT
+      SUBROUTINE DLARFT( DIRECT, STOREV, N, K, V, LDV, TAU, T, LDT )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          DIRECT, STOREV
+      INTEGER            K, LDT, LDV, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   T( LDT, * ), TAU( * ), V( LDV, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLARFT FORMS THE TRIANGULAR FACTOR T OF A REAL BLOCK REFLECTOR H
+C  OF ORDER N, WHICH IS DEFINED AS A PRODUCT OF K ELEMENTARY REFLECTORS.
+C
+C  IF DIRECT = 'F', H = H(1) H(2) . . . H(K) AND T IS UPPER TRIANGULAR;
+C
+C  IF DIRECT = 'B', H = H(K) . . . H(2) H(1) AND T IS LOWER TRIANGULAR.
+C
+C  IF STOREV = 'C', THE VECTOR WHICH DEFINES THE ELEMENTARY REFLECTOR
+C  H(I) IS STORED IN THE I-TH COLUMN OF THE ARRAY V, AND
+C
+C     H  =  I - V * T * V'
+C
+C  IF STOREV = 'R', THE VECTOR WHICH DEFINES THE ELEMENTARY REFLECTOR
+C  H(I) IS STORED IN THE I-TH ROW OF THE ARRAY V, AND
+C
+C     H  =  I - V' * T * V
+C
+C  ARGUMENTS
+C  =========
+C
+C  DIRECT  (INPUT) CHARACTER*1
+C          SPECIFIES THE ORDER IN WHICH THE ELEMENTARY REFLECTORS ARE
+C          MULTIPLIED TO FORM THE BLOCK REFLECTOR:
+C          = 'F': H = H(1) H(2) . . . H(K) (FORWARD)
+C          = 'B': H = H(K) . . . H(2) H(1) (BACKWARD)
+C
+C  STOREV  (INPUT) CHARACTER*1
+C          SPECIFIES HOW THE VECTORS WHICH DEFINE THE ELEMENTARY
+C          REFLECTORS ARE STORED (SEE ALSO FURTHER DETAILS):
+C          = 'C': COLUMNWISE
+C          = 'R': ROWWISE
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE BLOCK REFLECTOR H. N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE ORDER OF THE TRIANGULAR FACTOR T (= THE NUMBER OF
+C          ELEMENTARY REFLECTORS). K >= 1.
+C
+C  V       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION
+C                               (LDV,K) IF STOREV = 'C'
+C                               (LDV,N) IF STOREV = 'R'
+C          THE MATRIX V. SEE FURTHER DETAILS.
+C
+C  LDV     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY V.
+C          IF STOREV = 'C', LDV >= MAX(1,N); IF STOREV = 'R', LDV >= K.
+C
+C  TAU     (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I).
+C
+C  T       (OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDT,K)
+C          THE K BY K TRIANGULAR FACTOR T OF THE BLOCK REFLECTOR.
+C          IF DIRECT = 'F', T IS UPPER TRIANGULAR; IF DIRECT = 'B', T IS
+C          LOWER TRIANGULAR. THE REST OF THE ARRAY IS NOT USED.
+C
+C  LDT     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY T. LDT >= K.
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE SHAPE OF THE MATRIX V AND THE STORAGE OF THE VECTORS WHICH DEFINE
+C  THE H(I) IS BEST ILLUSTRATED BY THE FOLLOWING EXAMPLE WITH N = 5 AND
+C  K = 3. THE ELEMENTS EQUAL TO 1 ARE NOT STORED; THE CORRESPONDING
+C  ARRAY ELEMENTS ARE MODIFIED BUT RESTORED ON EXIT. THE REST OF THE
+C  ARRAY IS NOT USED.
+C
+C  DIRECT = 'F' AND STOREV = 'C':         DIRECT = 'F' AND STOREV = 'R':
+C
+C               V = (  1       )                 V = (  1 V1 V1 V1 V1 )
+C                   ( V1  1    )                     (     1 V2 V2 V2 )
+C                   ( V1 V2  1 )                     (        1 V3 V3 )
+C                   ( V1 V2 V3 )
+C                   ( V1 V2 V3 )
+C
+C  DIRECT = 'B' AND STOREV = 'C':         DIRECT = 'B' AND STOREV = 'R':
+C
+C               V = ( V1 V2 V3 )                 V = ( V1 V1  1       )
+C                   ( V1 V2 V3 )                     ( V2 V2 V2  1    )
+C                   (  1 V2 V3 )                     ( V3 V3 V3 V3  1 )
+C                   (     1 V3 )
+C                   (        1 )
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+00, ZERO = 0.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+      DOUBLE PRECISION   VII
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DGEMV, DTRMV
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 )
+     $   RETURN
+C
+      IF( LSAME( DIRECT, 'F' ) ) THEN
+         DO 20 I = 1, K
+            IF( TAU( I ).EQ.ZERO ) THEN
+C
+C              H(I)  =  I
+C
+               DO 10 J = 1, I
+                  T( J, I ) = ZERO
+   10          CONTINUE
+            ELSE
+C
+C              GENERAL CASE
+C
+               VII = V( I, I )
+               V( I, I ) = ONE
+               IF( LSAME( STOREV, 'C' ) ) THEN
+C
+C                 T(1:I-1,I) := - TAU(I) * V(I:N,1:I-1)' * V(I:N,I)
+C
+                  CALL DGEMV( 'TRANSPOSE', N-I+1, I-1, -TAU( I ),
+     $                        V( I, 1 ), LDV, V( I, I ), 1, ZERO,
+     $                        T( 1, I ), 1 )
+               ELSE
+C
+C                 T(1:I-1,I) := - TAU(I) * V(1:I-1,I:N) * V(I,I:N)'
+C
+                  CALL DGEMV( 'NO TRANSPOSE', I-1, N-I+1, -TAU( I ),
+     $                        V( 1, I ), LDV, V( I, I ), LDV, ZERO,
+     $                        T( 1, I ), 1 )
+               END IF
+               V( I, I ) = VII
+C
+C              T(1:I-1,I) := T(1:I-1,1:I-1) * T(1:I-1,I)
+C
+               CALL DTRMV( 'UPPER', 'NO TRANSPOSE', 'NON-UNIT', I-1, T,
+     $                     LDT, T( 1, I ), 1 )
+               T( I, I ) = TAU( I )
+            END IF
+   20    CONTINUE
+      ELSE
+         DO 40 I = K, 1, -1
+            IF( TAU( I ).EQ.ZERO ) THEN
+C
+C              H(I)  =  I
+C
+               DO 30 J = I, K
+                  T( J, I ) = ZERO
+   30          CONTINUE
+            ELSE
+C
+C              GENERAL CASE
+C
+               IF( I.LT.K ) THEN
+                  IF( LSAME( STOREV, 'C' ) ) THEN
+                     VII = V( N-K+I, I )
+                     V( N-K+I, I ) = ONE
+C
+C                    T(I+1:K,I) :=
+C                            - TAU(I) * V(1:N-K+I,I+1:K)' * V(1:N-K+I,I)
+C
+                     CALL DGEMV( 'TRANSPOSE', N-K+I, K-I, -TAU( I ),
+     $                           V( 1, I+1 ), LDV, V( 1, I ), 1, ZERO,
+     $                           T( I+1, I ), 1 )
+                     V( N-K+I, I ) = VII
+                  ELSE
+                     VII = V( I, N-K+I )
+                     V( I, N-K+I ) = ONE
+C
+C                    T(I+1:K,I) :=
+C                            - TAU(I) * V(I+1:K,1:N-K+I) * V(I,1:N-K+I)'
+C
+                     CALL DGEMV( 'NO TRANSPOSE', K-I, N-K+I, -TAU( I ),
+     $                           V( I+1, 1 ), LDV, V( I, 1 ), LDV, ZERO,
+     $                           T( I+1, I ), 1 )
+                     V( I, N-K+I ) = VII
+                  END IF
+C
+C                 T(I+1:K,I) := T(I+1:K,I+1:K) * T(I+1:K,I)
+C
+                  CALL DTRMV( 'LOWER', 'NO TRANSPOSE', 'NON-UNIT', K-I,
+     $                        T( I+1, I+1 ), LDT, T( I+1, I ), 1 )
+               END IF
+               T( I, I ) = TAU( I )
+            END IF
+   40    CONTINUE
+      END IF
+      RETURN
+C
+C     END OF DLARFT
+C
+      END
+C*MODULE DGEEV   *DECK DLARFX
+      SUBROUTINE DLARFX( SIDE, M, N, V, TAU, C, LDC, WORK )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          SIDE
+      INTEGER            LDC, M, N
+      DOUBLE PRECISION   TAU
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   C( LDC, * ), V( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLARFX APPLIES A REAL ELEMENTARY REFLECTOR H TO A REAL M BY N
+C  MATRIX C, FROM EITHER THE LEFT OR THE RIGHT. H IS REPRESENTED IN THE
+C  FORM
+C
+C        H = I - TAU * V * V'
+C
+C  WHERE TAU IS A REAL SCALAR AND V IS A REAL VECTOR.
+C
+C  IF TAU = 0, THEN H IS TAKEN TO BE THE UNIT MATRIX
+C
+C  THIS VERSION USES INLINE CODE IF H HAS ORDER < 11.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          = 'L': FORM  H * C
+C          = 'R': FORM  C * H
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX C.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX C.
+C
+C  V       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (M) IF SIDE = 'L'
+C                                     OR (N) IF SIDE = 'R'
+C          THE VECTOR V IN THE REPRESENTATION OF H.
+C
+C  TAU     (INPUT) DOUBLE PRECISION
+C          THE VALUE TAU IN THE REPRESENTATION OF H.
+C
+C  C       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDC,N)
+C          ON ENTRY, THE M BY N MATRIX C.
+C          ON EXIT, C IS OVERWRITTEN BY THE MATRIX H * C IF SIDE = 'L',
+C          OR C * H IF SIDE = 'R'.
+C
+C  LDC     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY C. LDA >= (1,M).
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION
+C                      (N) IF SIDE = 'L'
+C                      OR (M) IF SIDE = 'R'
+C          WORK IS NOT REFERENCED IF H HAS ORDER < 11.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            J
+      DOUBLE PRECISION   SUM, T1, T10, T2, T3, T4, T5, T6, T7, T8, T9,
+     $                   V1, V10, V2, V3, V4, V5, V6, V7, V8, V9
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DGEMV, DGER
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( TAU.EQ.ZERO )
+     $   RETURN
+      IF( LSAME( SIDE, 'L' ) ) THEN
+C
+C        FORM  H * C, WHERE H HAS ORDER M.
+C
+         GO TO ( 10, 30, 50, 70, 90, 110, 130, 150,
+     $           170, 190 )M
+C
+C        CODE FOR GENERAL M
+C
+C        W := C'*V
+C
+         CALL DGEMV( 'TRANSPOSE', M, N, ONE, C, LDC, V, 1, ZERO, WORK,
+     $               1 )
+C
+C        C := C - TAU * V * W'
+C
+         CALL DGER( M, N, -TAU, V, 1, WORK, 1, C, LDC )
+         GO TO 410
+   10    CONTINUE
+C
+C        SPECIAL CODE FOR 1 X 1 HOUSEHOLDER
+C
+         T1 = ONE - TAU*V( 1 )*V( 1 )
+         DO 20 J = 1, N
+            C( 1, J ) = T1*C( 1, J )
+   20    CONTINUE
+         GO TO 410
+   30    CONTINUE
+C
+C        SPECIAL CODE FOR 2 X 2 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         DO 40 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+   40    CONTINUE
+         GO TO 410
+   50    CONTINUE
+C
+C        SPECIAL CODE FOR 3 X 3 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         DO 60 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+   60    CONTINUE
+         GO TO 410
+   70    CONTINUE
+C
+C        SPECIAL CODE FOR 4 X 4 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         DO 80 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J ) +
+     $            V4*C( 4, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+            C( 4, J ) = C( 4, J ) - SUM*T4
+   80    CONTINUE
+         GO TO 410
+   90    CONTINUE
+C
+C        SPECIAL CODE FOR 5 X 5 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         DO 100 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J ) +
+     $            V4*C( 4, J ) + V5*C( 5, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+            C( 4, J ) = C( 4, J ) - SUM*T4
+            C( 5, J ) = C( 5, J ) - SUM*T5
+  100    CONTINUE
+         GO TO 410
+  110    CONTINUE
+C
+C        SPECIAL CODE FOR 6 X 6 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         DO 120 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J ) +
+     $            V4*C( 4, J ) + V5*C( 5, J ) + V6*C( 6, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+            C( 4, J ) = C( 4, J ) - SUM*T4
+            C( 5, J ) = C( 5, J ) - SUM*T5
+            C( 6, J ) = C( 6, J ) - SUM*T6
+  120    CONTINUE
+         GO TO 410
+  130    CONTINUE
+C
+C        SPECIAL CODE FOR 7 X 7 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         DO 140 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J ) +
+     $            V4*C( 4, J ) + V5*C( 5, J ) + V6*C( 6, J ) +
+     $            V7*C( 7, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+            C( 4, J ) = C( 4, J ) - SUM*T4
+            C( 5, J ) = C( 5, J ) - SUM*T5
+            C( 6, J ) = C( 6, J ) - SUM*T6
+            C( 7, J ) = C( 7, J ) - SUM*T7
+  140    CONTINUE
+         GO TO 410
+  150    CONTINUE
+C
+C        SPECIAL CODE FOR 8 X 8 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         V8 = V( 8 )
+         T8 = TAU*V8
+         DO 160 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J ) +
+     $            V4*C( 4, J ) + V5*C( 5, J ) + V6*C( 6, J ) +
+     $            V7*C( 7, J ) + V8*C( 8, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+            C( 4, J ) = C( 4, J ) - SUM*T4
+            C( 5, J ) = C( 5, J ) - SUM*T5
+            C( 6, J ) = C( 6, J ) - SUM*T6
+            C( 7, J ) = C( 7, J ) - SUM*T7
+            C( 8, J ) = C( 8, J ) - SUM*T8
+  160    CONTINUE
+         GO TO 410
+  170    CONTINUE
+C
+C        SPECIAL CODE FOR 9 X 9 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         V8 = V( 8 )
+         T8 = TAU*V8
+         V9 = V( 9 )
+         T9 = TAU*V9
+         DO 180 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J ) +
+     $            V4*C( 4, J ) + V5*C( 5, J ) + V6*C( 6, J ) +
+     $            V7*C( 7, J ) + V8*C( 8, J ) + V9*C( 9, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+            C( 4, J ) = C( 4, J ) - SUM*T4
+            C( 5, J ) = C( 5, J ) - SUM*T5
+            C( 6, J ) = C( 6, J ) - SUM*T6
+            C( 7, J ) = C( 7, J ) - SUM*T7
+            C( 8, J ) = C( 8, J ) - SUM*T8
+            C( 9, J ) = C( 9, J ) - SUM*T9
+  180    CONTINUE
+         GO TO 410
+  190    CONTINUE
+C
+C        SPECIAL CODE FOR 10 X 10 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         V8 = V( 8 )
+         T8 = TAU*V8
+         V9 = V( 9 )
+         T9 = TAU*V9
+         V10 = V( 10 )
+         T10 = TAU*V10
+         DO 200 J = 1, N
+            SUM = V1*C( 1, J ) + V2*C( 2, J ) + V3*C( 3, J ) +
+     $            V4*C( 4, J ) + V5*C( 5, J ) + V6*C( 6, J ) +
+     $            V7*C( 7, J ) + V8*C( 8, J ) + V9*C( 9, J ) +
+     $            V10*C( 10, J )
+            C( 1, J ) = C( 1, J ) - SUM*T1
+            C( 2, J ) = C( 2, J ) - SUM*T2
+            C( 3, J ) = C( 3, J ) - SUM*T3
+            C( 4, J ) = C( 4, J ) - SUM*T4
+            C( 5, J ) = C( 5, J ) - SUM*T5
+            C( 6, J ) = C( 6, J ) - SUM*T6
+            C( 7, J ) = C( 7, J ) - SUM*T7
+            C( 8, J ) = C( 8, J ) - SUM*T8
+            C( 9, J ) = C( 9, J ) - SUM*T9
+            C( 10, J ) = C( 10, J ) - SUM*T10
+  200    CONTINUE
+         GO TO 410
+      ELSE
+C
+C        FORM  C * H, WHERE H HAS ORDER N.
+C
+         GO TO ( 210, 230, 250, 270, 290, 310, 330, 350,
+     $           370, 390 )N
+C
+C        CODE FOR GENERAL N
+C
+C        W := C * V
+C
+         CALL DGEMV( 'NO TRANSPOSE', M, N, ONE, C, LDC, V, 1, ZERO,
+     $               WORK, 1 )
+C
+C        C := C - TAU * W * V'
+C
+         CALL DGER( M, N, -TAU, WORK, 1, V, 1, C, LDC )
+         GO TO 410
+  210    CONTINUE
+C
+C        SPECIAL CODE FOR 1 X 1 HOUSEHOLDER
+C
+         T1 = ONE - TAU*V( 1 )*V( 1 )
+         DO 220 J = 1, M
+            C( J, 1 ) = T1*C( J, 1 )
+  220    CONTINUE
+         GO TO 410
+  230    CONTINUE
+C
+C        SPECIAL CODE FOR 2 X 2 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         DO 240 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+  240    CONTINUE
+         GO TO 410
+  250    CONTINUE
+C
+C        SPECIAL CODE FOR 3 X 3 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         DO 260 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+  260    CONTINUE
+         GO TO 410
+  270    CONTINUE
+C
+C        SPECIAL CODE FOR 4 X 4 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         DO 280 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 ) +
+     $            V4*C( J, 4 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+            C( J, 4 ) = C( J, 4 ) - SUM*T4
+  280    CONTINUE
+         GO TO 410
+  290    CONTINUE
+C
+C        SPECIAL CODE FOR 5 X 5 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         DO 300 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 ) +
+     $            V4*C( J, 4 ) + V5*C( J, 5 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+            C( J, 4 ) = C( J, 4 ) - SUM*T4
+            C( J, 5 ) = C( J, 5 ) - SUM*T5
+  300    CONTINUE
+         GO TO 410
+  310    CONTINUE
+C
+C        SPECIAL CODE FOR 6 X 6 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         DO 320 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 ) +
+     $            V4*C( J, 4 ) + V5*C( J, 5 ) + V6*C( J, 6 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+            C( J, 4 ) = C( J, 4 ) - SUM*T4
+            C( J, 5 ) = C( J, 5 ) - SUM*T5
+            C( J, 6 ) = C( J, 6 ) - SUM*T6
+  320    CONTINUE
+         GO TO 410
+  330    CONTINUE
+C
+C        SPECIAL CODE FOR 7 X 7 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         DO 340 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 ) +
+     $            V4*C( J, 4 ) + V5*C( J, 5 ) + V6*C( J, 6 ) +
+     $            V7*C( J, 7 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+            C( J, 4 ) = C( J, 4 ) - SUM*T4
+            C( J, 5 ) = C( J, 5 ) - SUM*T5
+            C( J, 6 ) = C( J, 6 ) - SUM*T6
+            C( J, 7 ) = C( J, 7 ) - SUM*T7
+  340    CONTINUE
+         GO TO 410
+  350    CONTINUE
+C
+C        SPECIAL CODE FOR 8 X 8 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         V8 = V( 8 )
+         T8 = TAU*V8
+         DO 360 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 ) +
+     $            V4*C( J, 4 ) + V5*C( J, 5 ) + V6*C( J, 6 ) +
+     $            V7*C( J, 7 ) + V8*C( J, 8 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+            C( J, 4 ) = C( J, 4 ) - SUM*T4
+            C( J, 5 ) = C( J, 5 ) - SUM*T5
+            C( J, 6 ) = C( J, 6 ) - SUM*T6
+            C( J, 7 ) = C( J, 7 ) - SUM*T7
+            C( J, 8 ) = C( J, 8 ) - SUM*T8
+  360    CONTINUE
+         GO TO 410
+  370    CONTINUE
+C
+C        SPECIAL CODE FOR 9 X 9 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         V8 = V( 8 )
+         T8 = TAU*V8
+         V9 = V( 9 )
+         T9 = TAU*V9
+         DO 380 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 ) +
+     $            V4*C( J, 4 ) + V5*C( J, 5 ) + V6*C( J, 6 ) +
+     $            V7*C( J, 7 ) + V8*C( J, 8 ) + V9*C( J, 9 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+            C( J, 4 ) = C( J, 4 ) - SUM*T4
+            C( J, 5 ) = C( J, 5 ) - SUM*T5
+            C( J, 6 ) = C( J, 6 ) - SUM*T6
+            C( J, 7 ) = C( J, 7 ) - SUM*T7
+            C( J, 8 ) = C( J, 8 ) - SUM*T8
+            C( J, 9 ) = C( J, 9 ) - SUM*T9
+  380    CONTINUE
+         GO TO 410
+  390    CONTINUE
+C
+C        SPECIAL CODE FOR 10 X 10 HOUSEHOLDER
+C
+         V1 = V( 1 )
+         T1 = TAU*V1
+         V2 = V( 2 )
+         T2 = TAU*V2
+         V3 = V( 3 )
+         T3 = TAU*V3
+         V4 = V( 4 )
+         T4 = TAU*V4
+         V5 = V( 5 )
+         T5 = TAU*V5
+         V6 = V( 6 )
+         T6 = TAU*V6
+         V7 = V( 7 )
+         T7 = TAU*V7
+         V8 = V( 8 )
+         T8 = TAU*V8
+         V9 = V( 9 )
+         T9 = TAU*V9
+         V10 = V( 10 )
+         T10 = TAU*V10
+         DO 400 J = 1, M
+            SUM = V1*C( J, 1 ) + V2*C( J, 2 ) + V3*C( J, 3 ) +
+     $            V4*C( J, 4 ) + V5*C( J, 5 ) + V6*C( J, 6 ) +
+     $            V7*C( J, 7 ) + V8*C( J, 8 ) + V9*C( J, 9 ) +
+     $            V10*C( J, 10 )
+            C( J, 1 ) = C( J, 1 ) - SUM*T1
+            C( J, 2 ) = C( J, 2 ) - SUM*T2
+            C( J, 3 ) = C( J, 3 ) - SUM*T3
+            C( J, 4 ) = C( J, 4 ) - SUM*T4
+            C( J, 5 ) = C( J, 5 ) - SUM*T5
+            C( J, 6 ) = C( J, 6 ) - SUM*T6
+            C( J, 7 ) = C( J, 7 ) - SUM*T7
+            C( J, 8 ) = C( J, 8 ) - SUM*T8
+            C( J, 9 ) = C( J, 9 ) - SUM*T9
+            C( J, 10 ) = C( J, 10 ) - SUM*T10
+  400    CONTINUE
+         GO TO 410
+      END IF
+  410 CONTINUE
+      RETURN
+C
+C     END OF DLARFX
+C
+      END
+C*MODULE DGEEV   *DECK DLASCL
+      SUBROUTINE DLASCL( TYPE, KL, KU, CFROM, CTO, M, N, A, LDA, INFO )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          TYPE
+      INTEGER            INFO, KL, KU, LDA, M, N
+      DOUBLE PRECISION   CFROM, CTO
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLASCL MULTIPLIES THE M BY N REAL MATRIX A BY THE REAL SCALAR
+C  CTO/CFROM.  THIS IS DONE WITHOUT OVER/UNDERFLOW AS LONG AS THE FINAL
+C  RESULT CTO*A(I,J)/CFROM DOES NOT OVER/UNDERFLOW. TYPE SPECIFIES THAT
+C  A MAY BE FULL, UPPER TRIANGULAR, LOWER TRIANGULAR, UPPER HESSENBERG,
+C  OR BANDED.
+C
+C  ARGUMENTS
+C  =========
+C
+C  TYPE    (INPUT) CHARACTER*1
+C          TYPE INDICES THE STORAGE TYPE OF THE INPUT MATRIX.
+C          = 'G':  A IS A FULL MATRIX.
+C          = 'L':  A IS A LOWER TRIANGULAR MATRIX.
+C          = 'U':  A IS AN UPPER TRIANGULAR MATRIX.
+C          = 'H':  A IS AN UPPER HESSENBERG MATRIX.
+C          = 'B':  A IS A SYMMETRIC BAND MATRIX WITH LOWER BANDWIDTH KL
+C                  AND UPPER BANDWIDTH KU AND WITH THE ONLY THE LOWER
+C                  HALF STORED.
+C          = 'Q':  A IS A SYMMETRIC BAND MATRIX WITH LOWER BANDWIDTH KL
+C                  AND UPPER BANDWIDTH KU AND WITH THE ONLY THE UPPER
+C                  HALF STORED.
+C          = 'Z':  A IS A BAND MATRIX WITH LOWER BANDWIDTH KL AND UPPER
+C                  BANDWIDTH KU.
+C
+C  KL      (INPUT) INTEGER
+C          THE LOWER BANDWIDTH OF A.  REFERENCED ONLY IF TYPE = 'B',
+C          'Q' OR 'Z'.
+C
+C  KU      (INPUT) INTEGER
+C          THE UPPER BANDWIDTH OF A.  REFERENCED ONLY IF TYPE = 'B',
+C          'Q' OR 'Z'.
+C
+C  CFROM   (INPUT) DOUBLE PRECISION
+C  CTO     (INPUT) DOUBLE PRECISION
+C          THE MATRIX A IS MULTIPLIED BY CTO/CFROM. A(I,J) IS COMPUTED
+C          WITHOUT OVER/UNDERFLOW IF THE FINAL RESULT CTO*A(I,J)/CFROM
+C          CAN BE REPRESENTED WITHOUT OVER/UNDERFLOW.  CFROM MUST BE
+C          NONZERO.
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX A.  M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX A.  N >= 0.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,M)
+C          THE MATRIX TO BE MULTIPLIED BY CTO/CFROM.  SEE TYPE FOR THE
+C          STORAGE TYPE.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,M).
+C
+C  INFO    (OUTPUT) INTEGER
+C          0  - SUCCESSFUL EXIT
+C          <0 - IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            DONE
+      INTEGER            I, ITYPE, J, K1, K2, K3, K4
+      DOUBLE PRECISION   BIGNUM, CFROM1, CFROMC, CTO1, CTOC, MUL, SMLNUM
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           LSAME, DLAMCH
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, MIN
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           XERBLA
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+C
+      IF( LSAME( TYPE, 'G' ) ) THEN
+         ITYPE = 0
+      ELSE IF( LSAME( TYPE, 'L' ) ) THEN
+         ITYPE = 1
+      ELSE IF( LSAME( TYPE, 'U' ) ) THEN
+         ITYPE = 2
+      ELSE IF( LSAME( TYPE, 'H' ) ) THEN
+         ITYPE = 3
+      ELSE IF( LSAME( TYPE, 'B' ) ) THEN
+         ITYPE = 4
+      ELSE IF( LSAME( TYPE, 'Q' ) ) THEN
+         ITYPE = 5
+      ELSE IF( LSAME( TYPE, 'Z' ) ) THEN
+         ITYPE = 6
+      ELSE
+         ITYPE = -1
+      END IF
+C
+      IF( ITYPE.EQ.-1 ) THEN
+         INFO = -1
+      ELSE IF( CFROM.EQ.ZERO ) THEN
+         INFO = -4
+      ELSE IF( M.LT.0 ) THEN
+         INFO = -6
+      ELSE IF( N.LT.0 .OR. ( ITYPE.EQ.4 .AND. N.NE.M ) .OR.
+     $         ( ITYPE.EQ.5 .AND. N.NE.M ) ) THEN
+         INFO = -7
+      ELSE IF( ITYPE.LE.3 .AND. LDA.LT.MAX( 1, M ) ) THEN
+         INFO = -9
+      ELSE IF( ITYPE.GE.4 ) THEN
+         IF( KL.LT.0 .OR. KL.GT.MAX( M-1, 0 ) ) THEN
+            INFO = -2
+         ELSE IF( KU.LT.0 .OR. KU.GT.MAX( N-1, 0 ) .OR.
+     $            ( ( ITYPE.EQ.4 .OR. ITYPE.EQ.5 ) .AND. KL.NE.KU ) )
+     $             THEN
+            INFO = -3
+         ELSE IF( ( ITYPE.EQ.4 .AND. LDA.LT.KL+1 ) .OR.
+     $            ( ITYPE.EQ.5 .AND. LDA.LT.KU+1 ) .OR.
+     $            ( ITYPE.EQ.6 .AND. LDA.LT.2*KL+KU+1 ) ) THEN
+            INFO = -9
+         END IF
+      END IF
+C
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DLASCL', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 .OR. M.EQ.0 )
+     $   RETURN
+C
+C     GET MACHINE PARAMETERS
+C
+      SMLNUM = DLAMCH( 'S' )
+      BIGNUM = ONE / SMLNUM
+C
+      CFROMC = CFROM
+      CTOC = CTO
+C
+   10 CONTINUE
+      CFROM1 = CFROMC*SMLNUM
+      CTO1 = CTOC / BIGNUM
+      IF( ABS( CFROM1 ).GT.ABS( CTOC ) .AND. CTOC.NE.ZERO ) THEN
+         MUL = SMLNUM
+         DONE = .FALSE.
+         CFROMC = CFROM1
+      ELSE IF( ABS( CTO1 ).GT.ABS( CFROMC ) ) THEN
+         MUL = BIGNUM
+         DONE = .FALSE.
+         CTOC = CTO1
+      ELSE
+         MUL = CTOC / CFROMC
+         DONE = .TRUE.
+      END IF
+C
+      IF( ITYPE.EQ.0 ) THEN
+C
+C        FULL MATRIX
+C
+         DO 30 J = 1, N
+            DO 20 I = 1, M
+               A( I, J ) = A( I, J )*MUL
+   20       CONTINUE
+   30    CONTINUE
+C
+      ELSE IF( ITYPE.EQ.1 ) THEN
+C
+C        LOWER TRIANGULAR MATRIX
+C
+         DO 50 J = 1, N
+            DO 40 I = J, M
+               A( I, J ) = A( I, J )*MUL
+   40       CONTINUE
+   50    CONTINUE
+C
+      ELSE IF( ITYPE.EQ.2 ) THEN
+C
+C        UPPER TRIANGULAR MATRIX
+C
+         DO 70 J = 1, N
+            DO 60 I = 1, MIN( J, M )
+               A( I, J ) = A( I, J )*MUL
+   60       CONTINUE
+   70    CONTINUE
+C
+      ELSE IF( ITYPE.EQ.3 ) THEN
+C
+C        UPPER HESSENBERG MATRIX
+C
+         DO 90 J = 1, N
+            DO 80 I = 1, MIN( J+1, M )
+               A( I, J ) = A( I, J )*MUL
+   80       CONTINUE
+   90    CONTINUE
+C
+      ELSE IF( ITYPE.EQ.4 ) THEN
+C
+C        LOWER HALF OF A SYMMETRIC BAND MATRIX
+C
+         K3 = KL + 1
+         K4 = N + 1
+         DO 110 J = 1, N
+            DO 100 I = 1, MIN( K3, K4-J )
+               A( I, J ) = A( I, J )*MUL
+  100       CONTINUE
+  110    CONTINUE
+C
+      ELSE IF( ITYPE.EQ.5 ) THEN
+C
+C        UPPER HALF OF A SYMMETRIC BAND MATRIX
+C
+         K1 = KU + 2
+         K3 = KU + 1
+         DO 130 J = 1, N
+            DO 120 I = MAX( K1-J, 1 ), K3
+               A( I, J ) = A( I, J )*MUL
+  120       CONTINUE
+  130    CONTINUE
+C
+      ELSE IF( ITYPE.EQ.6 ) THEN
+C
+C        BAND MATRIX
+C
+         K1 = KL + KU + 2
+         K2 = KL + 1
+         K3 = 2*KL + KU + 1
+         K4 = KL + KU + 1 + M
+         DO 150 J = 1, N
+            DO 140 I = MAX( K1-J, K2 ), MIN( K3, K4-J )
+               A( I, J ) = A( I, J )*MUL
+  140       CONTINUE
+  150    CONTINUE
+C
+      END IF
+C
+      IF( .NOT.DONE )
+     $   GO TO 10
+C
+      RETURN
+C
+C     END OF DLASCL
+C
+      END
+C*MODULE DGEEV   *DECK DLASET
+      SUBROUTINE DLASET( UPLO, M, N, ALPHA, BETA, A, LDA )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     OCTOBER 31, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          UPLO
+      INTEGER            LDA, M, N
+      DOUBLE PRECISION   ALPHA, BETA
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLASET INITIALIZES AN M-BY-N MATRIX A TO BETA ON THE DIAGONAL AND
+C  ALPHA ON THE OFFDIAGONALS.
+C
+C  ARGUMENTS
+C  =========
+C
+C  UPLO    (INPUT) CHARACTER*1
+C          SPECIFIES THE PART OF THE MATRIX A TO BE SET.
+C          = 'U':      UPPER TRIANGULAR PART IS SET; THE STRICTLY LOWER
+C                      TRIANGULAR PART OF A IS NOT CHANGED.
+C          = 'L':      LOWER TRIANGULAR PART IS SET; THE STRICTLY UPPER
+C                      TRIANGULAR PART OF A IS NOT CHANGED.
+C          OTHERWISE:  ALL OF THE MATRIX A IS SET.
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX A.  M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX A.  N >= 0.
+C
+C  ALPHA   (INPUT) DOUBLE PRECISION
+C          THE CONSTANT TO WHICH THE OFFDIAGONAL ELEMENTS ARE TO BE SET.
+C
+C  BETA    (INPUT) DOUBLE PRECISION
+C          THE CONSTANT TO WHICH THE DIAGONAL ELEMENTS ARE TO BE SET.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON EXIT, THE LEADING M-BY-N SUBMATRIX OF A IS SET AS FOLLOWS:
+C
+C          IF UPLO = 'U', A(I,J) = ALPHA, 1<=I<=J-1, 1<=J<=N,
+C          IF UPLO = 'L', A(I,J) = ALPHA, J+1<=I<=M, 1<=J<=N,
+C          OTHERWISE,     A(I,J) = ALPHA, 1<=I<=M, 1<=J<=N, I.NE.J,
+C
+C          AND, FOR ALL UPLO, A(I,I) = BETA, 1<=I<=MIN(M,N).
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A.  LDA >= MAX(1,M).
+C
+C =====================================================================
+C
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( LSAME( UPLO, 'U' ) ) THEN
+C
+C        SET THE STRICTLY UPPER TRIANGULAR OR TRAPEZOIDAL PART OF THE
+C        ARRAY TO ALPHA.
+C
+         DO 20 J = 2, N
+            DO 10 I = 1, MIN( J-1, M )
+               A( I, J ) = ALPHA
+   10       CONTINUE
+   20    CONTINUE
+C
+      ELSE IF( LSAME( UPLO, 'L' ) ) THEN
+C
+C        SET THE STRICTLY LOWER TRIANGULAR OR TRAPEZOIDAL PART OF THE
+C        ARRAY TO ALPHA.
+C
+         DO 40 J = 1, MIN( M, N )
+            DO 30 I = J + 1, M
+               A( I, J ) = ALPHA
+   30       CONTINUE
+   40    CONTINUE
+C
+      ELSE
+C
+C        SET THE LEADING M-BY-N SUBMATRIX TO ALPHA.
+C
+         DO 60 J = 1, N
+            DO 50 I = 1, M
+               A( I, J ) = ALPHA
+   50       CONTINUE
+   60    CONTINUE
+      END IF
+C
+C     SET THE FIRST MIN(M,N) DIAGONAL ELEMENTS TO BETA.
+C
+      DO 70 I = 1, MIN( M, N )
+         A( I, I ) = BETA
+   70 CONTINUE
+C
+      RETURN
+C
+C     END OF DLASET
+C
+      END
+C*MODULE DGEEV   *DECK DLASSQ
+      SUBROUTINE DLASSQ( N, X, INCX, SCALE, SUMSQ )
+C
+C  -- LAPACK AUXILIARY ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INCX, N
+      DOUBLE PRECISION   SCALE, SUMSQ
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   X( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DLASSQ  RETURNS THE VALUES  SCL  AND  SMSQ  SUCH THAT
+C
+C     ( SCL**2 )*SMSQ = X( 1 )**2 +...+ X( N )**2 + ( SCALE**2 )*SUMSQ,
+C
+C  WHERE  X( I ) = X( 1 + ( I - 1 )*INCX ). THE VALUE OF  SUMSQ  IS
+C  ASSUMED TO BE NON-NEGATIVE AND  SCL  RETURNS THE VALUE
+C
+C     SCL = MAX( SCALE, ABS( X( I ) ) ).
+C
+C  SCALE AND SUMSQ MUST BE SUPPLIED IN SCALE AND SUMSQ AND
+C  SCL AND SMSQ ARE OVERWRITTEN ON SCALE AND SUMSQ RESPECTIVELY.
+C
+C  THE ROUTINE MAKES ONLY ONE PASS THROUGH THE VECTOR X.
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTS TO BE USED FROM THE VECTOR X.
+C
+C  X       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C          THE VECTOR FOR WHICH A SCALED SUM OF SQUARES IS COMPUTED.
+C             X( I )  = X( 1 + ( I - 1 )*INCX ), 1 <= I <= N.
+C
+C  INCX    (INPUT) INTEGER
+C          THE INCREMENT BETWEEN SUCCESSIVE VALUES OF THE VECTOR X.
+C          INCX > 0.
+C
+C  SCALE   (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE VALUE  SCALE  IN THE EQUATION ABOVE.
+C          ON EXIT, SCALE IS OVERWRITTEN WITH  SCL , THE SCALING FACTOR
+C          FOR THE SUM OF SQUARES.
+C
+C  SUMSQ   (INPUT/OUTPUT) DOUBLE PRECISION
+C          ON ENTRY, THE VALUE  SUMSQ  IN THE EQUATION ABOVE.
+C          ON EXIT, SUMSQ IS OVERWRITTEN WITH  SMSQ , THE BASIC SUM OF
+C          SQUARES FROM WHICH  SCL  HAS BEEN FACTORED OUT.
+C
+C =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            IX
+      DOUBLE PRECISION   ABSXI
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+      IF( N.GT.0 ) THEN
+         DO 10 IX = 1, 1 + ( N-1 )*INCX, INCX
+            IF( X( IX ).NE.ZERO ) THEN
+               ABSXI = ABS( X( IX ) )
+               IF( SCALE.LT.ABSXI ) THEN
+                  SUMSQ = 1 + SUMSQ*( SCALE / ABSXI )**2
+                  SCALE = ABSXI
+               ELSE
+                  SUMSQ = SUMSQ + ( ABSXI / SCALE )**2
+               END IF
+            END IF
+   10    CONTINUE
+      END IF
+      RETURN
+C
+C     END OF DLASSQ
+C
+      END
+C*MODULE DGEEV   *DECK DORG2R
+      SUBROUTINE DORG2R( M, N, K, A, LDA, TAU, WORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     FEBRUARY 29, 1992
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INFO, K, LDA, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DORG2R GENERATES AN M BY N REAL MATRIX Q WITH ORTHONORMAL COLUMNS,
+C  WHICH IS DEFINED AS THE FIRST N COLUMNS OF A PRODUCT OF K ELEMENTARY
+C  REFLECTORS OF ORDER M
+C
+C        Q  =  H(1) H(2) . . . H(K)
+C
+C  AS RETURNED BY DGEQRF.
+C
+C  ARGUMENTS
+C  =========
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX Q. M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX Q. M >= N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTARY REFLECTORS WHOSE PRODUCT DEFINES THE
+C          MATRIX Q. N >= K >= 0.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE I-TH COLUMN MUST CONTAIN THE VECTOR WHICH
+C          DEFINES THE ELEMENTARY REFLECTOR H(I), FOR I = 1,2,...,K, AS
+C          RETURNED BY DGEQRF IN THE FIRST K COLUMNS OF ITS ARRAY
+C          ARGUMENT A.
+C          ON EXIT, THE M-BY-N MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE FIRST DIMENSION OF THE ARRAY A. LDA >= MAX(1,M).
+C
+C  TAU     (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY DGEQRF.
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (N)
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0: SUCCESSFUL EXIT
+C          < 0: IF INFO = -I, THE I-TH ARGUMENT HAS AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ONE, ZERO
+      PARAMETER          ( ONE = 1.0D+00, ZERO = 0.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      INTEGER            I, J, L
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DLARF, DSCAL, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      IF( M.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 .OR. N.GT.M ) THEN
+         INFO = -2
+      ELSE IF( K.LT.0 .OR. K.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, M ) ) THEN
+         INFO = -5
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DORG2R', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 )
+     $   RETURN
+C
+C     INITIALISE COLUMNS K+1:N TO COLUMNS OF THE UNIT MATRIX
+C
+      DO 20 J = K + 1, N
+         DO 10 L = 1, M
+            A( L, J ) = ZERO
+   10    CONTINUE
+         A( J, J ) = ONE
+   20 CONTINUE
+C
+      DO 40 I = K, 1, -1
+C
+C        APPLY H(I) TO A(I:M,I:N) FROM THE LEFT
+C
+         IF( I.LT.N ) THEN
+            A( I, I ) = ONE
+            CALL DLARF( 'LEFT', M-I+1, N-I, A( I, I ), 1, TAU( I ),
+     $                  A( I, I+1 ), LDA, WORK )
+         END IF
+         IF( I.LT.M )
+     $      CALL DSCAL( M-I, -TAU( I ), A( I+1, I ), 1 )
+         A( I, I ) = ONE - TAU( I )
+C
+C        SET A(1:I-1,I) TO ZERO
+C
+         DO 30 L = 1, I - 1
+            A( L, I ) = ZERO
+   30    CONTINUE
+   40 CONTINUE
+      RETURN
+C
+C     END OF DORG2R
+C
+      END
+C*MODULE DGEEV   *DECK DORGHR
+      SUBROUTINE DORGHR( N, ILO, IHI, A, LDA, TAU, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            IHI, ILO, INFO, LDA, LWORK, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DORGHR GENERATES A REAL ORTHOGONAL MATRIX Q WHICH IS DEFINED AS THE
+C  PRODUCT OF IHI-ILO ELEMENTARY REFLECTORS OF ORDER N, AS RETURNED BY
+C  DGEHRD:
+C
+C  Q = H(ILO) H(ILO+1) . . . H(IHI-1).
+C
+C  ARGUMENTS
+C  =========
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX Q. N >= 0.
+C
+C  ILO     (INPUT) INTEGER
+C  IHI     (INPUT) INTEGER
+C          ILO AND IHI MUST HAVE THE SAME VALUES AS IN THE PREVIOUS CALL
+C          OF DGEHRD. Q IS EQUAL TO THE UNIT MATRIX EXCEPT IN THE
+C          SUBMATRIX Q(ILO+1:IHI,ILO+1:IHI).
+C          1 <= ILO <= IHI <= N, IF N > 0; ILO=1 AND IHI=0, IF N=0.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE VECTORS WHICH DEFINE THE ELEMENTARY REFLECTORS,
+C          AS RETURNED BY DGEHRD.
+C          ON EXIT, THE N-BY-N ORTHOGONAL MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY A. LDA >= MAX(1,N).
+C
+C  TAU     (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (N-1)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY DGEHRD.
+C
+C  WORK    (WORKSPACE/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK. LWORK >= IHI-ILO.
+C          FOR OPTIMUM PERFORMANCE LWORK >= (IHI-ILO)*NB, WHERE NB IS
+C          THE OPTIMAL BLOCKSIZE.
+C
+C          IF LWORK = -1, THEN A WORKSPACE QUERY IS ASSUMED; THE ROUTINE
+C          ONLY CALCULATES THE OPTIMAL SIZE OF THE WORK ARRAY, RETURNS
+C          THIS VALUE AS THE FIRST ENTRY OF THE WORK ARRAY, AND NO ERROR
+C          MESSAGE RELATED TO LWORK IS ISSUED BY XERBLA.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            LQUERY
+      INTEGER            I, IINFO, J, LWKOPT, NB, NH
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DORGQR, XERBLA
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      NH = IHI - ILO
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( N.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -2
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, NH ) .AND. .NOT.LQUERY ) THEN
+         INFO = -8
+      END IF
+C
+      IF( INFO.EQ.0 ) THEN
+         NB = ILAENV( 1, 'DORGQR', ' ', NH, NH, NH, -1 )
+         LWKOPT = MAX( 1, NH )*NB
+         WORK( 1 ) = LWKOPT
+      END IF
+C
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DORGHR', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.EQ.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+C     SHIFT THE VECTORS WHICH DEFINE THE ELEMENTARY REFLECTORS ONE
+C     COLUMN TO THE RIGHT, AND SET THE FIRST ILO AND THE LAST N-IHI
+C     ROWS AND COLUMNS TO THOSE OF THE UNIT MATRIX
+C
+      DO 40 J = IHI, ILO + 1, -1
+         DO 10 I = 1, J - 1
+            A( I, J ) = ZERO
+   10    CONTINUE
+         DO 20 I = J + 1, IHI
+            A( I, J ) = A( I, J-1 )
+   20    CONTINUE
+         DO 30 I = IHI + 1, N
+            A( I, J ) = ZERO
+   30    CONTINUE
+   40 CONTINUE
+      DO 60 J = 1, ILO
+         DO 50 I = 1, N
+            A( I, J ) = ZERO
+   50    CONTINUE
+         A( J, J ) = ONE
+   60 CONTINUE
+      DO 80 J = IHI + 1, N
+         DO 70 I = 1, N
+            A( I, J ) = ZERO
+   70    CONTINUE
+         A( J, J ) = ONE
+   80 CONTINUE
+C
+      IF( NH.GT.0 ) THEN
+C
+C        GENERATE Q(ILO+1:IHI,ILO+1:IHI)
+C
+         CALL DORGQR( NH, NH, NH, A( ILO+1, ILO+1 ), LDA, TAU( ILO ),
+     $                WORK, LWORK, IINFO )
+      END IF
+      WORK( 1 ) = LWKOPT
+      RETURN
+C
+C     END OF DORGHR
+C
+      END
+C*MODULE DGEEV   *DECK DORGQR
+      SUBROUTINE DORGQR( M, N, K, A, LDA, TAU, WORK, LWORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      INTEGER            INFO, K, LDA, LWORK, M, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      DOUBLE PRECISION   A( LDA, * ), TAU( * ), WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DORGQR GENERATES AN M-BY-N REAL MATRIX Q WITH ORTHONORMAL COLUMNS,
+C  WHICH IS DEFINED AS THE FIRST N COLUMNS OF A PRODUCT OF K ELEMENTARY
+C  REFLECTORS OF ORDER M
+C
+C        Q  =  H(1) H(2) . . . H(K)
+C
+C  AS RETURNED BY DGEQRF.
+C
+C  ARGUMENTS
+C  =========
+C
+C  M       (INPUT) INTEGER
+C          THE NUMBER OF ROWS OF THE MATRIX Q. M >= 0.
+C
+C  N       (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS OF THE MATRIX Q. M >= N >= 0.
+C
+C  K       (INPUT) INTEGER
+C          THE NUMBER OF ELEMENTARY REFLECTORS WHOSE PRODUCT DEFINES THE
+C          MATRIX Q. N >= K >= 0.
+C
+C  A       (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDA,N)
+C          ON ENTRY, THE I-TH COLUMN MUST CONTAIN THE VECTOR WHICH
+C          DEFINES THE ELEMENTARY REFLECTOR H(I), FOR I = 1,2,...,K, AS
+C          RETURNED BY DGEQRF IN THE FIRST K COLUMNS OF ITS ARRAY
+C          ARGUMENT A.
+C          ON EXIT, THE M-BY-N MATRIX Q.
+C
+C  LDA     (INPUT) INTEGER
+C          THE FIRST DIMENSION OF THE ARRAY A. LDA >= MAX(1,M).
+C
+C  TAU     (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (K)
+C          TAU(I) MUST CONTAIN THE SCALAR FACTOR OF THE ELEMENTARY
+C          REFLECTOR H(I), AS RETURNED BY DGEQRF.
+C
+C  WORK    (WORKSPACE/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LWORK)
+C          ON EXIT, IF INFO = 0, WORK(1) RETURNS THE OPTIMAL LWORK.
+C
+C  LWORK   (INPUT) INTEGER
+C          THE DIMENSION OF THE ARRAY WORK. LWORK >= MAX(1,N).
+C          FOR OPTIMUM PERFORMANCE LWORK >= N*NB, WHERE NB IS THE
+C          OPTIMAL BLOCKSIZE.
+C
+C          IF LWORK = -1, THEN A WORKSPACE QUERY IS ASSUMED; THE ROUTINE
+C          ONLY CALCULATES THE OPTIMAL SIZE OF THE WORK ARRAY, RETURNS
+C          THIS VALUE AS THE FIRST ENTRY OF THE WORK ARRAY, AND NO ERROR
+C          MESSAGE RELATED TO LWORK IS ISSUED BY XERBLA.
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAS AN ILLEGAL VALUE
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            LQUERY
+      INTEGER            I, IB, IINFO, IWS, J, KI, KK, L, LDWORK,
+     $                   LWKOPT, NB, NBMIN, NX
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DLARFB, DLARFT, DORG2R, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          MAX, MIN
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     TEST THE INPUT ARGUMENTS
+C
+      INFO = 0
+      NB = ILAENV( 1, 'DORGQR', ' ', M, N, K, -1 )
+      LWKOPT = MAX( 1, N )*NB
+      WORK( 1 ) = LWKOPT
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( M.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 .OR. N.GT.M ) THEN
+         INFO = -2
+      ELSE IF( K.LT.0 .OR. K.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, M ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, N ) .AND. .NOT.LQUERY ) THEN
+         INFO = -8
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DORGQR', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE
+C
+      IF( N.LE.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+C
+      NBMIN = 2
+      NX = 0
+      IWS = N
+      IF( NB.GT.1 .AND. NB.LT.K ) THEN
+C
+C        DETERMINE WHEN TO CROSS OVER FROM BLOCKED TO UNBLOCKED CODE.
+C
+         NX = MAX( 0, ILAENV( 3, 'DORGQR', ' ', M, N, K, -1 ) )
+         IF( NX.LT.K ) THEN
+C
+C           DETERMINE IF WORKSPACE IS LARGE ENOUGH FOR BLOCKED CODE.
+C
+            LDWORK = N
+            IWS = LDWORK*NB
+            IF( LWORK.LT.IWS ) THEN
+C
+C              NOT ENOUGH WORKSPACE TO USE OPTIMAL NB:  REDUCE NB AND
+C              DETERMINE THE MINIMUM VALUE OF NB.
+C
+               NB = LWORK / LDWORK
+               NBMIN = MAX( 2, ILAENV( 2, 'DORGQR', ' ', M, N, K, -1 ) )
+            END IF
+         END IF
+      END IF
+C
+      IF( NB.GE.NBMIN .AND. NB.LT.K .AND. NX.LT.K ) THEN
+C
+C        USE BLOCKED CODE AFTER THE LAST BLOCK.
+C        THE FIRST KK COLUMNS ARE HANDLED BY THE BLOCK METHOD.
+C
+         KI = ( ( K-NX-1 ) / NB )*NB
+         KK = MIN( K, KI+NB )
+C
+C        SET A(1:KK,KK+1:N) TO ZERO.
+C
+         DO 20 J = KK + 1, N
+            DO 10 I = 1, KK
+               A( I, J ) = ZERO
+   10       CONTINUE
+   20    CONTINUE
+      ELSE
+         KK = 0
+      END IF
+C
+C     USE UNBLOCKED CODE FOR THE LAST OR ONLY BLOCK.
+C
+      IF( KK.LT.N )
+     $   CALL DORG2R( M-KK, N-KK, K-KK, A( KK+1, KK+1 ), LDA,
+     $                TAU( KK+1 ), WORK, IINFO )
+C
+      IF( KK.GT.0 ) THEN
+C
+C        USE BLOCKED CODE
+C
+         DO 50 I = KI + 1, 1, -NB
+            IB = MIN( NB, K-I+1 )
+            IF( I+IB.LE.N ) THEN
+C
+C              FORM THE TRIANGULAR FACTOR OF THE BLOCK REFLECTOR
+C              H = H(I) H(I+1) . . . H(I+IB-1)
+C
+               CALL DLARFT( 'FORWARD', 'COLUMNWISE', M-I+1, IB,
+     $                      A( I, I ), LDA, TAU( I ), WORK, LDWORK )
+C
+C              APPLY H TO A(I:M,I+IB:N) FROM THE LEFT
+C
+               CALL DLARFB( 'LEFT', 'NO TRANSPOSE', 'FORWARD',
+     $                      'COLUMNWISE', M-I+1, N-I-IB+1, IB,
+     $                      A( I, I ), LDA, WORK, LDWORK, A( I, I+IB ),
+     $                      LDA, WORK( IB+1 ), LDWORK )
+            END IF
+C
+C           APPLY H TO ROWS I:M OF CURRENT BLOCK
+C
+            CALL DORG2R( M-I+1, IB, IB, A( I, I ), LDA, TAU( I ), WORK,
+     $                   IINFO )
+C
+C           SET ROWS 1:I-1 OF CURRENT BLOCK TO ZERO
+C
+            DO 40 J = I, I + IB - 1
+               DO 30 L = 1, I - 1
+                  A( L, J ) = ZERO
+   30          CONTINUE
+   40       CONTINUE
+   50    CONTINUE
+      END IF
+C
+      WORK( 1 ) = IWS
+      RETURN
+C
+C     END OF DORGQR
+C
+      END
+C*MODULE DGEEV   *DECK DTREVC
+      SUBROUTINE DTREVC( SIDE, HOWMNY, SELECT, N, T, LDT, VL, LDVL, VR,
+     $                   LDVR, MM, M, WORK, INFO )
+C
+C  -- LAPACK ROUTINE (VERSION 3.0) --
+C     UNIV. OF TENNESSEE, UNIV. OF CALIFORNIA BERKELEY, NAG LTD.,
+C     COURANT INSTITUTE, ARGONNE NATIONAL LAB, AND RICE UNIVERSITY
+C     JUNE 30, 1999
+C
+C     .. SCALAR ARGUMENTS ..
+      CHARACTER          HOWMNY, SIDE
+      INTEGER            INFO, LDT, LDVL, LDVR, M, MM, N
+C     ..
+C     .. ARRAY ARGUMENTS ..
+      LOGICAL            SELECT( * )
+      DOUBLE PRECISION   T( LDT, * ), VL( LDVL, * ), VR( LDVR, * ),
+     $                   WORK( * )
+C     ..
+C
+C  PURPOSE
+C  =======
+C
+C  DTREVC COMPUTES SOME OR ALL OF THE RIGHT AND/OR LEFT EIGENVECTORS OF
+C  A REAL UPPER QUASI-TRIANGULAR MATRIX T.
+C
+C  THE RIGHT EIGENVECTOR X AND THE LEFT EIGENVECTOR Y OF T CORRESPONDING
+C  TO AN EIGENVALUE W ARE DEFINED BY:
+C
+C               T*X = W*X,     Y'*T = W*Y'
+C
+C  WHERE Y' DENOTES THE CONJUGATE TRANSPOSE OF THE VECTOR Y.
+C
+C  IF ALL EIGENVECTORS ARE REQUESTED, THE ROUTINE MAY EITHER RETURN THE
+C  MATRICES X AND/OR Y OF RIGHT OR LEFT EIGENVECTORS OF T, OR THE
+C  PRODUCTS Q*X AND/OR Q*Y, WHERE Q IS AN INPUT ORTHOGONAL
+C  MATRIX. IF T WAS OBTAINED FROM THE REAL-SCHUR FACTORIZATION OF AN
+C  ORIGINAL MATRIX A = Q*T*Q', THEN Q*X AND Q*Y ARE THE MATRICES OF
+C  RIGHT OR LEFT EIGENVECTORS OF A.
+C
+C  T MUST BE IN SCHUR CANONICAL FORM (AS RETURNED BY DHSEQR), THAT IS,
+C  BLOCK UPPER TRIANGULAR WITH 1-BY-1 AND 2-BY-2 DIAGONAL BLOCKS; EACH
+C  2-BY-2 DIAGONAL BLOCK HAS ITS DIAGONAL ELEMENTS EQUAL AND ITS
+C  OFF-DIAGONAL ELEMENTS OF OPPOSITE SIGN.  CORRESPONDING TO EACH 2-BY-2
+C  DIAGONAL BLOCK IS A COMPLEX CONJUGATE PAIR OF EIGENVALUES AND
+C  EIGENVECTORS; ONLY ONE EIGENVECTOR OF THE PAIR IS COMPUTED, NAMELY
+C  THE ONE CORRESPONDING TO THE EIGENVALUE WITH POSITIVE IMAGINARY PART.
+C
+C  ARGUMENTS
+C  =========
+C
+C  SIDE    (INPUT) CHARACTER*1
+C          = 'R':  COMPUTE RIGHT EIGENVECTORS ONLY;
+C          = 'L':  COMPUTE LEFT EIGENVECTORS ONLY;
+C          = 'B':  COMPUTE BOTH RIGHT AND LEFT EIGENVECTORS.
+C
+C  HOWMNY  (INPUT) CHARACTER*1
+C          = 'A':  COMPUTE ALL RIGHT AND/OR LEFT EIGENVECTORS;
+C          = 'B':  COMPUTE ALL RIGHT AND/OR LEFT EIGENVECTORS,
+C                  AND BACKTRANSFORM THEM USING THE INPUT MATRICES
+C                  SUPPLIED IN VR AND/OR VL;
+C          = 'S':  COMPUTE SELECTED RIGHT AND/OR LEFT EIGENVECTORS,
+C                  SPECIFIED BY THE LOGICAL ARRAY SELECT.
+C
+C  SELECT  (INPUT/OUTPUT) LOGICAL ARRAY, DIMENSION (N)
+C          IF HOWMNY = 'S', SELECT SPECIFIES THE EIGENVECTORS TO BE
+C          COMPUTED.
+C          IF HOWMNY = 'A' OR 'B', SELECT IS NOT REFERENCED.
+C          TO SELECT THE REAL EIGENVECTOR CORRESPONDING TO A REAL
+C          EIGENVALUE W(J), SELECT(J) MUST BE SET TO .TRUE..  TO SELECT
+C          THE COMPLEX EIGENVECTOR CORRESPONDING TO A COMPLEX CONJUGATE
+C          PAIR W(J) AND W(J+1), EITHER SELECT(J) OR SELECT(J+1) MUST BE
+C          SET TO .TRUE.; THEN ON EXIT SELECT(J) IS .TRUE. AND
+C          SELECT(J+1) IS .FALSE..
+C
+C  N       (INPUT) INTEGER
+C          THE ORDER OF THE MATRIX T. N >= 0.
+C
+C  T       (INPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDT,N)
+C          THE UPPER QUASI-TRIANGULAR MATRIX T IN SCHUR CANONICAL FORM.
+C
+C  LDT     (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY T. LDT >= MAX(1,N).
+C
+C  VL      (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDVL,MM)
+C          ON ENTRY, IF SIDE = 'L' OR 'B' AND HOWMNY = 'B', VL MUST
+C          CONTAIN AN N-BY-N MATRIX Q (USUALLY THE ORTHOGONAL MATRIX Q
+C          OF SCHUR VECTORS RETURNED BY DHSEQR).
+C          ON EXIT, IF SIDE = 'L' OR 'B', VL CONTAINS:
+C          IF HOWMNY = 'A', THE MATRIX Y OF LEFT EIGENVECTORS OF T;
+C                           VL HAS THE SAME QUASI-LOWER TRIANGULAR FORM
+C                           AS T'. IF T(I,I) IS A REAL EIGENVALUE, THEN
+C                           THE I-TH COLUMN VL(I) OF VL  IS ITS
+C                           CORRESPONDING EIGENVECTOR. IF T(I:I+1,I:I+1)
+C                           IS A 2-BY-2 BLOCK WHOSE EIGENVALUES ARE
+C                           COMPLEX-CONJUGATE EIGENVALUES OF T, THEN
+C                           VL(I)+SQRT(-1)*VL(I+1) IS THE COMPLEX
+C                           EIGENVECTOR CORRESPONDING TO THE EIGENVALUE
+C                           WITH POSITIVE REAL PART.
+C          IF HOWMNY = 'B', THE MATRIX Q*Y;
+C          IF HOWMNY = 'S', THE LEFT EIGENVECTORS OF T SPECIFIED BY
+C                           SELECT, STORED CONSECUTIVELY IN THE COLUMNS
+C                           OF VL, IN THE SAME ORDER AS THEIR
+C                           EIGENVALUES.
+C          A COMPLEX EIGENVECTOR CORRESPONDING TO A COMPLEX EIGENVALUE
+C          IS STORED IN TWO CONSECUTIVE COLUMNS, THE FIRST HOLDING THE
+C          REAL PART, AND THE SECOND THE IMAGINARY PART.
+C          IF SIDE = 'R', VL IS NOT REFERENCED.
+C
+C  LDVL    (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY VL.  LDVL >= MAX(1,N) IF
+C          SIDE = 'L' OR 'B'; LDVL >= 1 OTHERWISE.
+C
+C  VR      (INPUT/OUTPUT) DOUBLE PRECISION ARRAY, DIMENSION (LDVR,MM)
+C          ON ENTRY, IF SIDE = 'R' OR 'B' AND HOWMNY = 'B', VR MUST
+C          CONTAIN AN N-BY-N MATRIX Q (USUALLY THE ORTHOGONAL MATRIX Q
+C          OF SCHUR VECTORS RETURNED BY DHSEQR).
+C          ON EXIT, IF SIDE = 'R' OR 'B', VR CONTAINS:
+C          IF HOWMNY = 'A', THE MATRIX X OF RIGHT EIGENVECTORS OF T;
+C                           VR HAS THE SAME QUASI-UPPER TRIANGULAR FORM
+C                           AS T. IF T(I,I) IS A REAL EIGENVALUE, THEN
+C                           THE I-TH COLUMN VR(I) OF VR  IS ITS
+C                           CORRESPONDING EIGENVECTOR. IF T(I:I+1,I:I+1)
+C                           IS A 2-BY-2 BLOCK WHOSE EIGENVALUES ARE
+C                           COMPLEX-CONJUGATE EIGENVALUES OF T, THEN
+C                           VR(I)+SQRT(-1)*VR(I+1) IS THE COMPLEX
+C                           EIGENVECTOR CORRESPONDING TO THE EIGENVALUE
+C                           WITH POSITIVE REAL PART.
+C          IF HOWMNY = 'B', THE MATRIX Q*X;
+C          IF HOWMNY = 'S', THE RIGHT EIGENVECTORS OF T SPECIFIED BY
+C                           SELECT, STORED CONSECUTIVELY IN THE COLUMNS
+C                           OF VR, IN THE SAME ORDER AS THEIR
+C                           EIGENVALUES.
+C          A COMPLEX EIGENVECTOR CORRESPONDING TO A COMPLEX EIGENVALUE
+C          IS STORED IN TWO CONSECUTIVE COLUMNS, THE FIRST HOLDING THE
+C          REAL PART AND THE SECOND THE IMAGINARY PART.
+C          IF SIDE = 'L', VR IS NOT REFERENCED.
+C
+C  LDVR    (INPUT) INTEGER
+C          THE LEADING DIMENSION OF THE ARRAY VR.  LDVR >= MAX(1,N) IF
+C          SIDE = 'R' OR 'B'; LDVR >= 1 OTHERWISE.
+C
+C  MM      (INPUT) INTEGER
+C          THE NUMBER OF COLUMNS IN THE ARRAYS VL AND/OR VR. MM >= M.
+C
+C  M       (OUTPUT) INTEGER
+C          THE NUMBER OF COLUMNS IN THE ARRAYS VL AND/OR VR ACTUALLY
+C          USED TO STORE THE EIGENVECTORS.
+C          IF HOWMNY = 'A' OR 'B', M IS SET TO N.
+C          EACH SELECTED REAL EIGENVECTOR OCCUPIES ONE COLUMN AND EACH
+C          SELECTED COMPLEX EIGENVECTOR OCCUPIES TWO COLUMNS.
+C
+C  WORK    (WORKSPACE) DOUBLE PRECISION ARRAY, DIMENSION (3*N)
+C
+C  INFO    (OUTPUT) INTEGER
+C          = 0:  SUCCESSFUL EXIT
+C          < 0:  IF INFO = -I, THE I-TH ARGUMENT HAD AN ILLEGAL VALUE
+C
+C  FURTHER DETAILS
+C  ===============
+C
+C  THE ALGORITHM USED IN THIS PROGRAM IS BASICALLY BACKWARD (FORWARD)
+C  SUBSTITUTION, WITH SCALING TO MAKE THE THE CODE ROBUST AGAINST
+C  POSSIBLE OVERFLOW.
+C
+C  EACH EIGENVECTOR IS NORMALIZED SO THAT THE ELEMENT OF LARGEST
+C  MAGNITUDE HAS MAGNITUDE 1; HERE THE MAGNITUDE OF A COMPLEX NUMBER
+C  (X,Y) IS TAKEN TO BE |X| + |Y|.
+C
+C  =====================================================================
+C
+C     .. PARAMETERS ..
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+00, ONE = 1.0D+00 )
+C     ..
+C     .. LOCAL SCALARS ..
+      LOGICAL            ALLV, BOTHV, LEFTV, OVER, PAIR, RIGHTV, SOMEV
+      INTEGER            I, IERR, II, IP, IS, J, J1, J2, JNXT, K, KI, N2
+      DOUBLE PRECISION   BETA, BIGNUM, EMAX, OVFL, REC, REMAX, SCALE,
+     $                   SMIN, SMLNUM, ULP, UNFL, VCRIT, VMAX, WI, WR,
+     $                   XNORM
+C     ..
+C     .. EXTERNAL FUNCTIONS ..
+      LOGICAL            LSAME
+      INTEGER            IDAMAX
+      DOUBLE PRECISION   DDOT, DLAMCH
+      EXTERNAL           LSAME, IDAMAX, DDOT, DLAMCH
+C     ..
+C     .. EXTERNAL ROUTINES ..
+      EXTERNAL           DAXPY, DCOPY, DGEMV, DLALN2, DSCAL, XERBLA
+C     ..
+C     .. INTRINSIC FUNCTIONS ..
+      INTRINSIC          ABS, MAX, SQRT
+C     ..
+C     .. LOCAL ARRAYS ..
+      DOUBLE PRECISION   X( 2, 2 )
+C     ..
+C     .. EXECUTABLE STATEMENTS ..
+C
+C     DECODE AND TEST THE INPUT PARAMETERS
+C
+      BOTHV = LSAME( SIDE, 'B' )
+      RIGHTV = LSAME( SIDE, 'R' ) .OR. BOTHV
+      LEFTV = LSAME( SIDE, 'L' ) .OR. BOTHV
+C
+      ALLV = LSAME( HOWMNY, 'A' )
+      OVER = LSAME( HOWMNY, 'B' )
+      SOMEV = LSAME( HOWMNY, 'S' )
+C
+      INFO = 0
+      IF( .NOT.RIGHTV .AND. .NOT.LEFTV ) THEN
+         INFO = -1
+      ELSE IF( .NOT.ALLV .AND. .NOT.OVER .AND. .NOT.SOMEV ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -4
+      ELSE IF( LDT.LT.MAX( 1, N ) ) THEN
+         INFO = -6
+      ELSE IF( LDVL.LT.1 .OR. ( LEFTV .AND. LDVL.LT.N ) ) THEN
+         INFO = -8
+      ELSE IF( LDVR.LT.1 .OR. ( RIGHTV .AND. LDVR.LT.N ) ) THEN
+         INFO = -10
+      ELSE
+C
+C        SET M TO THE NUMBER OF COLUMNS REQUIRED TO STORE THE SELECTED
+C        EIGENVECTORS, STANDARDIZE THE ARRAY SELECT IF NECESSARY, AND
+C        TEST MM.
+C
+         IF( SOMEV ) THEN
+            M = 0
+            PAIR = .FALSE.
+            DO 10 J = 1, N
+               IF( PAIR ) THEN
+                  PAIR = .FALSE.
+                  SELECT( J ) = .FALSE.
+               ELSE
+                  IF( J.LT.N ) THEN
+                     IF( T( J+1, J ).EQ.ZERO ) THEN
+                        IF( SELECT( J ) )
+     $                     M = M + 1
+                     ELSE
+                        PAIR = .TRUE.
+                        IF( SELECT( J ) .OR. SELECT( J+1 ) ) THEN
+                           SELECT( J ) = .TRUE.
+                           M = M + 2
+                        END IF
+                     END IF
+                  ELSE
+                     IF( SELECT( N ) )
+     $                  M = M + 1
+                  END IF
+               END IF
+   10       CONTINUE
+         ELSE
+            M = N
+         END IF
+C
+         IF( MM.LT.M ) THEN
+            INFO = -11
+         END IF
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DTREVC', -INFO )
+         RETURN
+      END IF
+C
+C     QUICK RETURN IF POSSIBLE.
+C
+      IF( N.EQ.0 )
+     $   RETURN
+C
+C     SET THE CONSTANTS TO CONTROL OVERFLOW.
+C
+      UNFL = DLAMCH( 'SAFE MINIMUM' )
+      OVFL = ONE / UNFL
+      CALL DLABAD( UNFL, OVFL )
+      ULP = DLAMCH( 'PRECISION' )
+      SMLNUM = UNFL*( N / ULP )
+      BIGNUM = ( ONE-ULP ) / SMLNUM
+C
+C     COMPUTE 1-NORM OF EACH COLUMN OF STRICTLY UPPER TRIANGULAR
+C     PART OF T TO CONTROL OVERFLOW IN TRIANGULAR SOLVER.
+C
+      WORK( 1 ) = ZERO
+      DO 30 J = 2, N
+         WORK( J ) = ZERO
+         DO 20 I = 1, J - 1
+            WORK( J ) = WORK( J ) + ABS( T( I, J ) )
+   20    CONTINUE
+   30 CONTINUE
+C
+C     INDEX IP IS USED TO SPECIFY THE REAL OR COMPLEX EIGENVALUE:
+C       IP = 0, REAL EIGENVALUE,
+C            1, FIRST OF CONJUGATE COMPLEX PAIR: (WR,WI)
+C           -1, SECOND OF CONJUGATE COMPLEX PAIR: (WR,WI)
+C
+      N2 = 2*N
+C
+      IF( RIGHTV ) THEN
+C
+C        COMPUTE RIGHT EIGENVECTORS.
+C
+         IP = 0
+         IS = M
+         DO 140 KI = N, 1, -1
+C
+            IF( IP.EQ.1 )
+     $         GO TO 130
+            IF( KI.EQ.1 )
+     $         GO TO 40
+            IF( T( KI, KI-1 ).EQ.ZERO )
+     $         GO TO 40
+            IP = -1
+C
+   40       CONTINUE
+            IF( SOMEV ) THEN
+               IF( IP.EQ.0 ) THEN
+                  IF( .NOT.SELECT( KI ) )
+     $               GO TO 130
+               ELSE
+                  IF( .NOT.SELECT( KI-1 ) )
+     $               GO TO 130
+               END IF
+            END IF
+C
+C           COMPUTE THE KI-TH EIGENVALUE (WR,WI).
+C
+            WR = T( KI, KI )
+            WI = ZERO
+            IF( IP.NE.0 )
+     $         WI = SQRT( ABS( T( KI, KI-1 ) ) )*
+     $              SQRT( ABS( T( KI-1, KI ) ) )
+            SMIN = MAX( ULP*( ABS( WR )+ABS( WI ) ), SMLNUM )
+C
+            IF( IP.EQ.0 ) THEN
+C
+C              REAL RIGHT EIGENVECTOR
+C
+               WORK( KI+N ) = ONE
+C
+C              FORM RIGHT-HAND SIDE
+C
+               DO 50 K = 1, KI - 1
+                  WORK( K+N ) = -T( K, KI )
+   50          CONTINUE
+C
+C              SOLVE THE UPPER QUASI-TRIANGULAR SYSTEM:
+C                 (T(1:KI-1,1:KI-1) - WR)*X = SCALE*WORK.
+C
+               JNXT = KI - 1
+               DO 60 J = KI - 1, 1, -1
+                  IF( J.GT.JNXT )
+     $               GO TO 60
+                  J1 = J
+                  J2 = J
+                  JNXT = J - 1
+                  IF( J.GT.1 ) THEN
+                     IF( T( J, J-1 ).NE.ZERO ) THEN
+                        J1 = J - 1
+                        JNXT = J - 2
+                     END IF
+                  END IF
+C
+                  IF( J1.EQ.J2 ) THEN
+C
+C                    1-BY-1 DIAGONAL BLOCK
+C
+                     CALL DLALN2( .FALSE., 1, 1, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+N ), N, WR,
+     $                            ZERO, X, 2, SCALE, XNORM, IERR )
+C
+C                    SCALE X(1,1) TO AVOID OVERFLOW WHEN UPDATING
+C                    THE RIGHT-HAND SIDE.
+C
+                     IF( XNORM.GT.ONE ) THEN
+                        IF( WORK( J ).GT.BIGNUM / XNORM ) THEN
+                           X( 1, 1 ) = X( 1, 1 ) / XNORM
+                           SCALE = SCALE / XNORM
+                        END IF
+                     END IF
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( KI, SCALE, WORK( 1+N ), 1 )
+                     WORK( J+N ) = X( 1, 1 )
+C
+C                    UPDATE RIGHT-HAND SIDE
+C
+                     CALL DAXPY( J-1, -X( 1, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+N ), 1 )
+C
+                  ELSE
+C
+C                    2-BY-2 DIAGONAL BLOCK
+C
+                     CALL DLALN2( .FALSE., 2, 1, SMIN, ONE,
+     $                            T( J-1, J-1 ), LDT, ONE, ONE,
+     $                            WORK( J-1+N ), N, WR, ZERO, X, 2,
+     $                            SCALE, XNORM, IERR )
+C
+C                    SCALE X(1,1) AND X(2,1) TO AVOID OVERFLOW WHEN
+C                    UPDATING THE RIGHT-HAND SIDE.
+C
+                     IF( XNORM.GT.ONE ) THEN
+                        BETA = MAX( WORK( J-1 ), WORK( J ) )
+                        IF( BETA.GT.BIGNUM / XNORM ) THEN
+                           X( 1, 1 ) = X( 1, 1 ) / XNORM
+                           X( 2, 1 ) = X( 2, 1 ) / XNORM
+                           SCALE = SCALE / XNORM
+                        END IF
+                     END IF
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( KI, SCALE, WORK( 1+N ), 1 )
+                     WORK( J-1+N ) = X( 1, 1 )
+                     WORK( J+N ) = X( 2, 1 )
+C
+C                    UPDATE RIGHT-HAND SIDE
+C
+                     CALL DAXPY( J-2, -X( 1, 1 ), T( 1, J-1 ), 1,
+     $                           WORK( 1+N ), 1 )
+                     CALL DAXPY( J-2, -X( 2, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+N ), 1 )
+                  END IF
+   60          CONTINUE
+C
+C              COPY THE VECTOR X OR Q*X TO VR AND NORMALIZE.
+C
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( KI, WORK( 1+N ), 1, VR( 1, IS ), 1 )
+C
+                  II = IDAMAX( KI, VR( 1, IS ), 1 )
+                  REMAX = ONE / ABS( VR( II, IS ) )
+                  CALL DSCAL( KI, REMAX, VR( 1, IS ), 1 )
+C
+                  DO 70 K = KI + 1, N
+                     VR( K, IS ) = ZERO
+   70             CONTINUE
+               ELSE
+                  IF( KI.GT.1 )
+     $               CALL DGEMV( 'N', N, KI-1, ONE, VR, LDVR,
+     $                           WORK( 1+N ), 1, WORK( KI+N ),
+     $                           VR( 1, KI ), 1 )
+C
+                  II = IDAMAX( N, VR( 1, KI ), 1 )
+                  REMAX = ONE / ABS( VR( II, KI ) )
+                  CALL DSCAL( N, REMAX, VR( 1, KI ), 1 )
+               END IF
+C
+            ELSE
+C
+C              COMPLEX RIGHT EIGENVECTOR.
+C
+C              INITIAL SOLVE
+C                [ (T(KI-1,KI-1) T(KI-1,KI) ) - (WR + I* WI)]*X = 0.
+C                [ (T(KI,KI-1)   T(KI,KI)   )               ]
+C
+               IF( ABS( T( KI-1, KI ) ).GE.ABS( T( KI, KI-1 ) ) ) THEN
+                  WORK( KI-1+N ) = ONE
+                  WORK( KI+N2 ) = WI / T( KI-1, KI )
+               ELSE
+                  WORK( KI-1+N ) = -WI / T( KI, KI-1 )
+                  WORK( KI+N2 ) = ONE
+               END IF
+               WORK( KI+N ) = ZERO
+               WORK( KI-1+N2 ) = ZERO
+C
+C              FORM RIGHT-HAND SIDE
+C
+               DO 80 K = 1, KI - 2
+                  WORK( K+N ) = -WORK( KI-1+N )*T( K, KI-1 )
+                  WORK( K+N2 ) = -WORK( KI+N2 )*T( K, KI )
+   80          CONTINUE
+C
+C              SOLVE UPPER QUASI-TRIANGULAR SYSTEM:
+C              (T(1:KI-2,1:KI-2) - (WR+I*WI))*X = SCALE*(WORK+I*WORK2)
+C
+               JNXT = KI - 2
+               DO 90 J = KI - 2, 1, -1
+                  IF( J.GT.JNXT )
+     $               GO TO 90
+                  J1 = J
+                  J2 = J
+                  JNXT = J - 1
+                  IF( J.GT.1 ) THEN
+                     IF( T( J, J-1 ).NE.ZERO ) THEN
+                        J1 = J - 1
+                        JNXT = J - 2
+                     END IF
+                  END IF
+C
+                  IF( J1.EQ.J2 ) THEN
+C
+C                    1-BY-1 DIAGONAL BLOCK
+C
+                     CALL DLALN2( .FALSE., 1, 2, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+N ), N, WR, WI,
+     $                            X, 2, SCALE, XNORM, IERR )
+C
+C                    SCALE X(1,1) AND X(1,2) TO AVOID OVERFLOW WHEN
+C                    UPDATING THE RIGHT-HAND SIDE.
+C
+                     IF( XNORM.GT.ONE ) THEN
+                        IF( WORK( J ).GT.BIGNUM / XNORM ) THEN
+                           X( 1, 1 ) = X( 1, 1 ) / XNORM
+                           X( 1, 2 ) = X( 1, 2 ) / XNORM
+                           SCALE = SCALE / XNORM
+                        END IF
+                     END IF
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( KI, SCALE, WORK( 1+N ), 1 )
+                        CALL DSCAL( KI, SCALE, WORK( 1+N2 ), 1 )
+                     END IF
+                     WORK( J+N ) = X( 1, 1 )
+                     WORK( J+N2 ) = X( 1, 2 )
+C
+C                    UPDATE THE RIGHT-HAND SIDE
+C
+                     CALL DAXPY( J-1, -X( 1, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+N ), 1 )
+                     CALL DAXPY( J-1, -X( 1, 2 ), T( 1, J ), 1,
+     $                           WORK( 1+N2 ), 1 )
+C
+                  ELSE
+C
+C                    2-BY-2 DIAGONAL BLOCK
+C
+                     CALL DLALN2( .FALSE., 2, 2, SMIN, ONE,
+     $                            T( J-1, J-1 ), LDT, ONE, ONE,
+     $                            WORK( J-1+N ), N, WR, WI, X, 2, SCALE,
+     $                            XNORM, IERR )
+C
+C                    SCALE X TO AVOID OVERFLOW WHEN UPDATING
+C                    THE RIGHT-HAND SIDE.
+C
+                     IF( XNORM.GT.ONE ) THEN
+                        BETA = MAX( WORK( J-1 ), WORK( J ) )
+                        IF( BETA.GT.BIGNUM / XNORM ) THEN
+                           REC = ONE / XNORM
+                           X( 1, 1 ) = X( 1, 1 )*REC
+                           X( 1, 2 ) = X( 1, 2 )*REC
+                           X( 2, 1 ) = X( 2, 1 )*REC
+                           X( 2, 2 ) = X( 2, 2 )*REC
+                           SCALE = SCALE*REC
+                        END IF
+                     END IF
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( KI, SCALE, WORK( 1+N ), 1 )
+                        CALL DSCAL( KI, SCALE, WORK( 1+N2 ), 1 )
+                     END IF
+                     WORK( J-1+N ) = X( 1, 1 )
+                     WORK( J+N ) = X( 2, 1 )
+                     WORK( J-1+N2 ) = X( 1, 2 )
+                     WORK( J+N2 ) = X( 2, 2 )
+C
+C                    UPDATE THE RIGHT-HAND SIDE
+C
+                     CALL DAXPY( J-2, -X( 1, 1 ), T( 1, J-1 ), 1,
+     $                           WORK( 1+N ), 1 )
+                     CALL DAXPY( J-2, -X( 2, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+N ), 1 )
+                     CALL DAXPY( J-2, -X( 1, 2 ), T( 1, J-1 ), 1,
+     $                           WORK( 1+N2 ), 1 )
+                     CALL DAXPY( J-2, -X( 2, 2 ), T( 1, J ), 1,
+     $                           WORK( 1+N2 ), 1 )
+                  END IF
+   90          CONTINUE
+C
+C              COPY THE VECTOR X OR Q*X TO VR AND NORMALIZE.
+C
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( KI, WORK( 1+N ), 1, VR( 1, IS-1 ), 1 )
+                  CALL DCOPY( KI, WORK( 1+N2 ), 1, VR( 1, IS ), 1 )
+C
+                  EMAX = ZERO
+                  DO 100 K = 1, KI
+                     EMAX = MAX( EMAX, ABS( VR( K, IS-1 ) )+
+     $                      ABS( VR( K, IS ) ) )
+  100             CONTINUE
+C
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( KI, REMAX, VR( 1, IS-1 ), 1 )
+                  CALL DSCAL( KI, REMAX, VR( 1, IS ), 1 )
+C
+                  DO 110 K = KI + 1, N
+                     VR( K, IS-1 ) = ZERO
+                     VR( K, IS ) = ZERO
+  110             CONTINUE
+C
+               ELSE
+C
+                  IF( KI.GT.2 ) THEN
+                     CALL DGEMV( 'N', N, KI-2, ONE, VR, LDVR,
+     $                           WORK( 1+N ), 1, WORK( KI-1+N ),
+     $                           VR( 1, KI-1 ), 1 )
+                     CALL DGEMV( 'N', N, KI-2, ONE, VR, LDVR,
+     $                           WORK( 1+N2 ), 1, WORK( KI+N2 ),
+     $                           VR( 1, KI ), 1 )
+                  ELSE
+                     CALL DSCAL( N, WORK( KI-1+N ), VR( 1, KI-1 ), 1 )
+                     CALL DSCAL( N, WORK( KI+N2 ), VR( 1, KI ), 1 )
+                  END IF
+C
+                  EMAX = ZERO
+                  DO 120 K = 1, N
+                     EMAX = MAX( EMAX, ABS( VR( K, KI-1 ) )+
+     $                      ABS( VR( K, KI ) ) )
+  120             CONTINUE
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( N, REMAX, VR( 1, KI-1 ), 1 )
+                  CALL DSCAL( N, REMAX, VR( 1, KI ), 1 )
+               END IF
+            END IF
+C
+            IS = IS - 1
+            IF( IP.NE.0 )
+     $         IS = IS - 1
+  130       CONTINUE
+            IF( IP.EQ.1 )
+     $         IP = 0
+            IF( IP.EQ.-1 )
+     $         IP = 1
+  140    CONTINUE
+      END IF
+C
+      IF( LEFTV ) THEN
+C
+C        COMPUTE LEFT EIGENVECTORS.
+C
+         IP = 0
+         IS = 1
+         DO 260 KI = 1, N
+C
+            IF( IP.EQ.-1 )
+     $         GO TO 250
+            IF( KI.EQ.N )
+     $         GO TO 150
+            IF( T( KI+1, KI ).EQ.ZERO )
+     $         GO TO 150
+            IP = 1
+C
+  150       CONTINUE
+            IF( SOMEV ) THEN
+               IF( .NOT.SELECT( KI ) )
+     $            GO TO 250
+            END IF
+C
+C           COMPUTE THE KI-TH EIGENVALUE (WR,WI).
+C
+            WR = T( KI, KI )
+            WI = ZERO
+            IF( IP.NE.0 )
+     $         WI = SQRT( ABS( T( KI, KI+1 ) ) )*
+     $              SQRT( ABS( T( KI+1, KI ) ) )
+            SMIN = MAX( ULP*( ABS( WR )+ABS( WI ) ), SMLNUM )
+C
+            IF( IP.EQ.0 ) THEN
+C
+C              REAL LEFT EIGENVECTOR.
+C
+               WORK( KI+N ) = ONE
+C
+C              FORM RIGHT-HAND SIDE
+C
+               DO 160 K = KI + 1, N
+                  WORK( K+N ) = -T( KI, K )
+  160          CONTINUE
+C
+C              SOLVE THE QUASI-TRIANGULAR SYSTEM:
+C                 (T(KI+1:N,KI+1:N) - WR)'*X = SCALE*WORK
+C
+               VMAX = ONE
+               VCRIT = BIGNUM
+C
+               JNXT = KI + 1
+               DO 170 J = KI + 1, N
+                  IF( J.LT.JNXT )
+     $               GO TO 170
+                  J1 = J
+                  J2 = J
+                  JNXT = J + 1
+                  IF( J.LT.N ) THEN
+                     IF( T( J+1, J ).NE.ZERO ) THEN
+                        J2 = J + 1
+                        JNXT = J + 2
+                     END IF
+                  END IF
+C
+                  IF( J1.EQ.J2 ) THEN
+C
+C                    1-BY-1 DIAGONAL BLOCK
+C
+C                    SCALE IF NECESSARY TO AVOID OVERFLOW WHEN FORMING
+C                    THE RIGHT-HAND SIDE.
+C
+                     IF( WORK( J ).GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+N ), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+C
+                     WORK( J+N ) = WORK( J+N ) -
+     $                             DDOT( J-KI-1, T( KI+1, J ), 1,
+     $                             WORK( KI+1+N ), 1 )
+C
+C                    SOLVE (T(J,J)-WR)'*X = WORK
+C
+                     CALL DLALN2( .FALSE., 1, 1, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+N ), N, WR,
+     $                            ZERO, X, 2, SCALE, XNORM, IERR )
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( N-KI+1, SCALE, WORK( KI+N ), 1 )
+                     WORK( J+N ) = X( 1, 1 )
+                     VMAX = MAX( ABS( WORK( J+N ) ), VMAX )
+                     VCRIT = BIGNUM / VMAX
+C
+                  ELSE
+C
+C                    2-BY-2 DIAGONAL BLOCK
+C
+C                    SCALE IF NECESSARY TO AVOID OVERFLOW WHEN FORMING
+C                    THE RIGHT-HAND SIDE.
+C
+                     BETA = MAX( WORK( J ), WORK( J+1 ) )
+                     IF( BETA.GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+N ), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+C
+                     WORK( J+N ) = WORK( J+N ) -
+     $                             DDOT( J-KI-1, T( KI+1, J ), 1,
+     $                             WORK( KI+1+N ), 1 )
+C
+                     WORK( J+1+N ) = WORK( J+1+N ) -
+     $                               DDOT( J-KI-1, T( KI+1, J+1 ), 1,
+     $                               WORK( KI+1+N ), 1 )
+C
+C                    SOLVE
+C                      [T(J,J)-WR   T(J,J+1)     ]'* X = SCALE*( WORK1 )
+C                      [T(J+1,J)    T(J+1,J+1)-WR]             ( WORK2 )
+C
+                     CALL DLALN2( .TRUE., 2, 1, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+N ), N, WR,
+     $                            ZERO, X, 2, SCALE, XNORM, IERR )
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( N-KI+1, SCALE, WORK( KI+N ), 1 )
+                     WORK( J+N ) = X( 1, 1 )
+                     WORK( J+1+N ) = X( 2, 1 )
+C
+                     VMAX = MAX( ABS( WORK( J+N ) ),
+     $                      ABS( WORK( J+1+N ) ), VMAX )
+                     VCRIT = BIGNUM / VMAX
+C
+                  END IF
+  170          CONTINUE
+C
+C              COPY THE VECTOR X OR Q*X TO VL AND NORMALIZE.
+C
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( N-KI+1, WORK( KI+N ), 1, VL( KI, IS ), 1 )
+C
+                  II = IDAMAX( N-KI+1, VL( KI, IS ), 1 ) + KI - 1
+                  REMAX = ONE / ABS( VL( II, IS ) )
+                  CALL DSCAL( N-KI+1, REMAX, VL( KI, IS ), 1 )
+C
+                  DO 180 K = 1, KI - 1
+                     VL( K, IS ) = ZERO
+  180             CONTINUE
+C
+               ELSE
+C
+                  IF( KI.LT.N )
+     $               CALL DGEMV( 'N', N, N-KI, ONE, VL( 1, KI+1 ), LDVL,
+     $                           WORK( KI+1+N ), 1, WORK( KI+N ),
+     $                           VL( 1, KI ), 1 )
+C
+                  II = IDAMAX( N, VL( 1, KI ), 1 )
+                  REMAX = ONE / ABS( VL( II, KI ) )
+                  CALL DSCAL( N, REMAX, VL( 1, KI ), 1 )
+C
+               END IF
+C
+            ELSE
+C
+C              COMPLEX LEFT EIGENVECTOR.
+C
+C               INITIAL SOLVE:
+C                 ((T(KI,KI)    T(KI,KI+1) )' - (WR - I* WI))*X = 0.
+C                 ((T(KI+1,KI) T(KI+1,KI+1))                )
+C
+               IF( ABS( T( KI, KI+1 ) ).GE.ABS( T( KI+1, KI ) ) ) THEN
+                  WORK( KI+N ) = WI / T( KI, KI+1 )
+                  WORK( KI+1+N2 ) = ONE
+               ELSE
+                  WORK( KI+N ) = ONE
+                  WORK( KI+1+N2 ) = -WI / T( KI+1, KI )
+               END IF
+               WORK( KI+1+N ) = ZERO
+               WORK( KI+N2 ) = ZERO
+C
+C              FORM RIGHT-HAND SIDE
+C
+               DO 190 K = KI + 2, N
+                  WORK( K+N ) = -WORK( KI+N )*T( KI, K )
+                  WORK( K+N2 ) = -WORK( KI+1+N2 )*T( KI+1, K )
+  190          CONTINUE
+C
+C              SOLVE COMPLEX QUASI-TRIANGULAR SYSTEM:
+C              ( T(KI+2,N:KI+2,N) - (WR-I*WI) )*X = WORK1+I*WORK2
+C
+               VMAX = ONE
+               VCRIT = BIGNUM
+C
+               JNXT = KI + 2
+               DO 200 J = KI + 2, N
+                  IF( J.LT.JNXT )
+     $               GO TO 200
+                  J1 = J
+                  J2 = J
+                  JNXT = J + 1
+                  IF( J.LT.N ) THEN
+                     IF( T( J+1, J ).NE.ZERO ) THEN
+                        J2 = J + 1
+                        JNXT = J + 2
+                     END IF
+                  END IF
+C
+                  IF( J1.EQ.J2 ) THEN
+C
+C                    1-BY-1 DIAGONAL BLOCK
+C
+C                    SCALE IF NECESSARY TO AVOID OVERFLOW WHEN
+C                    FORMING THE RIGHT-HAND SIDE ELEMENTS.
+C
+                     IF( WORK( J ).GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+N ), 1 )
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+N2 ), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+C
+                     WORK( J+N ) = WORK( J+N ) -
+     $                             DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                             WORK( KI+2+N ), 1 )
+                     WORK( J+N2 ) = WORK( J+N2 ) -
+     $                              DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                              WORK( KI+2+N2 ), 1 )
+C
+C                    SOLVE (T(J,J)-(WR-I*WI))*(X11+I*X12)= WK+I*WK2
+C
+                     CALL DLALN2( .FALSE., 1, 2, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+N ), N, WR,
+     $                            -WI, X, 2, SCALE, XNORM, IERR )
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( N-KI+1, SCALE, WORK( KI+N ), 1 )
+                        CALL DSCAL( N-KI+1, SCALE, WORK( KI+N2 ), 1 )
+                     END IF
+                     WORK( J+N ) = X( 1, 1 )
+                     WORK( J+N2 ) = X( 1, 2 )
+                     VMAX = MAX( ABS( WORK( J+N ) ),
+     $                      ABS( WORK( J+N2 ) ), VMAX )
+                     VCRIT = BIGNUM / VMAX
+C
+                  ELSE
+C
+C                    2-BY-2 DIAGONAL BLOCK
+C
+C                    SCALE IF NECESSARY TO AVOID OVERFLOW WHEN FORMING
+C                    THE RIGHT-HAND SIDE ELEMENTS.
+C
+                     BETA = MAX( WORK( J ), WORK( J+1 ) )
+                     IF( BETA.GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+N ), 1 )
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+N2 ), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+C
+                     WORK( J+N ) = WORK( J+N ) -
+     $                             DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                             WORK( KI+2+N ), 1 )
+C
+                     WORK( J+N2 ) = WORK( J+N2 ) -
+     $                              DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                              WORK( KI+2+N2 ), 1 )
+C
+                     WORK( J+1+N ) = WORK( J+1+N ) -
+     $                               DDOT( J-KI-2, T( KI+2, J+1 ), 1,
+     $                               WORK( KI+2+N ), 1 )
+C
+                     WORK( J+1+N2 ) = WORK( J+1+N2 ) -
+     $                                DDOT( J-KI-2, T( KI+2, J+1 ), 1,
+     $                                WORK( KI+2+N2 ), 1 )
+C
+C                    SOLVE 2-BY-2 COMPLEX LINEAR EQUATION
+C                      ([T(J,J)   T(J,J+1)  ]'-(WR-I*WI)*I)*X = SCALE*B
+C                      ([T(J+1,J) T(J+1,J+1)]             )
+C
+                     CALL DLALN2( .TRUE., 2, 2, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+N ), N, WR,
+     $                            -WI, X, 2, SCALE, XNORM, IERR )
+C
+C                    SCALE IF NECESSARY
+C
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( N-KI+1, SCALE, WORK( KI+N ), 1 )
+                        CALL DSCAL( N-KI+1, SCALE, WORK( KI+N2 ), 1 )
+                     END IF
+                     WORK( J+N ) = X( 1, 1 )
+                     WORK( J+N2 ) = X( 1, 2 )
+                     WORK( J+1+N ) = X( 2, 1 )
+                     WORK( J+1+N2 ) = X( 2, 2 )
+                     VMAX = MAX( ABS( X( 1, 1 ) ), ABS( X( 1, 2 ) ),
+     $                      ABS( X( 2, 1 ) ), ABS( X( 2, 2 ) ), VMAX )
+                     VCRIT = BIGNUM / VMAX
+C
+                  END IF
+  200          CONTINUE
+C
+C              COPY THE VECTOR X OR Q*X TO VL AND NORMALIZE.
+C
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( N-KI+1, WORK( KI+N ), 1, VL( KI, IS ), 1 )
+                  CALL DCOPY( N-KI+1, WORK( KI+N2 ), 1, VL( KI, IS+1 ),
+     $                        1 )
+C
+                  EMAX = ZERO
+                  DO 220 K = KI, N
+                     EMAX = MAX( EMAX, ABS( VL( K, IS ) )+
+     $                      ABS( VL( K, IS+1 ) ) )
+  220             CONTINUE
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( N-KI+1, REMAX, VL( KI, IS ), 1 )
+                  CALL DSCAL( N-KI+1, REMAX, VL( KI, IS+1 ), 1 )
+C
+                  DO 230 K = 1, KI - 1
+                     VL( K, IS ) = ZERO
+                     VL( K, IS+1 ) = ZERO
+  230             CONTINUE
+               ELSE
+                  IF( KI.LT.N-1 ) THEN
+                     CALL DGEMV( 'N', N, N-KI-1, ONE, VL( 1, KI+2 ),
+     $                           LDVL, WORK( KI+2+N ), 1, WORK( KI+N ),
+     $                           VL( 1, KI ), 1 )
+                     CALL DGEMV( 'N', N, N-KI-1, ONE, VL( 1, KI+2 ),
+     $                           LDVL, WORK( KI+2+N2 ), 1,
+     $                           WORK( KI+1+N2 ), VL( 1, KI+1 ), 1 )
+                  ELSE
+                     CALL DSCAL( N, WORK( KI+N ), VL( 1, KI ), 1 )
+                     CALL DSCAL( N, WORK( KI+1+N2 ), VL( 1, KI+1 ), 1 )
+                  END IF
+C
+                  EMAX = ZERO
+                  DO 240 K = 1, N
+                     EMAX = MAX( EMAX, ABS( VL( K, KI ) )+
+     $                      ABS( VL( K, KI+1 ) ) )
+  240             CONTINUE
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( N, REMAX, VL( 1, KI ), 1 )
+                  CALL DSCAL( N, REMAX, VL( 1, KI+1 ), 1 )
+C
+               END IF
+C
+            END IF
+C
+            IS = IS + 1
+            IF( IP.NE.0 )
+     $         IS = IS + 1
+  250       CONTINUE
+            IF( IP.EQ.-1 )
+     $         IP = 0
+            IF( IP.EQ.1 )
+     $         IP = -1
+C
+  260    CONTINUE
+C
+      END IF
+C
+      RETURN
+C
+C     END OF DTREVC
+C
+      END

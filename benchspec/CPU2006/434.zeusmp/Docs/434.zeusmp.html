@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>434.zeusmp: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>434.zeusmp<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>434.zeusmp</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Michael Norman &lt;mnorman &#x5b;at&#x5d; cosmos.ucsd.edu&gt;<br /> 
+Department of Physics<br />
+University of California, San Diego<br />
+San Diego<br />
+California<br />
+USA</p>
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Physics / Magnetohydrodynamics</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>434.zeusmp is based on ZEUS-MP, a computational fluid dynamics code developed at the
+Laboratory for Computational Astrophysics (NCSA, University of
+Illinois at Urbana-Champaign) for the simulation of astrophysical
+phenomena.  ZEUS-MP solves
+problems in three spatial dimensions with a wide variety of boundary
+conditions. </p>
+
+<p>The program solves the equations of ideal (non-resistive),
+non-relativistic, hydrodynamics and magnetohydrodynamics, including
+externally applied gravitational fields and self-gravity. The gas
+can be adiabatic or isothermal, and the thermal pressure is
+isotropic. Boundary conditions may be specified as reflecting,
+periodic, inflow, or outflow.</p>
+
+<p> The physical problem solved in SPEC CPU2006 is a 3-D blastwave
+simulated with the presence of a uniform magnetic field along the
+x-direction. A Cartesian grid is used and the boundaries are
+"outflow."  </p>
+
+<p>The original ZEUS-MP is based on ZEUS-3D and parallelized using the MPI
+message-passing library; for SPEC CPU2006, the MPI calls have been
+removed to create the single processor version 434.zeusmp.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>The input file zmp_inp contains many parameters from which the
+problem is built, among them:</p>
+
+<dl>
+<dt>mpitop</dt>
+
+<dd>The spatial arrangement of processors (irrelevant for CPU2006).</dd>
+
+<dt>rescon</dt>
+
+<dd>Restart control which is irrelevant in this test.</dd>
+
+<dt>pcon</dt>
+
+<dd>Problem control with the limits on number of steps (nlim)
+system time (tlim) and CPU time (cpulim).</dd>
+
+<dt>hycon</dt>
+
+<dd>Physical constants related to the hydrodynamical problem</dd>
+
+<dt>iib ~ okb</dt>
+
+<dd>Boundary conditions at the 6 boundaries.</dd>
+
+<dt>ggen1~3</dt>
+
+<dd>Grid information.</dd>
+
+<dt>grvcon</dt>
+
+<dd>Gravitation control which is irrelevant in this test.</dd>
+
+<dt>radcon</dt>
+
+<dd>Radiation control which is irrelevant in this test.</dd>
+
+<dt>radexp</dt>
+
+<dd>Radiative diffusion control which is irrelevant in this
+test.</dd>
+
+<dt>eqos</dt>
+
+<dd>Information on Equation of State.</dd>
+
+<dt>pgen</dt>
+
+<dd>Problem generator control information. In this test, it is a
+spherical blastwave with radius r=0.2 and located at the origin.
+The ambient density d0=1 and the ambient pressure is 0.6. The
+initial blastwave has density 100 times and pressure of 1 million
+times of the surrounding. B-field is in the x-direction
+(b10=140).</dd>
+
+<dt>gcon</dt>
+
+<dd>Moving grid control which is irrelevant in this test.</dd>
+
+<dt>iocon</dt>
+
+<dd>I/O control. Physical information of the blastwave test will
+ouput at the end of the run.</dd>
+</dl>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>The output file "tsl000aa" contains physical information of the
+blastwave at the beginning and the end of the run. This file is used
+for validation.</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>The main code is written in Fortran 77, with the change that (as
+in all of SPEC's Fortran benchmarks) the type</p>
+
+<pre>
+DOUBLE PRECISION
+</pre>
+
+<p>has been replaced by</p>
+
+<pre>
+REAL*8
+</pre>
+
+<p>thus making the size of the relevant floating-point data uniform
+across systems - an important consideration for fair benchmarking.
+While the type REAL*8 is not part of the strict Fortran 77 or
+Fortran 90 standards, it is a common language extension recognized
+by all Fortran compilers the SPEC CPU subcomittee has used in its
+tests.</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>None</p>
+
+<hr />
+
+<h2>References</h2>
+
+<p><a href=
+"http://cosmos.ucsd.edu/lca-www/software/lca_intro_zeusmp.html">http://cosmos.ucsd.edu/lca-www/software/lca_intro_zeusmp.html</a>
+</p>
+
+<hr />
+
+<p>Last updated: 27 July 2006</p>
+</body>
+</html>

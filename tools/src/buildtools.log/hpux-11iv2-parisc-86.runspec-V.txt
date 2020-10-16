@@ -1,0 +1,31 @@
+runspec v3496 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'unknown' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 86pre
+ Benchmarks version: 86pre
+      Tools version: 86pre
+    runspec version: 3496 ($Id: runspec 3496 2005-12-16 21:11:52Z cloyce $)
+
+Tools information:
+ Tools package installed: unknown
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0775 | 0     | 116   |  208896 | 05-Jan-2006 15:10:41 | specmake
+0755 | 0     | 116   | 1454080 | 05-Jan-2006 15:10:42 | specperl
+0775 | 0     | 116   |   32768 | 05-Jan-2006 15:11:42 | specinvoke
+0775 | 0     | 116   |   36864 | 05-Jan-2006 15:11:42 | specinvoke_pm
+0775 | 0     | 116   |  110592 | 05-Jan-2006 15:10:42 | specbzip2
+0775 | 0     | 116   |   40960 | 05-Jan-2006 15:11:42 | specmd5sum
+0755 | 0     | 116   |    7609 | 05-Jan-2006 15:11:54 | specdiff
+0755 | 0     | 116   |   85742 | 05-Jan-2006 15:11:54 | specpp
+0755 | 0     | 116   |   75061 | 05-Jan-2006 15:11:54 | runspec
+0775 | 22631 | 116   |    1520 | 31-Aug-2005 15:31:57 | runspec.bat
+
+Version info for specinvoke (/var/tmp/kit85-toolsbuild/bin/specinvoke): Version: 3478
+Version info for specmake (/var/tmp/kit85-toolsbuild/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/var/tmp/kit85-toolsbuild/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/var/tmp/kit85-toolsbuild/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/var/tmp/kit85-toolsbuild/bin/specperl): This is specperl, v5.8.7 built for PA-RISC2.0
+                           For more detail on specperl, say 'specperl -V'

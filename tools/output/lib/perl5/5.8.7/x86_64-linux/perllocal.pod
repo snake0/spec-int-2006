@@ -1,0 +1,352 @@
+=head2 Mon Apr 14 22:00:44 2014: C<Module> L<Compress::Zlib|Compress::Zlib>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.34>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:00:47 2014: C<Module> L<Compress::Bzip2|Compress::Bzip2>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 2.09>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:00:56 2014: C<Module> L<IO-stringy|IO-stringy>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 2.108>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:01 2014: C<Module> L<GD|GD>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.19>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:02 2014: C<Module> L<Mail|Mail>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.58>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:05 2014: C<Module> L<MIME-tools|MIME-tools>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 5.417>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:12 2014: C<Module> L<PDF::API2|PDF::API2>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 0.41>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:14 2014: C<Module> L<Text::CSV_XS|Text::CSV_XS>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 0.23>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:16 2014: C<Module> L<HTML::Tagset|HTML::Tagset>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 3.04>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:18 2014: C<Module> L<HTML::Parser|HTML::Parser>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 3.45>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:21 2014: C<Module> L<XML::NamespaceSupport|XML::NamespaceSupport>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.08>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:23 2014: C<Module> L<XML::SAX|XML::SAX>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 0.12>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:27 2014: C<Module> L<URI|URI>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.35>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:32 2014: C<Module> L<libwww-perl|libwww-perl>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 5.803>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:53 2014: C<Module> L<Algorithm::Diff|Algorithm::Diff>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.15>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Mon Apr 14 22:01:54 2014: C<Module> L<Font::AFM|Font::AFM>
+
+=over 4
+
+=item *
+
+C<installed into: /var/services/homes/spparmar/spec2006/tools/output/lib/perl5/site_perl/5.8.7>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.18>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+

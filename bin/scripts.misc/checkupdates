@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# checkupdates - check for uncommitted changes and new files in the working
+#                tree.
+#
+# No support is provided for this script.
+#
+# Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+#  All Rights Reserved
+#
+# $Id: checkupdates 3626 2006-01-17 14:16:50Z cloyce $
+
+if [ -z "$SPEC" ]; then
+    echo "SPEC variable is not set!";
+    exit 1;
+fi
+
+if [ ! -d $SPEC ]; then
+    echo "SPEC variable is not set to a directory name!";
+    exit 1;
+else
+    cd $SPEC
+fi
+
+if [ -d CVS ]; then
+  cvs -n update -d -P 2>&1 | egrep -v '^cvs update: (Updat|.*gnored$)'
+elif [ -d .svn ]; then
+  svn status
+else
+  echo 'What version control system is in use?'
+  exit 1
+fi
+

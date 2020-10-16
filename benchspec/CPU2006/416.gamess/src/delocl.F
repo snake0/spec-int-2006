@@ -1,0 +1,1635 @@
+C  9 DEC 03 - MWS - SYNCH COMMON BLOCK RUNOPT
+C 17 APR 02 - MWS - SYNCH UP FRGINF COMMON
+C 26 MAR 02 - CHC - AUTOIZ: EXIT IF TOO FEW COORDS TO USE CONSTRAINTS
+C 11 OCT 00 - CHC - RRD: REORDER COORDINATE TYPE, TOO
+C 16 FEB 00 - MWS - AUTOIZ,GTTOR,GTANG: STORAGE CHANGES
+C 15 JAN 00 - VK  - AUTOIZ: NO LONGER USES EFP POINTS IN DLC GENERATION
+C 13 DEC 99 - CHC - GINVRDL: BUG FIX FOR MULTI-CONSTRAINTS
+C 13 FEB 99 - MWS - GINVRDL: CHANGE NUMERICAL VALUE FOR -TOL-
+C 31 DEC 98 - CHC - RRD: FIXES FOR FREEZING OPTION
+C 27 SEP 98 - CHC - CONSTRAIN GEOMETRY OPT IN BAKER'S DELOCALIZED COORDS
+C 24 MAR 98 - JRS - NEW SOURCE MODULE DELOCL
+C
+C   CONTAINS THE ROUTINES TO CREATE A SET OF DELOCAL COORDINATES (DLCS)
+C   AND CONSTRAINT OPTIMIZATION AS DESCRIBED IN THE PAPER
+C   BAKER J., J. COMP. CHEM. V18. P1079 (1997)
+C   BAKER J., KESSI A., AND DELLEY B., J. CHEM. PHYS. V105. P192 (1996)
+C   PRIMARY AUTHORS OF THIS CODE: JIM SHOEMAKER AND CHEOL CHOI
+C
+C* MODULE DELOCL *DECK AUTOIZ
+      SUBROUTINE AUTOIZ(IZMAT,NONVDW,IXZMAT,IFZMAT,ITZMAT,IRZMAT,
+     *                  IPAIRS,IANG,ITOR,
+     *                  NELS,NNVDW,NZVAR,NPAIR,NANG,NTOR)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION IZMAT(NELS),IXZMAT(NELS),IFZMAT(NELS),ITZMAT(NELS),
+     *          IRZMAT(NELS),NONVDW(NNVDW),
+     *          IPAIRS(2,NPAIR),IANG(3,NANG),ITOR(4,NTOR)
+      DIMENSION ITMVEC(10)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      PARAMETER (MXATM=500, MXFRG=50)
+C
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /FMCOM / X(1)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /DLCFRZ/ FVALUE(50),ITABLE(50),IFTYPE(50),NCONST
+C
+      LOGICAL FLAG
+      INTEGER NBONDS
+C
+C     AUTOMATICALLY GENERATE A REDUNDANT SET OF INTERNAL COORDINATES
+C     AND PUT THEM INTO THE IZMAT ARRAY
+C
+      IFLAG=0
+      NRCONST=0
+      NNRCNST=0
+      NBONDS=0
+      NTHETA=0
+      NOMEGA=0
+      NEXTRA=0
+      NCONST=0
+      NXCONST=0
+C
+C      LET'S FIRST FIND OUT THE NUMBER OF INTERNAL COORDINATES
+C      WHICH WE WANT TO REMOVE. (NRCONST)
+C
+      CALL CHKRZT(IRZMAT,NELS,NRCONST)
+C
+C     DO NOT FORM DLC-S OUT OF EFP POINTS
+C
+      NFRGBK=NFRG
+      NFRG=0
+C
+C
+C  ----------ASSIGN BOND PAIRS --------------------------
+C
+      CALL GTBOND(IPAIRS,NPAIR,NBONDS,0)
+C
+C -- THE LAST VARIABLE IN CALL OF GTBOND IS LUNIT
+C    LUNIT=0: DEFINE THE BONDED ATOM PAIRS
+C    LUNIT NE 0 WRITE IPAIRS ARRAY TO AN OUTPUT FILE
+C
+C    ADD BOND PAIRS WITH DISTANCES GREATER THAN THE VDW BONDING
+C    SEPARATION,
+C    THESE ARE DEFINED BY THE USER IN THE NONVDW ARRAY
+C
+      IUSPEC=0
+      DO 10 I=1,NNVDW,2
+        IF ( (NONVDW(I) .GT. 0) .AND.  (NONVDW(I+1) .GT. 0) ) THEN
+           IPAIRS(1,NBONDS+1)=NONVDW(I)
+           IPAIRS(2,NBONDS+1)=NONVDW(I+1)
+           NBONDS=NBONDS+1
+           IUSPEC=IUSPEC+1
+        ENDIF
+        IF ((NONVDW(I) .GT. 0) .AND.  (NONVDW(I+1) .LE. 0)) THEN
+           IF (MASWRK) WRITE(IW,*) ' ERROR IN NONVDW LIST '
+           CALL ABRT
+        ENDIF
+ 10   CONTINUE
+C
+C   REORDER BOND INDICES, LOW - HIGH
+C
+      DO 690 I=1,NBONDS
+         IF(IPAIRS(1,I) .GT. IPAIRS(2,I)) THEN
+            ITEMP=IPAIRS(1,I)
+            IPAIRS(1,I)=IPAIRS(2,I)
+            IPAIRS(2,I)=ITEMP
+         END IF
+ 690  CONTINUE
+C
+C     SORT BOND PAIRS, INTO ASCENDING ORDER
+C
+      CALL VALFM(LOADFM)
+      LA     = 1      + LOADFM
+      LB     = LA     + NBONDS
+      LAST   = LB     + NBONDS
+      NEED = LAST - LOADFM
+      CALL GETFM(NEED)
+      IF (NBONDS.GT.1) CALL SRTBND(NBONDS,IPAIRS,X(LA),X(LB))
+      CALL RETFM(NEED)
+C
+C  ----------ASSIGN BOND ANGLES --------------------------
+C
+      CALL GTANG(IW,MASWRK,IPAIRS,NBONDS,NTHETA,IANG,NPAIR,NANG)
+C
+C  --- REARRANGE ANGLE INDICES BY ATOM NUMBERS, LOW MID HIGH
+C
+      IF (NTHETA.GT.0) THEN
+         DO 800 I=1,NTHETA
+            IF(IANG(3,I) .LT. IANG(1,I)) THEN
+               ITEMP=IANG(1,I)
+               IANG(1,I)=IANG(3,I)
+               IANG(3,I)=ITEMP
+            ENDIF
+ 800     CONTINUE
+C
+C  --- CHECK FOR 180 DEGREE ANGLES BY CALCULATING B MATRIX ELEMENTS.
+C      IF TRUE, SET ANGLE INDICES TO 0, AND CLEAN OUT OF IANG ARRAY
+C      IN SORTANG SUBROUTINE
+C
+         DO 1000 I=1,NTHETA
+           CALL CHKANG(IANG(1,I),IANG(2,I),IANG(3,I),C)
+ 1000    CONTINUE
+      ENDIF
+C
+C --- NOW SORT THE ANGLES INTO ASCENDING FIRST ATOM INDEX
+C     ALSO ELIMINATE THE 0,0,0 I,J,K ANGLES
+C
+      CALL VALFM(LOADFM)
+      LA     = 1      + LOADFM
+      LB     = LA     + NTHETA
+      LC     = LB     + NTHETA
+      LAST   = LC     + NTHETA
+      NEED = LAST - LOADFM
+      CALL GETFM(NEED)
+      IF (NTHETA.GT.1) CALL SRTANG(NTHETA,IANG,X(LA),X(LB),X(LC))
+      CALL RETFM(NEED)
+C
+C  ----------   ASSIGN TORSION ANGLES   ------------------------
+C     GTTOR FINDS MANY EXTRAS THAT GET DISCARDED LATER, SO STORAGE
+C     HAS TO BE MORE THAN YOU MIGHT GUESS.
+C
+      CALL GTTOR(IW,MASWRK,NBONDS,NTHETA,NOMEGA,IPAIRS,IANG,ITOR,
+     *           NPAIR,NANG,NTOR)
+      IF (NOMEGA.GT.0) THEN
+         DO 1010 I=1,NOMEGA
+           CALL CHKTOR(ITOR(1,I),ITOR(2,I),ITOR(3,I),ITOR(4,I),C)
+ 1010    CONTINUE
+      ENDIF
+C
+C  -- ELIMINATE DUPLICATE TORSIONS AND SORT BY ASCENDING ATOM INDEX
+C
+      CALL VALFM(LOADFM)
+      LA     = 1      + LOADFM
+      LB     = LA     + NOMEGA
+      LC     = LB     + NOMEGA
+      LD     = LC     + NOMEGA
+      LAST   = LD     + NOMEGA
+      NEED = LAST - LOADFM
+      CALL GETFM(NEED)
+      IF(NOMEGA.GT.1) CALL SRTTOR(NOMEGA,ITOR,X(LA),X(LB),X(LC),X(LD))
+      CALL RETFM(NEED)
+C
+C  ---- PUT INTERNALS INTO IZMAT ARRAY FOR DLC CALCULATION -------
+C
+C  PUT BOND PAIRS INTO IZMAT    1,I,J, ETC
+C
+      NZVAR=0
+      IZ=1
+      DO 530 I=1,NBONDS
+        IF (NRCONST .GT. 0) THEN
+            ITMVEC(1)=IPAIRS(1,I)
+            ITMVEC(2)=IPAIRS(2,I)
+            CALL CHKVEC(ITMVEC,IRZMAT,1,IFLAG,NELS,NRCONST)
+            IF (IFLAG .EQ. -1) THEN
+             ITZMAT(IZ)=1
+             ITZMAT(IZ+1)=IPAIRS(1,I)
+             ITZMAT(IZ+2)=IPAIRS(2,I)
+             IZ=IZ+3
+             NZVAR=NZVAR+1
+            ENDIF
+         ELSE
+            ITZMAT(IZ)=1
+            ITZMAT(IZ+1)=IPAIRS(1,I)
+            ITZMAT(IZ+2)=IPAIRS(2,I)
+            IZ=IZ+3
+            NZVAR=NZVAR+1
+         ENDIF
+  530 CONTINUE
+C
+C -- PUT SORTED ANGLES INTO THE IZMAT ARRAY
+C
+      IF (NTHETA.GT.0) THEN
+         NNRCNST=0
+         DO 810 I=1,NTHETA
+         IF (NRCONST .GT. 0) THEN
+            ITMVEC(1)=IANG(1,I)
+            ITMVEC(2)=IANG(2,I)
+            ITMVEC(3)=IANG(3,I)
+            CALL CHKVEC(ITMVEC,IRZMAT,2,IFLAG,NELS,NRCONST)
+            IF (IFLAG .EQ. -1) THEN
+              ITZMAT(IZ)=2
+              ITZMAT(IZ+1)=IANG(1,I)
+              ITZMAT(IZ+2)=IANG(2,I)
+              ITZMAT(IZ+3)=IANG(3,I)
+              IZ=IZ+4
+            ELSE
+              NNRCNST=NNRCNST+1
+            ENDIF
+         ELSE
+              ITZMAT(IZ)=2
+              ITZMAT(IZ+1)=IANG(1,I)
+              ITZMAT(IZ+2)=IANG(2,I)
+              ITZMAT(IZ+3)=IANG(3,I)
+              IZ=IZ+4
+         ENDIF
+ 810     CONTINUE
+         NTHETA = NTHETA-NNRCNST
+         NZVAR=NZVAR+NTHETA
+      ENDIF
+C
+C -- PUT SORTED TORSIONS INTO THE IZMAT ARRAY
+C
+      IF (NOMEGA.GT.0) THEN
+         NNRCNST=0
+         DO 830 I=1,NOMEGA
+         IF (NRCONST .GT. 0) THEN
+            ITMVEC(1)=ITOR(1,I)
+            ITMVEC(2)=ITOR(2,I)
+            ITMVEC(3)=ITOR(3,I)
+            ITMVEC(4)=ITOR(4,I)
+            CALL CHKVEC(ITMVEC,IRZMAT,3,IFLAG,NELS,NRCONST)
+            IF (IFLAG .EQ. -1) THEN
+             ITZMAT(IZ)=3
+             ITZMAT(IZ+1)=ITOR(1,I)
+             ITZMAT(IZ+2)=ITOR(2,I)
+             ITZMAT(IZ+3)=ITOR(3,I)
+             ITZMAT(IZ+4)=ITOR(4,I)
+             IZ=IZ+5
+            ELSE
+              NNRCNST=NNRCNST+1
+            ENDIF
+         ELSE
+            ITZMAT(IZ)=3
+            ITZMAT(IZ+1)=ITOR(1,I)
+            ITZMAT(IZ+2)=ITOR(2,I)
+            ITZMAT(IZ+3)=ITOR(3,I)
+            ITZMAT(IZ+4)=ITOR(4,I)
+            IZ=IZ+5
+         ENDIF
+ 830     CONTINUE
+         NOMEGA=NOMEGA-NNRCNST
+         NZVAR=NZVAR+NOMEGA
+      ENDIF
+C
+C -- PUT IXZMAT (EXTRA INTERNAL COORDINATE) INTO
+C -- IZMAT ARRAY
+C
+      IF ( (IXZMAT(1) .GT. 0) .AND. (IXZMAT(2) .GT.0) ) THEN
+         FLAG = .TRUE.
+         NIZ = 1
+         DO WHILE (FLAG)
+           IF (IXZMAT(NIZ) .EQ. 1) THEN
+             ITZMAT(IZ) = IXZMAT(NIZ)
+             ITZMAT(IZ+1) = IXZMAT(NIZ+1)
+             ITZMAT(IZ+2) = IXZMAT(NIZ+2)
+             IZ = IZ + 3
+             NIZ = NIZ + 3
+             NEXTRA = NEXTRA + 1
+           ELSEIF (IXZMAT(NIZ) .EQ. 2) THEN
+             ITZMAT(IZ) = IXZMAT(NIZ)
+             ITZMAT(IZ+1) = IXZMAT(NIZ+1)
+             ITZMAT(IZ+2) = IXZMAT(NIZ+2)
+             ITZMAT(IZ+3) = IXZMAT(NIZ+3)
+             IZ = IZ + 4
+             NIZ = NIZ + 4
+             NEXTRA = NEXTRA + 1
+           ELSEIF (IXZMAT(NIZ) .EQ. 3) THEN
+             ITZMAT(IZ) = IXZMAT(NIZ)
+             ITZMAT(IZ+1) = IXZMAT(NIZ+1)
+             ITZMAT(IZ+2) = IXZMAT(NIZ+2)
+             ITZMAT(IZ+3) = IXZMAT(NIZ+3)
+             ITZMAT(IZ+4) = IXZMAT(NIZ+4)
+             IZ = IZ + 5
+             NIZ = NIZ + 5
+             NEXTRA = NEXTRA + 1
+           ELSE
+            FLAG = .FALSE.
+           ENDIF
+         END DO
+      ENDIF
+C
+      NZVAR = NZVAR + NEXTRA
+      NZMAT=IZ
+C
+C    1. IS INTERNAL COORDINATE OF IFZMAT IN IZMAT ?
+C    2. FIND OUT THE NUMBER IN IZMAT OF THE EACH INTERNAL COORDINATE
+C       OF IFZMAT.
+C    3. GET NCONST
+C
+      CALL CHKFZT(IFZMAT,ITZMAT,NELS,NZVAR)
+C
+C -- PUT IFZMAT (CONSTRAINT INTERNAL COORDINATE) INTO
+C -- IZMAT ARRAY, IF IT IS NOT DEFINED.
+C
+      IF (NCONST.GT.0) THEN
+      NIZ = 1
+      DO 840 I=1,NCONST
+        IF (IFZMAT(NIZ) .EQ. 1) THEN
+           IF (ITABLE(I) .EQ. -1 ) THEN
+             ITZMAT(IZ) = IFZMAT(NIZ)
+             ITZMAT(IZ+1) = IFZMAT(NIZ+1)
+             ITZMAT(IZ+2) = IFZMAT(NIZ+2)
+             IZ = IZ + 3
+             NIZ = NIZ + 3
+             NZVAR = NZVAR + 1
+             ITABLE(I) = NZVAR
+             NXCONST = NXCONST + 1
+           ELSE
+             NIZ = NIZ + 3
+           END IF
+        ELSEIF (IFZMAT(NIZ) .EQ. 2) THEN
+           IF (ITABLE(I) .EQ. -1 ) THEN
+             ITZMAT(IZ) = IFZMAT(NIZ)
+             ITZMAT(IZ+1) = IFZMAT(NIZ+1)
+             ITZMAT(IZ+2) = IFZMAT(NIZ+2)
+             ITZMAT(IZ+3) = IFZMAT(NIZ+3)
+             IZ = IZ + 4
+             NIZ = NIZ + 4
+             NZVAR = NZVAR + 1
+             ITABLE(I) = NZVAR
+             NXCONST = NXCONST + 1
+           ELSE
+             NIZ = NIZ + 4
+           END IF
+        ELSEIF (IFZMAT(NIZ) .EQ. 3) THEN
+           IF (ITABLE(I) .EQ. -1 ) THEN
+             ITZMAT(IZ) = IFZMAT(NIZ)
+             ITZMAT(IZ+1) = IFZMAT(NIZ+1)
+             ITZMAT(IZ+2) = IFZMAT(NIZ+2)
+             ITZMAT(IZ+3) = IFZMAT(NIZ+3)
+             ITZMAT(IZ+4) = IFZMAT(NIZ+4)
+             IZ = IZ + 5
+             NIZ = NIZ + 5
+             NZVAR = NZVAR + 1
+             ITABLE(I) = NZVAR
+             NXCONST = NXCONST + 1
+           ELSE
+             NIZ = NIZ + 5
+           END IF
+        ENDIF
+ 840  CONTINUE
+C
+      NZMAT=NZMAT+IZ
+      ENDIF
+C
+C     LET'S REORDER THE IZMAT IN SUCH A WAY THAT CONSTRAINT
+C     COORDINATES COME FIRST.
+C
+      CALL RRD(IZMAT,ITZMAT,NELS,NZVAR)
+C
+C     RESTORE NFRG
+C
+      NFRG = NFRGBK
+C
+C  WRITE SOME DIAGNOSTIC INFO
+C
+      IF (MASWRK) THEN
+      WRITE(IW,*)
+      WRITE(IW,*)
+      WRITE(IW,*) '-----------------------------------------------'
+      WRITE(IW,*) ' STATISTICS ON AUTOMATIC COORDINATE GENERATION '
+      WRITE(IW,*) '-----------------------------------------------'
+      WRITE(IW,*) ' NUMBER OF USER SPECIFIED BONDS         ',IUSPEC
+      WRITE(IW,*) ' NUMBER OF BONDS                        ',NBONDS
+      WRITE(IW,*) ' NUMBER OF ANGLES                       ',NTHETA
+      WRITE(IW,*) ' NUMBER OF TORSIONS                     ',NOMEGA
+      WRITE(IW,*) ' NUMBER OF EXTRA COORD.                 ',NEXTRA
+      WRITE(IW,*) ' NUMBER OF EXTRA COORD. FOR CONSTRAINTS ',NXCONST
+      WRITE(IW,*) ' NUMBER OF CONSTRAINED COORD.           ',NCONST
+      WRITE(IW,*)
+      WRITE(IW,*) ' TOTAL NUMBER OF PRIMITIVES             ',NZVAR
+      WRITE(IW,*) '-----------------------------------------------'
+      END IF
+C
+      IF ((NZVAR-NCONST) .LT. (3*NAT-6)) THEN
+         IF(MASWRK) WRITE(IW,980) NZVAR,NCONST,3*NAT-6
+         CALL ABRT
+      END IF
+      RETURN
+C
+  980 FORMAT(1X,'*** ERROR ***'/
+     *  1X,'THERE ARE NOT ENOUGH PRIMITIVE INTERNAL COORDINATES  =',I5/
+     *  1X,'SO THAT SUBTRACTING THE DESIRED NUMBER OF CONSTRAINTS=',I5/
+     *  1X,'LEAVES AT LEAST 3N-6=',I5,' COORDINATES.'/
+     *  1X,'THIS CONDITION IS LIKELY ONLY FOR VERY SMALL MOLECULES.'/
+     *  1X,'A POSSIBLE CURE IS TO USE -NONVDW- INPUT TO ADD ANOTHER'/
+     *  1X,'COORDINATE TO THE PRIMITIVE SET.')
+      END
+C
+C*MODULE DELOCL  *DECK RRD
+      SUBROUTINE RRD(IZMAT,ITZMAT,NELS,NZVAR)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DIMENSION TEMFRZ(50),ITMTYP(50),IZMAT(NELS),ITZMAT(NELS)
+      COMMON /DLCFRZ/ FVALUE(50),ITABLE(50),IFTYPE(50),NCONST
+C
+      NFRZ = 0
+      IZ = 1
+      NIZ = 1
+      DO 100 I=1,NZVAR
+        IF (ITZMAT(NIZ) .EQ. 1) THEN
+           DO 200 J=1,NCONST
+             IF (ITABLE(J).EQ.I) THEN
+                IZMAT(IZ) = ITZMAT(NIZ)
+                IZMAT(IZ+1) = ITZMAT(NIZ+1)
+                IZMAT(IZ+2) = ITZMAT(NIZ+2)
+                IZ = IZ + 3
+                NFRZ = NFRZ+1
+                TEMFRZ(NFRZ)=FVALUE(J)
+                ITMTYP(NFRZ)=IFTYPE(J)
+             ENDIF
+ 200       CONTINUE
+           NIZ = NIZ + 3
+        ELSEIF (ITZMAT(NIZ) .EQ. 2) THEN
+           DO 220 J=1,NCONST
+             IF (ITABLE(J).EQ.I) THEN
+                IZMAT(IZ) = ITZMAT(NIZ)
+                IZMAT(IZ+1) = ITZMAT(NIZ+1)
+                IZMAT(IZ+2) = ITZMAT(NIZ+2)
+                IZMAT(IZ+3) = ITZMAT(NIZ+3)
+                IZ = IZ + 4
+                NFRZ = NFRZ+1
+                TEMFRZ(NFRZ)=FVALUE(J)
+                ITMTYP(NFRZ)=IFTYPE(J)
+             ENDIF
+ 220       CONTINUE
+           NIZ = NIZ + 4
+        ELSEIF (ITZMAT(NIZ) .EQ. 3) THEN
+           DO 240 J=1,NCONST
+             IF (ITABLE(J).EQ.I) THEN
+                IZMAT(IZ) = ITZMAT(NIZ)
+                IZMAT(IZ+1) = ITZMAT(NIZ+1)
+                IZMAT(IZ+2) = ITZMAT(NIZ+2)
+                IZMAT(IZ+3) = ITZMAT(NIZ+3)
+                IZMAT(IZ+4) = ITZMAT(NIZ+4)
+                IZ = IZ + 5
+                NFRZ = NFRZ+1
+                TEMFRZ(NFRZ)=FVALUE(J)
+                ITMTYP(NFRZ)=IFTYPE(J)
+             ENDIF
+ 240       CONTINUE
+           NIZ = NIZ + 5
+        ENDIF
+ 100  CONTINUE
+C
+      IF (NCONST .GT. 0 ) THEN
+       DO I=1,NCONST
+          FVALUE(I)=TEMFRZ(I)
+          IFTYPE(I)=ITMTYP(I)
+       ENDDO
+      END IF
+C
+      NIZ = 1
+      DO 300 I=1,NZVAR
+        IF (ITZMAT(NIZ) .EQ. 1) THEN
+           IZMAT(IZ) = ITZMAT(NIZ)
+           IZMAT(IZ+1) = ITZMAT(NIZ+1)
+           IZMAT(IZ+2) = ITZMAT(NIZ+2)
+           IZ = IZ + 3
+           NIZ = NIZ + 3
+           DO 400 J=1,NCONST
+             IF (ITABLE(J).EQ.I) IZ = IZ - 3
+ 400       CONTINUE
+        ELSEIF (ITZMAT(NIZ) .EQ. 2) THEN
+           IZMAT(IZ) = ITZMAT(NIZ)
+           IZMAT(IZ+1) = ITZMAT(NIZ+1)
+           IZMAT(IZ+2) = ITZMAT(NIZ+2)
+           IZMAT(IZ+3) = ITZMAT(NIZ+3)
+           IZ = IZ + 4
+           NIZ = NIZ + 4
+           DO 420 J=1,NCONST
+             IF (ITABLE(J).EQ.I) IZ = IZ - 4
+ 420       CONTINUE
+        ELSEIF (ITZMAT(NIZ) .EQ. 3) THEN
+           IZMAT(IZ) = ITZMAT(NIZ)
+           IZMAT(IZ+1) = ITZMAT(NIZ+1)
+           IZMAT(IZ+2) = ITZMAT(NIZ+2)
+           IZMAT(IZ+3) = ITZMAT(NIZ+3)
+           IZMAT(IZ+4) = ITZMAT(NIZ+4)
+           IZ = IZ + 5
+           NIZ = NIZ + 5
+           DO 440 J=1,NCONST
+             IF (ITABLE(J).EQ.I) IZ = IZ - 5
+ 440       CONTINUE
+        ENDIF
+ 300  CONTINUE
+C
+      DO 500 I=1,NCONST
+ 500  ITABLE(I)=I
+      RETURN
+      END
+C*MODULE DELOCL  *DECK CHKANG
+      SUBROUTINE CHKANG(I,J,K,C)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+C     -----THIS ROUTINE COMPUTES THE B MATRIX ELEMENTS OF A
+C          VALENCE ANGLE BENDING COORDINATE AS DEFINED BY WILSON.
+C          SEE PP. 56-58 OF "MOLECULAR VIBRATIONS" BY E.B. WILSON,
+C          J.C. DECIUS AND P.C. CROSS, MCGRAW-HILL, NY, 1955 ----
+C
+C     -----I AND K ARE THE NUMBERS OF THE END ATOMS.  J IS THE
+C          NUMBER OF THE CENTRAL ATOM -----
+C
+      DIMENSION C(3,1)
+      DIMENSION RJI(3),RJK(3),EJI(3),EJK(3)
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, TOL=1.0D-07)
+C
+      PI = ACOS(-ONE)
+      DJISQ = ZERO
+      DJKSQ = ZERO
+C
+      DO 100 M = 1,3
+         RJI(M) = C(M,I)-C(M,J)
+         RJK(M) = C(M,K)-C(M,J)
+         DJISQ = DJISQ+RJI(M)*RJI(M)
+         DJKSQ = DJKSQ+RJK(M)*RJK(M)
+  100 CONTINUE
+      DJI = SQRT(DJISQ)
+      DJK = SQRT(DJKSQ)
+      DOTJ = ZERO
+      DO 120 M = 1,3
+         EJI(M) = RJI(M)/DJI
+         EJK(M) = RJK(M)/DJK
+         DOTJ = DOTJ+EJI(M)*EJK(M)
+  120 CONTINUE
+      IF (ONE.LE.ABS(DOTJ)) GO TO 200
+      DOT = ZERO
+      DO 180 M = 1,3
+  180 DOT = DOT+EJI(M)*EJK(M)
+      EQVAL =   ACOS(DOT)
+      IF(ABS(EQVAL).LT.TOL) EQVAL=ZERO
+      IF(ABS(EQVAL-PI).LT.TOL) EQVAL=PI
+      RETURN
+C
+  200 CONTINUE
+C
+C      WE GET HERE IF 3 ATOMS IN ANGLE ARE LINEAR
+C
+C      IF (MASWRK) WRITE (IW,9008)
+C      CALL ABRT
+C      STOP
+C 9008 FORMAT(" ROUNDOFF ERROR IN CHKANG - STO"P )
+C
+      I=0
+      J=0
+      K=0
+      RETURN
+      END
+C*MODULE DELOCL *DECK CHKFZT
+C   09 AUG 98 CHC
+      SUBROUTINE CHKFZT(IFZMAT,IZMAT,NELS,NZVAR)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DIMENSION IZMAT(NELS),IFZMAT(NELS),IVEC(10)
+      COMMON /DLCFRZ/ FVALUE(50),ITABLE(50),IFTYPE(50),NCONST
+      LOGICAL FFLAG
+C
+C     -----THIS ROUTINE CHECK THE IZMAT TO FIND OUT THE EXISTANCE OF
+C          INTERNAL COORDINATES OF IFZMAT IN IZMAT.
+C          IF IT IS, THE CORRESPONDING ITABLE VALUE IS SET TO THE
+C          NUMBER OF THE INTERNAL COORDINATES OF IZMAT.
+C          IF IT IS NOT, THE CORRESPONDING ITABLE VALUE IS SET TO -1
+C          INDICATING A NEW INTERNAL COORDINATE HAS TO BE GENERATED FOR
+C          THIS PARTICULAR CONSTRAINT.
+C
+C     -----IFZMAT : CONSTRAINT INTERNAL COORDINATES.
+C          IZMAT  : REDUNDANT INTERNAL COORDINATES.
+C          NZVAR  : THE NUMBER OF REDUNDANT INTERNAL COORDINATES.
+C
+      DO 10 I=1,50
+        ITABLE(I) = 0
+        IFTYPE(I) = 0
+  10  CONTINUE
+      DO 20 I=1,10
+  20  IVEC(I) = 0
+C
+C    1. IS IFZMAT IN ZMAT  ?
+C    2. SET THE TABLE, ITABLE.
+C
+      IF ( (IZMAT(1) .GT. 0) .AND. (IFZMAT(1) .GT.0) ) THEN
+         FFLAG = .TRUE.
+         NIFZ = 1
+         NCONST = 0
+         DO WHILE (FFLAG)
+           IF (IFZMAT(NIFZ) .EQ. 1) THEN
+             IVEC(1) = IFZMAT(NIFZ+1)
+             IVEC(2) = IFZMAT(NIFZ+2)
+             NIFZ = NIFZ + 3
+             NCONST = NCONST + 1
+             IFTYPE(NCONST) = 1
+             CALL CHKVEC(IVEC,IZMAT,1,ITABLE(NCONST),NELS,NZVAR)
+           ELSEIF (IFZMAT(NIFZ) .EQ. 2) THEN
+             IVEC(1) = IFZMAT(NIFZ+1)
+             IVEC(2) = IFZMAT(NIFZ+2)
+             IVEC(3) = IFZMAT(NIFZ+3)
+             NIFZ = NIFZ + 4
+             NCONST = NCONST + 1
+             IFTYPE(NCONST) = 2
+             CALL CHKVEC(IVEC,IZMAT,2,ITABLE(NCONST),NELS,NZVAR)
+           ELSEIF (IFZMAT(NIFZ) .EQ. 3) THEN
+             IVEC(1) = IFZMAT(NIFZ+1)
+             IVEC(2) = IFZMAT(NIFZ+2)
+             IVEC(3) = IFZMAT(NIFZ+3)
+             IVEC(4) = IFZMAT(NIFZ+4)
+             NIFZ = NIFZ + 5
+             NCONST = NCONST + 1
+             IFTYPE(NCONST) = 3
+             CALL CHKVEC(IVEC,IZMAT,3,ITABLE(NCONST),NELS,NZVAR)
+           ELSE
+            FFLAG = .FALSE.
+           ENDIF
+C     END DO OF DO WHILE (FFLAG)
+         END DO
+      ENDIF
+      RETURN
+      END
+C*MODULE DELOCL *DECK CHKRZT
+      SUBROUTINE CHKRZT(IRZMAT,NELS,NCONST)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION IRZMAT(NELS)
+      LOGICAL FFLAG
+C
+C   09 AUG 98 CHC
+C
+      NCONST = 0
+      IF (IRZMAT(1) .GT.0) THEN
+         FFLAG = .TRUE.
+         NIFZ = 1
+         DO WHILE (FFLAG)
+           IF (IRZMAT(NIFZ) .EQ. 1) THEN
+             NIFZ = NIFZ + 3
+             NCONST = NCONST + 1
+           ELSEIF (IRZMAT(NIFZ) .EQ. 2) THEN
+             NIFZ = NIFZ + 4
+             NCONST = NCONST + 1
+           ELSEIF (IRZMAT(NIFZ) .EQ. 3) THEN
+             NIFZ = NIFZ + 5
+             NCONST = NCONST + 1
+           ELSE
+            FFLAG = .FALSE.
+           ENDIF
+C     END DO OF DO WHILE (FFLAG)
+         END DO
+      ENDIF
+      RETURN
+      END
+C*MODULE DELOCL *DECK CHKTOR
+      SUBROUTINE CHKTOR(I,J,K,L,C)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+C     -----THIS ROUTINE COMPUTES THE B MATRIX ELEMENTS FOR THE
+C          TORSION AS DEFINED BY WILSON.
+C          SEE PP. 60-61 OF "MOLECULAR VIBRATIONS" BY E.B. WILSON,
+C          J.C. DECIUS AND P.C. CROSS, MCGRAW-HILL, NY, 1955.
+C          NOTE THAT THE SIGN OF THE SECOND TERM ON THE RIGHT HAND
+C          SIDE IN EQUATION (22) IS INCORRECT AS PRINTED ON P61 OF
+C          WDC -----
+C
+C     -----I AND L ARE THE END ATOMS.  I IS NEARER THE OBSERVER.
+C          J AND K ARE THE CENTRAL ATOM. J IS NEARER THE OBSERVER -----
+C
+      DIMENSION C(3,1)
+      DIMENSION RIJ(3),RJK(3),RKL(3),EIJ(3),EJK(3),EKL(3),CR1(3),CR2(3)
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, TOL=1.0D-07)
+      PARAMETER (TOLRD=1.0001D+00)
+C
+      PI = ACOS(-ONE)
+      DIJSQ = ZERO
+      DJKSQ = ZERO
+      DKLSQ=ZERO
+      DO 120 M = 1,3
+         RIJ(M) = C(M,J)-C(M,I)
+         DIJSQ = DIJSQ+RIJ(M)*RIJ(M)
+         RJK(M) = C(M,K)-C(M,J)
+         DJKSQ = DJKSQ+RJK(M)*RJK(M)
+         RKL(M) = C(M,L)-C(M,K)
+         DKLSQ = DKLSQ+RKL(M)*RKL(M)
+  120 CONTINUE
+      DIJ = SQRT(DIJSQ)
+      DJK = SQRT(DJKSQ)
+      DKL = SQRT(DKLSQ)
+      DO 180 M = 1,3
+         EIJ(M) = RIJ(M)/DIJ
+         EJK(M) = RJK(M)/DJK
+         EKL(M) = RKL(M)/DKL
+  180 CONTINUE
+C
+      CR1(1) = EIJ(2)*EJK(3)-EIJ(3)*EJK(2)
+      CR1(2) = EIJ(3)*EJK(1)-EIJ(1)*EJK(3)
+      CR1(3) = EIJ(1)*EJK(2)-EIJ(2)*EJK(1)
+C
+      CR2(1) = EJK(2)*EKL(3)-EJK(3)*EKL(2)
+      CR2(2) = EJK(3)*EKL(1)-EJK(1)*EKL(3)
+      CR2(3) = EJK(1)*EKL(2)-EJK(2)*EKL(1)
+C
+      DOTPJ = ZERO
+      DOTPK = ZERO
+      DO 220 M = 1,3
+         DOTPJ = DOTPJ-EIJ(M)*EJK(M)
+         DOTPK = DOTPK-EJK(M)*EKL(M)
+  220 CONTINUE
+      IF (ONE.LE.ABS(DOTPJ)) GO TO 320
+      IF (ONE.LE.ABS(DOTPK)) GO TO 320
+      SINPJ = SQRT(ONE-DOTPJ*DOTPJ)
+      SINPK = SQRT(ONE-DOTPK*DOTPK)
+      DOT = ZERO
+      DO 300 M = 1,3
+  300 DOT = DOT+(CR1(M)*CR2(M))/(SINPJ*SINPK)
+      IF (ABS(DOT) .GT. TOLRD) GO TO 320
+         IF (ABS(DOT) .GT. ONE) DOT = SIGN(ONE,DOT)
+         EQVAL =   ACOS(DOT)
+         IF(ABS(EQVAL).LT.TOL) EQVAL=ZERO
+         IF(ABS(EQVAL-PI).LT.TOL) EQVAL=PI
+         SENSE = DDOT(3,CR2,1,RIJ,1)
+         IF(SENSE.LT.ZERO) EQVAL = -EQVAL
+         RETURN
+C
+  320 CONTINUE
+C
+C      IF (MASWRK) WRITE (IW,9008)
+C      CALL ABRT
+C      STOP
+C 9008 FORMAT(" ROUNDOFF ERROR IN TORS - STOP ")
+C
+      I=0
+      J=0
+      K=0
+      L=0
+      RETURN
+      END
+C*MODULE DELOCL *DECK CHKVEC
+C   09 AUG 98 CHC
+      SUBROUTINE CHKVEC(IVEC,IZMAT,ITYPE,ID,NELS,NZVAR)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+C     -----THIS ROUTINE CHECK THE IZMAT TO FIND OUT THE EXISTANCE OF
+C          INTERNAL COORDINATES OF VEC IN IZMAT.
+C          IF IT IS, THE CORRESPONDING ITABLE VALUE IS SET TO THE
+C          NUMBER OF THE INTERNAL COORDINATES OF IZMAT.
+C          IF IT IS NOT, THE CORRESPONDING ITABLE VALUE IS SET TO -1
+C          INDICATING A NEW INTERNAL COORDINATE HAS TO BE GENERATED FOR
+C          THIS PARTICULAR CONSTRAINT.
+C
+C          IZMAT  : REDUNDANT INTERNAL COORDINATES.
+C          ID     : RETURN FLAG
+C                   -1 : NO CORRESPONDING INTERNAL COORD. IN IZMAT
+C                   NUMBER : THE COORD. NUMBER IN IZMAT.
+C          ITYPE  : THE TYPE OF INTERNAL COODINATE OF VEC.
+C
+      DIMENSION IZMAT(NELS),IVEC(10)
+C
+      ID = -1
+      NIZ = 1
+      DO 100 I=1,NZVAR
+      IF (IZMAT(NIZ).EQ.1) THEN
+        IF (ITYPE.EQ.1) THEN
+           IF ( ( ( IZMAT(NIZ+1) .EQ. IVEC(1) ) .AND.
+     *            ( IZMAT(NIZ+2) .EQ. IVEC(2) ) ) .OR.
+     *          ( ( IZMAT(NIZ+2) .EQ. IVEC(1) ) .AND.
+     *            ( IZMAT(NIZ+1) .EQ. IVEC(2) ) ) ) THEN
+              ID = I
+              NIZ = NIZ + 3
+           ELSE
+              NIZ = NIZ + 3
+           END IF
+        ELSE
+           NIZ = NIZ + 3
+        ENDIF
+      ELSEIF (IZMAT(NIZ).EQ.2) THEN
+        IF  (ITYPE .EQ. 2)  THEN
+           IF ( ( ( IZMAT(NIZ+1) .EQ. IVEC(1) ) .AND.
+     *            ( IZMAT(NIZ+2) .EQ. IVEC(2) ) .AND.
+     *            ( IZMAT(NIZ+3) .EQ. IVEC(3) ) ) .OR.
+     *          ( ( IZMAT(NIZ+1) .EQ. IVEC(3) ) .AND.
+     *            ( IZMAT(NIZ+2) .EQ. IVEC(2) ) .AND.
+     *            ( IZMAT(NIZ+3) .EQ. IVEC(1) ) ) ) THEN
+              ID = I
+              NIZ = NIZ + 4
+           ELSE
+              NIZ = NIZ + 4
+           END IF
+        ELSE
+           NIZ = NIZ + 4
+        ENDIF
+      ELSEIF (IZMAT(NIZ).EQ.3) THEN
+        IF (ITYPE .EQ. 3) THEN
+           IF ( ( ( IZMAT(NIZ+1) .EQ. IVEC(1) ) .AND.
+     *            ( IZMAT(NIZ+2) .EQ. IVEC(2) ) .AND.
+     *            ( IZMAT(NIZ+3) .EQ. IVEC(3) ) . AND.
+     *            ( IZMAT(NIZ+4) .EQ. IVEC(4) ) ) .OR.
+     *          ( ( IZMAT(NIZ+1) .EQ. IVEC(4) ) .AND.
+     *            ( IZMAT(NIZ+2) .EQ. IVEC(3) ) .AND.
+     *            ( IZMAT(NIZ+3) .EQ. IVEC(2) ) .AND.
+     *            ( IZMAT(NIZ+4) .EQ. IVEC(1) ) ) ) THEN
+              ID = I
+              NIZ = NIZ + 5
+           ELSE
+              NIZ = NIZ + 5
+           END IF
+        ELSE
+          NIZ = NIZ + 5
+        ENDIF
+      END IF
+ 100  CONTINUE
+C
+      RETURN
+      END
+C*MODULE DELOCL *DECK GTANG
+      SUBROUTINE GTANG(IW,MASWRK,IPAIRS,NBONDS,NTHETA,IANG,NPAIR,NANG)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL MASWRK
+C
+      DIMENSION IPAIRS(2,NPAIR), IANG(3,NANG)
+C
+C     ASSIGNS BONDS BASED ON BOND ADJACENT BOND PAIRS
+C     NOTE: THESE ANGLES MAY INCLUDE 3 ATOMS THAT LIE IN A STRAIGHT LINE
+C     THIS WILL BE FIXED IN ROUTINE CHKBEND
+C
+C     IPAIRS, NBONDS HAVE ALREADY BEEN DETERMINED IN GTBOND
+C
+      NTHETA=0
+      DO 600 I=1,NBONDS-1
+         I1=IPAIRS(1,I)
+         I2=IPAIRS(2,I)
+         DO 610 J=I+1,NBONDS
+            J1=IPAIRS(1,J)
+            J2=IPAIRS(2,J)
+            IF ((I1.EQ.J1) .AND. (I2 .NE. J2)) THEN
+              NTHETA=NTHETA+1
+              IF(NTHETA.GT.NANG) GO TO 800
+              IANG(1,NTHETA)=I2
+              IANG(2,NTHETA)=I1
+              IANG(3,NTHETA)=J2
+            ELSEIF ((I1.EQ.J2) .AND. (I2 .NE. J1) .AND.
+     *             (I1 .NE. J1)) THEN
+              NTHETA=NTHETA+1
+              IF(NTHETA.GT.NANG) GO TO 800
+              IANG(1,NTHETA)=I2
+              IANG(2,NTHETA)=I1
+              IANG(3,NTHETA)=J1
+            ELSEIF ((I2.EQ.J1).AND. (I1 .NE. J2) .AND.
+     *             (I2 .NE. J2)) THEN
+              NTHETA=NTHETA+1
+              IF(NTHETA.GT.NANG) GO TO 800
+              IANG(1,NTHETA)=I1
+              IANG(2,NTHETA)=I2
+              IANG(3,NTHETA)=J2
+            ELSEIF ((I2.EQ.J2) .AND. (I1 .NE. J1) .AND.
+     *             (I2 .NE. J1)) THEN
+              NTHETA=NTHETA+1
+              IF(NTHETA.GT.NANG) GO TO 800
+              IANG(1,NTHETA)=I1
+              IANG(2,NTHETA)=I2
+              IANG(3,NTHETA)=J1
+            ENDIF
+ 610     CONTINUE
+ 600  CONTINUE
+C
+      RETURN
+C
+C     REACHING HERE MEANS THE OVERESTIMATION IN ZMATIN WAS NOT OVER
+C
+  800 CONTINUE
+      IF (MASWRK) WRITE(IW,1100) NANG
+      CALL ABRT
+      STOP
+C
+ 1100 FORMAT(5X,'TOO MANY BENDS, STORAGE ALLOCATED FOR ONLY',I10)
+      END
+C
+C*MODULE DELOCL *DECK GTTOR
+      SUBROUTINE GTTOR(IW,MASWRK,NBONDS,NTHETA,NOMEGA,IPAIRS,IANG,ITOR,
+     *                 NPAIR,NANG,NTOR)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION IPAIRS(2,NPAIR),IANG(3,NANG),ITOR(4,NTOR)
+C
+      LOGICAL MASWRK
+C
+C -- LOGIC: SEE IF AN END ATOM IN AN ANGLE AND A BOND PAIR
+C  HAVE AN ATOM IN COMMON. IF THEY DO, AND IF THE OTHER ATOM IN
+C  THE BOND PAIR IS NOT THE CENTER ATOM IN THE ANGLE, WE HAVE A VALID
+C  TORSION ANGLE.
+C
+C -- THIS PROCEDURE WILL LEAD TO DUPLICATION OF TORSION SPECIFICATIONS,
+C    WHICH WILL BE CLEANED OUT LATER. ALSO NEED TO CHECK FOR BAD
+C    TORSIONS, I.E. THREE ATOMS IN A LINE
+C
+      NOMEGA=0
+      DO 360 I=1, NTHETA
+        I1=IANG(1,I)
+        I2=IANG(2,I)
+        I3=IANG(3,I)
+        DO 350 J=1,NBONDS
+          J1=IPAIRS(1,J)
+          J2=IPAIRS(2,J)
+          IF ((I1.EQ.J1) .AND. (I2 .NE. J2) .AND.
+     *        (J2 .NE. I3)) THEN
+              NOMEGA=NOMEGA+1
+              IF(NOMEGA.GT.NTOR) GO TO 800
+              ITOR(1,NOMEGA)=J2
+              ITOR(2,NOMEGA)=I1
+              ITOR(3,NOMEGA)=I2
+              ITOR(4,NOMEGA)=I3
+C
+          ELSEIF ((I1.EQ.J2) .AND. (I2 .NE. J1) .AND.
+     *            (I3 .NE. J1)) THEN
+              NOMEGA=NOMEGA+1
+              IF(NOMEGA.GT.NTOR) GO TO 800
+              ITOR(1,NOMEGA)=J1
+              ITOR(2,NOMEGA)=I1
+              ITOR(3,NOMEGA)=I2
+              ITOR(4,NOMEGA)=I3
+C
+          ELSEIF ((I3.EQ.J1) .AND. (I2 .NE. J2) .AND.
+     *            (I1 .NE. J2) ) THEN
+              NOMEGA=NOMEGA+1
+              IF(NOMEGA.GT.NTOR) GO TO 800
+              ITOR(1,NOMEGA)=I1
+              ITOR(2,NOMEGA)=I2
+              ITOR(3,NOMEGA)=I3
+              ITOR(4,NOMEGA)=J2
+C
+          ELSEIF ((I3.EQ.J2) .AND. (I2 .NE. J1) .AND.
+     *             (I1 .NE. J1)) THEN
+              NOMEGA=NOMEGA+1
+              IF(NOMEGA.GT.NTOR) GO TO 800
+              ITOR(1,NOMEGA)=I1
+              ITOR(2,NOMEGA)=I2
+              ITOR(3,NOMEGA)=I3
+              ITOR(4,NOMEGA)=J1
+C
+          ENDIF
+  350   CONTINUE
+  360 CONTINUE
+C
+C  REARRANGE TORSION INDICES LOW M1 M2 HIGH
+C
+      DO 520 I=1,NOMEGA
+        IF(ITOR(4,I) .LT. ITOR(1,I)) THEN
+            IT1=ITOR(1,I)
+            IT2=ITOR(2,I)
+            ITOR(1,I)=ITOR(4,I)
+            ITOR(2,I)=ITOR(3,I)
+            ITOR(3,I)=IT2
+            ITOR(4,I)=IT1
+         END IF
+ 520  CONTINUE
+C
+      RETURN
+C
+C     REACHING HERE MEANS THE OVERESTIMATION IN ZMATIN WAS NOT OVER
+C
+  800 CONTINUE
+      IF (MASWRK) WRITE(IW,1200) NTOR
+      CALL ABRT
+      STOP
+C
+ 1200 FORMAT(5X,'TOO MANY TORSIONS, STORAGE ALLOCATED FOR ONLY',I10)
+      END
+C*MODULE DELOCL *DECK SRTANG
+C  7 JAN 98 JRS
+C   HEAP SORT ALGORITHM FROM NUMERICAL RECIPES USED TO SORT THE
+C   ANGLES  INTO ASCENDING ORDER BASED ON FIRST ATOM NUMBER
+C
+      SUBROUTINE SRTANG(N,IRT,IRA,IRB,IRC)
+C
+      DIMENSION IRT(3,N),IRA(N),IRB(N),IRC(N)
+C
+      DO 5 I=1,N
+         IRA(I)=IRT(1,I)
+         IRB(I)=IRT(2,I)
+ 5       IRC(I)=IRT(3,I)
+C
+      L=N/2+1
+      IR=N
+ 10   CONTINUE
+        IF (L .GT. 1) THEN
+          L=L-1
+          IRRA=IRA(L)
+          IRRB=IRB(L)
+          IRRC=IRC(L)
+        ELSE
+          IRRA=IRA(IR)
+          IRRB=IRB(IR)
+          IRRC=IRC(IR)
+          IRA(IR)=IRA(1)
+          IRB(IR)=IRB(1)
+          IRC(IR)=IRC(1)
+          IR=IR-1
+          IF (IR .EQ. 1) THEN
+             IRA(1)=IRRA
+             IRB(1)=IRRB
+             IRC(1)=IRRC
+             GOTO 900
+          ENDIF
+        ENDIF
+C
+        I=L
+        J=L+L
+ 20     IF (J .LE. IR) THEN
+           IF(J .LT. IR) THEN
+              IF(IRA(J) .LT. IRA(J+1))J=J+1
+           ENDIF
+        IF(IRRA.LT.IRA(J))THEN
+           IRA(I)=IRA(J)
+           IRB(I)=IRB(J)
+           IRC(I)=IRC(J)
+           I=J
+           J=J+J
+        ELSE
+           J=IR+1
+        ENDIF
+      GOTO 20
+      ENDIF
+      IRA(I)=IRRA
+      IRB(I)=IRRB
+      IRC(I)=IRRC
+      GOTO 10
+C
+ 900  CONTINUE
+C
+C NOW ALL THE 0,0,0 ELEMENTS SHOULD BE FIRST
+C AND WE ELIMINATE THEM
+C
+C     INZ USED TO BE SET TO 1. BUT I (CHEOL) THINK IT SHOULD BE
+C     SET TO 0.
+C     CHEOL HO CHOI, 20 JUL. 1998.
+C
+      INZ=0
+      DO 901 I=1,N
+       IF ( IRA(I) .NE. 0) THEN
+         GOTO 902
+       ELSE
+         INZ=INZ+1
+       ENDIF
+ 901  CONTINUE
+C
+ 902  CONTINUE
+      DO 910 I=INZ+1,N
+         J=I-INZ
+         IRT(1,J)=IRA(I)
+         IRT(2,J)=IRB(I)
+         IRT(3,J)=IRC(I)
+ 910  CONTINUE
+C
+      N=N-INZ
+C
+      RETURN
+      END
+C*MODULE DELOCL *DECK SRTBND
+C  7 JAN 98 JRS
+C   HEAP SORT ALGORITHM FROM NUMERICAL RECIPES USED TO SORT THE
+C   BOND PAIRS INTO ASCENDING ORDER
+C
+      SUBROUTINE SRTBND(N,IRT,IRA,IRB)
+C
+      DIMENSION IRT(2,N),IRA(N),IRB(N)
+      DO 5 I=1,N
+         IRA(I)=IRT(1,I)
+ 5       IRB(I)=IRT(2,I)
+      L=N/2+1
+      IR=N
+ 10   CONTINUE
+        IF (L .GT. 1) THEN
+          L=L-1
+          IRRA=IRA(L)
+          IRRB=IRB(L)
+        ELSE
+          IRRA=IRA(IR)
+          IRRB=IRB(IR)
+          IRA(IR)=IRA(1)
+          IRB(IR)=IRB(1)
+          IR=IR-1
+          IF (IR .EQ. 1) THEN
+             IRA(1)=IRRA
+             IRB(1)=IRRB
+             GOTO 900
+          ENDIF
+        ENDIF
+C
+        I=L
+        J=L+L
+ 20     IF (J .LE. IR) THEN
+           IF(J .LT. IR) THEN
+              IF(IRA(J) .LT. IRA(J+1))J=J+1
+           ENDIF
+        IF(IRRA.LT.IRA(J))THEN
+           IRA(I)=IRA(J)
+           IRB(I)=IRB(J)
+           I=J
+           J=J+J
+        ELSE
+           J=IR+1
+        ENDIF
+      GOTO 20
+      ENDIF
+      IRA(I)=IRRA
+      IRB(I)=IRRB
+      GOTO 10
+C
+ 900  CONTINUE
+      DO 910 I=1,N
+         IRT(1,I)=IRA(I)
+ 910     IRT(2,I)=IRB(I)
+C
+      RETURN
+      END
+C*MODULE DELOCL *DECK SRTTOR
+C  7 JAN 98 JRS
+C   HEAP SORT ALGORITHM FROM NUMERICAL RECIPES USED TO SORT THE
+C   TORSIONS  INTO ASCENDING ORDER BASED ON FIRST ATOM NUMBER
+C
+      SUBROUTINE SRTTOR(N,IRT,IRA,IRB,IRC,IRD)
+C
+      DIMENSION IRT(4,N),IRA(N),IRB(N),IRC(N),IRD(N)
+C
+      DO 5 I=1,N
+         IRA(I)=IRT(1,I)
+         IRB(I)=IRT(2,I)
+         IRC(I)=IRT(3,I)
+ 5       IRD(I)=IRT(4,I)
+C
+C   SCAN THROUGH AND IDENTIFY DUPLICATE TORSIONS
+C
+      IDP=0
+      DO 910 I=1,N-1
+       DO 920 J=I+1,N
+        IF(IRA(I) .NE. 0) THEN
+         IF((IRA(I).EQ.IRA(J)) .AND. (IRB(I).EQ.IRB(J)) .AND.
+     *     (IRC(I).EQ.IRC(J)) .AND. (IRD(I).EQ.IRD(J))) THEN
+                IDP=IDP+1
+                IRA(J)=0
+                IRB(J)=0
+                IRC(J)=0
+                IRD(J)=0
+          ENDIF
+         ENDIF
+ 920     CONTINUE
+ 910  CONTINUE
+C
+      L=N/2+1
+      IR=N
+ 10   CONTINUE
+        IF (L .GT. 1) THEN
+          L=L-1
+          IRRA=IRA(L)
+          IRRB=IRB(L)
+          IRRC=IRC(L)
+          IRRD=IRD(L)
+        ELSE
+          IRRA=IRA(IR)
+          IRRB=IRB(IR)
+          IRRC=IRC(IR)
+          IRRD=IRD(IR)
+          IRA(IR)=IRA(1)
+          IRB(IR)=IRB(1)
+          IRC(IR)=IRC(1)
+          IRD(IR)=IRD(1)
+          IR=IR-1
+          IF (IR .EQ. 1) THEN
+             IRA(1)=IRRA
+             IRB(1)=IRRB
+             IRC(1)=IRRC
+             IRD(1)=IRRD
+             GOTO 900
+          ENDIF
+        ENDIF
+C
+        I=L
+        J=L+L
+ 20     IF (J .LE. IR) THEN
+           IF(J .LT. IR) THEN
+              IF(IRA(J) .LT. IRA(J+1))J=J+1
+           ENDIF
+        IF(IRRA.LT.IRA(J))THEN
+           IRA(I)=IRA(J)
+           IRB(I)=IRB(J)
+           IRC(I)=IRC(J)
+           IRD(I)=IRD(J)
+           I=J
+           J=J+J
+        ELSE
+           J=IR+1
+        ENDIF
+      GOTO 20
+      ENDIF
+      IRA(I)=IRRA
+      IRB(I)=IRRB
+      IRC(I)=IRRC
+      IRD(I)=IRRD
+      GOTO 10
+C
+ 900  CONTINUE
+C
+C NOW ALL THE 0,0,0 ELEMENTS SHOULD BE FIRST
+C AND WE ELIMINATE THEM
+C
+      INZ=0
+      DO 901 I=1,N
+       IF ( IRA(I) .NE. 0) THEN
+         GOTO 902
+       ELSE
+         INZ=INZ+1
+       ENDIF
+ 901  CONTINUE
+C
+ 902  CONTINUE
+C
+      DO 950 I=INZ+1,N
+          J=I-INZ
+         IRT(1,J)=IRA(I)
+         IRT(2,J)=IRB(I)
+         IRT(3,J)=IRC(I)
+ 950     IRT(4,J)=IRD(I)
+C
+      N=N-INZ
+C
+      RETURN
+      END
+C*MODULE DELOCL *DECK BMATDL
+       SUBROUTINE BMATDL(B,IZMAT,ZMAT,NZVAR,NCOORD)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION B(NZVAR,NCOORD),IZMAT(*),ZMAT(*)
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+C
+C
+C     ----- CONSTRUCT THE B MATRIX -----
+C     A WORD TO THE WISE, THE INITIAL B MATRIX IS NZVAR X NCOORD,
+C     BUT IT ENDS UP BEING NVAR X NCOORD, IF NVAR.LT.NZVAR
+C
+C    19 JUN 96 SHOE COMMENTS
+C
+C     IZMAT: IS THE ARRAY OF INTEGERS THAT DEFINES THE TYPE OF INTERNAL
+C            COORDINATE
+C            AS WELL AS THE INDICES OF THE ATOMS INVOLVED IN THAT COORD.
+C      ZMAT: IS THE REAL*8 ARRAY OF VALUES OF THE INTERNAL COORDINATES
+C         B: IS THE INTERNAL TO CARTESIAN TRANFORMATION MATRIX
+C       NAT: NUMBER OF ATOMS
+C    NCOORD: NUMBER OF CARTESIAN COORDINATES, 3*NAT
+C     NZVAR: NUMBER INTERNAL COORDINATES (3N-6 (5))
+C
+C     ZERO OUT THE OLD B MATRIX
+C
+      CALL VCLR(B,1,3*NAT*NZVAR)
+C
+C     ----- CONSTRUCT THE B MATRIX -----
+C
+      NOINT = 0
+      IADD = 1
+C
+  110 CONTINUE
+      NOINT=NOINT+1
+      IF (NOINT.GT.NZVAR) GO TO 230
+C
+      ITYPE = IZMAT(IADD)
+      GO TO (120,140,160,180,200,210,215), ITYPE
+C
+C     ----- BOND STRETCH -----
+C
+  120 CONTINUE
+      CALL BSTR(ZMAT(NOINT),NOINT,IZMAT(IADD+1),
+     *          IZMAT(IADD+2),C,B,NZVAR)
+      IADD = IADD + 3
+      GO TO 110
+C
+C     ----- ANGLE BEND -----
+C
+  140 CONTINUE
+      CALL BEND(ZMAT(NOINT),NOINT,IZMAT(IADD+1),IZMAT(IADD+2),
+     *          IZMAT(IADD+3),C,B,NZVAR)
+      IADD = IADD + 4
+      GO TO 110
+C
+C     ----- TORSION -----
+C     DIHEDRAL ANGLE BETWEEN TWO PLANES HAVING TWO ATOMS IN COMMON
+C
+  160 CONTINUE
+      CALL TORS(ZMAT(NOINT),NOINT,IZMAT(IADD+1),IZMAT(IADD+2),
+     *          IZMAT(IADD+3),IZMAT(IADD+4),C,B,NZVAR)
+      IADD = IADD + 5
+      GO TO 110
+C
+C     ------ TO BE SUPPORTED ------
+C     ------ 1. OUT OF PLANE ANGLE BENDING
+C     ------ 2. LINEAR ANGLE BENDING
+C     ------ 3. DIHEDRAL ANGLE BETWEEN TWO PLANES WITH 1 ATOM IN COMMON
+C     ------ 4. GHOST ATOM TORSION
+C
+  180 CONTINUE
+  200 CONTINUE
+  210 CONTINUE
+  215 CONTINUE
+  230 CONTINUE
+      RETURN
+      END
+C*MODULE DELOCL *DECK DLCBGD
+      SUBROUTINE DLCBGD(SIJ,NSIJ)
+C
+C     DRIVER TO CALCULATE DLC COEFFICIENTS FROM B AND G DIAGONALIZED
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL LINEAR
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /FMCOM / X(1)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /ZMAT  / NZMAT,NZVAR,NVAR,NSYMC,LINEAR
+C
+      DIMENSION SIJ(NSIJ)
+C
+C     ----- CALCULATE B AND B INVERSE MATRICES -----
+C     AT THIS POINT IT IS GOOD TO REALIZE THAT
+C     NVAR  = NUMBER OF COORDS IN THE GEOMETRY SEARCH, 3N-6 OR 3N-5
+C     NZVAR = NUMBER OF INPUT INTERNAL COORDINATES, ADJUSTED UPWARDS
+C             BY 1 FOR EACH LINEAR BEND.  THUS IT MAY NO LONGER BE
+C             EQUAL TO THE USER'S INPUT.  WE HAVE NZVAR.GE.NVAR
+C     NRWO  = ??
+C
+      NCOORD = 3*NAT
+C
+C     ----- GROW FAST MEMORY -----
+C
+      CALL VALFM(LOADFM)
+      LIZMAT = 1      + LOADFM
+      LZMAT  = LIZMAT + NZMAT
+      LB     = LZMAT  + NZVAR
+      LEVEC  = LB    + NZVAR*NCOORD
+      LG     = LEVEC  + NVAR*NVAR
+      LRECPM = LG     + NVAR*NVAR
+      LEVAL  = LRECPM + NCOORD
+      LSCR   = LEVAL  + NVAR
+      LIA    = LSCR   + 8*NVAR
+      LGLIN  = LIA    + NVAR
+      LTVEC  = LGLIN   + (NVAR*NVAR+NVAR)/2
+      LPROJM = LTVEC + NVAR
+      LTM    = LPROJM + NVAR*(NVAR+20)
+      LAST   = LTM + NVAR*NVAR
+      NEED   = LAST - LOADFM
+      CALL GETFM(NEED)
+C
+C     ----- GET IZMAT AND SYMMETRY MATRIX FROM DIRECT ACCESS FILE -----
+C
+      CALL DAREAD(IDAF,IODA,X(LIZMAT),NZMAT,40,1)
+C
+C
+C     ----- CALCULATE THE B MATRIX -----
+C
+      CALL BMATDL(X(LB),X(LIZMAT),X(LZMAT),
+     *          NZVAR,NCOORD)
+C
+C     ----- CALCULATE THE B INVERSE MATRIX -----
+C
+      CALL GINVRDL(X(LB),X(LEVEC),X(LG),X(LRECPM),X(LEVAL),
+     *            X(LSCR),X(LIA),X(LGLIN),X(LTVEC),X(LPROJM),X(LTM),
+     *            NVAR,NCOORD,NAT,NZERO,SIJ,NSIJ)
+C
+      CALL RETFM(NEED)
+      RETURN
+      END
+C*MODULE DELOCL  *DECK GINVRDL
+      SUBROUTINE GINVRDL(B,EIGVEC,G,RECIPM,EIGVAL,SCR,IA,GLIN,
+     *                  TVEC,PROJM,TM,NVAR,NCOORD,NAT,NZERO,
+     *                  SIJ,NSIJ)
+C
+C    CALCULATE G MATRIX, DIAGONALIZE, ASSIGN EIGVEC FOR NON-ZERO
+C    EIGNVALS TO SIJ ARRAY
+C
+C    GEOMETRY CONSTRAINTS ARE APPLIED.
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION B(NVAR,NCOORD),EIGVEC(NVAR,NVAR),G(NVAR,NVAR),
+     *          RECIPM(NCOORD),EIGVAL(NVAR),SCR(NVAR,8),IA(NVAR),
+     *          GLIN(*)
+      DIMENSION SIJ(NSIJ), TVEC(NVAR), PROJM(NVAR,NVAR+20),
+     *TM(NVAR,NVAR)
+C
+C
+      LOGICAL OUT,GOPARR,DSKWRK,MASWRK
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MASSES/ ZMASS(MXATM)
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /DLCFRZ/ FVALUE(50), ITABLE(50), IFTYPE(50), NCONST
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, TOL=1.0D-05)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DBUGME/8HGINVR   /
+#else
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      DATA DBUGME_STR/"GINVR   "/
+#endif
+C
+      OUT = MASWRK  .AND.  (EXETYP.EQ.DBUGME  .OR.  NPRINT.EQ.1)
+C
+C     ----- CALCULATE G = B * (M**-1) * (B)'
+C
+      I0=0
+      DO I=1,NAT
+         IF(ZMASS(I).NE.ZERO) THEN
+            TEMP = ONE/ZMASS(I)
+         ELSE
+            TEMP = ONE
+         END IF
+C
+         TEMP=ONE
+C
+         RECIPM(I0+1) = TEMP
+         RECIPM(I0+2) = TEMP
+         RECIPM(I0+3) = TEMP
+         I0=I0+3
+      ENDDO
+C
+      DO I=1,NVAR
+         DO J=1,NVAR
+            SUM = ZERO
+            DO K=1,NCOORD
+               SUM = SUM + B(I,K)*RECIPM(K)*B(J,K)
+            ENDDO
+            G(I,J) = SUM
+         ENDDO
+      ENDDO
+C
+      IF(OUT) THEN
+         IF (MASWRK) WRITE(IW,*) 'GINVR: G MATRIX IS'
+         CALL PRSQ(G,NVAR,NVAR,NVAR)
+      END IF
+C
+C     ----- PACK G INTO TRIANGULAR STORAGE -----
+C
+      DO I=1,NVAR
+         IROW = (I*I-I)/2
+         DO J=1,I
+            GLIN(IROW+J) = G(I,J)
+         ENDDO
+      ENDDO
+C
+C     ----- DIAGONALIZE G -----
+C
+      CALL GLDIAG(NVAR,NVAR,NVAR,GLIN,SCR,EIGVAL,EIGVEC,IERR,IA)
+C
+C     ----- COUNT NO. OF ZERO EIGENVALUES, FIND G**-1, AND PUT IT IN G.
+C
+      NZERO = 0
+      DO I=1,NVAR
+         IF (ABS(EIGVAL(I)) .LT. TOL) NZERO = NZERO + 1
+      ENDDO
+C
+C     IMPOSING CONSTRAINTS BY SCHMIDT-ORTHOGONALIZATION,
+C
+      IF (NCONST.GT.0) THEN
+C
+C        SETTING UP CONSTRAINT VECTORS
+C
+         DO I=1,NCONST
+            DO J=1,NVAR
+              TM(J,I)= ZERO
+            ENDDO
+            TM(ITABLE(I),I)= ONE
+         ENDDO
+C
+C        PROJECT AND NORMALIZE THE INITIAL CONSTRAINT VECTOR(S) INTO DLC
+C
+         DO I=1,NCONST
+            DO K=1,NVAR
+               TVEC(K) = ZERO
+            ENDDO
+            DO J=1+NZERO,NVAR
+               TDOT=ZERO
+               DO K=1,NVAR
+                  TDOT=TDOT+TM(K,I)*EIGVEC(K,J)
+               ENDDO
+               DO K=1,NVAR
+                  TVEC(K)=TVEC(K)+TDOT*EIGVEC(K,J)
+               ENDDO
+            ENDDO
+            TDOT=ZERO
+            DO K=1,NVAR
+               TDOT=TDOT+TVEC(K)**2
+            ENDDO
+C
+C           NORMALIZATION
+C
+            TDOT = SQRT(TDOT)
+            DO K=1,NVAR
+               TM(K,I)=TVEC(K)/TDOT
+            ENDDO
+         ENDDO
+C
+C        COPY THE EIGVEC INTO PROJM.
+C
+         DO I=1,NCONST
+            DO J=1,NVAR
+               PROJM(J,I)=TM(J,I)
+            ENDDO
+         ENDDO
+         DO I=NCONST+1,NCONST+NVAR-NZERO
+            DO J=1,NVAR
+              PROJM(J,I)=EIGVEC(J,I+NZERO)
+            ENDDO
+         ENDDO
+C
+C        SCHMIDT-ORTHONORMALIZE
+C
+         DO I=2,NCONST+NVAR-NZERO
+            DO K=1,NVAR
+               TVEC(K) = ZERO
+            ENDDO
+            DO J=1,I-1
+               TDOT=ZERO
+               DO K=1,NVAR
+                  TDOT=TDOT+PROJM(K,I)*PROJM(K,J)
+               ENDDO
+               DO K=1,NVAR
+                  TVEC(K)=TVEC(K)+TDOT*PROJM(K,J)
+               ENDDO
+            ENDDO
+            TDOT=ZERO
+            DO K=1,NVAR
+               PROJM(K,I)=PROJM(K,I)-TVEC(K)
+               TDOT=TDOT+PROJM(K,I)**2
+            ENDDO
+C
+C           NORMALIZATION
+C
+            TDOT = SQRT(TDOT)
+            DO K=1,NVAR
+               PROJM(K,J)=PROJM(K,J)/TDOT
+            ENDDO
+         ENDDO
+C
+C        AGAIN, ASSIGN UNIT VECTORS FOR CONSTRAINTS
+C
+         DO I=1,NCONST
+            DO J=1,NVAR
+               PROJM(J,I)= ZERO
+            ENDDO
+            PROJM(I,I)= ONE
+         ENDDO
+C
+C        PUT THEM BACK TO SIJ
+C
+         DO I=1,NVAR-NZERO
+            DO J=1,NVAR
+               EIGVEC(J,I+NZERO)=PROJM(J,I)
+            ENDDO
+         ENDDO
+      ENDIF
+C
+C     END OF PROJECTION !!
+C
+      ITEST=NVAR-NZERO
+      IF(ITEST .EQ. 3*NAT-6) THEN
+         ICNT=1
+         DO I=NZERO+1,NVAR
+            DO J=1,NVAR
+               SIJ(ICNT)=EIGVEC(J,I)
+               ICNT=ICNT+1
+            ENDDO
+         ENDDO
+      ELSE
+         IF(MASWRK) WRITE(IW,9078) NVAR,NVAR-NZERO,3*NAT-6
+         IF(MASWRK) WRITE(IW,9079) TOL,(EIGVAL(NZERO+III),III=-4,5)
+         CALL ABRT
+      ENDIF
+C
+      RETURN
+C
+ 9078 FORMAT(/1X,'ERROR: BAD DELOCALIZED COORDINATES GENERATED!!!'/
+     * 1X,I10,' PRIMITIVE INTERNAL COORDINATES ARE BEING USED.'/
+     * 1X,I10,' LINEARLY INDEPENDENT COMBINATIONS OF THESE ARE FOUND.'/
+     * 1X,I10,' COORDINATES ARE NEEDED TO HAVE A TOTAL OF 3N-6.'//
+     * 1X,'IF THE NUMBER OF LINEARLY INDEPENDENT COOORDS IS TOO SMALL,'/
+     * 1X,'ADD SOME COORDINATES BY -NONVDW- TO CONNECT MONOMER PIECES'/
+     * 1X,'(ESPECIALLY IF YOU ARE SHORT BY A MULTIPLE OF 6), OR ELSE'/
+     * 1X,'USE -IXZMAT- TO ADD EXTRA PRIMITIVE COORDINATES.'//
+     * 1X,'IF THE NUMBER OF LINEARLY INDEPENDENT COOORDS IS TOO BIG,'/
+     * 1X,'TRY USING -IRZMAT- TO REMOVE SOME PRIMITIVE COORDINATES.')
+ 9079 FORMAT(/6X,'THE FOLLOWING IS DEBUGGING INFORMATION.'/
+     *        1X,'TO BE KEPT, A DLC EIGENVALUE MUST EXCEED',1P,E12.4/
+     *        1X,'THE FIVE LARGEST EIGENVALUES DISCARDED='/1X,1P,5E12.4/
+     *        1X,'THE FIVE SMALLEST EIGENVALUES KEPT    ='/1X,1P,5E12.4)
+      END

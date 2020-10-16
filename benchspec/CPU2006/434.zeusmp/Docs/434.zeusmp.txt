@@ -1,0 +1,141 @@
+                                   434.zeusmp
+                       SPEC CPU2006 Benchmark Description
+
+Benchmark Name
+
+   434.zeusmp
+
+     ----------------------------------------------------------------------
+
+Benchmark Author
+
+   Michael Norman <mnorman [at] cosmos.ucsd.edu>
+   Department of Physics
+   University of California, San Diego
+   San Diego
+   California
+   USA
+
+     ----------------------------------------------------------------------
+
+Benchmark Program General Category
+
+   Physics / Magnetohydrodynamics
+
+     ----------------------------------------------------------------------
+
+Benchmark Description
+
+   434.zeusmp is based on ZEUS-MP, a computational fluid dynamics code
+   developed at the Laboratory for Computational Astrophysics (NCSA,
+   University of Illinois at Urbana-Champaign) for the simulation of
+   astrophysical phenomena. ZEUS-MP solves problems in three spatial
+   dimensions with a wide variety of boundary conditions.
+
+   The program solves the equations of ideal (non-resistive),
+   non-relativistic, hydrodynamics and magnetohydrodynamics, including
+   externally applied gravitational fields and self-gravity. The gas can be
+   adiabatic or isothermal, and the thermal pressure is isotropic. Boundary
+   conditions may be specified as reflecting, periodic, inflow, or outflow.
+
+   The physical problem solved in SPEC CPU2006 is a 3-D blastwave simulated
+   with the presence of a uniform magnetic field along the x-direction. A
+   Cartesian grid is used and the boundaries are "outflow."
+
+   The original ZEUS-MP is based on ZEUS-3D and parallelized using the MPI
+   message-passing library; for SPEC CPU2006, the MPI calls have been removed
+   to create the single processor version 434.zeusmp.
+
+     ----------------------------------------------------------------------
+
+Input Description
+
+   The input file zmp_inp contains many parameters from which the problem is
+   built, among them:
+
+   mpitop
+           The spatial arrangement of processors (irrelevant for CPU2006).
+
+   rescon
+           Restart control which is irrelevant in this test.
+
+   pcon
+           Problem control with the limits on number of steps (nlim) system
+           time (tlim) and CPU time (cpulim).
+
+   hycon
+           Physical constants related to the hydrodynamical problem
+
+   iib ~ okb
+           Boundary conditions at the 6 boundaries.
+
+   ggen1~3
+           Grid information.
+
+   grvcon
+           Gravitation control which is irrelevant in this test.
+
+   radcon
+           Radiation control which is irrelevant in this test.
+
+   radexp
+           Radiative diffusion control which is irrelevant in this test.
+
+   eqos
+           Information on Equation of State.
+
+   pgen
+           Problem generator control information. In this test, it is a
+           spherical blastwave with radius r=0.2 and located at the origin.
+           The ambient density d0=1 and the ambient pressure is 0.6. The
+           initial blastwave has density 100 times and pressure of 1 million
+           times of the surrounding. B-field is in the x-direction (b10=140).
+
+   gcon
+           Moving grid control which is irrelevant in this test.
+
+   iocon
+           I/O control. Physical information of the blastwave test will ouput
+           at the end of the run.
+
+     ----------------------------------------------------------------------
+
+Output Description
+
+   The output file "tsl000aa" contains physical information of the blastwave
+   at the beginning and the end of the run. This file is used for validation.
+
+     ----------------------------------------------------------------------
+
+Programming Language
+
+   The main code is written in Fortran 77, with the change that (as in all of
+   SPEC's Fortran benchmarks) the type
+
+ DOUBLE PRECISION
+
+   has been replaced by
+
+ REAL*8
+
+   thus making the size of the relevant floating-point data uniform across
+   systems - an important consideration for fair benchmarking. While the type
+   REAL*8 is not part of the strict Fortran 77 or Fortran 90 standards, it is
+   a common language extension recognized by all Fortran compilers the SPEC
+   CPU subcomittee has used in its tests.
+
+     ----------------------------------------------------------------------
+
+Known portability issues
+
+   None
+
+     ----------------------------------------------------------------------
+
+References
+
+   http://cosmos.ucsd.edu/lca-www/software/lca_intro_zeusmp.html
+
+     ----------------------------------------------------------------------
+
+   Last updated: 27 July 2006

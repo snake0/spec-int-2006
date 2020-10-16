@@ -1,0 +1,940 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+            Installing SPEC CPU2006 Under Unix, Linux, and Mac OS X
+
+   Last updated: 3 Aug 2006 jh/ms
+   (To check for possible updates to this document, please see
+   http://www.spec.org/cpu2006/Docs/ )
+
+     ----------------------------------------------------------------------
+
+   Contents
+
+     * Installation Steps
+     * Example Installation
+     * Appendix: the DVD drive is on system A, but I want to install on
+       system B. What do I do?
+         1. Network install
+         2. Tar file
+
+     ----------------------------------------------------------------------
+
+Installation Steps
+
+   The SPEC CPU2006 suite has been tested under Unix, Linux, Mac OS X and
+   Windows XP systems. Your DVD can be installed under many operating
+   systems.
+
+   Reminder: the SPEC license allows you to install on multiple systems as
+   you may wish within your institution; but you may not share the software
+   with the public.
+
+   The installation procedure for Unix, Linux, and Mac OS X is as follows:
+
+    1. Review the hardware and software requirements, in
+       system-requirements.html
+
+       Note: links to SPEC CPU2006 documents on this web page assume that you
+       are reading the page from a directory that also contains the other
+       SPEC CPU2006 documents. If by some chance you are reading this web
+       page from a location where the links do not work, try accessing the
+       referenced documents at one of the following locations:
+
+          * www.spec.org/cpu2006/Docs/
+          * The $SPEC/Docs/ (Unix) or %SPEC%\Docs\ (Windows) directory on a
+            system where SPEC CPU2006 has been installed.
+          * The Docs/ directory on your SPEC CPU2006 distribution DVD.
+
+    2. Create a directory on the destination disk. You should make sure that
+       you have a disk that has at least 8GB free. (For more information on
+       disk usage, see system-requirements.html.)
+
+    3. Mount the DVD. For Mac OS X and some versions of Unix and Linux such
+       as SUSE the DVD will be automatically mounted. For some systems, you
+       may have to enter an explicit mount command. If your operating system
+       supports the Rock Ridge Interchange Protocol extensions to ISO 9660,
+       be sure to select them, unless they are the default. The following
+       examples are not intended to be comprehensive, but may get you started
+       or at least give you clues which manpages to read:
+
+       +--------------------------------------------------------------------+
+       |AIX:    |mount -v cdrfs -r /dev/cd0 /cdrom                          |
+       |--------+-----------------------------------------------------------|
+       |HP-UX:  |pfs_mountd &                                               |
+       |        |pfsd &                                                     |
+       |        |pfs_mount -v /dev/rdsk/c1t2d0 /cdrom                       |
+       |        |(Obtain the device name via ioscan -funCdisk. See the      |
+       |        |manpages for pfs, pfsd, pfs_mount, pfs_mountd, and         |
+       |        |pfs_umount. You will need the latter in order to eject the |
+       |        |DVD.)                                                      |
+       |--------+-----------------------------------------------------------|
+       |Linux:  |mount -t iso9660 -o ro,exec /dev/cdrom /mnt                |
+       |--------+-----------------------------------------------------------|
+       |Solaris:|If Volume Management is running, you should find that the  |
+       |        |DVD is automatically mounted, as /cdrom/label_of_volume/ If|
+       |        |not, you should be able to mount it with commands similar  |
+       |        |to this:                                                   |
+       |        |mkdir /mnt1                                                |
+       |        |mount -F hsfs -o ro /dev/dsk/c0t6d0s0 /mnt1                |
+       +--------------------------------------------------------------------+
+
+       Note that you may need root privileges to mount the DVD.
+
+       The following paragraphs assume that your DVD drive is on the same
+       system as where you wish to install. If it is on a different system,
+       please see the appendix.
+
+    4. Set your current working directory to the directory where the DVD is
+       mounted.
+
+    5. Type
+           ./install.sh
+       When prompted, enter the destination directory. Note that for a
+       destination directory, you will have to use syntax acceptable to sh
+       (so you might need to say $HOME instead of ~).
+
+       The installation procedure will attempt to determine your current
+       architecture. If a possible match is found, you will see a message
+       such as this one:
+
+       These appear to be valid toolsets:
+
+       Note that you MUST type in the architecture that you wish to use: type
+       the name exactly as it appears (or use cut and paste). If there is
+       only one choice you can type "y" or "n" to accept or decline that
+       architecture
+
+       If the installation procedure is unable to determine your system
+       architecture, you will see a message such as this one:
+
+        We do not appear to have vendor supplied binaries for your architecture. 
+
+       If you see that message, please stop here, and examine the file
+       tools-build.html
+
+       Thousands of files will be installed on your destination disk. (If you
+       would prefer to see them all named you can set VERBOSE=1 in your
+       environment before installing the kit.) You should see summary
+       messages such as these:
+
+         Unpacking CPU2006 base files (7 MB)
+         Unpacking 400.perlbench benchmark and data files (61.5 MB)
+         Unpacking 401.bzip2 benchmark and data files (110.6 MB)
+         Unpacking 403.gcc benchmark and data files (43 MB)
+         Unpacking 410.bwaves benchmark and data files (0.1 MB)
+         Unpacking 416.gamess benchmark and data files (16.8 MB)
+         Unpacking 429.mcf benchmark and data files (6.9 MB)
+         Unpacking 433.milc benchmark and data files (0.6 MB)
+         Unpacking 434.zeusmp benchmark and data files (1.1 MB)
+         Unpacking 435.gromacs benchmark and data files (13 MB)
+         Unpacking 436.cactusADM benchmark and data files (3.3 MB)
+         Unpacking 437.leslie3d benchmark and data files (0.3 MB)
+         Unpacking 444.namd benchmark and data files (7.5 MB)
+         Unpacking 445.gobmk benchmark and data files (9.2 MB)
+         Unpacking 447.dealII benchmark and data files (70.2 MB)
+         Unpacking 450.soplex benchmark and data files (321 MB)
+         Unpacking 453.povray benchmark and data files (10.3 MB)
+         Unpacking 454.calculix benchmark and data files (26 MB)
+         Unpacking 456.hmmer benchmark and data files (57 MB)
+         Unpacking 458.sjeng benchmark and data files (0.4 MB)
+         Unpacking 459.GemsFDTD benchmark and data files (2.6 MB)
+         Unpacking 462.libquantum benchmark and data files (0.2 MB)
+         Unpacking 464.h264ref benchmark and data files (52.9 MB)
+         Unpacking 465.tonto benchmark and data files (6.8 MB)
+         Unpacking 470.lbm benchmark and data files (4.7 MB)
+         Unpacking 471.omnetpp benchmark and data files (2.9 MB)
+         Unpacking 473.astar benchmark and data files (5.7 MB)
+         Unpacking 481.wrf benchmark and data files (67.1 MB)
+         Unpacking 482.sphinx3 benchmark and data files (51.7 MB)
+         Unpacking 483.xalancbmk benchmark and data files (213.6 MB)
+         Unpacking 998.specrand benchmark and data files (4.1 MB)
+         Unpacking 999.specrand benchmark and data files (4.1 MB)
+
+         Checking the integrity of your source tree...
+
+
+         Checksums are all okay.
+         Unpacking binary tools for macosx-x86...  <<-- your valid architcture
+         Checking the integrity of your binary tools...
+
+         Checksums are all okay.
+         Top of SPEC benchmark tree is '/Users/peg/CPU2006'  <<-- your directory
+         Everything looks okay.  cd to /Users/peg/CPU2006/,  <<-- your directory
+         source the shrc file and have at it!
+
+
+       At this point, you will have consumed about 1.5GB of disk space on the
+       destination drive.
+
+    6. Change your current directory to the top-level SPEC directory and
+       source either shrc or cshrc:
+
+          * For example, if you are using a Bourne-compatible shell (such as
+            ash, bash, ksh, zsh), you could type:
+
+            Users$ cd /Users/peg/cpu2006/
+            cpu2006$ . ./shrc     <-- that's dot-space-dot-slash-shrc
+          * If you are using a csh-compatible shell, you could type:
+
+            Users% cd /bigdisk/bob/cpu2006
+            cpu2006% source cshrc
+
+            (The cshrc script is new with CPU2006)
+
+       The effect of the above commands is to set up environment variables
+       and paths for SPEC.
+
+    7. Test that you can build a benchmark using the config file supplied for
+       your system. For example:
+
+        % runspec --config=macosx-ia32-iccifortv91.cfg --action=build --tune=base bzip2
+
+       The above command assumes that you can identify a config file (in the
+       directory $SPEC/config) that is appropriate for you. For a quick
+       introduction to config files, see "About Config Files" in runspec.html
+
+       The "--tune=base" above indicates that we want to use only the simple
+       tuning, if more than one kind of tuning is supplied in the config
+       file.
+
+    8. Test that you can run a benchmark, using the minimal input set - the
+       "test" workload. For example:
+
+        % runspec --config=macosx-ia32-iccifortv91.cfg --size=test --tune=base \
+                     --noreportable --iterations=1 bzip2
+
+       The "\" above indicates that the command is continued on the next
+       line. The "--noreportable" ensures that the tools will allow us to run
+       just a single benchmark instead of the whole suite, and
+       "--iterations=1" says just run the benchmark once.
+
+    9. Test that you can run a benchmark using the real input set - the
+       "reference" workload. For example:
+
+        % runspec --config=macosx-ia32-iccifortv91.cfg --size=ref \
+                     --noreportable --iterations=1 bzip2
+
+       Check the results in $SPEC/result.
+
+   10. Have a look at runspec.html to learn how to do a full run of the
+       suite. Also the command runspec -h will list the various options for
+       runspec
+
+Example Installation
+
+   Here is a complete Mac OS X installation, with interspersed commentary.
+   This example follows the steps listed above. We assume that Steps 1
+   through 3 are already complete (from the list above).
+
+   Step 4: Set the current working directory to the DVD:
+
+ % cd /Volumes/SPEC_CPU2006v092/
+
+
+   Step 5: Invoke install.sh. When prompted, we enter the destination
+   directory, and the desired architecture:
+
+ % ./install.sh
+
+ SPEC CPU2006 Installation
+
+ Top of the CPU2006 tree is '/Volumes/SPEC_CPU2006v092'
+ Enter the directory you wish to install to (e.g. /usr/cpu2006)
+ /Users/peg/CPU2006/
+
+ These appear to be valid toolsets:
+
+ macosx-x86                    For MacOS X 10.4.3+ on x86 processors
+                               Built on MacOS X 10.4.3 (build 8F1111) with
+                               GCC 4.0.1 (build 5245)
+
+ macosx-ppc                    For MacOS X 10.2.8+ on PowerPC G3+ processors
+                               Built on MacOS X 10.2.8 with gcc 3.1 (4/2002)
+
+
+ Enter the architecture you are using:
+ macosx-x86
+
+ Unpacking CPU2006 base files (7 MB)
+ Unpacking 400.perlbench benchmark and data files (61.5 MB)
+ Unpacking 401.bzip2 benchmark and data files (110.6 MB)
+ Unpacking 403.gcc benchmark and data files (43 MB)
+ Unpacking 410.bwaves benchmark and data files (0.1 MB)
+ Unpacking 416.gamess benchmark and data files (16.8 MB)
+ Unpacking 429.mcf benchmark and data files (6.9 MB)
+ Unpacking 433.milc benchmark and data files (0.6 MB)
+ Unpacking 434.zeusmp benchmark and data files (1.1 MB)
+ Unpacking 435.gromacs benchmark and data files (13 MB)
+ Unpacking 436.cactusADM benchmark and data files (3.3 MB)
+ Unpacking 437.leslie3d benchmark and data files (0.3 MB)
+ Unpacking 444.namd benchmark and data files (7.5 MB)
+ Unpacking 445.gobmk benchmark and data files (9.2 MB)
+ Unpacking 447.dealII benchmark and data files (70.2 MB)
+ Unpacking 450.soplex benchmark and data files (321 MB)
+ Unpacking 453.povray benchmark and data files (10.3 MB)
+ Unpacking 454.calculix benchmark and data files (26 MB)
+ Unpacking 456.hmmer benchmark and data files (57 MB)
+ Unpacking 458.sjeng benchmark and data files (0.4 MB)
+ Unpacking 459.GemsFDTD benchmark and data files (2.6 MB)
+ Unpacking 462.libquantum benchmark and data files (0.2 MB)
+ Unpacking 464.h264ref benchmark and data files (52.9 MB)
+ Unpacking 465.tonto benchmark and data files (6.8 MB)
+ Unpacking 470.lbm benchmark and data files (4.7 MB)
+ Unpacking 471.omnetpp benchmark and data files (2.9 MB)
+ Unpacking 473.astar benchmark and data files (5.7 MB)
+ Unpacking 481.wrf benchmark and data files (67.1 MB)
+ Unpacking 482.sphinx3 benchmark and data files (51.7 MB)
+ Unpacking 483.xalancbmk benchmark and data files (213.6 MB)
+ Unpacking 998.specrand benchmark and data files (4.1 MB)
+ Unpacking 999.specrand benchmark and data files (4.1 MB)
+
+ Checking the integrity of your source tree...
+
+
+ Checksums are all okay.
+ Unpacking binary tools for macosx-x86...
+ Checking the integrity of your binary tools...
+
+ Checksums are all okay.
+ Top of SPEC benchmark tree is '/Users/peg/CPU2006'
+ Everything looks okay.  cd to /Users/peg/CPU2006/,
+ source the shrc file and have at it!
+
+
+   Step 6: Now, we set the current working directory to the DESTINATION
+   device. If you are using a Bourne compatible shell, you will source shrc;
+   if you are using a variant of the csh, you'll use cshrc.
+
+
+ % cd /Users/peg/CPU2006/
+ % . ./shrc
+
+   That's dot-space-dot-slash-shrc just above
+
+   Step 7: Use runspec to do a test build:
+
+
+ % runspec --config=macosx-ia32-iccifortv91.cfg \
+              --action=build --tune=base bzip2
+ runspec v4283 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+ Using 'macosx-x86' tools
+ Reading MANIFEST... 17900 files
+ Loading runspec modules...............
+ Locating benchmarks...found 31 benchmarks in 13 benchsets.
+ Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, PostScript, raw, Screen, Submission Check
+
+ =============================================================================
+ Warning:  You appear to be using one of the config files that is supplied
+ with the SPEC CPU2006 distribution.  This can be a fine way to get started.
+
+ Each config file was developed for a specific combination of compiler / OS /
+ hardware.  If your platform uses different versions of the software or
+ hardware listed, or operates in a different mode (e.g. 32- vs. 64-bit mode),
+ there is the possibility that this configuration file may not work as-is. If
+ problems arise please see the technical support file at
+
+   http://www.spec.org/cpu2006/Docs/techsupport
+
+ A more recent config file for your platform may be among result submissions at
+
+   http://www.spec.org/cpu2006/
+
+ Generally, issues with compilation should be directed to the compiler vendor.
+ You can find hints about how to debug problems by looking at the section on
+ "Troubleshooting" in
+   http://www.spec.org/cpu2006/Docs/config.html
+
+ This warning will go away if you rename your config file to something other
+ than one of the names of the presupplied config files.
+
+ ==================== The run will continue in 30 seconds ====================
+ Reading config file '/Users/peg/CPU2006/config/macosx-ia32-iccifortv91.cfg'
+ Benchmarks selected: 401.bzip2
+ Compiling Binaries
+   Building 401.bzip2 ref base macosx-ia32-iccifortv91 default: (build_base_macosx-ia32-iccifortv91.0000)
+
+ Build successes: 401.bzip2(base)
+
+ Build Complete
+
+ The log for this run is in /Users/peg/CPU2006/result/CPU2006.002.log
+
+ runspec finished at Tue May 30 12:29:58 2006; 44 total seconds elapsed
+
+   Just above, various compile and link commands may or may not be echoed to
+   your screen, depending on the settings in your config file. At this point,
+   we've accomplished a lot. The SPEC tree is installed, and we have verified
+   that a benchmark can be compiled using the C compiler.
+
+   Step 8: Now try running a benchmark, using the minimal test workload. The
+   test workload runs in a tiny amount of time and does a minimal
+   verification that the benchmark executable can at least start up:
+
+
+ % runspec --config=macosx-ia32-iccifortv91.cfg --size=test \
+              --noreportable --tune=base --iterations=1 bzip2
+ runspec v4283 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+ Using 'macosx-x86' tools
+ Reading MANIFEST... 17900 files
+ Loading runspec modules...............
+ Locating benchmarks...found 31 benchmarks in 13 benchsets.
+ Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, PostScript, raw, Screen, Submission Check
+
+ =============================================================================
+ Warning:  You appear to be using one of the config files that is supplied
+ with the SPEC CPU2006 distribution.  This can be a fine way to get started.
+
+ Each config file was developed for a specific combination of compiler / OS /
+ hardware.  If your platform uses different versions of the software or
+ hardware listed, or operates in a different mode (e.g. 32- vs. 64-bit mode),
+ there is the possibility that this configuration file may not work as-is. If
+ problems arise please see the technical support file at
+
+   http://www.spec.org/cpu2006/Docs/techsupport
+
+ A more recent config file for your platform may be among result submissions at
+
+   http://www.spec.org/cpu2006/
+
+ Generally, issues with compilation should be directed to the compiler vendor.
+ You can find hints about how to debug problems by looking at the section on
+ "Troubleshooting" in
+   http://www.spec.org/cpu2006/Docs/config.html
+
+ This warning will go away if you rename your config file to something other
+ than one of the names of the presupplied config files.
+
+ ==================== The run will continue in 30 seconds ====================
+ Reading config file '/Users/peg/CPU2006/config/macosx-ia32-iccifortv91.cfg'
+ Benchmarks selected: 401.bzip2
+ Compiling Binaries
+   Up to date 401.bzip2 test base macosx-ia32-iccifortv91 default
+
+
+ Parsing Flags
+   Looking at 401.bzip2 base macosx-ia32-iccifortv91 default: done
+ Flag Parsing Complete
+
+ Setting Up Run Directories
+   Setting up 401.bzip2 test base macosx-ia32-iccifortv91 default: created (run_base_test_macosx-ia32-iccifortv91.0000)
+ Running Benchmarks
+   Running 401.bzip2 test base macosx-ia32-iccifortv91 default
+ Success: 1x401.bzip2
+ Producing Reports
+ mach: default
+   ext: macosx-ia32-iccifortv91
+     size: test
+       set: int
+ NOTICE: sw_os is longer than 50 characters and will be split
+         format: raw -> /Users/peg/CPU2006/result/CINT2006.003.test.rsf
+         format: flags -> /Users/peg/CPU2006/result/CINT2006.003.test.flags.html
+         format: ASCII -> /Users/peg/CPU2006/result/CINT2006.003.test.txt
+         format: config -> /Users/peg/CPU2006/result/CINT2006.003.test.cfg
+         format: CSV -> /Users/peg/CPU2006/result/CINT2006.003.test.csv
+         format: PDF -> /Users/peg/CPU2006/result/CINT2006.003.test.pdf
+         format: PostScript -> /Users/peg/CPU2006/result/CINT2006.003.test.ps
+       set: fp
+
+ The log for this run is in /Users/peg/CPU2006/result/CPU2006.003.log
+
+ runspec finished at Tue May 30 12:32:07 2006; 65 total seconds elapsed
+
+   Notice about 20 lines up the notation "Success: 1x401.bzip2". That is what
+   we want to see.
+
+   Step 9: let's try running bzip2 with the real workload. This will take a
+   while - about 22 minutes on the 1.8GHz iMac used for the sample
+   installation.
+
+ % runspec --config=macosx-ia32-iccifortv91.cfg  \
+              --size=ref --noreportable --tune=base --iterations=1 bzip2
+ runspec v4283 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+ Using 'macosx-x86' tools
+ Reading MANIFEST... 17900 files
+ Loading runspec modules...............
+ Locating benchmarks...found 31 benchmarks in 13 benchsets.
+ Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, PostScript, raw, Screen, Submission Check
+
+ =============================================================================
+ Warning:  You appear to be using one of the config files that is supplied
+ with the SPEC CPU2006 distribution.  This can be a fine way to get started.
+
+ Each config file was developed for a specific combination of compiler / OS /
+ hardware.  If your platform uses different versions of the software or
+ hardware listed, or operates in a different mode (e.g. 32- vs. 64-bit mode),
+ there is the possibility that this configuration file may not work as-is. If
+ problems arise please see the technical support file at
+
+   http://www.spec.org/cpu2006/Docs/techsupport
+
+ A more recent config file for your platform may be among result submissions at
+
+   http://www.spec.org/cpu2006/
+
+ Generally, issues with compilation should be directed to the compiler vendor.
+ You can find hints about how to debug problems by looking at the section on
+ "Troubleshooting" in
+   http://www.spec.org/cpu2006/Docs/config.html
+
+ This warning will go away if you rename your config file to something other
+ than one of the names of the presupplied config files.
+
+ ==================== The run will continue in 30 seconds ====================
+ Reading config file '/Users/peg/CPU2006/config/macosx-ia32-iccifortv91.cfg'
+ Benchmarks selected: 401.bzip2
+ Compiling Binaries
+   Up to date 401.bzip2 ref base macosx-ia32-iccifortv91 default
+
+
+ Parsing Flags
+   Looking at 401.bzip2 base macosx-ia32-iccifortv91 default: done
+ Flag Parsing Complete
+
+ Setting Up Run Directories
+   Setting up 401.bzip2 ref base macosx-ia32-iccifortv91 default: created (run_base_ref_macosx-ia32-iccifortv91.0000)
+ Running Benchmarks
+   Running 401.bzip2 ref base macosx-ia32-iccifortv91 default
+  Success: 1x401.bzip2
+ Producing Reports
+ mach: default
+   ext: macosx-ia32-iccifortv91
+     size: ref
+       set: int
+ NOTICE: sw_os is longer than 50 characters and will be split
+         format: raw -> /Users/peg/CPU2006/result/CINT2006.004.rsf
+         format: flags -> /Users/peg/CPU2006/result/CINT2006.004.flags.html
+         format: ASCII -> /Users/peg/CPU2006/result/CINT2006.004.txt
+         format: config -> /Users/peg/CPU2006/result/CINT2006.004.cfg
+         format: CSV -> /Users/peg/CPU2006/result/CINT2006.004.csv
+         format: PDF -> /Users/peg/CPU2006/result/CINT2006.004.pdf
+         format: PostScript -> /Users/peg/CPU2006/result/CINT2006.004.ps
+       set: fp
+
+ The log for this run is in /Users/peg/CPU2006/result/CPU2006.004.log
+
+ runspec finished at Tue May 30 12:54:09 2006; 1298 total seconds elapsed
+
+
+   Success with the real workload! So now let's look in the result directory
+   and see what we find:
+
+ % cd result
+ % ls
+ CINT2006.003.test.cfg           CINT2006.003.test.rsf           CINT2006.004.pdf                CPU2006.003.log
+ CINT2006.003.test.csv           CINT2006.003.test.txt           CINT2006.004.ps                 CPU2006.004.log
+ CINT2006.003.test.flags.html    CINT2006.004.cfg                CINT2006.004.rsf                CPU2006.lock
+ CINT2006.003.test.pdf           CINT2006.004.csv                CINT2006.004.txt                images
+ CINT2006.003.test.ps            CINT2006.004.flags.html         CPU2006.002.log
+
+   Notice the three separate sets of files: .002, .003, and .004
+
+   CPU2006.002.log has the log from the compile.
+
+   CPU2006.003.log has the log from running 401.bzip2 with the "test" input.
+   The various outputs (.csv, .pdf, .ps, .txt), a compiler flags report
+   (.flags.html), and the configuration file (.cfg) are all preceded by
+   "CINT2006", because 401.bzip2 is one of the integer benchmarks. The tools
+   also distinguish the fact that the input was a "test" input by putting
+   that in the file name as well.
+
+   CPU2006.004.log has the log from running 401.bzip2 with the "ref" input.
+   Once again, the various outputs and the configuration file (.cfg) all
+   start with CINT2006.
+
+   The careful reader may wonder: "What happened to *001* files?" The answer
+   is that the author of this example had a fat-finger experience when trying
+   to enter the correct runspec command and did not like the results, and so
+   deleted them. Doing so is harmless to the other logs, and can help
+   organize a result directory by getting the clutter out of the way. To
+   remove everything associated with run #1, simply type "rm *001*"; or if
+   you feel nervous about that, try something like "mkdir hideme; mv *001*
+   hideme". Doing either of these will not cause the runspec tools to
+   complain.
+
+   So let's look at our reference input results, in the .txt file:
+
+
+ % cat CINT2006.004.txt
+ ##############################################################################
+ #   INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN  #
+ #                                                                            #
+ # 'reportable' flag not set during run                                       #
+ # 471.omnetpp base did not have enough runs!                                 #
+ # 456.hmmer base did not have enough runs!                                   #
+ # 445.gobmk base did not have enough runs!                                   #
+ # 458.sjeng base did not have enough runs!                                   #
+ # 429.mcf base did not have enough runs!                                     #
+ # 473.astar base did not have enough runs!                                   #
+ # 483.xalancbmk base did not have enough runs!                               #
+ # 400.perlbench base did not have enough runs!                               #
+ # 464.h264ref base did not have enough runs!                                 #
+ # 462.libquantum base did not have enough runs!                              #
+ # 401.bzip2 base did not have enough runs!                                   #
+ # 403.gcc base did not have enough runs!                                     #
+ # Unknown flags were used! See                                               #
+ #      http://www.spec.org/auto/cpu2006/docs/runspec.html#flagsurl           #
+ # for information about how to get rid of this error.                        #
+ #                                                                            #
+ #   INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN  #
+ ##############################################################################
+                             SPEC CINT2006 Summary
+  Our Favorite Company, Inc. SuperFast Processor, 4x9999MHz CPUs, 1999MHz FSB
+                            Tue May 30 12:32:31 2006
+
+ SPEC License #999   Test date: Jan-0000     Hardware availability: Jan-0000
+ Test sponsor: Our Favorite Company, Inc.    Software availability: Jan-0000
+
+                                   Estimated                       Estimated
+                 Base     Base       Base        Peak     Peak       Peak
+ Benchmarks      Ref.   Run Time     Ratio       Ref.   Run Time     Ratio
+ -------------- ------  ---------  ---------    ------  ---------  ---------
+ 400.perlbench                               NR                                
+ 401.bzip2        9650       1244       7.76 *                                 
+ 403.gcc                                     NR                                
+ 429.mcf                                     NR                                
+ 445.gobmk                                   NR                                
+ 456.hmmer                                   NR                                
+ 458.sjeng                                   NR                                
+ 462.libquantum                              NR                                
+ 464.h264ref                                 NR                                
+ 471.omnetpp                                 NR                                
+ 473.astar                                   NR                                
+ 483.xalancbmk                               NR                                
+ ==============================================================================
+ 400.perlbench                               NR                                
+ 401.bzip2        9650       1244       7.76 *                                 
+ 403.gcc                                     NR                                
+ 429.mcf                                     NR                                
+ 445.gobmk                                   NR                                
+ 456.hmmer                                   NR                                
+ 458.sjeng                                   NR                                
+ 462.libquantum                              NR                                
+ 464.h264ref                                 NR                                
+ 471.omnetpp                                 NR                                
+ 473.astar                                   NR                                
+ 483.xalancbmk                               NR                                
+  Est. SPECint_base2006                 0.00
+  Est. SPECint2006                                                   Not Run
+
+
+                                    HARDWARE
+                                    --------
+             CPU Name: Intel CPU (1.0)
+  CPU Characteristics: Intel CPU (1.0)
+              CPU MHz: 9999
+                  FPU: Integrated
+       CPU(s) enabled: 9999 cores, 9999 chips, 9999 cores/chip
+     CPU(s) orderable: 9999
+        Primary Cache: 64 KB Instr + 32 KB Data
+      Secondary Cache: 8192 KB
+             L3 Cache: None
+          Other Cache: None
+               Memory: 4096 MB
+       Disk Subsystem: xxxx
+       Other Hardware: None
+
+
+                                    SOFTWARE
+                                    --------
+     Operating System: Mac OS X, v10.4.3, Build 8F1111; Darwin v8.3.1,
+                       release 199506
+             Compiler: xxxx
+        Auto Parallel: --
+          File System: HFS+
+         System State: Default
+       Other Software: None
+
+
+                                 General Notes
+                                 -------------
+      Boot ROM Version: 5.2.7f1
+      FSB Speed: 1999MHz
+      Memory Details:
+      DIMM0/J6700: 512MB, DDR2_SDRAM, PC2-4200U-444
+      DIMM1/J6800: 512MB, DDR2_SDRAM, PC2-4200U-444
+      DIMM2/J6900: 512MB, DDR2_SDRAM, PC2-4200U-444
+      DIMM3/J7000: 512MB, DDR2_SDRAM, PC2-4200U-444
+      DIMM4/J7100: 512MB, DDR2_SDRAM, PC2-4200U-444
+      DIMM5/J7200: 512MB, DDR2_SDRAM, PC2-4200U-444
+      DIMM6/J7300: 512MB, DDR2_SDRAM, PC2-4200U-444
+      DIMM7/J7400: 512MB, DDR2_SDRAM, PC2-4200U-444
+
+                               Base Unknown Flags
+                               ------------------
+  401.bzip2: "icc" (in CC) "icc" (in LD) "-fast" (in COPTIMIZE)
+
+
+ ##############################################################################
+ #   INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN  #
+ #                                                                            #
+ # 'reportable' flag not set during run                                       #
+ # 471.omnetpp base did not have enough runs!                                 #
+ # 456.hmmer base did not have enough runs!                                   #
+ # 445.gobmk base did not have enough runs!                                   #
+ # 458.sjeng base did not have enough runs!                                   #
+ # 429.mcf base did not have enough runs!                                     #
+ # 473.astar base did not have enough runs!                                   #
+ # 483.xalancbmk base did not have enough runs!                               #
+ # 400.perlbench base did not have enough runs!                               #
+ # 464.h264ref base did not have enough runs!                                 #
+ # 462.libquantum base did not have enough runs!                              #
+ # 401.bzip2 base did not have enough runs!                                   #
+ # 403.gcc base did not have enough runs!                                     #
+ # Unknown flags were used! See                                               #
+ #      http://www.spec.org/auto/cpu2006/docs/runspec.html#flagsurl           #
+ # for information about how to get rid of this error.                        #
+ #                                                                            #
+ #   INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN -- INVALID RUN  #
+ ##############################################################################
+ -----------------------------------------------------------------------------
+ For questions about this result, please contact the tester.
+ For other inquiries, please contact webmaster@spec.org.
+ Copyright 2006 Standard Performance Evaluation Corporation
+ Generated on Tue May 30 12:54:07 2006 by SPEC CPU2006 ASCII formatter v4286
+
+
+
+   Done. The suite is installed, and we can run at least one benchmark for
+   real (see the report of the time spent in 401.bzip2 above).
+
+     ----------------------------------------------------------------------
+
+Appendix: the DVD drive is on system A, but I want to install on system B. What
+do I do?
+
+   If the title of this section describes your situation, you basically have
+   two choices.
+
+    1. Network mount: You can mount the device over the network and do the
+       installation remotely.
+    2. Tar file: You can install from the tar file
+
+  1. Network mount
+
+   You might be able to mount the DVD on one system and use network services
+   to make it available on other systems.
+
+   Please note that the SPEC CPU2006 license agreement does not allow you to
+   post the DVD on any public server. If your institution has a SPEC CPU2006
+   license, then it's fine to post it on an internal server that is
+   accessible only to members of your institution.
+
+   Whether you attempt a network mount will probably depend on:
+
+     * available network hardware,
+     * the networking services provided by your operating system, and
+     * the security policies of your IT department (if any).
+
+   If your network environment allows easy cross-system mounting, or if you
+   feel brave about reading manpages, you can use a network mount for the
+   installation. Otherwise, you can fall back on the tar file.
+
+   Network mount, easy:
+   for example, System A Solaris/Opteron  +  System B Solaris/SPARC
+
+   Your operating system may be configured to automatically mount the drive
+   and automatically make it visible to other network systems, or may make it
+   visible with minimal user intervention. During one set of testing, system
+   A (with the DVD drive) was an Opteron-based system running Solaris 10. The
+   SPEC CPU2006 DVD was inserted. The operating system mounted it
+   automatically, and from a terminal window, a (non-privileged) user entered
+   the Solaris share command to make it visible to other hosts.
+
+   On System B, a Solaris SPARC system, a non-privileged user typed:
+
+ cd /net/systemA/cdrom/spec_cpu2006
+ ./install.sh
+
+   and the installation proceeded normally, picking up from step 5, above.
+
+   Network mount, medium difficulty:
+   for example, System A Solaris/Opteron  +  System B Tru64 Unix/Alpha
+
+   Subsequent to the tests of the previous paragraphs, the DVD drive on
+   System A (Solaris/Opteron) was also visible to a system running Compaq
+   Tru64 UNIX V5.1A. But in this case, a little assistance was needed from
+   the privileged (root) account on system B:
+
+ echo "systemA.domain.com:/cdrom/spec_cpu2006 /systemA nfs ro,bg,soft 0 0" >> /etc/fstab
+ mkdir /systemA
+ /usr/sbin/mount /systemA
+
+   Then, the non-privileged user was able to say:
+
+ cd /systemA
+ ./install.sh
+
+   and once again the installation proceeded normally, picking up from step
+   5, above.
+
+   Network mount, a bit harder:
+   for example, System A SuSE/x86  +  System B Mac OS X/PowerPC
+
+   The SPEC CPU2006 DVD was also inserted into a system running SuSE Linux
+   9.0, and used from a Mac OS X PowerBook. On both these systems, there are
+   probably automatic tools that would have accomplished the following more
+   quickly, but the tester happened to read the manpages in the particular
+   order that he happened to read them in. The following succeeded:
+
+   On System A, root added
+
+ /dev/cdrom  /cd  iso9660  ro,user,noauto,unhide
+
+   to /etc/fstab as suggested by man mount; the DVD was inserted; and the
+   user typed mount /cd. On System A, root also added:
+
+ /cd  192.168.0.0/24(ro,insecure,no_root_squash,sync)
+
+   to /etc/exports, and then typed:
+
+ exportfs -r
+ rpc.nfsd -p 8
+ rpc.mountd
+ cat /var/lib/nfs/etab
+
+   On System B, root typed:
+
+ mkdir /remote
+ mount -t nfs 192.168.0.106:/cd /remote
+
+   Finally, the user typed
+
+ cd /remote
+ ./install.sh
+
+   and installation continued as normal, with step 5.
+
+  2. Tar file
+
+   If the DVD drive is on a system other than the one where you wish to do
+   the installation, and if you do not wish to try to get a network mount
+   working, then the final fallback is to use the compressed tarfile. If you
+   choose this option, please carefully observe the warnings.
+
+    1. Go to the system with the DVD drive ("System A"). Insert the SPEC
+       CPU2006 DVD, and, if required, issue a mount command.
+
+    2. From a terminal window (aka command window), cd to the top level
+       directory on the DVD.
+
+    3. You are going to retrieve five things from the DVD. First, find the
+       large tarfile and its corresponding md5 file:
+
+ cd original.src
+ ls -l cpu2006.tar.bz*
+
+       or, if System A is a Windows system, then:
+
+ cd original.src
+ dir cpu2006.tar.bz*
+
+       In either case, you should see one moderately large file > 400MB,
+       cpu2006.tar.bz2, and a small file associated with it that contains a
+       checksum, cpu2006.tar.bz2.md5.
+
+       If you don't see the above files, try looking for cpu*tar*. The name
+       might change if, for example, a maintenance update of CPU2006 changes
+       the name slightly to indicate an updated version.
+
+       Do whatever is required in order to transfer both files intact to the
+       system where you wish to do the installation ("System B"). If you use
+       ftp, do not forget to use image (binary) mode. For example:
+
+ $ ftp
+ ftp> op systemB
+ Name: imauser
+ Password:
+ ftp> cd /kits
+ ftp> bin   <-------- important
+ 200 Type set to I.
+ ftp> put cpu2006.tar.bz2
+ ftp> put cpu2006.tar.bz2.md5
+
+       Please note that the SPEC CPU2006 license agreement does not allow you
+       to post the above file on any public ftp server. If your institution
+       has a SPEC CPU2006 license, then it's fine to post it on an internal
+       server that is accessible only to members of your institution.
+
+    4. Next, you are going to look on the DVD for versions of specbzip2,
+       specmd5sum, and spectar that are compatible with system B. Please do
+       not use the tar supplied by your operating system unless you are sure
+       that it can handle long path names. Many commonly-supplied tar
+       utilities cannnot.
+
+       Please do not use Windows Zip utilities, as these will not preserve
+       line endings.
+
+       If you have GNU tar and the genuine bzip2, then you can use those;
+       otherwise, please hunt around on the DVD to find prebuilt versions
+       that are compatible with your environment, like so:
+
+ $ cd /dvdrom
+ $ cd tools
+ $ cd bin
+ $ ls
+ aix5L-ppc            hpux-11iv2-parisc    linux-suse101-AMD64  macosx-x86           solaris-sparc
+ freebsd54-ia32       irix6.5-mips         linux-suse101-i386   netbsd21-ia32        solaris-x86
+ freebsd60-ia32       linux-redhat62-ia32  linux-ydl20-ppc      openbsd38-ia32       tru64-alpha
+ hpux-11iv2-ipf       linux-rhas3r2-ia64   macosx-ppc           sles9-glibc23-ia64   windows-i386
+ $ cd aix5L-ppc
+ $ cat description
+ For PowerPC systems running AIX 5L V5.1 or later
+                               Built on AIX 5L V5.1 with the
+                               IBM XL C/C++ for AIX Version 8 compiler
+ $ ls -l spec*
+ -r-xr-xr-x   1 root     root      100596 Dec 20  2005 specbzip2
+ -r-xr-xr-x   1 root     root       26642 Dec 20  2005 specmd5sum
+ -r-xr-xr-x   1 root     root      285259 Dec 20  2005 spectar
+ $
+
+       Once you've found the right versions of specbzip2, specmd5sum, and
+       spectar for the system where you intend to install (system B),
+       transfer them to system B using the same methods that you used for the
+       big tarfile.
+
+    5. On system B, use specmd5sum to check that the file transfer worked
+       correctly. In this example, we assume that you have placed all 5 of
+       the files mentioned above in the /kits directory:
+
+ $ cd /kits
+ $ specmd5sum -c cpu2006.tar.bz2.md5
+ cpu2006.tar.bz2: OK
+
+    6. Unpack the tarfile, like so:
+
+ $ cd /mybigdisk
+ $ mkdir cpu2006
+ $ cd cpu2006
+ $ /kits/specbzip2 -dc /kits/cpu2006.tar.bz2 | /kits/spectar -xf -
+
+       Be patient: it will take bit of time to unpack! It might take 15
+       minutes, depending on the speed of your processor and disks. Go for a
+       coffee break.
+
+    7. Now, at last, type ./install.sh and pick up with step 5, above. Your
+       output will be similar, but not identical, to the output shown in step
+       5 above: you won't see the "Unpacking xxxx" messages, because you
+       already did the unpacking.
+
+     ----------------------------------------------------------------------
+
+   Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+   All Rights Reserved

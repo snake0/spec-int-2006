@@ -1,0 +1,157 @@
+Some Notes About 465.tonto 
+J. Henning 18 Apr 2004
+
+465.tonto is based upon http://www.theochem.uwa.edu.au/tonto/
+
+The original distribution includes excellent documentation.  A 
+copy may be found in: 
+
+     465.tonto/Docs/htmldocumentation/index.html
+
+Some of the original ocumentation does not apply to the SPEC 
+version, due to porting decisions that were made in order to 
+get tonto into the SPEC framework (see below).  But porters to 
+new platforms may wish to consult the documents, as well as the 
+example configuration files from the original tonto build 
+framework.  These config files may be found in 
+
+      465.tonto/Docs/tonto_config/
+
+For example, Solaris users need -stackvar (place variables on 
+the stack, ie.  make them automatic rather than static), a 
+suggestion that can be seen in 
+465.tonto/Docs/tonto_config/WORKSHOP-f95-on-SUNOS
+
+Note that SPEC has an approval process for so-called 
+"portability" options, as documented in the Run Rules.
+
+---------------------------------
+Porting Tonto to the SPEC Harness
+
+The original source code for Tonto was in a dialect called 
+"foo", meaning "object-oriented Fortran".  In the original 
+tonto distribution - 
+http://www.theochem.uwa.edu.au/tonto/download.html - the .foo 
+code is turned into Fortran via a sequence of steps that 
+include, among other things:
+
+ 1. @echo Compiling $(*F).foo into Fortran ...
+
+ 2. @$(PERL) -I$(scriptdir) -w $(scriptdir)/foo.perl \
+                    -fortran $(*F).tmp \
+                    -fortranint $(intdir)/$(*F).int \
+                    -fortranuse $(usedir)/$(*F).use $&lt;
+
+ 3. @$(PERL) -w $(scriptdir)/filepp -w -I. -I$(intdir) \
+        -I$(usedir) -M$(scriptdir) $(INCFLAGS) -m literal.pm \
+        -m tonto.pm -o $@ $(DEFS) $(*F).tmp
+
+ 4.  @$(RM) -f $(*F).tmp
+
+The Makefile steps above accomplish the following [some 
+technicalities have been omitted for ease of explanation]:
+
+ 1. Say what we're about to do
+
+ 2. From the original source - say, for example, "mumble.foo" -
+    use "foo.perl" to create "mumble.int" (interface 
+    definitions), "mumble.use" (what it uses) and "mumble.tmp" 
+    (the actual Fortran guts of the program)
+
+ 3. Use "filepp", a pre-processor with some similarities to C 
+    pre-processors, to turn "mumble.tmp" into "mumble.f90".
+    Although not shown above, this step relies heavily on a 
+    file called "macros", which includes items such as
+
+         #define REAL_SIZE     8
+         #define CPX_SIZE   16
+         #define PTR_SIZE     8
+
+         #define AND        .and.
+         #define OR         .or.
+         #define NOT        .not.
+
+         #define IN         intent(in)
+         #define OUT        intent(out)
+         #define INOUT      intent(inout)
+         #define PAR        parameter
+
+         #define SPEED_OF_LIGHT_SI        2.99792458d+8
+         #define CHARGE_OF_ELECTRON_SI    1.602177d-19
+         #define AMU_SI                   1.6605402d-27
+         #define MASS_OF_ELECTRON_SI      9.10939d-31
+
+         #define ARRAY4(X,A,B,C,D)      X, dimension(A,B,C,D)
+         #define REALMAT4(A,B,C,D)      ARRAY4(REAL,A,B,C,D)
+
+    Notice above that the "macros" file provides a mixture of 
+    language synonyms, constants, and type definitions.  It's 
+    worth perusing in some detail; I've given you only a tiny 
+    sample above.
+
+  4. Remove "mumble.tmp"
+
+If this benchmark is to be ported into the SPEC harness, what 
+would be an acceptable way to do so?  In particular, what 
+should be the SPEC-provided source code in 465.tonto/src?  
+Using our example above, should it be the original source, 
+"mumble.foo"?  Or perhaps the result of step 3, "mumble.f90"?
+
+Note that shipping "mumble.foo" as the source would require 
+shipping the foo-to-Fortran preprocessor, "foo.perl", as part 
+of the SPEC toolset, and perhaps various other parts of the 
+tonto framework.  This might lead to some clashes of differing
+assumptions about the workings of build frameworks.
+
+On the other hand, shipping "mumble.f90" would mean shipping 
+the *result* of all the above macros - which might lead to 
+problems later if we find a platform with (for example) a need 
+to use a different PTR_SIZE.
+
+After discussions with various SPEC members, I chose to break 
+the above process after step 2: that is, after the production 
+of "mumble.tmp".  The various .tmp files are what you will find 
+in the directory 465.tonto/src.  But of course, you won't find 
+mumble.tmp"; you will find "mumble.F90".  
+
+When you use runspec to compile 465.tonto, it first creates 
+"mumble.fppized.f90" and then from that calls your compiler to 
+create object files.
+
+This decision is similar to what has been done for several 
+other benchmarks.
+
+It is perhaps also worthwhile to highlight that SPEC has 
+now added "filepp" - see http://www.cabaret.demon.co.uk/filepp/ - 
+to the SPEC toolset (named $SPEC/bin/specpp).  Filepp appears 
+to be significantly more flexible than the preprocessor that 
+was used prior to kit50, and does not appear to have broken any 
+of the other Fortran benchmarks.  It also allows the tonto 
+preprocessing to call out to its modules "tonto.pm" and 
+"literal.pm" to accomplish tasks such as:
+
+   sub split_by_comment {
+   # split the line into it's non-comment and comment parts, if 
+   # applicable.
+
+   sub LineWrap {
+   # Split a line so that it is no longer than 130 characters.  
+   # Uses the &amp;  continuation character.
+
+   sub Remove_Multiple_Blank_Lines {
+
+Here are some statistics that may be of interest:
+
+   Original .foo code:                  109,755 lines
+
+   The result of step 2 (i.e. 
+   the contents of 465.tonto/src):      159,820 lines
+
+   After filepp (i.e. the contents of
+   465.tonto/run/00000001/*fppized*
+   plus *int *use)                      179,219 lines 
+
+The supplied ref workload is described by the author as much 
+shorter in duration than what one would do in real life, but 
+otherwise an accurate reflection of how Tonto is used. 
+

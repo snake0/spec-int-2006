@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Errata SPEC CPU2006</title>
+<!-- $Id: runspec.html 4393 2006-06-12 15:56:25Z john $ -->
+<!-- You'll want a nice wide screen when editing this .......................................................................... -->
+
+<link rel="STYLESHEET" href="css/cpu2006docs.css" type="text/css" />
+<style type="text/css">
+body { background: white; color: black; }
+
+h3 { font-size:110%; }
+
+</style>
+
+</head>
+<body>
+
+<h1 style="margin-bottom:0">Errata for SPEC CPU2006</h1>
+<p style="font-size:80%">Last updated: 2 Aug 2006  jh</p>
+
+<p>This document describes known problems in SPEC CPU2006. </p> 
+<ul>
+<li><p>Problems may be added in the <a href="#open">Open</a> section from time to time.  For the latest version of this
+document, you should check  <a
+href="http://www.spec.org/cpu2006/Docs/errata.html">http://www.spec.org/cpu2006/Docs/errata.html</a>.) </p></li>
+<li><p>When problems are fixed, they are moved to the <a href="#closed">Closed</a> section. </p></li>
+</ul>
+
+<p>Note: When updating this document, please do not ever re-use problem numbers.</p>
+
+<h2 id="open">Open Problem Reports</h2>
+
+<h3 id="problem1">1. Missing example-advanced.cfg</h3>  
+  <ul>
+  <li>Problem summary: the advanced example config file has not been updated</li> 
+  <li>Details: SPEC CPU2000 had a config file which demonstrated many advanced features.  For SPEC CPU2006, the advanced
+  example has not yet been developed.</li>
+  <li>Workaround: an advanced example might be added to <a href="http://www.spec.org/cpu2006/">www.spec.org/cpu2006</a> at a
+  later date; in the meantime, there are brief examples throughout <a href="config.html">config.html</a>.  You might
+  also find that many of the cpu2000 features in 
+  <a href="http://www.spec.org/cpu2000/docs/example-advanced.cfg">www.spec.org/cpu2000/docs/example-advanced.cfg</a>
+  still work, but they have not been tested in the cpu2006 environment.</li>
+  </ul>
+
+<h3 id="problem2">2. Parallel builds aren't parallel on Windows</h3>
+  <ul>
+  <li>Problem summary: Benchmark builds on Windows effectively ignore the <tt>-j</tt> flag.</li> 
+  <li>Details: Because the Windows build of GNU make requires <tt>sh.exe</tt> to be present in order to do parallel
+      builds.  No <tt>sh.exe</tt> is shipped with the SPEC CPU2006 tools, so using the option to do parallel builds
+      will only result in a warning and a normal serial build.</li>
+  <li>Workaround: None.</li>
+  </ul>
+
+<h3 id="problem3">3. Reporting of seconds</h3>
+  <ul>
+  <li>Problem summary: Seconds are rounded to 3 digits in some reports</li> 
+  <li><p>Details: For certain values, the SPEC tools print 3 significant digits.  This is intentional.  For example, if one
+  system has a SPECint_rate2006 performance of 1234.456 and another has a SPECint_rate2006 performance of 1229.987, it is
+  arguable that the performance of these systems is not materially different.  Given the reality of run-to-run variation
+  (which is, sometimes, on the order of 1%), it makes sense to report both systems' SPECint_rate2006 as 1230.</p>
+  <p>There was agreement that it is acceptable to round SPEC's <b>computed metrics</b> to 3 significant digits.  However, it
+  has been noted that the argument is weaker for rounding of original <b>observations</b>.  In particular, if we wish to
+  acknowledge the reality of run to run variation, then it seems reasonable to report a time of 1234.456 seconds using an
+  integral number of seconds (1234), rather than rounding to the nearest 10 seconds (1230).</p>
+  <p>Results posted on SPEC's web site in reports such as the HTML, PDF, and text formats will use 3 significant digits for
+  computed metrics, but seconds larger than 1000 will be reported as an integral number of seconds.  A future maintenance
+  update of SPEC CPU2006 will behave the same way.  But for SPEC CPU2006 V1.0, you may notice that reports you generate for
+  yourself round seconds to three significant digits.</p></li>
+  <li>Workaround: The above described rounding occurs only in the reports intended for humans, such as PDF, HTML, and text.
+  But all available digits are still included in the raw files (<tt>.rsf</tt>), and in the file intended for use by
+  spreadsheets (<tt>.csv</tt>).  Therefore, if you prefer to see as many digits as possible, or would prefer to do your own
+  rounding, then this is <span class="alarm">another good reason to use CSV output format</span>.  See the documentation for
+  <a href="runspec.html#output_format"> <span class="ttnobr">runspec --output_format csv</span></a>.</li>
+  </ul>
+
+<h3 id="problem4">4.  Unexpected message installing on Solaris/x86</h3>  
+  <ul>
+  <li>Problem summary: unexpected "killed" messages occur while installing on Solaris/x86</li> 
+  <li>Details: The lines shown in red below should not be present:
+<pre>
+./install.sh
+
+SPEC CPU2006 Installation
+
+Top of the CPU2006 tree is '/data1/kumaran/kit97'
+<span class="alarm">specbzip2: Cannot find /lib64/ld-linux-x86-64.so.2
+Killed
+specbzip2: Cannot find /lib/ld-linux.so.2
+Killed</span>
+
+There appears to be only one valid toolset:
+
+solaris-x86                   Recommended for Solaris 10 and later
+                              Built on Solaris 10 with Sun Studio 11
+</pre>                                                                                                                                    
+  </li>
+  <li>Workaround: The lines can safely be ignored.  The suite figures out which tool sets to offer you by trying them.  The
+  above lines come from toolsets that are not actually compatible with Solaris-x86.  But a moment later, the correct toolset
+  is found and offered.  Please ignore the extraneous messages.</li>
+  </ul>
+
+<!--
+
+(N = next available problem number)
+
+<h3 id="problemN">N.  Template</h3>  
+  <ul>
+  <li>Problem summary:</li> 
+  <li>Details: </li>
+  <li>Workaround: </li>
+  </ul>
+
+-->
+
+<h2 id="closed">Closed Problem Reports</h2>
+
+<p>None yet</p>
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+README file for Perl extension XML::SAX::ExpatXS
+================================================
+
+1. Introduction
+2. Callbacks
+3. Encoding
+4. Known Issues
+
+
+1.Introduction
+------------------------------
+
+This module is an XS only implementation of PerlSAX2 parser 
+using Expat. XML::SAX::Expat is implemented as a layer 
+over XML::Parser.
+
+This first version of this module has been created by Matt 
+Sergeant reusing sources of XML::Parser. The current 
+maintainer is Petr Cimprich <petr AT gingerall DOT cz>.
+
+The wrapper is considered stable, however it must be used 
+with caution and tested before a production deployment.
+Feedback of any kind would be appreciated.
+
+
+2. Callbacks
+------------------------------
+
+These PerlSAX callbacks are supported and tested:
+
+ start_document()
+ end_document()
+ start_element()
+ end_element()
+ characters()
+ processing_instruction()
+ start_prefix_mapping()
+ end_prefix_mapping()
+ set_document_locator()
+ fatal_error()
+ comment()
+ start_dtd()
+ end_dtd()
+ start_cdata()
+ end_cdata()
+ element_decl
+ attribute_decl
+ notation_decl()
+ unparsed_entity_decl()
+ external_entity_decl()
+ internal_entity_decl()
+ start_entity()
+ end_entity ()
+ resolve_entity()
+
+
+These methods are never called by XML::SAX::ExpatXS:
+
+ warning()
+ error()
+ ignorable_whitespace()
+
+
+This one is deprecated but works:
+
+ xml_decl()
+
+
+3. Encoding
+------------------------------
+
+These charsets and encodings are supported:
+
+UTF-8        (1)
+UTF-16	     (1)
+US-ASCII     (1)
+ISO-8859-1   (1)
+ISO-8859-2   (2)
+ISO-8859-3   (2)
+ISO-8859-4   (2)
+ISO-8859-5   (2)
+ISO-8859-7   (2)
+ISO-8859-8   (2)
+ISO-8859-9   (2)
+WINDOWS-1250 (2)
+WINDOWS-1252 (2)
+BIG5	     (2)
+EUC-KR	     (2)
+EUC-JP	     (2,3)
+Shift JIS.   (2,3)
+
+(1) Expat built-in
+(2) external handler
+(3) see lib/XML/SAX/ExpatXS/Encodings/Japanese_Encodings.msg
+
+Other encodings can be added with XML::Encoding, see 
+lib/XML/SAX/ExpatXS/Encodings/README for more info.
+
+
+4. Known Issues
+------------------------------
+
+ - This callback isn't called yet: skipped_entity()

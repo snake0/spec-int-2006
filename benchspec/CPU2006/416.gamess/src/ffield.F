@@ -1,0 +1,570 @@
+C  9 DEC 03 - MWS - SYNCH COMMON BLOCK RUNOPT
+C 26 MAR 03 - MWS - TAKE ENERGY FROM FUNCT COMMON BLOCK, NOT ENRGYS
+C  6 SEP 01 - MWS - ADD DUMMY ARGUMENTS TO NAMEIO CALL
+C 25 JUN 01 - MWS - ALTER COMMON BLOCK WFNOPT
+C 13 FEB 99 - MAF - FFLDX: CORRECT SYMMETRY OFF/ON FOR SPHER HARMONICS
+C 12 NOV 98 - GDF - MAKE SYMTRY COMMON CONSISTENT
+C 13 JUN 96 - VAG - ADD VARIABLE FOR CI TYPE TO SCFOPT COMMON
+C  5 MAR 96 - MWS - CHANGE SHELL SYMMETRY PACKING COMMONS
+C  3 JAN 96 - MWS - FFLDX: CALL NEW ONE ELECTRON INTEGRAL DRIVER
+C 28 SEP 95 - MWS - FFLDX: USE DIPINT ROUTINE TO GET THESE INTEGRALS
+C 10 NOV 94 - MWS - FFLDX: REMOVE FTNCHEK WARNINGS
+C 27 OCT 94 - MWS - FFLDX: DELETE OLD MP2PAR COMMON
+C 10 AUG 94 - MWS - INCREASE NUMBER OF DAF RECORDS
+C  2 MAY 94 - MWS - FFLDX: FIX CHECK RUNS
+C 16 JUL 93 - MWS - INCREASE MAXIMUM CI ROOTS TO 100
+C 31 OCT 92 - MWS - PREVENT SEMIEMPIRICAL FIELDS (NO DIPOLE INTEGRALS)
+C 22 JUN 92 - MWS - ADD 2ND ARG TO GUESMO CALL
+C  1 MAY 92 - MWS - INCLUDE HENRY KURTZ' FFIELD CALCULATION IN GAMESS
+C
+C*MODULE FFIELD  *DECK FFLDX
+      SUBROUTINE FFLDX
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      LOGICAL ONEFLD,AOFF,GOPARR,DSKWRK,MASWRK
+      LOGICAL MCCI,SYM,PK,PKSAVE,PANDK,BLOCK
+C
+      PARAMETER (MXATM=500, MXSH=1000)
+      PARAMETER (NNAM=7)
+C
+      DIMENSION QNAM(NNAM),KQNAM(NNAM)
+      DIMENSION EFIELD(5),EFVAL(3),FFENER(13),KFLI(13),KFLJ(13),
+     *          DIP(13,3),EONE(3),COM(3)
+C
+      COMMON /ENRGMP/ EMP2,EMP3,EMP4
+      COMMON /FMCOM / X(1)
+      COMMON /FUNCT / E,EG(3,MXATM)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PKFIL / PK,PANDK,BLOCK
+      COMMON /RESTAR/ TIMLIM,IREST,NREC,INTLOC,IST,JST,KST,LST
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /SYMTRY/ MAPSHL(MXSH,48),MAPCTR(MXATM,48),
+     *                T(432),INVT(48),NT
+      COMMON /TMVALS/ TI,TX,TIM
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+      COMMON /XYZPRP/ XP,YP,ZP,
+     *                DIPMX,DIPMY,DIPMZ,
+     *                QXX,QYY,QZZ,QXY,QXZ,QYZ,
+     *                QMXX,QMYY,QMZZ,QMXY,QMXZ,QMYZ,
+     *                OXXX,OXXY,OXXZ,OXYY,OYYY,OYYZ,
+     *                OXZZ,OYZZ,OZZZ,OXYZ,
+     *                OMXXX,OMXXY,OMXXZ,OMXYY,OMYYY,
+     *                OMYYZ,OMXZZ,OMYZZ,OMZZZ,OMXYZ
+C
+      PARAMETER (ZERO=0.0D+00, TWO=2.0D+00, DFAC=2.541766D+00)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA FFCALC/8HFFCALC  /
+#else
+      CHARACTER*8 :: FFCALC_STR
+      EQUIVALENCE (FFCALC, FFCALC_STR)
+      DATA FFCALC_STR/"FFCALC  "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA QNAM/8HEFIELD  ,8HIAXIS   ,8HJAXIS   ,8HONEFLD  ,
+     *          8HEONE    ,8HSYM     ,8HAOFF    /
+#else
+      CHARACTER*8 :: QNAM_STR(NNAM)
+      EQUIVALENCE (QNAM, QNAM_STR)
+      DATA QNAM_STR/"EFIELD  ","IAXIS   ","JAXIS   ","ONEFLD  ",
+     *          "EONE    ","SYM     ","AOFF    "/
+#endif
+      DATA KQNAM/3,1,1,0,33,0,0/
+C
+      DATA KFLI/1,3,3,1,2,2,2,1,3,5,5,4,4/
+      DATA KFLJ/1,1,2,2,2,1,3,3,3,5,4,4,5/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RMC,GUGA/8HMCSCF    ,8HGUGA     /
+#else
+      CHARACTER*8 :: RMC_STR, GUGA_STR
+      EQUIVALENCE (GUGA, GUGA_STR)
+      EQUIVALENCE (RMC, RMC_STR)
+      DATA RMC_STR,GUGA_STR/"MCSCF   " ,"GUGA    " /
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+C        CALCULATION OF POLARIZABILITY QUANTITIES BY APPLIED FIELDS
+C
+C        THE METHOD IS DESCRIBED IN THE PAPER
+C       "CALCULATION OF NONLINEAR OPTICAL PROPERTIES OF MOLECULES"
+C        H.A.KURTZ, J.J.P.STEWART, K.M.DIETER
+C        J.COMPUT.CHEM.  11,82-87 (1990)
+C
+C        THIS CODE CONTRIBUTED BY HENRY KURTZ TO GAMESS IN APRIL 1992
+C
+      IF(MASWRK) WRITE(IW,9000)
+      MCCI = SCFTYP.EQ.RMC  .OR.  CITYP.EQ.GUGA
+C
+      JRET = 0
+      BFIELD = 1.0D-03
+      IAXIS = 3
+      JAXIS = 0
+      ONEFLD = .FALSE.
+      SYM=.FALSE.
+      AOFF = .FALSE.
+      EONE(1) = ZERO
+      EONE(2) = ZERO
+      EONE(3) = ZERO
+      CALL NAMEIO (IR,JRET,FFCALC,NNAM,QNAM,KQNAM,
+     *             BFIELD,IAXIS,JAXIS,ONEFLD,EONE,SYM,AOFF,
+     *             0,0,0,0,0,0,0,
+     *   0,0,0,0,0,  0,0,0,0,0,
+     *   0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,
+     *   0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0,  0,0,0,0,0)
+      IF(JRET.GT.1) THEN
+         IF(MASWRK) WRITE(IW,*) 'ERROR IN $FFCALC GROUP'
+         CALL ABRT
+      END IF
+C
+      IF(MASWRK) THEN
+         WRITE(IW,9010) IAXIS,JAXIS,BFIELD,SYM,ONEFLD
+         IF(ONEFLD) WRITE(IW,9015) (EONE(IE),IE=1,3)
+      END IF
+C
+C     ----- MP2 SHOULD GO FASTEST WITH JK INTEGRAL FILE -----
+C
+      PKSAVE = PK
+      NOPKSV = NOPK
+      IF(MPLEVL.EQ.2) PK=.FALSE.
+      IF(MPLEVL.EQ.2) NOPK=1
+C
+C     ----- SET UP FOR A SINGLE APPLIED FIELD CALCULATION -----
+C
+      IF(ONEFLD) THEN
+         CALL ONEEI
+         CALL GUESMO(GUESS)
+         GO TO 100
+      END IF
+C
+C     ------ CALCULATE FIELD-FREE ENERGY OF MOLECULE -----
+C
+      WRITE(IW,9020)
+      CALL ENERGX
+C
+      IF(E.EQ.ZERO  .AND.  EXETYP.NE.CHECK) THEN
+         IF(MASWRK) WRITE(IW,9030)
+         CALL ABRT
+         STOP
+      END IF
+      IF(TIM .GE. TIMLIM) THEN
+         IF(MASWRK) WRITE(IW,9040)
+         CALL ABRT
+         STOP
+      END IF
+C
+C     ----- EVALUATE AND SAVE DIPOLE INTEGRALS IN C.O.M. COORDS -----
+C
+  100 CONTINUE
+      CALL CALCOM(XP,YP,ZP)
+      COM(1) = XP
+      COM(2) = YP
+      COM(3) = ZP
+      CALL DIPINT(COM(1),COM(2),COM(3),.FALSE.)
+C
+      L1 = NUM
+      L2 = (L1*L1+L1)/2
+      L3 = L1*L1
+C
+      CALL VALFM(LOADFM)
+      LHAM = LOADFM + 1
+      LVEC = LHAM   + L2
+      LAST = LVEC   + L3
+      NEED = LAST - LOADFM - 1
+      CALL GETFM(NEED)
+      IF(ONEFLD) GO TO 200
+C
+C     ----- SAVE FIELD FREE RESULTS -----
+C
+      IF(MPLEVL.GT.0) THEN
+         FFENER(1) = EMP2
+         DIP(1,1) = ZERO
+         DIP(1,2) = ZERO
+         DIP(1,3) = ZERO
+      ELSE
+         FFENER(1) = E
+         DIP(1,1) = DIPMX/DFAC
+         DIP(1,2) = DIPMY/DFAC
+         DIP(1,3) = DIPMZ/DFAC
+      END IF
+C
+      IF(MASWRK) THEN
+         WRITE(IW,9050) 1,ZERO,ZERO,ZERO
+         WRITE(IW,9060) FFENER(1)
+         WRITE(IW,9070) DIPMX,DIPMY,DIPMZ
+      END IF
+C
+C     ----- SAVE FIELD FREE ORBITALS, AND POSSIBLY CI VECTOR -----
+C
+      CALL FFSVMO(0,X(LVEC))
+      IF(MCCI) CALL FFSVCI(0)
+C
+C     ----- SAVE ORIGINAL ONE ELECTRON INTEGRALS FOR LATER -----
+C
+  200 CONTINUE
+      CALL DAREAD(IDAF,IODA,X(LHAM),L2,11,0)
+      CALL DAWRIT(IDAF,IODA,X(LHAM),L2,94,0)
+      CALL RETFM(NEED)
+C
+C     -----  SET UP THE BASE FIELDS -----
+C  IF AXIAL COMPONENTS ONLY (JAXIS.EQ.0) THEN FIELDS ARE
+C     1:    0
+C     2:    I      4:  2I
+C     3:   -I      5: -2I
+C
+C  IF OFF AXIS (JAXIS.NE.0) THEN GO AROUND THE PLANE IN
+C  AS SYSTEMATIC WAY AS POSSIBLE TO HELP CONVERGENCE.
+C     1:    0    0
+C     2:   -I    0        6:    I    0          10:  -2I  -2J
+C     3:   -I    J        7:    I   -J          11:  -2I   2J
+C     4:    0    J        8:    O   -J          12:   2I   2J
+C     5:    I    J        9:   -I   -J          13:   2I  -2J
+C
+      IF (ONEFLD) THEN
+         NFLDS = 2
+      ELSE
+         EFIELD(1) = ZERO
+         EFIELD(2) =  BFIELD
+         EFIELD(3) = -BFIELD
+         EFIELD(4) =  TWO*BFIELD
+         EFIELD(5) = -TWO*BFIELD
+         IF (JAXIS.EQ.0) THEN
+            NFLDS = 5
+         ELSE
+            IF (AOFF) THEN
+               NFLDS = 13
+            ELSE
+               NFLDS = 9
+            END IF
+         END IF
+      END IF
+C
+C     ----- RESET SYMMETRY TO C1 FOR ASYMMETRIC APPLIED FIELDS -----
+C     IF NECESSARY, CALCULATE A GRANDE LIST OF TWO ELECTRON INTEGRALS
+C     AND ALSO TURN OFF USE OF SYMMETRY IN FOCK DIAGONALIZATIONS.
+C
+      IF(SYM) THEN
+         IF(ONEFLD) CALL JANDK
+      ELSE
+         IF(ONEFLD  .OR.  (NT.GT.1  .AND.  .NOT.MCCI)) THEN
+            IF(MASWRK) WRITE(IW,9080)
+            CALL SYMOFF
+            CALL JANDK
+         ELSE
+            CALL SYMOFF
+         END IF
+      END IF
+C
+      IF(TIM .GE. TIMLIM) THEN
+         IF(MASWRK) WRITE(IW,9040)
+         CALL ABRT
+         STOP
+      END IF
+C
+      IF(EXETYP.EQ.CHECK) THEN
+         CALL VCLR(FFENER,1,13  )
+         CALL VCLR(DIP   ,1,13*3)
+      END IF
+C
+C     ----- BEGIN LOOP OVER ALL APPLIED FIELDS -----
+C
+      IF(.NOT.ONEFLD) NPRINT = -5
+      DO 400 IFLD = 2,NFLDS
+         EFVAL(1) = ZERO
+         EFVAL(2) = ZERO
+         EFVAL(3) = ZERO
+C
+C            SETUP THIS ELECTRIC FIELD
+C
+         IF (ONEFLD) THEN
+            EFVAL(1) = EONE(1)
+            EFVAL(2) = EONE(2)
+            EFVAL(3) = EONE(3)
+         ELSE
+            IF (JAXIS.EQ.0) THEN
+               EFVAL(IAXIS) = EFIELD(IFLD)
+            ELSE
+               EFVAL(IAXIS) = EFIELD(KFLI(IFLD))
+               EFVAL(JAXIS) = EFIELD(KFLJ(IFLD))
+            END IF
+         END IF
+         MFLD = IFLD-1
+         IF(MASWRK) WRITE(IW,9090) MFLD,(EFVAL(J),J=1,3)
+         IF(EXETYP.EQ.CHECK) GO TO 400
+C
+C           ADD ELECTRIC FIELD TO ONE ELECTRON HAMILTONIAN
+C
+         CALL VALFM (LOADFM)
+         LMU  = LOADFM + 1
+         LH   = LMU    + L2
+         LAST = LH     + L2
+         NEED = LAST - LOADFM - 1
+         CALL GETFM(NEED)
+C
+         CALL DAREAD(IDAF,IODA,X(LH),L2,94,0)
+C
+         IF(EFVAL(1).NE.ZERO) THEN
+            CALL DAREAD(IDAF,IODA,X(LMU),L2,95,0)
+            CALL DAXPY(L2,EFVAL(1),X(LMU),1,X(LH),1)
+         END IF
+         IF(EFVAL(2).NE.ZERO) THEN
+            CALL DAREAD(IDAF,IODA,X(LMU),L2,96,0)
+            CALL DAXPY(L2,EFVAL(2),X(LMU),1,X(LH),1)
+         END IF
+         IF(EFVAL(3).NE.ZERO) THEN
+            CALL DAREAD(IDAF,IODA,X(LMU),L2,97,0)
+            CALL DAXPY(L2,EFVAL(3),X(LMU),1,X(LH),1)
+         END IF
+C
+         CALL DAWRIT(IDAF,IODA,X(LH),L2,11,0)
+C
+C           RECOVER THE FIELD FREE ORBITALS AND DENSITY
+C              CAUTION, STORAGE AT -LMU- IS USED AS L3!
+C
+         IF(.NOT.ONEFLD) THEN
+            CALL FFSVMO(1,X(LMU))
+            IF(MCCI) CALL FFSVCI(1)
+            CALL ORTHDN
+         END IF
+         CALL RETFM(NEED)
+C
+C           CALCULATE WAVEFUNCTION UNDER THIS FIELD
+C
+         CALL WFN
+C
+         IF(E.EQ.ZERO) THEN
+            IF(MASWRK) WRITE(IW,9030)
+            CALL ABRT
+            STOP
+         END IF
+C
+         IF(TIM .GE. TIMLIM) THEN
+            IF(MASWRK) WRITE(IW,9040)
+            CALL ABRT
+            STOP
+         END IF
+C
+C           ADD NUCLEAR CONTRIBUTION FROM FIELD
+C
+         ANUCF = ZERO
+         DO 330 JNUF = 1,NAT
+            DO 320 INUF = 1,3
+               COMCOR = C(INUF,JNUF) - COM(INUF)
+               ANUCF = ANUCF - EFVAL(INUF)*COMCOR*ZAN(JNUF)
+  320       CONTINUE
+  330    CONTINUE
+C
+         EWITHF = E + ANUCF
+         FFENER(IFLD) = EWITHF
+C
+C           CALCULATE DIPOLE
+C
+         IF(MPLEVL.GT.0) THEN
+            DIP(IFLD,1) = ZERO
+            DIP(IFLD,2) = ZERO
+            DIP(IFLD,3) = ZERO
+         ELSE
+            CALL ELMOMC
+            DIP(IFLD,1) = DIPMX/DFAC
+            DIP(IFLD,2) = DIPMY/DFAC
+            DIP(IFLD,3) = DIPMZ/DFAC
+         END IF
+C
+         IF(MASWRK) THEN
+            MFLD = IFLD-1
+            WRITE(IW,9050) MFLD,(EFVAL(J),J=1,3)
+            WRITE(IW,9060) EWITHF
+            WRITE(IW,9070) DIPMX,DIPMY,DIPMZ
+         END IF
+  400 CONTINUE
+C
+      IF(ONEFLD) THEN
+         CALL HFPROP
+      ELSE
+         CALL PFFLD(IW,IAXIS,JAXIS,BFIELD,FFENER,DIP,AOFF)
+      END IF
+C
+      IF(.NOT.SYM) CALL SYMON
+      PK = PKSAVE
+      NOPK=NOPKSV
+C
+      IF(MASWRK) THEN
+         WRITE(IW,*) '..... DONE WITH FINITE FIELD CALCULATION .....'
+         CALL TIMIT(1)
+      END IF
+      RETURN
+C
+ 9000 FORMAT(//'      ******************************'/
+     *         '      *                            *'/
+     *         '      *  FINITE FIELD CALCULATION  *'/
+     *         '      *                            *'/
+     *         '      ******************************')
+ 9010 FORMAT(/5X,13("-")/5X,'$FFCALC INPUT'/5X,13("-")/
+     *        1X,' IAXIS=',I2,'   JAXIS=',I2,'  EFIELD=',F9.5/
+     *        1X,'   SYM=',L2,'  ONEFLD=',L2)
+ 9015 FORMAT(1X,'USER SPECIFIED FIELD IS E(X,Y,Z)=',3F9.5)
+ 9020 FORMAT(//1X,'CALCULATING ENERGY WITH NO FIELD PRESENT')
+ 9030 FORMAT(1X,'*** FFIELD RUN STOPPED BY CONVERGENCE FAILURE ***')
+ 9040 FORMAT(1X,'*** INSUFFICIENT TIME TO CONTINUE FFIELD JOB ***')
+ 9050 FORMAT(//1X,'APPLIED FIELD',I3,' IS E(X,Y,Z) = ',3F9.5)
+ 9060 FORMAT(1X,'ENERGY WITH THE FIELD ON ',F30.16)
+ 9070 FORMAT(1X,'X DIPOLE WITH FIELD ON   ',F30.16/
+     *       1X,'Y DIPOLE WITH FIELD ON   ',F30.16/
+     *       1X,'Z DIPOLE WITH FIELD ON   ',F30.16//)
+ 9080 FORMAT(1X,'RECALCULATING INTEGRALS W/O POINT GROUP SYMMETRY')
+ 9090 FORMAT(//1X,'--- EVALUATING WAVEFUNCTION FOR FIELD',I3,' ---'/
+     *          1X,'APPLIED AT STRENGTH E(X,Y,Z) = ',3F9.5)
+      END
+C*MODULE FFIELD   *DECK PFFLD
+      SUBROUTINE PFFLD(IW,IAXIS,JAXIS,BFIELD,FFENER,DIP,AOFF)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL AOFF,GOPARR,DSKWRK,MASWRK
+      CHARACTER*1 AXIS(3)
+C
+      DIMENSION FFENER(13),DIP(13,3)
+      DIMENSION DALPHA(3),DBETA(3)
+C
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      DATA AXIS/'X','Y','Z'/
+C
+C     ----- COMPUTE AND PRINT FINAL POLARIZABILITY RESULTS -----
+C
+      IX = IAXIS
+      IF(JAXIS.NE.0) GO TO 500
+C
+C           AXIAL COMPONENTS
+C
+      BD = -(2.0D+00/3.0D+00) *(FFENER(2)-FFENER(3))
+     *    + (1.0D+00/12.0D+00)*(FFENER(4)-FFENER(5))
+      FDIPOL = BD/BFIELD
+      BD = (2.0D+00/3.0D+00)*(DIP(2,IX) + DIP(3,IX))
+     *   - (1.0D+00/6.0D+00)*(DIP(4,IX) + DIP(5,IX))
+      DDIPOL = BD
+C
+      BA =  (5.0D+00/2.0D+00) *FFENER(1)
+     *    - (4.0D+00/3.0D+00) *(FFENER(2)+FFENER(3))
+     *    + (1.0D+00/12.0D+00)*(FFENER(4)+FFENER(5))
+      FALPHA = BA/(BFIELD*BFIELD)
+      DO 310 IB = 1,3
+         BA = (2.0D+00/3.0D+00) *(DIP(2,IB) - DIP(3,IB))
+     *      - (1.0D+00/12.0D+00)*(DIP(4,IB) - DIP(5,IB))
+         DALPHA(IB) = BA/BFIELD
+  310 CONTINUE
+C
+      BB =                  (FFENER(2)-FFENER(3))
+     *   - (1.0D+00/2.0D+00)*(FFENER(4)-FFENER(5))
+      FBETA = BB/(BFIELD**3)
+      DO 320 IB = 1,3
+         BB = (1.0D+00/3.0D+00)*(DIP(4,IB) + DIP(5,IB)
+     *                         - DIP(2,IB) - DIP(3,IB))
+         DBETA(IB) = BB/(BFIELD*BFIELD)
+  320 CONTINUE
+C
+      BG = -6.0D+00*FFENER(1) + 4.0D+00*(FFENER(2)+FFENER(3))
+     *     - (FFENER(4) + FFENER(5))
+      FGAMMA = BG/(BFIELD**4)
+      BG = (1.0D+00/2.0D+00)*(DIP(4,IX) - DIP(5,IX))
+     *     - (DIP(2,IX) - DIP(3,IX))
+      DGAMMA = BG/(BFIELD**3)
+C
+      IF (MASWRK) THEN
+         WRITE (IW,8000) BFIELD,AXIS(IX),FDIPOL,DDIPOL
+         DO 400 IB = 1,3
+            IF (IB.EQ.IX) THEN
+               WRITE (IW,8001) AXIS(IB),AXIS(IX),FALPHA,DALPHA(IB)
+            ELSE
+               WRITE (IW,8002) AXIS(IB),AXIS(IX),DALPHA(IB)
+            END IF
+  400    CONTINUE
+         DO 410 IB = 1,3
+            IF (IB.EQ.IX) THEN
+               WRITE (IW,8003) AXIS(IB),AXIS(IX),AXIS(IX),
+     *                         FBETA,DBETA(IB)
+            ELSE
+               WRITE (IW,8004) AXIS(IB),AXIS(IX),AXIS(IX),DBETA(IB)
+            END IF
+  410    CONTINUE
+         WRITE (IW,8005) (AXIS(IX),J=1,4),FGAMMA,DGAMMA
+      END IF
+      RETURN
+C
+C     ----- COMPUTE AND PRINT OFF-AXIS COMPONENTS -----
+C
+  500 CONTINUE
+      IF (AOFF) THEN
+        AIJ = (FFENER(10)-FFENER(11)-FFENER(13)+FFENER(12))/48.0D+00
+     *        - (FFENER(5)-FFENER(7)-FFENER(3)+FFENER(9))/3.0D+00
+        AIJ = AIJ/(BFIELD*BFIELD)
+      ELSE
+        AIJ = 0.0D+00
+      END IF
+C
+      BIJJ = 0.5D+00*(FFENER(9) - FFENER(5) + FFENER(3) - FFENER(7))
+     *       + FFENER(6) - FFENER(2)
+      BIJJ = BIJJ/(BFIELD**3)
+      BJII = 0.5D+00*(FFENER(9) - FFENER(5) + FFENER(7) - FFENER(3))
+     *       + FFENER(4) - FFENER(8)
+      BJII = BJII/(BFIELD**3)
+C
+      GIIJJ = -4.0D+00*FFENER(1)
+     *        - (FFENER(5) + FFENER(9) + FFENER(7) + FFENER(3))
+     *        + 2.0D+00*(FFENER(6) + FFENER(2))
+     *        + 2.0D+00*(FFENER(4) + FFENER(8))
+      GIIJJ = GIIJJ/(BFIELD**4)
+      GDIP = 0.5D+00*(DIP(5,IX) - DIP(3,IX) + DIP(7,IX) - DIP(9,IX))
+     *       - (DIP(6,IX) - DIP(2,IX))
+      GDIP = GDIP/(BFIELD**3)
+C
+      IF (MASWRK) THEN
+         IF (AOFF) THEN
+            WRITE(IW,8200) BFIELD,AXIS(IX),AXIS(JAXIS),AXIS(JAXIS),
+     *                BIJJ,AXIS(JAXIS),AXIS(IX),AXIS(IX),BJII,
+     *                AXIS(IX),AXIS(IX),AXIS(JAXIS),AXIS(JAXIS),
+     *                GIIJJ,GDIP,AXIS(IX),AXIS(JAXIS),AIJ
+         ELSE
+            WRITE (IW,8400) BFIELD,AXIS(IX),AXIS(JAXIS),AXIS(JAXIS),
+     *                BIJJ,AXIS(JAXIS),AXIS(IX),AXIS(IX),BJII,
+     *                AXIS(IX),AXIS(IX),AXIS(JAXIS),AXIS(JAXIS),
+     *                GIIJJ,GDIP
+         END IF
+      END IF
+      RETURN
+C
+ 8000 FORMAT(//,'  ************* SUMMARY ****************',//,
+     *          '  AXIAL COMPONENTS WITH BASE FIELD OF',F9.4,//,
+     *          13X,'ENERGY-BASED',14X,'DIPOLE-BASED',/,
+     *          '  DIPOLE ',A1,': ',1P,E15.7,10X,1P,E15.7)
+ 8001 FORMAT('  ALPHA ',2A1,': ',1P,E15.7,10X,1P,E15.7)
+ 8002 FORMAT('  ALPHA ',2A1,': ',25X,1P,E15.7)
+ 8003 FORMAT('  BETA ',3A1,': ',1P,E15.7,10X,1P,E15.7)
+ 8004 FORMAT('  BETA ',3A1,': ',25X,1P,E15.7)
+ 8005 FORMAT('  GAM ',4A1,': ',1P,E15.7,10X,1P,E15.7//
+     *        '  ***************************************')
+ 8200 FORMAT(//,'  ************* SUMMARY ****************',//,
+     *           ' OFF-AXIAL COMPONENTS WITH BASE FIELD OF ',F9.4,//,
+     *           13X,'ENERGY-BASED',14X,'DIPOLE-BASED',/,
+     *           '  BETA ',3A1,': ',1P,E15.5,/,
+     *           '  BETA ',3A1,': ',1P,E15.5,/,
+     *           '  GAM ',4A1,': ',1P,E15.5,10X,1P,E15.5,/,
+     *           '  ALPHA ',2A1,': ',1P,E15.5,//
+     *           '  ***************************************')
+ 8400 FORMAT(//,'  ************* SUMMARY ****************',//,
+     *           ' OFF-AXIAL COMPONENTS WITH BASE FIELD OF ',F9.4,//,
+     *           13X,'ENERGY-BASED',14X,'DIPOLE-BASED',/,
+     *           '  BETA ',3A1,': ',1P,E15.5,/,
+     *           '  BETA ',3A1,': ',1P,E15.5,/,
+     *           '  GAM ',4A1,': ',1P,E15.5,10X,1P,E15.5,//,
+     *           '  ***************************************')
+      END

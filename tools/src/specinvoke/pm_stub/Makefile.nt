@@ -1,0 +1,21 @@
+#
+# Makefile for pm_stub performance monitor module for specinvoke
+# Copyright (C) 2003 Standard Performance Evaluation Corporation
+#
+# $Id: Makefile.nt 2259 2005-01-15 16:35:48Z cloyce $
+
+all: pmfuncs.obj docopy
+
+CFLAGS=/Zi
+LDFLAGS=/Zi
+
+pmfuncs.obj: pmfuncs.c specinvoke_pm.h
+	$(CC) $(CFLAGS) -c -Fo$@ -I. -I.. -DPERFMON pmfuncs.c
+
+docopy: pmfuncs.obj
+	copy pmfuncs.obj ..
+
+clean:
+	rm -f core *.obj
+
+distclean: clean

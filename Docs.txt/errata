@@ -1,0 +1,123 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+                            Errata for SPEC CPU2006
+
+   Last updated: 2 Aug 2006 jh
+
+   This document describes known problems in SPEC CPU2006.
+
+     * Problems may be added in the Open section from time to time. For the
+       latest version of this document, you should check
+       http://www.spec.org/cpu2006/Docs/errata.html.)
+
+     * When problems are fixed, they are moved to the Closed section.
+
+   Note: When updating this document, please do not ever re-use problem
+   numbers.
+
+Open Problem Reports
+
+  1. Missing example-advanced.cfg
+
+     * Problem summary: the advanced example config file has not been updated
+     * Details: SPEC CPU2000 had a config file which demonstrated many
+       advanced features. For SPEC CPU2006, the advanced example has not yet
+       been developed.
+     * Workaround: an advanced example might be added to www.spec.org/cpu2006
+       at a later date; in the meantime, there are brief examples throughout
+       config.html. You might also find that many of the cpu2000 features in
+       www.spec.org/cpu2000/docs/example-advanced.cfg still work, but they
+       have not been tested in the cpu2006 environment.
+
+  2. Parallel builds aren't parallel on Windows
+
+     * Problem summary: Benchmark builds on Windows effectively ignore the -j
+       flag.
+     * Details: Because the Windows build of GNU make requires sh.exe to be
+       present in order to do parallel builds. No sh.exe is shipped with the
+       SPEC CPU2006 tools, so using the option to do parallel builds will
+       only result in a warning and a normal serial build.
+     * Workaround: None.
+
+  3. Reporting of seconds
+
+     * Problem summary: Seconds are rounded to 3 digits in some reports
+     * Details: For certain values, the SPEC tools print 3 significant
+       digits. This is intentional. For example, if one system has a
+       SPECint_rate2006 performance of 1234.456 and another has a
+       SPECint_rate2006 performance of 1229.987, it is arguable that the
+       performance of these systems is not materially different. Given the
+       reality of run-to-run variation (which is, sometimes, on the order of
+       1%), it makes sense to report both systems' SPECint_rate2006 as 1230.
+
+       There was agreement that it is acceptable to round SPEC's computed
+       metrics to 3 significant digits. However, it has been noted that the
+       argument is weaker for rounding of original observations. In
+       particular, if we wish to acknowledge the reality of run to run
+       variation, then it seems reasonable to report a time of 1234.456
+       seconds using an integral number of seconds (1234), rather than
+       rounding to the nearest 10 seconds (1230).
+
+       Results posted on SPEC's web site in reports such as the HTML, PDF,
+       and text formats will use 3 significant digits for computed metrics,
+       but seconds larger than 1000 will be reported as an integral number of
+       seconds. A future maintenance update of SPEC CPU2006 will behave the
+       same way. But for SPEC CPU2006 V1.0, you may notice that reports you
+       generate for yourself round seconds to three significant digits.
+
+     * Workaround: The above described rounding occurs only in the reports
+       intended for humans, such as PDF, HTML, and text. But all available
+       digits are still included in the raw files (.rsf), and in the file
+       intended for use by spreadsheets (.csv). Therefore, if you prefer to
+       see as many digits as possible, or would prefer to do your own
+       rounding, then this is another good reason to use CSV output format.
+       See the documentation for runspec --output_format csv.
+
+  4. Unexpected message installing on Solaris/x86
+
+     * Problem summary: unexpected "killed" messages occur while installing
+       on Solaris/x86
+     * Details: The lines shown in red below should not be present:
+
+ ./install.sh
+
+ SPEC CPU2006 Installation
+
+ Top of the CPU2006 tree is '/data1/kumaran/kit97'
+ specbzip2: Cannot find /lib64/ld-linux-x86-64.so.2
+ Killed
+ specbzip2: Cannot find /lib/ld-linux.so.2
+ Killed
+
+ There appears to be only one valid toolset:
+
+ solaris-x86                   Recommended for Solaris 10 and later
+                               Built on Solaris 10 with Sun Studio 11
+
+     * Workaround: The lines can safely be ignored. The suite figures out
+       which tool sets to offer you by trying them. The above lines come from
+       toolsets that are not actually compatible with Solaris-x86. But a
+       moment later, the correct toolset is found and offered. Please ignore
+       the extraneous messages.
+
+Closed Problem Reports
+
+   None yet

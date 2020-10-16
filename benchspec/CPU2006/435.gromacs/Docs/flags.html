@@ -1,0 +1,2869 @@
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta name="generator" content="SPEC CPU2006 Tools  (flags v4553)" />
+<style type="text/css" id="internalScreen" media="screen">
+<!--
+body {
+  margin:  1em;
+  border:  0;
+  padding: 0;
+  background: white;
+  color:      black;
+  font-family: "Times Roman", times, serif;
+}
+
+.tt {
+  font-family: monospace;
+}
+
+div.flagClass > h2 {
+  border-bottom: 1px dotted black;
+  width: 80%;
+  font-family: sans-serif;
+}
+
+div.flagDesc {
+  clear: both;
+  background-color: rgb(255, 245, 220);
+  border: 1px solid blue; /* XXX This is for debugging */ 
+  margin: 0 auto;
+  width: 90%;
+}
+
+li.flagName {
+  font-weight: bold;
+  width: 100%;
+  border-bottom: 1px solid black;
+  display: block;
+  margin: 0.5em 0 0.5em 0;
+  font-size: 125%;
+}
+
+/* (presumably short) informationals all get grouped together near the top
+ * of the flag description block.
+ */
+.flagOrigin, .flagDescClass, .flagDescCompiler, .flagDescRE, .flagVar {
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  float: left;
+  padding: 0.25em;
+  margin: 0 0 0.25em 0;
+}
+
+.flagDescClass::before {
+  content: "Flag Class: ";
+}
+.flagDescCompiler::before {
+  content: "Compilers that recognize this flag: ";
+}
+.flagDescRE::before {
+  content: "Regular Expression: ";
+}
+.flagVar::before {
+  content: "Found In: ";
+}
+
+span.flagDescInc {
+  border-bottom: 1px solid black;
+}
+
+/* The description text stands alone. */
+.descText {
+  clear: both;
+  padding: 0.5em 1em 0.5em 1em;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  margin: 0.5em 0 0.5em 0;
+}
+
+/* This is a separate class so that in the print style sheet it can
+ * be ignored.
+ * Also, 'style="clear:both;"' is longer than 'class="clear"'
+ */
+.clear {
+  clear: both;
+}
+
+/* This is really for the link _to_ the flag report */
+li.unknown > a:link, a:visited { text-decoration: none; }
+
+.monospace {
+  font-family: Courier, "Courier New", monospace;
+}
+
+ul.flagDescList {
+  clear: both;
+  list-style-type: none;
+}
+
+/* Arrange for each flag description to have some headroom. */
+ul.flagDescList > li {
+  margin: 2em 0 0 0;
+}
+
+ul.flagDesc {
+  list-style-type: none;
+}
+
+div.flagTOC {
+  border: 1px solid white;
+  padding: 0.5em 1em;
+  margin: 0 auto;
+  width: 80%;
+}
+
+ul.flagTOC {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul.flagTOC > li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+  margin: 0;
+  padding: 0.25em 0 0.25em 0;
+  float: left;
+  display: inline-block; /* Fix IE bug; compliant browsers will ignore this */
+  width: 24.3%;
+  min-height: 1.5em;
+  overflow: hidden; /* If the table gets squeezed too much, don't let the
+                     * text overlap
+                     */
+}
+
+ul.SubMenu li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+}
+
+ul.SubMenu {
+  display: none;
+  position: absolute;
+  list-style-type: none;
+  border: 1px solid black;
+  background-color: white;
+  margin: 0 0 0 2em;
+  padding: 0.25em 5em 0.25em 0.5em;
+  white-space: nowrap;
+}
+
+li:hover > ul.SubMenu, ul.SubMenu:hover {
+  display: block;
+}
+
+ul.SubMenu > li:hover, ul.flagTOC > li:hover {
+  background-color: rgb(176, 196, 238); /* lightsteelgray... almost */
+  border: 1px solid rgb(128, 128, 128);
+}
+
+
+.resultpage a:link, .resultpage a:visited {
+  text-decoration: none;
+  border-bottom: 1px dashed black;
+  color: inherit;
+}
+
+.resultpage {
+  margin: auto;
+  padding: 0;
+  width: 800px;
+}
+
+.logo {
+  float: left;
+}
+
+.titlebarcontainer, .resultstable {
+  border: solid 1px;
+  width: 100%;
+  float: left;
+}
+
+div.logo > img {
+  vertical-align: 50%;
+  margin: auto;
+}
+
+.titlebar {
+  float: left;
+  padding: 0em 1em 0em 1em;
+  text-align: center;
+  width: 92%;
+}
+
+div.titlebar > h1, div.titlebar > p {
+  margin: 0 1em 0 1em;
+}
+
+.systembar {
+  float: left;
+  width: 65%;
+  font-size: 150%;
+  margin: 0;
+  padding: 0.1em;
+  border-right: solid 1px black;
+}
+
+.metricbar {
+  padding: 0.1em;
+  margin: 0;
+  float: right;
+  width: 33%;
+  height: 50%;
+  font-size: 120%;
+}
+
+.metricbar#base {
+  background-color: #c8c8c8;
+  color: black;
+}
+
+.metricbar#peak {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+}
+
+.metricbar p {
+  margin: 0;
+  padding: 0.2em;
+}
+
+.datebar p, .systembar p {
+  margin: 0;
+  padding: 0;
+}
+
+.datebar p {
+  float: left;
+  border-left: solid 1px black;
+}
+
+span.item {
+  float: left;
+  margin: 0;
+  padding: 0 0 0 0.1em;
+}
+
+span.value {
+  float: right;
+  padding: 0 0.1em 0 0;
+}
+
+.datebar {
+  width: 100%;
+  float: left;
+  font-size: 50%;
+  min-height: 100%;
+  border: solid 1px black;
+}
+
+p#test_sponsor {
+  width: 31%;
+}
+
+p#license_num {
+  width: 16%;
+}
+
+p#test_date {
+  width: 15%;
+}
+
+p#hw_avail, p#sw_avail {
+  width: 18%;
+}
+
+div.graph {
+  margin: auto;
+}
+
+div.infobox {
+  float: left;
+  width: 100%;
+  padding: 0;
+  border: solid 1px black;
+}
+
+div.infobox table {
+  width: 49%;
+  float: left;
+}
+
+div.infobox table tr {
+  vertical-align: top;
+}
+
+div.infobox table#Hardware {
+  width: 50%;
+  border-right: 1px solid black;
+}
+
+div.infobox thead th {
+  font-size: 200%;
+}
+
+div.infobox tbody th {
+  text-align: left;
+}
+
+.resultstable h2, div.notes h2 {
+  text-align: center;
+  margin: 0.1em;
+}
+
+div.notes h3 {
+  margin: 0.1em;
+}
+
+div.notes dd {
+  margin-bottom: 1em;
+}
+
+.resultstable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resultstable th.basecol, .resultstable th.peakcol {
+  padding: 0.1em;
+  font-size: 90%;
+}
+
+.resultstable th {
+  border: solid 2px black;
+}
+
+.resultstable td {
+  border: solid 1px #b8b8b8;
+}
+
+td.bm, th.bm { 
+  border-right: solid 2px black;
+  border-left: solid 2px black;
+}
+
+td.secs { 
+  border-left: solid 2px black;
+}
+
+td.ratio { 
+  border-right: solid 2px black;
+}
+
+.resultstable tfoot td {
+  text-align: center;
+  border: solid 2px black;
+}
+
+th.basecol {
+  background-color: #c8c8c8;
+  color: black;
+}
+td.basecol {
+  text-align: right;
+  background-color: transparent;
+  color: black;
+}
+
+th.peakcol {
+  text-align: center;
+}
+
+.peakcol {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+  text-align: right;
+}
+
+td.bm {
+  /* Basically, the benchmark name and copies columns */
+  background-color: #c8c8c8;
+  color: black;
+}
+
+span.selected {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+div.notes {
+  width: 100%;
+  float: left;
+  border: solid 1px black;
+}
+
+div.flagfooter {
+  text-align: center;
+}
+
+div.errors {
+  border: solid 2px red;
+}
+div.errors h2 {
+  background-color: transparent;
+  color: red;
+}
+
+div.footer {
+  border: none;
+}
+
+/* People find the "double underline" confusing.  And Safari 1.3 doesn't deal
+ * well with attempting to disable the border for userflag links.  So just
+ * give up and don't decorate user flags specially.
+********************
+span.userflag {
+  text-decoration: underline;
+}
+
+.userflag a:link {
+  border-bottom: 0;
+}
+********************
+*/
+/* Most of the screen-specific CSS is also the common CSS */
+
+/* Style for the non-image W3C marking at the bottom of the page, courtesy of
+ * Marek Prokop (http://www.sovavsiti.cz/css/w3c_buttons.html)
+ */
+.w3cbutton3 {
+  margin: 1em 1em 0 0;
+  width: 9em;
+  border: 1px solid #ccc;
+  font-family: helvetica,arial,sans-serif;
+  font-size: 70%;
+  font-weight: bold;
+  float: left;
+}
+.w3cbutton3 a {
+  display: block;
+  width: 100%;
+}
+.w3cbutton3 a:link,
+.w3cbutton3 a:visited,
+.w3cbutton3 a:hover {
+  background-color: #fc6;
+  color: #000;
+  text-decoration: none;
+  border-bottom: none;
+}
+.w3cbutton3 span.w3c {
+  padding: 0 0.4em;
+  background-color: #fff;
+  color: #0c479d;
+}
+
+-->
+</style>
+<style type="text/css" id="internalPrint" media="print">
+<!--
+body {
+  margin:  1em;
+  border:  0;
+  padding: 0;
+  background: white;
+  color:      black;
+  font-family: "Times Roman", times, serif;
+}
+
+.tt {
+  font-family: monospace;
+}
+
+div.flagClass > h2 {
+  border-bottom: 1px dotted black;
+  width: 80%;
+  font-family: sans-serif;
+}
+
+div.flagDesc {
+  clear: both;
+  background-color: rgb(255, 245, 220);
+  border: 1px solid blue; /* XXX This is for debugging */ 
+  margin: 0 auto;
+  width: 90%;
+}
+
+li.flagName {
+  font-weight: bold;
+  width: 100%;
+  border-bottom: 1px solid black;
+  display: block;
+  margin: 0.5em 0 0.5em 0;
+  font-size: 125%;
+}
+
+/* (presumably short) informationals all get grouped together near the top
+ * of the flag description block.
+ */
+.flagOrigin, .flagDescClass, .flagDescCompiler, .flagDescRE, .flagVar {
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  float: left;
+  padding: 0.25em;
+  margin: 0 0 0.25em 0;
+}
+
+.flagDescClass::before {
+  content: "Flag Class: ";
+}
+.flagDescCompiler::before {
+  content: "Compilers that recognize this flag: ";
+}
+.flagDescRE::before {
+  content: "Regular Expression: ";
+}
+.flagVar::before {
+  content: "Found In: ";
+}
+
+span.flagDescInc {
+  border-bottom: 1px solid black;
+}
+
+/* The description text stands alone. */
+.descText {
+  clear: both;
+  padding: 0.5em 1em 0.5em 1em;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  margin: 0.5em 0 0.5em 0;
+}
+
+/* This is a separate class so that in the print style sheet it can
+ * be ignored.
+ * Also, 'style="clear:both;"' is longer than 'class="clear"'
+ */
+.clear {
+  clear: both;
+}
+
+/* This is really for the link _to_ the flag report */
+li.unknown > a:link, a:visited { text-decoration: none; }
+
+.monospace {
+  font-family: Courier, "Courier New", monospace;
+}
+
+ul.flagDescList {
+  clear: both;
+  list-style-type: none;
+}
+
+/* Arrange for each flag description to have some headroom. */
+ul.flagDescList > li {
+  margin: 2em 0 0 0;
+}
+
+ul.flagDesc {
+  list-style-type: none;
+}
+
+div.flagTOC {
+  border: 1px solid white;
+  padding: 0.5em 1em;
+  margin: 0 auto;
+  width: 80%;
+}
+
+ul.flagTOC {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul.flagTOC > li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+  margin: 0;
+  padding: 0.25em 0 0.25em 0;
+  float: left;
+  display: inline-block; /* Fix IE bug; compliant browsers will ignore this */
+  width: 24.3%;
+  min-height: 1.5em;
+  overflow: hidden; /* If the table gets squeezed too much, don't let the
+                     * text overlap
+                     */
+}
+
+ul.SubMenu li {
+  border: 1px solid white; /* rgb(211, 211, 211); */
+}
+
+ul.SubMenu {
+  display: none;
+  position: absolute;
+  list-style-type: none;
+  border: 1px solid black;
+  background-color: white;
+  margin: 0 0 0 2em;
+  padding: 0.25em 5em 0.25em 0.5em;
+  white-space: nowrap;
+}
+
+li:hover > ul.SubMenu, ul.SubMenu:hover {
+  display: block;
+}
+
+ul.SubMenu > li:hover, ul.flagTOC > li:hover {
+  background-color: rgb(176, 196, 238); /* lightsteelgray... almost */
+  border: 1px solid rgb(128, 128, 128);
+}
+
+
+.resultpage a:link, .resultpage a:visited {
+  text-decoration: none;
+  border-bottom: 1px dashed black;
+  color: inherit;
+}
+
+.resultpage {
+  margin: auto;
+  padding: 0;
+  width: 800px;
+}
+
+.logo {
+  float: left;
+}
+
+.titlebarcontainer, .resultstable {
+  border: solid 1px;
+  width: 100%;
+  float: left;
+}
+
+div.logo > img {
+  vertical-align: 50%;
+  margin: auto;
+}
+
+.titlebar {
+  float: left;
+  padding: 0em 1em 0em 1em;
+  text-align: center;
+  width: 92%;
+}
+
+div.titlebar > h1, div.titlebar > p {
+  margin: 0 1em 0 1em;
+}
+
+.systembar {
+  float: left;
+  width: 65%;
+  font-size: 150%;
+  margin: 0;
+  padding: 0.1em;
+  border-right: solid 1px black;
+}
+
+.metricbar {
+  padding: 0.1em;
+  margin: 0;
+  float: right;
+  width: 33%;
+  height: 50%;
+  font-size: 120%;
+}
+
+.metricbar#base {
+  background-color: #c8c8c8;
+  color: black;
+}
+
+.metricbar#peak {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+}
+
+.metricbar p {
+  margin: 0;
+  padding: 0.2em;
+}
+
+.datebar p, .systembar p {
+  margin: 0;
+  padding: 0;
+}
+
+.datebar p {
+  float: left;
+  border-left: solid 1px black;
+}
+
+span.item {
+  float: left;
+  margin: 0;
+  padding: 0 0 0 0.1em;
+}
+
+span.value {
+  float: right;
+  padding: 0 0.1em 0 0;
+}
+
+.datebar {
+  width: 100%;
+  float: left;
+  font-size: 50%;
+  min-height: 100%;
+  border: solid 1px black;
+}
+
+p#test_sponsor {
+  width: 31%;
+}
+
+p#license_num {
+  width: 16%;
+}
+
+p#test_date {
+  width: 15%;
+}
+
+p#hw_avail, p#sw_avail {
+  width: 18%;
+}
+
+div.graph {
+  margin: auto;
+}
+
+div.infobox {
+  float: left;
+  width: 100%;
+  padding: 0;
+  border: solid 1px black;
+}
+
+div.infobox table {
+  width: 49%;
+  float: left;
+}
+
+div.infobox table tr {
+  vertical-align: top;
+}
+
+div.infobox table#Hardware {
+  width: 50%;
+  border-right: 1px solid black;
+}
+
+div.infobox thead th {
+  font-size: 200%;
+}
+
+div.infobox tbody th {
+  text-align: left;
+}
+
+.resultstable h2, div.notes h2 {
+  text-align: center;
+  margin: 0.1em;
+}
+
+div.notes h3 {
+  margin: 0.1em;
+}
+
+div.notes dd {
+  margin-bottom: 1em;
+}
+
+.resultstable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resultstable th.basecol, .resultstable th.peakcol {
+  padding: 0.1em;
+  font-size: 90%;
+}
+
+.resultstable th {
+  border: solid 2px black;
+}
+
+.resultstable td {
+  border: solid 1px #b8b8b8;
+}
+
+td.bm, th.bm { 
+  border-right: solid 2px black;
+  border-left: solid 2px black;
+}
+
+td.secs { 
+  border-left: solid 2px black;
+}
+
+td.ratio { 
+  border-right: solid 2px black;
+}
+
+.resultstable tfoot td {
+  text-align: center;
+  border: solid 2px black;
+}
+
+th.basecol {
+  background-color: #c8c8c8;
+  color: black;
+}
+td.basecol {
+  text-align: right;
+  background-color: transparent;
+  color: black;
+}
+
+th.peakcol {
+  text-align: center;
+}
+
+.peakcol {
+  background-color: transparent;
+  color: #2626b3;       /* peak blue */
+  text-align: right;
+}
+
+td.bm {
+  /* Basically, the benchmark name and copies columns */
+  background-color: #c8c8c8;
+  color: black;
+}
+
+span.selected {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+div.notes {
+  width: 100%;
+  float: left;
+  border: solid 1px black;
+}
+
+div.flagfooter {
+  text-align: center;
+}
+
+div.errors {
+  border: solid 2px red;
+}
+div.errors h2 {
+  background-color: transparent;
+  color: red;
+}
+
+div.footer {
+  border: none;
+}
+
+/* People find the "double underline" confusing.  And Safari 1.3 doesn't deal
+ * well with attempting to disable the border for userflag links.  So just
+ * give up and don't decorate user flags specially.
+********************
+span.userflag {
+  text-decoration: underline;
+}
+
+.userflag a:link {
+  border-bottom: 0;
+}
+********************
+*/
+/* Classes that contain links - useless on paper */
+.flagTOC, .SubMenu, .NoPrint {
+  display: none;
+}
+
+/* Don't decorate links - they're not clickable */
+a {
+  text-decoration: none;
+  background: inherit;
+  color: inherit;
+}
+
+.resultpage {
+  width: 100%;
+}
+
+.w3cbutton3 {
+  display: none;
+}
+-->
+</style>
+<title>435.gromacs Flags</title>
+</head><body>
+<h1>435.gromacs Flags</h1>
+
+
+<p>These are flags that appear in the benchmark sources, categorized as to
+whether they are portability candidates, mandatory, or forbidden.
+</p>
+
+<div class="NoPrint">
+<h3>Sections</h3>
+<p>Selecting one of the following will take you directly to that section:</p>
+<ul>
+<li><a href="#Section_portability">Portability Flags</a></li>
+<li><a href="#Section_mandatory">Mandatory Flags</a></li>
+<li><a href="#Section_forbidden">Forbidden Flags</a></li>
+</ul>
+</div>
+
+<hr />
+
+<div class="flagClass" id="portability">
+<h2><a name="Section_portability" id="Section_portability">Portability Flags</a></h2>
+<div class="flagTOC">
+<ul class="flagTOC">
+ <li><a href="#b435.gromacs_DSPEC_CPU_APPEND_UNDERSCORE">-DSPEC_CPU_APPEND_UNDERSCORE</a></li>
+</ul>
+<div class="clear"></div>
+</div>
+
+<ul class="flagDescList">
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSPEC_CPU_APPEND_UNDERSCORE" id="b435.gromacs_DSPEC_CPU_APPEND_UNDERSCORE">-DSPEC_CPU_APPEND_UNDERSCORE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_APPEND_UNDERSCORE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+For compilers that export symbols in uppercase with an underscore.
+</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+
+</div>
+<hr />
+<div class="flagClass" id="mandatory">
+<h2><a name="Section_mandatory" id="Section_mandatory">Mandatory Flags</a></h2>
+<div class="flagTOC">
+<ul class="flagTOC">
+ <li><a href="#b435.gromacs_currdir_inc">-I.</a></li>
+ <li><a href="#b435.gromacs_DHAVE_CONFIG_H">-DHAVE_CONFIG_H</a></li>
+ <li><a href="#b435.gromacs_DSPEC_CPU">-DSPEC_CPU</a></li>
+ <li><a href="#b435.gromacs_DSPEC_CPU_WINDOWS">-DSPEC_CPU_WINDOWS</a></li>
+</ul>
+<div class="clear"></div>
+</div>
+
+<ul class="flagDescList">
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_currdir_inc" id="b435.gromacs_currdir_inc">-I.</a></li>
+<li class="flagDescRE"><span class="tt">-I\.(?:\s+|$)</span></li>
+<li class="descText">
+<p>
+This flag is included automatically by Spec/object.pm.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_CONFIG_H" id="b435.gromacs_DHAVE_CONFIG_H">-DHAVE_CONFIG_H</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_CONFIG_H(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+This should always be defined when running gromacs, since it means the
+configuration file is present. When including Gromacs headers as a
+library from external code it is not defined.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSPEC_CPU" id="b435.gromacs_DSPEC_CPU">-DSPEC_CPU</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSPEC_CPU_WINDOWS" id="b435.gromacs_DSPEC_CPU_WINDOWS">-DSPEC_CPU_WINDOWS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_WINDOWS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Portabilty for windows
+</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+
+</div>
+<hr />
+<div class="flagClass" id="forbidden">
+<h2><a name="Section_forbidden" id="Section_forbidden">Forbidden Flags</a></h2>
+<div class="flagTOC">
+<ul class="flagTOC">
+ <li><a href="#b435.gromacs_DALLOW_OFFDIAG_LT_HALFDIAG">-DALLOW_OFFDIAG_LT_HALFDIAG</a></li>
+ <li><a href="#b435.gromacs_DBUFSIZE">-DBUFSIZE</a></li>
+ <li><a href="#b435.gromacs_DCHECK_MPI_ENV">-DCHECK_MPI_ENV</a></li>
+ <li><a href="#b435.gromacs_DCPLUSPLUS">-DCPLUSPLUS</a></li>
+ <li><a href="#b435.gromacs_DCYLDEBUG">-DCYLDEBUG</a></li>
+ <li><a href="#b435.gromacs_DDEBSW">-DDEBSW</a></li>
+ <li><a href="#b435.gromacs_DDEBUG">-DDEBUG</a></li>
+ <li><a href="#b435.gromacs_DDEBUG2">-DDEBUG2</a></li>
+ <li><a href="#b435.gromacs_DDEBUGEBIN">-DDEBUGEBIN</a></li>
+ <li><a href="#b435.gromacs_DDEBUGGCT">-DDEBUGGCT</a></li>
+ <li><a href="#b435.gromacs_DDEBUGIDEF">-DDEBUGIDEF</a></li>
+ <li><a href="#b435.gromacs_DDEBUGMSHIFT">-DDEBUGMSHIFT</a></li>
+ <li><a href="#b435.gromacs_DDEBUGPAR">-DDEBUGPAR</a></li>
+ <li><a href="#b435.gromacs_DDEBUGRBIN">-DDEBUGRBIN</a></li>
+ <li><a href="#b435.gromacs_DDEBUGSHAKE">-DDEBUGSHAKE</a></li>
+ <li><a href="#b435.gromacs_DDEBUG_GMX">-DDEBUG_GMX</a></li>
+ <li><a href="#b435.gromacs_DDEBUG_NRNB">-DDEBUG_NRNB</a></li>
+ <li><a href="#b435.gromacs_DDEBUG_PBC">-DDEBUG_PBC</a></li>
+ <li><a href="#b435.gromacs_DDEBUG_PRES">-DDEBUG_PRES</a></li>
+ <li><a href="#b435.gromacs_DDISABLE_WATERWATER_LOOPS">-DDISABLE_WATERWATER_LOOPS</a></li>
+ <li><a href="#b435.gromacs_DDOUBLE">-DDOUBLE</a></li>
+ <li><a href="#b435.gromacs_DFALSE">-DFALSE</a></li>
+ <li><a href="#b435.gromacs_DFFTW_NAME_FFTW">-DFFTW_NAME_FFTW</a></li>
+ <li><a href="#b435.gromacs_DFFT_WORKSPACE">-DFFT_WORKSPACE</a></li>
+ <li><a href="#b435.gromacs_DGROMACS_MAGIC">-DGROMACS_MAGIC</a></li>
+ <li><a href="#b435.gromacs_DHACK">-DHACK</a></li>
+ <li><a href="#b435.gromacs_DHAVE_BOOL">-DHAVE_BOOL</a></li>
+ <li><a href="#b435.gromacs_DHAVE_FSEEKO">-DHAVE_FSEEKO</a></li>
+ <li><a href="#b435.gromacs_DHAVE_LIBMASSV_ANY">-DHAVE_LIBMASSV_ANY</a></li>
+ <li><a href="#b435.gromacs_DHAVE_MOTIF">-DHAVE_MOTIF</a></li>
+ <li><a href="#b435.gromacs_DHAVE_REAL">-DHAVE_REAL</a></li>
+ <li><a href="#b435.gromacs_DHAVE_STRCASECMP">-DHAVE_STRCASECMP</a></li>
+ <li><a href="#b435.gromacs_DHAVE_STRDUP">-DHAVE_STRDUP</a></li>
+ <li><a href="#b435.gromacs_DHAVE_UNISTD_H">-DHAVE_UNISTD_H</a></li>
+ <li><a href="#b435.gromacs_DINT_MAX">-DINT_MAX</a></li>
+ <li><a href="#b435.gromacs_DINVSQRT_DONE">-DINVSQRT_DONE</a></li>
+ <li><a href="#b435.gromacs_DMASTER_ID">-DMASTER_ID</a></li>
+ <li><a href="#b435.gromacs_DMAX">-DMAX</a></li>
+ <li><a href="#b435.gromacs_DMIN">-DMIN</a></li>
+ <li><a href="#b435.gromacs_DMPI_TEST">-DMPI_TEST</a></li>
+ <li><a href="#b435.gromacs_DM_2PI">-DM_2PI</a></li>
+ <li><a href="#b435.gromacs_DM_PI">-DM_PI</a></li>
+ <li><a href="#b435.gromacs_DM_PI_2">-DM_PI_2</a></li>
+ <li><a href="#b435.gromacs_DM_SQRT2">-DM_SQRT2</a></li>
+ <li><a href="#b435.gromacs_DNO_CLOCK">-DNO_CLOCK</a></li>
+ <li><a href="#b435.gromacs_DNO_GETPID">-DNO_GETPID</a></li>
+ <li><a href="#b435.gromacs_DNO_PIPE">-DNO_PIPE</a></li>
+ <li><a href="#b435.gromacs_DNO_PWUID">-DNO_PWUID</a></li>
+ <li><a href="#b435.gromacs_DNS5DB">-DNS5DB</a></li>
+ <li><a href="#b435.gromacs_DPRAGMAS">-DPRAGMAS</a></li>
+ <li><a href="#b435.gromacs_DSAFE">-DSAFE</a></li>
+ <li><a href="#b435.gromacs_DSEGV">-DSEGV</a></li>
+ <li><a href="#b435.gromacs_DSOFTWARE_INVSQRT">-DSOFTWARE_INVSQRT</a></li>
+ <li><a href="#b435.gromacs_DSOFTWARE_RECIP">-DSOFTWARE_RECIP</a></li>
+ <li><a href="#b435.gromacs_DSOFTWARE_SQRT">-DSOFTWARE_SQRT</a></li>
+ <li><a href="#b435.gromacs_DSORTNLIST">-DSORTNLIST</a></li>
+ <li><a href="#b435.gromacs_DSPEC_CPU_USE_SYSTEM_XDR">-DSPEC_CPU_USE_SYSTEM_XDR</a></li>
+ <li><a href="#b435.gromacs_DSQR">-DSQR</a></li>
+ <li><a href="#b435.gromacs_DSTRAND">-DSTRAND</a></li>
+ <li><a href="#b435.gromacs_DSYSVBFUNC">-DSYSVBFUNC</a></li>
+ <li><a href="#b435.gromacs_DTABLES">-DTABLES</a></li>
+ <li><a href="#b435.gromacs_DTEST_MPI_SUM">-DTEST_MPI_SUM</a></li>
+ <li><a href="#b435.gromacs_DTRUE">-DTRUE</a></li>
+ <li><a href="#b435.gromacs_DUSE_AXP_ASM">-DUSE_AXP_ASM</a></li>
+ <li><a href="#b435.gromacs_DUSE_FORTRAN">-DUSE_FORTRAN</a></li>
+ <li><a href="#b435.gromacs_DUSE_GMX_XDR">-DUSE_GMX_XDR</a></li>
+ <li><a href="#b435.gromacs_DUSE_LOCAL_BUFFERS">-DUSE_LOCAL_BUFFERS</a></li>
+ <li><a href="#b435.gromacs_DUSE_MPI">-DUSE_MPI</a></li>
+ <li><a href="#b435.gromacs_DUSE_PPC_ALTIVEC">-DUSE_PPC_ALTIVEC</a></li>
+ <li><a href="#b435.gromacs_DUSE_PVM3">-DUSE_PVM3</a></li>
+ <li><a href="#b435.gromacs_DUSE_SGI_FPE">-DUSE_SGI_FPE</a></li>
+ <li><a href="#b435.gromacs_DUSE_THREADS">-DUSE_THREADS</a></li>
+ <li><a href="#b435.gromacs_DUSE_VECTOR">-DUSE_VECTOR</a></li>
+ <li><a href="#b435.gromacs_DUSE_X86TRUNC">-DUSE_X86TRUNC</a></li>
+ <li><a href="#b435.gromacs_DUSE_X86_SSE2">-DUSE_X86_SSE2</a></li>
+ <li><a href="#b435.gromacs_DUSE_X86_SSE_AND_3DNOW">-DUSE_X86_SSE_AND_3DNOW</a></li>
+ <li><a href="#b435.gromacs_DUSE_XDR">-DUSE_XDR</a></li>
+ <li><a href="#b435.gromacs_DVECTORIZATION_BUFLENGTH">-DVECTORIZATION_BUFLENGTH</a></li>
+ <li><a href="#b435.gromacs_DVECTORIZE_INVSQRT">-DVECTORIZE_INVSQRT</a></li>
+ <li><a href="#b435.gromacs_DVECTORIZE_INVSQRT_S">-DVECTORIZE_INVSQRT_S</a></li>
+ <li><a href="#b435.gromacs_DVECTORIZE_INVSQRT_W">-DVECTORIZE_INVSQRT_W</a></li>
+ <li><a href="#b435.gromacs_DVECTORIZE_INVSQRT_WW">-DVECTORIZE_INVSQRT_WW</a></li>
+ <li><a href="#b435.gromacs_DVECTORIZE_RECIP">-DVECTORIZE_RECIP</a></li>
+ <li><a href="#b435.gromacs_DWIN32">-DWIN32</a></li>
+ <li><a href="#b435.gromacs_DWIN64">-DWIN64</a></li>
+ <li><a href="#b435.gromacs_DWITHOUT_FFTW">-DWITHOUT_FFTW</a></li>
+ <li><a href="#b435.gromacs_D_386_">-D_386_</a></li>
+ <li><a href="#b435.gromacs_D_3dview_h">-D_3dview_h</a></li>
+ <li><a href="#b435.gromacs_D_PI">-D_PI</a></li>
+ <li><a href="#b435.gromacs_D_SPECIAL_VAR_ARG">-D_SPECIAL_VAR_ARG</a></li>
+ <li><a href="#b435.gromacs_D_WIN32">-D_WIN32</a></li>
+ <li><a href="#b435.gromacs_D_WIN64">-D_WIN64</a></li>
+ <li><a href="#b435.gromacs_D__386__">-D__386__</a></li>
+ <li><a href="#b435.gromacs_D__CYGWIN32__">-D__CYGWIN32__</a></li>
+ <li><a href="#b435.gromacs_D__CYGWIN__">-D__CYGWIN__</a></li>
+ <li><a href="#b435.gromacs_D__GENERAL__">-D__GENERAL__</a></li>
+ <li><a href="#b435.gromacs_D__GNUC__">-D__GNUC__</a></li>
+ <li><a href="#b435.gromacs_D__PGI">-D__PGI</a></li>
+ <li><a href="#b435.gromacs_D__STDC__">-D__STDC__</a></li>
+ <li><a href="#b435.gromacs_D__sgi">-D__sgi</a></li>
+ <li><a href="#b435.gromacs_header_guard">-D_binio_h,
+-D_bondf_h,
+-D_buffer_h,
+-D_calch_h,
+-D_calcmu_h,
+-D_callf77_h,
+-D_comlib_h,
+-D_complex_h,
+-D_comtest_h,
+-D_confio_h,
+-D_copyrite_h,
+-D_delay_h,
+-D_detectcpu_h,
+-D_disre_h,
+-D_do_fit_h,
+-D_do_md_h,
+-D_do_nm_h,
+-D_dummies_h,
+-D_ebin_h,
+-D_edsam_h,
+-D_enxio_h,
+-D_ewald_h,
+-D_ewald_util_h,
+-D_fatal_h,
+-D_fftgrid_h,
+-D_fftw_wrapper_h,
+-D_filenm_h,
+-D_force_h,
+-D_futil_h,
+-D_genalg_h,
+-D_gmx_system_xdr_h,
+-D_gmxfio_h,
+-D_grompp_h,
+-D_gstat_h,
+-D_idef_h,
+-D_ifunc_h,
+-D_init_h,
+-D_inner_h,
+-D_invblock_h,
+-D_ionize_h,
+-D_list_h,
+-D_macros_h,
+-D_main_h,
+-D_maths_h,
+-D_matio_h,
+-D_mdatom_h,
+-D_mdatoms_h,
+-D_mdebin_h,
+-D_mdrun_h,
+-D_memdump_h,
+-D_memtab_h,
+-D_memtest_h,
+-D_metacode_h,
+-D_mshift_h,
+-D_mvdata_h,
+-D_names_h,
+-D_network_h,
+-D_nhash_h,
+-D_nr_h,
+-D_nrama_h,
+-D_nrjac_h,
+-D_nrnb_h,
+-D_ns_h,
+-D_nsb_h,
+-D_nsgrid_h,
+-D_orires_h,
+-D_pbc_h,
+-D_pdbio_h,
+-D_pdebug_h,
+-D_physics_h,
+-D_pme_h,
+-D_poisson_h,
+-D_pppm_h,
+-D_princ_h,
+-D_pull_h,
+-D_pull_internal_h,
+-D_random_h,
+-D_rbin_h,
+-D_rdgroup_h,
+-D_readcomp_h,
+-D_readinp_h,
+-D_renum_h,
+-D_reorder_h,
+-D_replace_h,
+-D_rmpbc_h,
+-D_rwtop_h,
+-D_sheader_h,
+-D_shift_h,
+-D_shift_util_h,
+-D_sim_util_h,
+-D_simple_h,
+-D_smalloc_h,
+-D_sortwater_h,
+-D_split_h,
+-D_statusio_h,
+-D_statutil_h,
+-D_strdb_h,
+-D_string2_h,
+-D_struc2_h,
+-D_superb_h,
+-D_symtab_h,
+-D_sync_h,
+-D_synclib_h,
+-D_sysstuff_h,
+-D_systest_h,
+-D_tags_h,
+-D_tgroup_h,
+-D_tpxio_h,
+-D_transfer_h,
+-D_trnio_h,
+-D_txtdump_h,
+-D_typedefs_h,
+-D_update_h,
+-D_utils_h,
+-D_vcm_h,
+-D_vec_h,
+-D_viewit_h,
+-D_vveclib_h,
+-D_wgms_h,
+-D_wman_h,
+-D_wnblist_h,
+-D_writeps_h,
+-D_xdrf_h,
+-D_xmdrun_h,
+-D_xtcio_h,
+-D_xvgr_h</a></li>
+ <li><a href="#b435.gromacs_Deven">-Deven</a></li>
+ <li><a href="#b435.gromacs_Dfclose">-Dfclose</a></li>
+ <li><a href="#b435.gromacs_Di386">-Di386</a></li>
+ <li><a href="#b435.gromacs_Dmax">-Dmax</a></li>
+ <li><a href="#b435.gromacs_Dmin">-Dmin</a></li>
+ <li><a href="#b435.gromacs_Drewind">-Drewind</a></li>
+</ul>
+<div class="clear"></div>
+</div>
+
+<ul class="flagDescList">
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DALLOW_OFFDIAG_LT_HALFDIAG" id="b435.gromacs_DALLOW_OFFDIAG_LT_HALFDIAG">-DALLOW_OFFDIAG_LT_HALFDIAG</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DALLOW_OFFDIAG_LT_HALFDIAG(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+This is just an development/debug flag for testing degenerate
+cases. All routines in Gromacs can work with general triclinic
+simulation cells instead of only rectangular ones. In normal
+simulations skewed cells are always restored, but this
+#define can be used to allow degenerate cells for testing. In that
+case we need to include some extra stuff in neighborsearching, which
+makes the code somewhat slower. It is NEVER used for production runs.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DBUFSIZE" id="b435.gromacs_DBUFSIZE">-DBUFSIZE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DBUFSIZE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Default length of some line input buffers (char arrays) when reading
+from text files.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DCHECK_MPI_ENV" id="b435.gromacs_DCHECK_MPI_ENV">-DCHECK_MPI_ENV</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DCHECK_MPI_ENV(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+On some hosts a particular environment variable (e.g. LAM_WORLD) will
+be set if an MPI environment/daemon is started. If this define is set
+to a variable name a check is done to start a parallel run. It is NOT
+enabled by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DCPLUSPLUS" id="b435.gromacs_DCPLUSPLUS">-DCPLUSPLUS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DCPLUSPLUS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Old, non-standard flag for detecting C++ compilers when Gromacs is
+called as a library from C++ code. We're gradually moving to the ANSI
+__cplusplus instead.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DCYLDEBUG" id="b435.gromacs_DCYLDEBUG">-DCYLDEBUG</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DCYLDEBUG(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for cylindrical pulling.  Never used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBSW" id="b435.gromacs_DDEBSW">-DDEBSW</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBSW(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Flag to enable separate debugging of the tabulated switched nonbonded
+interactions.  Never used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUG" id="b435.gromacs_DDEBUG">-DDEBUG</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUG(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Define to get lots of debug messages on stdout and stdlog.  Never used
+by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUG2" id="b435.gromacs_DDEBUG2">-DDEBUG2</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUG2(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Even more (=everything) debug messages.  Never used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUGEBIN" id="b435.gromacs_DDEBUGEBIN">-DDEBUGEBIN</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUGEBIN(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for our energy bin code. Not enabled by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUGGCT" id="b435.gromacs_DDEBUGGCT">-DDEBUGGCT</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUGGCT(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for "General Coupling Theory".  Never used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUGIDEF" id="b435.gromacs_DDEBUGIDEF">-DDEBUGIDEF</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUGIDEF(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for interaction definition blocks.  Never used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUGMSHIFT" id="b435.gromacs_DDEBUGMSHIFT">-DDEBUGMSHIFT</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUGMSHIFT(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for molecular shift code.  Never used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUGPAR" id="b435.gromacs_DDEBUGPAR">-DDEBUGPAR</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUGPAR(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for general parallel send/receive calls.  Never used by
+default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUGRBIN" id="b435.gromacs_DDEBUGRBIN">-DDEBUGRBIN</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUGRBIN(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag to create a small test program for checking parallel data
+aggregation.  Never used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUGSHAKE" id="b435.gromacs_DDEBUGSHAKE">-DDEBUGSHAKE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUGSHAKE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for SHAKE, which is one of the bond constraint
+algorithms. Never enabled by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUG_GMX" id="b435.gromacs_DDEBUG_GMX">-DDEBUG_GMX</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUG_GMX(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+By default the debug_gmx() function does nothing. When this flag is
+set, it writes the current node id, file, and line number to the
+standard log (if available), or alternatively stderr.  Never used by
+default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUG_NRNB" id="b435.gromacs_DDEBUG_NRNB">-DDEBUG_NRNB</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUG_NRNB(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Flag to debug the flop accounting (just used for statistics).  Never
+used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUG_PBC" id="b435.gromacs_DDEBUG_PBC">-DDEBUG_PBC</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUG_PBC(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for the periodic boundary condition code.  Never enabled by
+default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDEBUG_PRES" id="b435.gromacs_DDEBUG_PRES">-DDEBUG_PRES</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDEBUG_PRES(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for pressure calculation code.  Never enabled by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDISABLE_WATERWATER_LOOPS" id="b435.gromacs_DDISABLE_WATERWATER_LOOPS">-DDISABLE_WATERWATER_LOOPS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDISABLE_WATERWATER_LOOPS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+This flag disables the water-water optimized inner loops. Nowadays it
+is just for debugging.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DDOUBLE" id="b435.gromacs_DDOUBLE">-DDOUBLE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DDOUBLE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when compiling a double precision Gromacs version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DFALSE" id="b435.gromacs_DFALSE">-DFALSE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DFALSE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+if FALSE is defined we use it as a boolean value, otherwise we define
+it to 0.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DFFTW_NAME_FFTW" id="b435.gromacs_DFFTW_NAME_FFTW">-DFFTW_NAME_FFTW</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DFFTW_NAME_FFTW(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Precision prefix (d,s, etc) when using the FFTW library calls. The
+SPEC version is compiled without FFTW.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DFFT_WORKSPACE" id="b435.gromacs_DFFT_WORKSPACE">-DFFT_WORKSPACE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DFFT_WORKSPACE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Whether to use extra workspace for FFTs. This is enabled by default,
+but since the SPEC version is compile without FFTW it does not have
+any effect.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DGROMACS_MAGIC" id="b435.gromacs_DGROMACS_MAGIC">-DGROMACS_MAGIC</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DGROMACS_MAGIC(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Magic number written at the start of frames in binary files, so we can
+identify them as Gromacs files.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHACK" id="b435.gromacs_DHACK">-DHACK</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHACK(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Embarrassing debug hack to test part of the PPPM algorithm. Not used
+anymore.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_BOOL" id="b435.gromacs_DHAVE_BOOL">-DHAVE_BOOL</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_BOOL(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if the system has a "bool" type (otherwise we define it).
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_FSEEKO" id="b435.gromacs_DHAVE_FSEEKO">-DHAVE_FSEEKO</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_FSEEKO(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if the system has 64-bit file access.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_LIBMASSV_ANY" id="b435.gromacs_DHAVE_LIBMASSV_ANY">-DHAVE_LIBMASSV_ANY</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_LIBMASSV_ANY(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if the IBM MASS libraries are present. This code is disabled
+in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_MOTIF" id="b435.gromacs_DHAVE_MOTIF">-DHAVE_MOTIF</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_MOTIF(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if the Motif library is present, so we can do some graphical
+stuff.  This code is disabled in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_REAL" id="b435.gromacs_DHAVE_REAL">-DHAVE_REAL</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_REAL(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_STRCASECMP" id="b435.gromacs_DHAVE_STRCASECMP">-DHAVE_STRCASECMP</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_STRCASECMP(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if the system has strcasecmp(), otherwise we define one.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_STRDUP" id="b435.gromacs_DHAVE_STRDUP">-DHAVE_STRDUP</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_STRDUP(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if the system has strdup(), otherwise we define one.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DHAVE_UNISTD_H" id="b435.gromacs_DHAVE_UNISTD_H">-DHAVE_UNISTD_H</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DHAVE_UNISTD_H(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if the include header unistd.h exists, otherwise we define the
+necessary functions.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DINT_MAX" id="b435.gromacs_DINT_MAX">-DINT_MAX</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DINT_MAX(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+This is ANSI C, and defined in limits.h to be the largest value of an
+integer.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DINVSQRT_DONE" id="b435.gromacs_DINVSQRT_DONE">-DINVSQRT_DONE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DINVSQRT_DONE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Convenience define in header.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DMASTER_ID" id="b435.gromacs_DMASTER_ID">-DMASTER_ID</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DMASTER_ID(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+mdrun/systest.h is deprecated, it was only used with the early
+dedicated gromacs hardware.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DMAX" id="b435.gromacs_DMAX">-DMAX</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DMAX(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Macro for a max(a,b) function.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DMIN" id="b435.gromacs_DMIN">-DMIN</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DMIN(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Macro for a min(a,b) function.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DMPI_TEST" id="b435.gromacs_DMPI_TEST">-DMPI_TEST</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DMPI_TEST(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for MPI, introduce extra checking for each call.  This part
+is disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DM_2PI" id="b435.gromacs_DM_2PI">-DM_2PI</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DM_2PI(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Math value for 2.0*PI (we first check if the system defines it)
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DM_PI" id="b435.gromacs_DM_PI">-DM_PI</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DM_PI(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Math value for PI (we first check if the system defines it)
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DM_PI_2" id="b435.gromacs_DM_PI_2">-DM_PI_2</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DM_PI_2(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Math value for Pi/2 (we first check if the system defines it)
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DM_SQRT2" id="b435.gromacs_DM_SQRT2">-DM_SQRT2</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DM_SQRT2(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Mathematical value for sqrt(2) (we first check if the system defines it)
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DNO_CLOCK" id="b435.gromacs_DNO_CLOCK">-DNO_CLOCK</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DNO_CLOCK(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if no clock routines are available. Just used for statistics
+anyway, and the output is disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DNO_GETPID" id="b435.gromacs_DNO_GETPID">-DNO_GETPID</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DNO_GETPID(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if it is not possible to get a process ID from the
+system. This is just used as an optional way to get a real 'random'
+random seed. This part of the code is not used in the SPEC test.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DNO_PIPE" id="b435.gromacs_DNO_PIPE">-DNO_PIPE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DNO_PIPE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if no pipes are available on this system. Only used to
+compress/uncompress IO on-the-fly, not enabled in the SPEC test.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DNO_PWUID" id="b435.gromacs_DNO_PWUID">-DNO_PWUID</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DNO_PWUID(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined if pwd.h is not present, so we cannot get name/uid of the
+user. This is only used to add a comment at the top of a log file,
+which anyway is disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DNS5DB" id="b435.gromacs_DNS5DB">-DNS5DB</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DNS5DB(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug flag for grid-based neighborsearching.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DPRAGMAS" id="b435.gromacs_DPRAGMAS">-DPRAGMAS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DPRAGMAS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Add a cray pragma to ignore vector dependencies in the next loop if
+set. Not enabled by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSAFE" id="b435.gromacs_DSAFE">-DSAFE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSAFE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Used to check and work around an old compiler bug. No longer used by
+default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSEGV" id="b435.gromacs_DSEGV">-DSEGV</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSEGV(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Deprecated debugging option.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSOFTWARE_INVSQRT" id="b435.gromacs_DSOFTWARE_INVSQRT">-DSOFTWARE_INVSQRT</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSOFTWARE_INVSQRT(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the Gromacs software version of 1/sqrt(x) is used. Not
+enabled in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSOFTWARE_RECIP" id="b435.gromacs_DSOFTWARE_RECIP">-DSOFTWARE_RECIP</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSOFTWARE_RECIP(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the Gromacs software version of 1/x is used. Not enabled
+in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSOFTWARE_SQRT" id="b435.gromacs_DSOFTWARE_SQRT">-DSOFTWARE_SQRT</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSOFTWARE_SQRT(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the Gromacs software version of sqrt(x) is used. Not
+enabled in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSORTNLIST" id="b435.gromacs_DSORTNLIST">-DSORTNLIST</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSORTNLIST(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug/hacking flag to test if neighborlist quicksorting helps. Not
+enabled by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSPEC_CPU_USE_SYSTEM_XDR" id="b435.gromacs_DSPEC_CPU_USE_SYSTEM_XDR">-DSPEC_CPU_USE_SYSTEM_XDR</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSPEC_CPU_USE_SYSTEM_XDR(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+System XDR libraries are used instead of build-in version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSQR" id="b435.gromacs_DSQR">-DSQR</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSQR(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Macro to define a shortcut for (x*x)
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSTRAND" id="b435.gromacs_DSTRAND">-DSTRAND</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSTRAND(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined (by default) to select the Boxmuller algorithm for a gaussian
+random gnerator
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DSYSVBFUNC" id="b435.gromacs_DSYSVBFUNC">-DSYSVBFUNC</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DSYSVBFUNC(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+The file mdrun/bfunc.h was used with our early dedicated hardware, but
+is now deprecated.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DTABLES" id="b435.gromacs_DTABLES">-DTABLES</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DTABLES(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug/hacking flag to control the use of tabulated interactions for
+short-range Ewald corrections.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DTEST_MPI_SUM" id="b435.gromacs_DTEST_MPI_SUM">-DTEST_MPI_SUM</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DTEST_MPI_SUM(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Debug/hacking flag to test alternative communication strategy. Not
+used by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DTRUE" id="b435.gromacs_DTRUE">-DTRUE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DTRUE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+if TRUE is defined we use it as a boolean value, otherwise we define
+it to 1.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_AXP_ASM" id="b435.gromacs_DUSE_AXP_ASM">-DUSE_AXP_ASM</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_AXP_ASM(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when Alpha AXP assembly vectorized versions of sqrt(x) are
+used. This part is disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_FORTRAN" id="b435.gromacs_DUSE_FORTRAN">-DUSE_FORTRAN</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_FORTRAN(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when Fortran77 inner loops are enabled.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_GMX_XDR" id="b435.gromacs_DUSE_GMX_XDR">-DUSE_GMX_XDR</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_GMX_XDR(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use our own portable implementation of XDR for input/output
+files. This is always used in the SPEC code to ensure we have the same
+code on all platforms.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_LOCAL_BUFFERS" id="b435.gromacs_DUSE_LOCAL_BUFFERS">-DUSE_LOCAL_BUFFERS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_LOCAL_BUFFERS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use extra buffers for vectorized innerloops.  This part is entirely
+disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_MPI" id="b435.gromacs_DUSE_MPI">-DUSE_MPI</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_MPI(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Compile a parallel MPI version when set.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_PPC_ALTIVEC" id="b435.gromacs_DUSE_PPC_ALTIVEC">-DUSE_PPC_ALTIVEC</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_PPC_ALTIVEC(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use Altivec assembly innerloops on PowerPC.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_PVM3" id="b435.gromacs_DUSE_PVM3">-DUSE_PVM3</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_PVM3(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use PVM for parallel runs.  This is no longer supported.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_SGI_FPE" id="b435.gromacs_DUSE_SGI_FPE">-DUSE_SGI_FPE</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_SGI_FPE(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use SGI extensions to catch floating point exceptions.  This part is
+disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_THREADS" id="b435.gromacs_DUSE_THREADS">-DUSE_THREADS</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_THREADS(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Development/hacking flag to enable threads. Not used.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_VECTOR" id="b435.gromacs_DUSE_VECTOR">-DUSE_VECTOR</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_VECTOR(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Optimize inner loops for a vector architecture. Not used.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_X86TRUNC" id="b435.gromacs_DUSE_X86TRUNC">-DUSE_X86TRUNC</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_X86TRUNC(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use x86 inline assembly truncation.  This part is disabled in the SPEC
+code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_X86_SSE2" id="b435.gromacs_DUSE_X86_SSE2">-DUSE_X86_SSE2</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_X86_SSE2(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use x86 SSE2 double precision assembly inner loops.  This part is
+disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_X86_SSE_AND_3DNOW" id="b435.gromacs_DUSE_X86_SSE_AND_3DNOW">-DUSE_X86_SSE_AND_3DNOW</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_X86_SSE_AND_3DNOW(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use x86 SSE and AMD 3DNow single precision assembly loops.  This part
+is disabled in the SPEC code.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DUSE_XDR" id="b435.gromacs_DUSE_XDR">-DUSE_XDR</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DUSE_XDR(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Use XDR format for portable input/output files.  This is always enabled
+now.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DVECTORIZATION_BUFLENGTH" id="b435.gromacs_DVECTORIZATION_BUFLENGTH">-DVECTORIZATION_BUFLENGTH</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DVECTORIZATION_BUFLENGTH(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Size of the buffers used for vectorized innerloops on some
+architectures. All the DVECTORIZE_INVSQRT... defines below control
+which inner loops were vectorized.  This code is disabled in the SPEC
+version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DVECTORIZE_INVSQRT" id="b435.gromacs_DVECTORIZE_INVSQRT">-DVECTORIZE_INVSQRT</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DVECTORIZE_INVSQRT(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+See above.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DVECTORIZE_INVSQRT_S" id="b435.gromacs_DVECTORIZE_INVSQRT_S">-DVECTORIZE_INVSQRT_S</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DVECTORIZE_INVSQRT_S(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+See above.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DVECTORIZE_INVSQRT_W" id="b435.gromacs_DVECTORIZE_INVSQRT_W">-DVECTORIZE_INVSQRT_W</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DVECTORIZE_INVSQRT_W(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+See above.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DVECTORIZE_INVSQRT_WW" id="b435.gromacs_DVECTORIZE_INVSQRT_WW">-DVECTORIZE_INVSQRT_WW</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DVECTORIZE_INVSQRT_WW(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+See above.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DVECTORIZE_RECIP" id="b435.gromacs_DVECTORIZE_RECIP">-DVECTORIZE_RECIP</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DVECTORIZE_RECIP(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Vectorize the 1/x reciprocal in the inner loops.  This code is disabled
+in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DWIN32" id="b435.gromacs_DWIN32">-DWIN32</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DWIN32(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when running on native 32-bit MS windows, used for alternative header
+includes.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DWIN64" id="b435.gromacs_DWIN64">-DWIN64</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DWIN64(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when running on native 64-bit MS windows, used for alternative
+header includes.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_DWITHOUT_FFTW" id="b435.gromacs_DWITHOUT_FFTW">-DWITHOUT_FFTW</a></li>
+<li class="flagDescRE"><span class="tt">[-/]DWITHOUT_FFTW(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when we are compiling without the FFTW library (which is
+normally the case for the SPEC version).
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D_386_" id="b435.gromacs_D_386_">-D_386_</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_386_(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the CPU is an x86.  This code has been disabled in the SPEC
+version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D_3dview_h" id="b435.gromacs_D_3dview_h">-D_3dview_h</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_3dview_h(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D_PI" id="b435.gromacs_D_PI">-D_PI</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_PI(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+If M_PI isn't set to the value of math PI, we try to set it from _PI
+if available, or eventually define it ourselves
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D_SPECIAL_VAR_ARG" id="b435.gromacs_D_SPECIAL_VAR_ARG">-D_SPECIAL_VAR_ARG</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_SPECIAL_VAR_ARG(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Some old compilers did not understand standard ANSI variable
+argument functions, and this is a workaround. It will not affect any
+modern compiler, and is disabled by default.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D_WIN32" id="b435.gromacs_D_WIN32">-D_WIN32</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_WIN32(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when native 32-bit MS windows is used. Only used to include
+alternative headers for portability.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D_WIN64" id="b435.gromacs_D_WIN64">-D_WIN64</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_WIN64(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when native 64-bit MS windows is used. Only used to include
+alternative headers for portability.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__386__" id="b435.gromacs_D__386__">-D__386__</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__386__(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the CPU is an x86.  This code has been disabled in the SPEC
+version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__CYGWIN32__" id="b435.gromacs_D__CYGWIN32__">-D__CYGWIN32__</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__CYGWIN32__(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when CYGWIN under windows is used. Only used to include
+alternative headers for portability.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__CYGWIN__" id="b435.gromacs_D__CYGWIN__">-D__CYGWIN__</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__CYGWIN__(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when CYGWIN under windows is used. Only used to include
+alternative headers for portability.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__GENERAL__" id="b435.gromacs_D__GENERAL__">-D__GENERAL__</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__GENERAL__(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+mdrun/general.h is a completely deprecated file (it was used with
+early dedicated hardware). It is not used, and not included by any
+other file.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__GNUC__" id="b435.gromacs_D__GNUC__">-D__GNUC__</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__GNUC__(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the GCC compiler is used.  This code has been disabled in
+the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__PGI" id="b435.gromacs_D__PGI">-D__PGI</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__PGI(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the Portland compiler is used.  This code has been
+disabled in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__STDC__" id="b435.gromacs_D__STDC__">-D__STDC__</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__STDC__(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Not used in my codebase, but it is defined when using an ANSI C compiler.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_D__sgi" id="b435.gromacs_D__sgi">-D__sgi</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D__sgi(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined on SGI systems, used to enable floating point exception
+checks.  This code has been disabled in the SPEC version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_header_guard" id="b435.gromacs_header_guard">
+-D_binio_h,
+-D_bondf_h,
+-D_buffer_h,
+-D_calch_h,
+-D_calcmu_h,
+-D_callf77_h,
+-D_comlib_h,
+-D_complex_h,
+-D_comtest_h,
+-D_confio_h,
+-D_copyrite_h,
+-D_delay_h,
+-D_detectcpu_h,
+-D_disre_h,
+-D_do_fit_h,
+-D_do_md_h,
+-D_do_nm_h,
+-D_dummies_h,
+-D_ebin_h,
+-D_edsam_h,
+-D_enxio_h,
+-D_ewald_h,
+-D_ewald_util_h,
+-D_fatal_h,
+-D_fftgrid_h,
+-D_fftw_wrapper_h,
+-D_filenm_h,
+-D_force_h,
+-D_futil_h,
+-D_genalg_h,
+-D_gmx_system_xdr_h,
+-D_gmxfio_h,
+-D_grompp_h,
+-D_gstat_h,
+-D_idef_h,
+-D_ifunc_h,
+-D_init_h,
+-D_inner_h,
+-D_invblock_h,
+-D_ionize_h,
+-D_list_h,
+-D_macros_h,
+-D_main_h,
+-D_maths_h,
+-D_matio_h,
+-D_mdatom_h,
+-D_mdatoms_h,
+-D_mdebin_h,
+-D_mdrun_h,
+-D_memdump_h,
+-D_memtab_h,
+-D_memtest_h,
+-D_metacode_h,
+-D_mshift_h,
+-D_mvdata_h,
+-D_names_h,
+-D_network_h,
+-D_nhash_h,
+-D_nr_h,
+-D_nrama_h,
+-D_nrjac_h,
+-D_nrnb_h,
+-D_ns_h,
+-D_nsb_h,
+-D_nsgrid_h,
+-D_orires_h,
+-D_pbc_h,
+-D_pdbio_h,
+-D_pdebug_h,
+-D_physics_h,
+-D_pme_h,
+-D_poisson_h,
+-D_pppm_h,
+-D_princ_h,
+-D_pull_h,
+-D_pull_internal_h,
+-D_random_h,
+-D_rbin_h,
+-D_rdgroup_h,
+-D_readcomp_h,
+-D_readinp_h,
+-D_renum_h,
+-D_reorder_h,
+-D_replace_h,
+-D_rmpbc_h,
+-D_rwtop_h,
+-D_sheader_h,
+-D_shift_h,
+-D_shift_util_h,
+-D_sim_util_h,
+-D_simple_h,
+-D_smalloc_h,
+-D_sortwater_h,
+-D_split_h,
+-D_statusio_h,
+-D_statutil_h,
+-D_strdb_h,
+-D_string2_h,
+-D_struc2_h,
+-D_superb_h,
+-D_symtab_h,
+-D_sync_h,
+-D_synclib_h,
+-D_sysstuff_h,
+-D_systest_h,
+-D_tags_h,
+-D_tgroup_h,
+-D_tpxio_h,
+-D_transfer_h,
+-D_trnio_h,
+-D_txtdump_h,
+-D_typedefs_h,
+-D_update_h,
+-D_utils_h,
+-D_vcm_h,
+-D_vec_h,
+-D_viewit_h,
+-D_vveclib_h,
+-D_wgms_h,
+-D_wman_h,
+-D_wnblist_h,
+-D_writeps_h,
+-D_xdrf_h,
+-D_xmdrun_h,
+-D_xtcio_h,
+-D_xvgr_h
+</a></li>
+<li class="flagDescRE"><span class="tt">[-/]D_(?:binio|bondf|buffer|calch|calcmu|callf77|comlib|complex|comtest|confio|copyrite|delay|detectcpu|disre|do_fit|do_md|do_nm|dummies|ebin|edsam|enxio|ewald|ewald_util|fatal|fftgrid|fftw_wrapper|filenm|force|futil|genalg|gmx_system_xdr|gmxfio|grompp|gstat|idef|ifunc|init|inner|invblock|ionize|list|macros|main|maths|matio|mdatom|mdatoms|mdebin|mdrun|memdump|memtab|memtest|metacode|mshift|mvdata|names|network|nhash|nr|nrama|nrjac|nrnb|ns|nsb|nsgrid|orires|pbc|pdbio|pdebug|physics|pme|poisson|pppm|princ|pull|pull_internal|random|rbin|rdgroup|readcomp|readinp|renum|reorder|replace|rmpbc|rwtop|sheader|shift|shift_util|sim_util|simple|smalloc|sortwater|split|statusio|statutil|strdb|string2|struc2|superb|symtab|sync|synclib|sysstuff|systest|tags|tgroup|tpxio|transfer|trnio|txtdump|typedefs|update|utils|vcm|vec|viewit|vveclib|wgms|wman|wnblist|writeps|xdrf|xmdrun|xtcio|xvgr)_h(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+These macros are standard C duplicate-include guards for
+the corresponding header files.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_Deven" id="b435.gromacs_Deven">-Deven</a></li>
+<li class="flagDescRE"><span class="tt">[-/]Deven(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Macro to check if a number is even.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_Dfclose" id="b435.gromacs_Dfclose">-Dfclose</a></li>
+<li class="flagDescRE"><span class="tt">[-/]Dfclose(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Some old compilers had a macro clashing with the ANSI C fclose()
+function, so to make sure we #undef it if necessary.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_Di386" id="b435.gromacs_Di386">-Di386</a></li>
+<li class="flagDescRE"><span class="tt">[-/]Di386(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Defined when the CPU is an x86.  This code has been disabled in the SPEC
+version.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_Dmax" id="b435.gromacs_Dmax">-Dmax</a></li>
+<li class="flagDescRE"><span class="tt">[-/]Dmax(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Macro for a max(a,b) function.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_Dmin" id="b435.gromacs_Dmin">-Dmin</a></li>
+<li class="flagDescRE"><span class="tt">[-/]Dmin(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Macro for a min(a,b) function.
+</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<div class="flagDesc">
+<ul class="flagDesc">
+<li class="flagName"><a name="b435.gromacs_Drewind" id="b435.gromacs_Drewind">-Drewind</a></li>
+<li class="flagDescRE"><span class="tt">[-/]Drewind(?:=\S*)?\b</span></li>
+<li class="descText">
+<p>
+Some old compilers had a macro clashing with the ANSI C rewind()
+function, so to make sure we #undef it if necessary.
+</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+
+</div>
+<hr />
+</body>
+</html>

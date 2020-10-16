@@ -1,0 +1,2450 @@
+C 19 NOV 00 - MWS - N31G: RETURN NORMALIZED CXINP COEFS
+C 13 FEB 99 - AY  - 6-31 ADDED FOR K-ZN
+C 12 MAR 92 - MWS - REDIMENSION TO 500 ATOMS
+C 12 SEP 90 - MWS - INTRODUCE MXATM
+C  7 AUG 90 - TLW - ADD CF AND CG TO COMMON NSHEL
+C 10 MAY 90 - MWS - CHANGE CALLING ARGUMENTS TO N31G
+C 27 FEB 89 - STE - N31G: REWORK CONTRACTION NORMALIZATION
+C 10 AUG 88 - MWS - MXSH,MXGSH,MXGTOT FROM 120,10,440 TO 1000,30,5000
+C 30 MAY 88 - MWS - USE PARAMETERS TO DIMENSION COMMON
+C  7 JUL 86 - JAB - SANITIZE FLOATING POINT CONSTANTS
+C 13 OCT 85 - STE - SFN31: NUCS SHOULD BE NUCZ (TYPO); GENERIC SQRT
+C  9 AUG 85 - MWS - DELETE CON31G, RENAME EZERO... TO N31ONE...
+C 15 APR 85 - MWS - ALL AVAILABLE POPLE N-31G BASES INCLUDED.
+C 10 APR 85 - MWS - CHANGE ITYP TO MATCH CHANGES IN ROUTINE ATOMS,
+C                   NEW FUNCTION SFN31 ADDED.
+C 20 AUG 84 - MWS - FIX CS2(6) FOR SI IN ETWO (MSG PAPER WAS WRONG)
+C  6 JUL 84 - STE - DELETE COEONE,COETWO,COEZER, USE EONE...
+C 18 JAN 84 - STE - FIX DIMENSION OF CCO IN /INFCO/ IN CON31G
+C  6 JUL 83 - KKD - 6-31G NA-AR ADDED
+C 23 JUN 83 - MWS - BREAK UP BASIS SET SECTION-- N-31G BASIS SETS
+C 28 NOV 82 - MWS - FIX SUBSCRIPTS FOR P,S IN DTWO
+C  3 OCT 82 - MWS,NDSU - CONVERT FOR IBM
+C
+C*MODULE BASN31  *DECK N31G
+      SUBROUTINE N31G(NUCZ,IGAUSS,CSINP,CPINP,CDINP,SCFAC,IERR1,IERR2,
+     +                INTYP,NANGM,NBFS,MINF,MAXF,LOC,NGAUSS,NS)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION CSINP(*),CPINP(*),CDINP(*),SCFAC(*),
+     *          INTYP(*),NANGM(*),NBFS(*),MINF(*),MAXF(*),NS(*)
+      DIMENSION E1(6),E2(6),E3(6),E4(6),E123(24),CS1(6),CS2(6),CS3(6),
+     *          CS4(6),CS123(24),CP2(6),CP3(6),CP4(6),CP23(24),SCALF(5),
+     *          ED(6),DD(6)
+C
+      PARAMETER (MXSH=1000, MXGTOT=5000, MXATM=500)
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, PT5=0.5D+00, PT75=0.75D+00)
+      PARAMETER (PI32=5.56832799683170D+00, TOL=1.0D-10)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+C
+      EQUIVALENCE (E123(1),E1(1)),(CS123(1),CS1(1)),
+     *            (E123(7),E2(1)),(CS123(7),CS2(1)),(CP23(7),CP2(1)),
+     *            (E123(13),E3(1)),(CS123(13),CS3(1)),(CP23(13),CP3(1)),
+     *            (E123(19),E4(1)),(CS123(19),CS4(1)),(CP23(19),CP4(1))
+C
+      IGSV=IGAUSS
+C
+C     ----- SET UP THE N-31G BASIS SET -----
+C     J.CHEM.PHYS. 54,  724- 728 (1971)    -31G FOR H
+C                                         4-31G FOR C,N,O,F
+C                  56, 2257-2261 (1972) 5,6-31G FOR C,N,O,F
+C                  56, 4233-4234 (1972)   4-31G FOR B
+C                  62, 2921-2923 (1975) 4,6-31G FOR LI
+C                                         6-31G FOR B
+C                  66,  879- 880 (1977) 4,6-31G FOR BE
+C                  66,  879- 880 (1977)   6-31G FOR BE
+C                  56, 5255-5257 (1972)   4-31G FOR P,S,CL
+C                  77, 3654-3665 (1982)   6-31G FOR NA,MG,AL,P-AR
+C                 109, 1223-1229 (1998)   6-31G FOR K-ZN
+C  CHEM.PHYS.LETT. 76,  163- 168 (1980)   6-31G FOR SI
+C     -31G FOR HE AND 4,6-31G FOR NE ARE APPARENTLY UNPUBLISHED.
+C     THESE BASIS SETS WERE TAKEN DIRECTLY FROM GAUSSIAN 82.
+C
+C     4-31G AVAILABLE FOR H-HE, LI-NE, P-CL
+C           NOTE THAT 4-31G FOR LI AND BE IS ACTUALLY 5-21G
+C     5-31G AVAILABLE FOR H-HE, C-F.
+C     6-31G AVAILABLE FOR H-HE, LI-NE, NA-AR, K-ZN.
+C
+      DO 100 I = 1,24
+         E123(I) = ZERO
+         CS123(I) = ZERO
+         CP23(I) = ZERO
+  100 CONTINUE
+      DO 110 K = 1,6
+         ED(K) = ZERO
+         DD(K) = ZERO
+  110 CONTINUE
+C
+C     ----- H,HE -----
+C
+      IF (NUCZ .GT. 2) GO TO 120
+      CALL N31ONE(E1,CS1,NUCZ)
+      SCALF(1) = ZERO
+      SCALF(2) = ZERO
+      SCALF(3) = ZERO
+      SCALF(4) = SCFAC(1)
+      SCALF(5) = SCFAC(2)
+      GO TO 160
+C
+C     ----- LI-NE -----
+C
+  120 IF (NUCZ .GT. 10) GO TO 140
+      CALL N31TWO(E1,E2,CS1,CS2,CP2,IGAUSS,NUCZ)
+      SCALF(1) = ZERO
+      SCALF(2) = ZERO
+      SCALF(3) = SCFAC(1)
+      SCALF(4) = SCFAC(2)
+      SCALF(5) = SCFAC(3)
+      IF (SCALF(3) .EQ. ZERO) SCALF(3) = ONE
+      GO TO 160
+C
+C     ----- NA-AR -----
+C
+  140 IF (NUCZ .GT. 18) GO TO 150
+      CALL N31THR(E1,E2,E3,CS1,CS2,CS3,CP2,CP3,IGAUSS,NUCZ)
+      SCALF(1) = ZERO
+      SCALF(2) = SCFAC(1)
+      SCALF(3) = SCFAC(2)
+      SCALF(4) = SCFAC(3)
+      SCALF(5) = SCFAC(4)
+      IF (SCALF(2) .EQ. ZERO) SCALF(2) = ONE
+      IF (SCALF(3) .EQ. ZERO) SCALF(3) = ONE
+      GO TO 160
+C
+C     ----- K-ZN ------
+C
+  150 IF (NUCZ .GT. 30) CALL BERROR(2)
+      CALL N31FOU(E1,E2,E3,CS1,CS2,CS3,CP2,CP3,E4,CS4,CP4,
+     *            ED,DD,IGAUSS,NUCZ)
+      SCALF(1) = SCFAC(1)
+      SCALF(2) = SCFAC(2)
+      SCALF(3) = SCFAC(3)
+      SCALF(4) = ONE
+      SCALF(5) = ONE
+      IF (SCALF(1) .EQ. ZERO) SCALF(1) = ONE
+      IF (SCALF(2) .EQ. ZERO) SCALF(2) = ONE
+      IF (SCALF(3) .EQ. ZERO) SCALF(3) = ONE
+C
+C     ----- PROVIDE DEFAULT VALENCE SCALE FACTORS FOR H-AR -----
+C
+  160 CONTINUE
+      IF (SCALF(4) .EQ. ZERO) SCALF(4) = SFN31(NUCZ,1,IGAUSS)
+      IF (SCALF(5) .EQ. ZERO) SCALF(5) = SFN31(NUCZ,2,IGAUSS)
+C
+C     ----- LOOP OVER 2,3, OR 4 SHELLS. -----
+C
+      IPASS = 0
+  180 IPASS = IPASS+1
+C
+C     ----- H,HE -----
+C
+      IF (NUCZ .GT. 2) GO TO 210
+      GO TO (180,180,180,190,200),IPASS
+  190 ITYP = 1
+      IGAUSS = 3
+      IG = 0
+      GO TO 420
+  200 ITYP = 1
+      IGAUSS = 1
+      IG = 3
+      GO TO 420
+C
+C     ----- LI-NE -----
+C     NOTE THAT 4-31G FOR LI AND BE IS ACTUALLY A 5-21G SET
+C
+  210 IF (NUCZ .GT. 10) GO TO 250
+      GO TO (180,180,220,230,240),IPASS
+  220 ITYP = 1
+      IG = 0
+      IF(NUCZ.EQ.3  .AND.  IGSV.EQ.4) IGAUSS=5
+      IF(NUCZ.EQ.4  .AND.  IGSV.EQ.4) IGAUSS=5
+      GO TO 420
+  230 ITYP = 6
+      IGAUSS = 3
+      IF(NUCZ.EQ.3  .AND.  IGSV.EQ.4) IGAUSS=2
+      IF(NUCZ.EQ.4  .AND.  IGSV.EQ.4) IGAUSS=2
+      IG = 6
+      GO TO 420
+  240 ITYP = 6
+      IGAUSS = 1
+      IG = 9
+      GO TO 420
+C
+C     ----- NA-AR -----
+C
+  250 IF (NUCZ .GT. 18) GO TO 300
+      GO TO (180,260,270,280,290),IPASS
+  260 ITYP = 1
+      IG = 0
+      GO TO 420
+  270 ITYP = 6
+      IG = 6
+      GO TO 420
+  280 ITYP = 6
+      IGAUSS = 3
+      IG = 12
+      GO TO 420
+  290 ITYP = 6
+      IGAUSS = 1
+      IG = 15
+      GO TO 420
+C
+C     ----- K-ZN ------
+C
+  300 IF (NUCZ .GT. 30) CALL BERROR(2)
+      GO TO (310,320,330,340,350),IPASS
+  310 ITYP = 1
+      IG = 0
+      GO TO 420
+  320 ITYP = 6
+      IG = 6
+      GO TO 420
+  330 ITYP = 6
+      IG = 12
+      GO TO 420
+  340 ITYP = 6
+      IGAUSS = 3
+      IG = 18
+      GO TO 420
+  350 ITYP = 6
+      IGAUSS = 1
+      IG = 21
+C
+  420 CONTINUE
+      NSHELL = NSHELL+1
+      IF(NSHELL.GT.MXSH) THEN
+         IERR1=1
+         RETURN
+      END IF
+      NS(NAT) = NS(NAT)+1
+      KMIN(NSHELL) = MINF(ITYP)
+      KMAX(NSHELL) = MAXF(ITYP)
+      KSTART(NSHELL) = NGAUSS+1
+      KATOM(NSHELL) = NAT
+      KTYPE(NSHELL) = NANGM(ITYP)
+      INTYP(NSHELL) = ITYP
+      KNG(NSHELL) = IGAUSS
+      KLOC(NSHELL) = LOC+1
+      NGAUSS = NGAUSS+IGAUSS
+      IF(NGAUSS.GT.MXGTOT) THEN
+         IERR2=1
+         RETURN
+      END IF
+      LOC = LOC+NBFS(ITYP)
+      K1 = KSTART(NSHELL)
+      K2 = K1+KNG(NSHELL)-1
+      DO 440 I = 1,IGAUSS
+         K = K1+I-1
+         EX(K) = E123(IG+I)*SCALF(IPASS)**2
+         CSINP(K) = CS123(IG+I)
+         CPINP(K) = CP23(IG+I)
+         CS(K) = CSINP(K)
+         CP(K) = CPINP(K)
+  440 CONTINUE
+C
+C     ----- ALWAYS UNNORMALIZE PRIMITIVES -----
+C
+      DO 460 K = K1,K2
+         EE = EX(K)+EX(K)
+         FACS = PI32/(EE*SQRT(EE))
+         FACP = PT5*FACS/EE
+         CS(K) = CS(K)/SQRT(FACS)
+         CP(K) = CP(K)/SQRT(FACP)
+  460 CONTINUE
+C
+C     ----- IF(NORMF.EQ.0) NORMALIZE BASIS FUNCTIONS. -----
+C
+      IF (NORMF .EQ. 1) GO TO 540
+      FACS = ZERO
+      FACP = ZERO
+      DO 510 IG = K1,K2
+         DO 500 JG = K1,IG
+            EE = EX(IG)+EX(JG)
+            FAC = EE*SQRT(EE)
+            DUMS = CS(IG)*CS(JG)/FAC
+            DUMP = PT5*CP(IG)*CP(JG)/(EE*FAC)
+            IF (IG .EQ. JG) GO TO 480
+               DUMS = DUMS+DUMS
+               DUMP = DUMP+DUMP
+  480       CONTINUE
+            FACS = FACS+DUMS
+            FACP = FACP+DUMP
+  500    CONTINUE
+  510 CONTINUE
+      IF (FACS .GT. TOL) FACS = ONE/SQRT(FACS*PI32)
+      IF (FACP .GT. TOL) FACP = ONE/SQRT(FACP*PI32)
+      DO 520 IG = K1,K2
+         CS(IG)    = CS(IG)    * FACS
+         CP(IG)    = CP(IG)    * FACP
+         CSINP(IG) = CSINP(IG) * FACS
+         CPINP(IG) = CPINP(IG) * FACP
+  520 CONTINUE
+C
+  540 CONTINUE
+      IF (IPASS .LT. 5) GO TO 180
+C
+C     ----- D-ORBITAL. -----
+C
+      IF (NUCZ .LT. 21) GO TO 700
+      IPASSD = 0
+  560 IPASSD = IPASSD+1
+C
+C     ----- SC-ZN -----
+C
+      GO TO (570,580),IPASSD
+  570 ITYP = 3
+      IGAUSS = 3
+      IG = 0
+      GO TO 590
+  580 ITYP = 3
+      IGAUSS = 1
+      IG = 3
+C
+  590 CONTINUE
+      NSHELL = NSHELL+1
+      IF(NSHELL.GT.MXSH) THEN
+         IERR1=1
+         RETURN
+      END IF
+      NS(NAT) = NS(NAT)+1
+      KMIN(NSHELL) = MINF(ITYP)
+      KMAX(NSHELL) = MAXF(ITYP)
+      KSTART(NSHELL) = NGAUSS+1
+      KATOM(NSHELL) = NAT
+      KTYPE(NSHELL) = NANGM(ITYP)
+      INTYP(NSHELL) = ITYP
+      KNG(NSHELL) = IGAUSS
+      KLOC(NSHELL) = LOC+1
+      NGAUSS = NGAUSS+IGAUSS
+      IF(NGAUSS.GT.MXGTOT) THEN
+         IERR2=1
+         RETURN
+      END IF
+      LOC = LOC+NBFS(ITYP)
+      K1 = KSTART(NSHELL)
+      K2 = K1+KNG(NSHELL)-1
+      DO 600 I = 1,IGAUSS
+         K = K1+I-1
+         EX(K) = ED(IG+I)
+         CDINP(K) = DD(IG+I)
+         CD(K) = CDINP(K)
+  600 CONTINUE
+C
+C     ----- ALWAYS UNNORMALIZE PRIMITIVES -----
+C
+      DO 610 K = K1,K2
+         EE = EX(K)+EX(K)
+         FACS = PI32/(EE*SQRT(EE))
+         FACD = PT75*FACS/(EE*EE)
+         CD(K) = CD(K)/SQRT(FACD)
+  610 CONTINUE
+C
+C     ----- IF(NORMF.EQ.0) NORMALIZE BASIS FUNCTIONS. -----
+C
+      IF (NORMF .EQ. 1) GO TO 660
+      FACD = ZERO
+      DO 640 IG = K1,K2
+         DO 630 JG = K1,IG
+            EE = EX(IG)+EX(JG)
+            FAC = EE*SQRT(EE)
+            DUMD = PT75*CD(IG)*CD(JG)/(EE*EE*FAC)
+            IF (IG .EQ. JG) GO TO 620
+               DUMD = DUMD+DUMD
+  620       CONTINUE
+            FACD = FACD+DUMD
+  630    CONTINUE
+  640 CONTINUE
+      IF (FACD .GT. TOL) FACD = ONE/SQRT(FACD*PI32)
+      DO 650 IG = K1,K2
+         CD(IG)    = CD(IG)    * FACD
+         CDINP(IG) = CDINP(IG) * FACD
+  650 CONTINUE
+C
+  660 CONTINUE
+      IF (IPASSD .LT. 2) GO TO 560
+  700 CONTINUE
+      RETURN
+      END
+C*MODULE BASN31  *DECK SFN31
+      DOUBLE PRECISION FUNCTION SFN31(NUCZ,ISHELL,IGAUSS)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DIMENSION SCALE(2,18)
+C       INNER/OUTER VALENCE SCALE FACTORS FOR
+C                       H             HE             LI
+C                      BE              B              C
+C                       N              O              F
+C                      NE         NA-AR
+      DATA SCALE/
+     *       1.20D+00,1.15D+00, 1.00D+00,1.00D+00, 1.03D+00,1.12D+00,
+     *       1.03D+00,1.12D+00, 1.03D+00,1.12D+00, 1.00D+00,1.04D+00,
+     *       0.99D+00,0.98D+00, 0.99D+00,0.98D+00, 1.00D+00,1.00D+00,
+     *       1.00D+00,1.00D+00, 16*1.0D+00/
+C
+      IF(NUCZ.LE.0) CALL ABRT
+      IF(NUCZ.GT.30) CALL ABRT
+      SFN31 = SCALE(ISHELL,NUCZ)
+      IF(IGAUSS.NE.4) RETURN
+      IF(NUCZ.EQ.15  .AND.  ISHELL.EQ.1) SFN31=0.98D+00
+      IF(NUCZ.EQ.15  .AND.  ISHELL.EQ.2) SFN31=1.02D+00
+      IF(NUCZ.EQ.16  .AND.  ISHELL.EQ.1) SFN31=0.98D+00
+      IF(NUCZ.EQ.16  .AND.  ISHELL.EQ.2) SFN31=1.01D+00
+      IF(NUCZ.EQ.17  .AND.  ISHELL.EQ.1) SFN31=1.00D+00
+      IF(NUCZ.EQ.17  .AND.  ISHELL.EQ.2) SFN31=1.01D+00
+      RETURN
+      END
+C*MODULE BASN31  *DECK N31ONE
+      SUBROUTINE N31ONE(E1,CS1,IA)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION E1(6),CS1(6)
+C        *****  ENERGY OPTIMIZED 31G BASIS FOR HYDROGEN         *****
+C        *****  -31G EXPANSIONS                                 *****
+C        *****  COMPATIBLE WITH 4-31G 5-31G AND 6-31G SERIES    *****
+      GO TO (100,200), IA
+C        *****  HYDROGEN                                        *****
+  100 CONTINUE
+      E1(1) = 1.300773400D+01
+      CS1(1) = 3.349460434D-02
+      E1(2) = 1.962079420D+00
+      CS1(2) = 2.347269535D-01
+      E1(3) = 4.445289530D-01
+      CS1(3) = 8.137573262D-01
+      E1(4) = 1.219491560D-01
+      CS1(4) = 1.000000000D+00
+      RETURN
+C        ***** HELIUM
+  200 CONTINUE
+      E1(1)=38.421634D+00
+      CS1(1)= .023766D+00
+      E1(2)=5.77803D+00
+      CS1(2)= .154679D+00
+      E1(3)=1.241774D+00
+      CS1(3)= .469630D+00
+      E1(4)= .297964D+00
+      CS1(4)=1.0D+00
+      RETURN
+      END
+C*MODULE BASN31  *DECK N31TWO
+      SUBROUTINE N31TWO(E1,E2,CS1,CS2,CP2,NGAUSS,IA)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C        *****  ENERGY OPTIMIZED 4-31G 5-31G AND 6-31G BASES    *****
+      DIMENSION E1(6),E2(6),CS1(6),CS2(6),CP2(6)
+      GO TO (1200,1200,300,400,500,600,700,800,900,1000),IA
+C        *****  LITHIUM                                         *****
+  300 GO TO (310,320,330,340,350,360), NGAUSS
+  310 CALL BERROR(2)
+  320 CALL BERROR(2)
+  330 CALL BERROR(2)
+  340 CONTINUE
+C        *****  4-31G (ACTUALLY 5-21G)
+      E1(1)=.275394444D+03
+      CS1(1)=.612184691D-02
+      E1(2)=.414351754D+02
+      CS1(2)=.451129615D-01
+      E1(3)=.936699378D+01
+      CS1(3)=.192694150D+00
+      E1(4)=.253772533D+01
+      CS1(4)=.468544208D+00
+      E1(5)=.746636540D+00
+      CS1(5)=.440607515D+00
+      E2(1)=0.692397267D+00
+      CS2(1)=-0.252536797D+00
+      CP2(1)= 0.143591732D+00
+      E2(2)=0.821924442D-01
+      CS2(2)=0.109734080D+01
+      CP2(2)=0.947803050D+00
+      E2(4)=0.322374501D-01
+      CS2(4)=1.0D+00
+      CP2(4)=1.0D+00
+      RETURN
+  350 CALL BERROR(2)
+C        *****  6-31G                                           *****
+  360 CONTINUE
+      E1(1)=6.42418915D+02
+      CS1(1)=2.14260781D-03
+      E1(2)=9.67985153D+01
+      CS1(2)=1.62088715D-02
+      E1(3)=2.20911212D+01
+      CS1(3)=7.73155725D-02
+      E1(4)=6.20107025D+00
+      CS1(4)=2.45786052D-01
+      E1(5)=1.93511768D+00
+      CS1(5)=4.70189004D-01
+      E1(6)=6.36735789D-01
+      CS1(6)=3.45470845D-01
+      E2(1)=2.19145858D+00
+      CS2(1)=-3.50917459D-02
+      CP2(1)=8.94150804D-03
+      E2(2)=5.96126266D-01
+      CS2(2)=-1.91232844D-01
+      CP2(2)=1.41009464D-01
+      E2(3)=7.45154442D-02
+      CS2(3)=1.08398780D+00
+      CP2(3)=9.45363695D-01
+      E2(4)=2.86686637D-02
+      CS2(4)=1.00000000D+00
+      CP2(4)=1.00000000D+00
+      RETURN
+C        *****  BERYLLIUM                                       *****
+  400 GO TO (410,420,430,440,450,460), NGAUSS
+  410 CALL BERROR(2)
+  420 CALL BERROR(2)
+  430 CALL BERROR(2)
+  440 CONTINUE
+C       ***** 4-31G (ACTUALLY A 5-21G SET)
+      E1(1)=554.010D+00
+      E1(2)=83.2631D+00
+      E1(3)=18.8635D+00
+      E1(4)=5.17782D+00
+      E1(5)=1.55602D+00
+      CS1(1)=.00540997D+00
+      CS1(2)=.0402515D+00
+      CS1(3)=.176858D+00
+      CS1(4)=.452559D+00
+      CS1(5)=.470293D+00
+      E2(1)=1.35899D+00
+      E2(2)=.284533D+00
+      CS2(1)=-.477429D+00
+      CS2(2)=1.24745D+00
+      CP2(1)=.201142D+00
+      CP2(2)=.884483D+00
+      E2(4)=.0804858D+00
+      CS2(4)=.100000000D+01
+      CP2(4)=.100000000D+01
+      RETURN
+  450 CALL BERROR(2)
+  460 CONTINUE
+C        *****  6-31G                                          *****
+      E1(1)=1.26458569D+03
+      CS1(1)=1.94475759D-03
+      E1(2)=1.89936806D+02
+      CS1(2)=1.48350520D-02
+      E1(3)=4.31590890D+01
+      CS1(3)=7.20905463D-02
+      E1(4)=1.20986627D+01
+      CS1(4)=2.37154150D-01
+      E1(5)=3.80632322D+00
+      CS1(5)=4.69198652D-01
+      E1(6)=1.27289030D+00
+      CS1(6)=3.56520228D-01
+      E2(1)=3.01297304D+00
+      CS2(1)=-.112648729D+00
+      CP2(1)=0.0559801998D+00
+      E2(2)=0.704885761D+00
+      CS2(2)=-0.229506409D+00
+      CP2(2)=0.261550611D+00
+      E2(3)=0.207339363D+00
+      CS2(3)=1.18691677D+00
+      CP2(3)=0.793972339D+00
+      E2(4)=0.0656169489D+00
+      CS2(4)=1.00000000D+00
+      CP2(4)=1.00000000D+00
+      RETURN
+C        *****  BORON                                           *****
+  500 GO TO (510,520,530,540,550,560), NGAUSS
+  510 CALL BERROR(2)
+  520 CALL BERROR(2)
+  530 CALL BERROR(2)
+  540 CONTINUE
+C        *****  4-31G                                           *****
+      E1(1) = 3.307528520D+02
+      CS1(1) = 1.799417960D-02
+      E1(2) = 4.984386500D+01
+      CS1(2) = 1.246937000D-01
+      E1(3) = 1.111705350D+01
+      CS1(3) = 4.343353750D-01
+      E1(4) = 2.922724310D+00
+      CS1(4) = 5.609793740D-01
+      E2(1) = 5.355136790D+00
+      CS2(1) = -1.303870780D-01
+      CP2(1) = 6.374292250D-02
+      E2(2) = 1.370915820D+00
+      CS2(2) = -2.514343900D-01
+      CP2(2) = 2.761330530D-01
+      E2(3) = 4.037878930D-01
+      CS2(3) = 1.205129200D+00
+      CP2(3) = 7.773865960D-01
+      E2(4) = 1.149706420D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  550 CALL BERROR(2)
+  560 CONTINUE
+C        *****  6-31G                                           *****
+      E1(1)=2.06888225D+03
+      CS1(1)=1.86627459D-03
+      E1(2)=3.10649570D+02
+      CS1(2)=1.42514817D-02
+      E1(3)=7.06830330D+01
+      CS1(3)=6.95516185D-02
+      E1(4)=1.98610803D+01
+      CS1(4)=2.32572933D-01
+      E1(5)=6.29930484D+00
+      CS1(5)=4.67078712D-01
+      E1(6)=2.12702697D+00
+      CS1(6)=3.63431440D-01
+      E2(1)=4.45656619D+00
+      CS2(1)=-1.30393797D-01
+      CP2(1)=7.45975799D-02
+      E2(2)=1.12200748D+00
+      CS2(2)=-1.30788951D-01
+      CP2(2)=3.07846677D-01
+      E2(3)=3.387799820D-01
+      CS2(3)=1.13094448D+00
+      CP2(3)=7.43456834D-01
+      E2(4)=1.01045318D-01
+      CS2(4)=1.00000000D+00
+      CP2(4)=1.00000000D+00
+      RETURN
+C        *****  CARBON                                          *****
+  600 GO TO (610,620,630,640,650,660), NGAUSS
+  610 CALL BERROR(2)
+  620 CALL BERROR(2)
+  630 CALL BERROR(2)
+  640 CONTINUE
+C        *****  4-31G                                           *****
+      E1(1) = 4.869669280D+02
+      CS1(1) = 1.772582290D-02
+      E1(2) = 7.337109420D+01
+      CS1(2) = 1.234778670D-01
+      E1(3) = 1.641345790D+01
+      CS1(3) = 4.338754000D-01
+      E1(4) = 4.344983560D+00
+      CS1(4) = 5.615041970D-01
+      E2(1) = 8.673525310D+00
+      CS2(1) = -1.213837490D-01
+      CP2(1) = 6.354538410D-02
+      E2(2) = 2.096619260D+00
+      CS2(2) = -2.273384980D-01
+      CP2(2) = 2.982677570D-01
+      E2(3) = 6.046513290D-01
+      CS2(3) = 1.185173920D+00
+      CP2(3) = 7.621032280D-01
+      E2(4) = 1.697095320D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  650 CONTINUE
+C        *****  5-31G                                           *****
+      E1(1) = 1.264250200D+03
+      CS1(1) = 5.473495530D-03
+      E1(2) = 1.901442980D+02
+      CS1(2) = 4.079115360D-02
+      E1(3) = 4.312858670D+01
+      CS1(3) = 1.812203490D-01
+      E1(4) = 1.194438200D+01
+      CS1(4) = 4.634824780D-01
+      E1(5) = 3.651484710D+00
+      CS1(5) = 4.524711990D-01
+      E2(1) = 7.942730520D+00
+      CS2(1) = -1.207731490D-01
+      CP2(1) = 6.867749980D-02
+      E2(2) = 1.907237930D+00
+      CS2(2) = -1.697932090D-01
+      CP2(2) = 3.141028910D-01
+      E2(3) = 5.535773850D-01
+      CS2(3) = 1.149811710D+00
+      CP2(3) = 7.459685180D-01
+      E2(4) = 1.585119750D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  660 CONTINUE
+C        *****  6-31G                                           *****
+      E1(1) = 3.047524880D+03
+      CS1(1) = 1.834737130D-03
+      E1(2) = 4.573695180D+02
+      CS1(2) = 1.403732280D-02
+      E1(3) = 1.039486850D+02
+      CS1(3) = 6.884262220D-02
+      E1(4) = 2.921015530D+01
+      CS1(4) = 2.321844430D-01
+      E1(5) = 9.286662960D+00
+      CS1(5) = 4.679413480D-01
+      E1(6) = 3.163926960D+00
+      CS1(6) = 3.623119850D-01
+      E2(1) = 7.868272350D+00
+      CS2(1) = -1.193324200D-01
+      CP2(1) = 6.899906660D-02
+      E2(2) = 1.881288540D+00
+      CS2(2) = -1.608541520D-01
+      CP2(2) = 3.164239610D-01
+      E2(3) = 5.442492580D-01
+      CS2(3) = 1.143456440D+00
+      CP2(3) = 7.443082910D-01
+      E2(4) = 1.559860190D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+C        *****  NITROGEN                                        *****
+  700 GO TO (710,720,730,740,750,760), NGAUSS
+  710 CALL BERROR(2)
+  720 CALL BERROR(2)
+  730 CALL BERROR(2)
+  740 CONTINUE
+C        *****  4-31G                                           *****
+      E1(1) = 6.712795030D+02
+      CS1(1) = 1.759825110D-02
+      E1(2) = 1.012016620D+02
+      CS1(2) = 1.228462410D-01
+      E1(3) = 2.269996590D+01
+      CS1(3) = 4.337821410D-01
+      E1(4) = 6.040609000D+00
+      CS1(4) = 5.614182170D-01
+      E2(1) = 1.264524000D+01
+      CS2(1) = -1.174892990D-01
+      CP2(1) = 6.402034430D-02
+      E2(2) = 2.981719040D+00
+      CS2(2) = -2.139940160D-01
+      CP2(2) = 3.112025550D-01
+      E2(3) = 8.494317690D-01
+      CS2(3) = 1.174502110D+00
+      CP2(3) = 7.527482390D-01
+      E2(4) = 2.352813130D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  750 CONTINUE
+C        *****  5-31G                                           *****
+      E1(1) = 1.745284990D+03
+      CS1(1) = 5.421222340D-03
+      E1(2) = 2.625413270D+02
+      CS1(2) = 4.043458220D-02
+      E1(3) = 5.958251390D+01
+      CS1(3) = 1.804448930D-01
+      E1(4) = 1.654434660D+01
+      CS1(4) = 4.634396240D-01
+      E1(5) = 5.084876110D+00
+      CS1(5) = 4.526306780D-01
+      E2(1) = 1.194496010D+01
+      CS2(1) = -1.161469430D-01
+      CP2(1) = 6.732112530D-02
+      E2(2) = 2.800090140D+00
+      CS2(2) = -1.757313530D-01
+      CP2(2) = 3.221237760D-01
+      E2(3) = 7.981580700D-01
+      CS2(3) = 1.150529060D+00
+      CP2(3) = 7.421561640D-01
+      E2(4) = 2.235978380D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  760 CONTINUE
+C        *****  6-31G                                           *****
+      E1(1) = 4.173511460D+03
+      CS1(1) = 1.834772160D-03
+      E1(2) = 6.274579110D+02
+      CS1(2) = 1.399462700D-02
+      E1(3) = 1.429020930D+02
+      CS1(3) = 6.858655180D-02
+      E1(4) = 4.023432930D+01
+      CS1(4) = 2.322408730D-01
+      E1(5) = 1.282021290D+01
+      CS1(5) = 4.690699480D-01
+      E1(6) = 4.390437010D+00
+      CS1(6) = 3.604551990D-01
+      E2(1) = 1.186242410D+01
+      CS2(1) = -1.149611820D-01
+      CP2(1) = 6.757974390D-02
+      E2(2) = 2.771431290D+00
+      CS2(2) = -1.691174790D-01
+      CP2(2) = 3.239072960D-01
+      E2(3) = 7.878975580D-01
+      CS2(3) = 1.145851950D+00
+      CP2(3) = 7.408951400D-01
+      E2(4) = 2.207741540D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+C        *****  OXYGEN                                          *****
+  800 GO TO (810,820,830,840,850,860), NGAUSS
+  810 CALL BERROR(2)
+  820 CALL BERROR(2)
+  830 CALL BERROR(2)
+  840 CONTINUE
+C        *****  4-31G                                           *****
+      E1(1) = 8.832728600D+02
+      CS1(1) = 1.755062800D-02
+      E1(2) = 1.331292800D+02
+      CS1(2) = 1.228292230D-01
+      E1(3) = 2.990640790D+01
+      CS1(3) = 4.348835840D-01
+      E1(4) = 7.978677160D+00
+      CS1(4) = 5.600108040D-01
+      E2(1) = 1.652325950D+01
+      CS2(1) = -1.134010030D-01
+      CP2(1) = 6.854527470D-02
+      E2(2) = 3.856837080D+00
+      CS2(2) = -1.772864660D-01
+      CP2(2) = 3.312254350D-01
+      E2(3) = 1.092728880D+00
+      CS2(3) = 1.150407930D+00
+      CP2(3) = 7.346078780D-01
+      E2(4) = 2.955850070D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  850 CONTINUE
+C        *****  5-31G                                           *****
+      E1(1) = 2.296705350D+03
+      CS1(1) = 5.402590830D-03
+      E1(2) = 3.454369370D+02
+      CS1(2) = 4.033911540D-02
+      E1(3) = 7.840108180D+01
+      CS1(3) = 1.805909170D-01
+      E1(4) = 2.181041640D+01
+      CS1(4) = 4.643773710D-01
+      E1(5) = 6.721723480D+00
+      CS1(5) = 4.511585830D-01
+      E2(1) = 1.591091840D+01
+      CS2(1) = -1.118074560D-01
+      CP2(1) = 7.079811160D-02
+      E2(2) = 3.695812810D+00
+      CS2(2) = -1.519256420D-01
+      CP2(2) = 3.386958530D-01
+      E2(3) = 1.043638440D+00
+      CS2(3) = 1.133714340D+00
+      CP2(3) = 7.277198890D-01
+      E2(4) = 2.838735860D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  860 CONTINUE
+C        *****  6-31G                                           *****
+      E1(1) = 5.484671660D+03
+      CS1(1) = 1.831074430D-03
+      E1(2) = 8.252349460D+02
+      CS1(2) = 1.395017220D-02
+      E1(3) = 1.880469580D+02
+      CS1(3) = 6.844507810D-02
+      E1(4) = 5.296450000D+01
+      CS1(4) = 2.327143360D-01
+      E1(5) = 1.689757040D+01
+      CS1(5) = 4.701928980D-01
+      E1(6) = 5.799635340D+00
+      CS1(6) = 3.585208530D-01
+      E2(1) = 1.585513340D+01
+      CS2(1) = -1.107775490D-01
+      CP2(1) = 7.087426820D-02
+      E2(2) = 3.673026820D+00
+      CS2(2) = -1.480262620D-01
+      CP2(2) = 3.397528390D-01
+      E2(3) = 1.034345220D+00
+      CS2(3) = 1.130767010D+00
+      CP2(3) = 7.271585770D-01
+      E2(4) = 2.811389240D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+C        *****  FLUORINE                                        *****
+  900 GO TO (910,920,930,940,950,960), NGAUSS
+  910 CALL BERROR(2)
+  920 CALL BERROR(2)
+  930 CALL BERROR(2)
+  940 CONTINUE
+C     4-31G
+      E1(1) = 1.126162690D+03
+      CS1(1) = 1.747576090D-02
+      E1(2) = 1.697431570D+02
+      CS1(2) = 1.225230890D-01
+      E1(3) = 3.818151120D+01
+      CS1(3) = 4.349985020D-01
+      E1(4) = 1.021203590D+01
+      CS1(4) = 5.598121670D-01
+      E2(1) = 2.149536670D+01
+      CS2(1) = -1.110570790D-01
+      CP2(1) = 6.988875080D-02
+      E2(2) = 4.989777570D+00
+      CS2(2) = -1.683221010D-01
+      CP2(2) = 3.393875100D-01
+      E2(3) = 1.403573860D+00
+      CS2(3) = 1.143625550D+00
+      CP2(3) = 7.279589810D-01
+      E2(4) = 3.730318350D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  950 CONTINUE
+C        *****  5-31G                                           *****
+      E1(1) = 2.927122920D+03
+      CS1(1) = 5.380259070D-03
+      E1(2) = 4.402360610D+02
+      CS1(2) = 4.020133150D-02
+      E1(3) = 9.993134980D+01
+      CS1(3) = 1.804364600D-01
+      E1(4) = 2.783870100D+01
+      CS1(4) = 4.647456520D-01
+      E1(5) = 8.602577920D+00
+      CS1(5) = 4.506029000D-01
+      E2(1) = 2.090380370D+01
+      CS2(1) = -1.094195750D-01
+      CP2(1) = 7.156794460D-02
+      E2(2) = 4.831641890D+00
+      CS2(2) = -1.494113590D-01
+      CP2(2) = 3.450879300D-01
+      E2(3) = 1.353751870D+00
+      CS2(3) = 1.130961860D+00
+      CP2(3) = 7.228825230D-01
+      E2(4) = 3.610197530D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+  960 CONTINUE
+C     6-31G
+      E1(1) = 7.001713090D+03
+      CS1(1) = 1.819616900D-03
+      E1(2) = 1.051366090D+03
+      CS1(2) = 1.391607960D-02
+      E1(3) = 2.392856900D+02
+      CS1(3) = 6.840532450D-02
+      E1(4) = 6.739744530D+01
+      CS1(4) = 2.331857600D-01
+      E1(5) = 2.151995730D+01
+      CS1(5) = 4.712674390D-01
+      E1(6) = 7.403101300D+00
+      CS1(6) = 3.566185460D-01
+      E2(1) = 2.084795280D+01
+      CS2(1) = -1.085069750D-01
+      CP2(1) = 7.162872430D-02
+      E2(2) = 4.808308340D+00
+      CS2(2) = -1.464516580D-01
+      CP2(2) = 3.459121030D-01
+      E2(3) = 1.344069860D+00
+      CS2(3) = 1.128688580D+00
+      CP2(3) = 7.224699570D-01
+      E2(4) = 3.581513930D-01
+      CS2(4) = 1.000000000D+00
+      CP2(4) = 1.000000000D+00
+      RETURN
+C        ******   NEON
+ 1000 GO TO (1010,1020,1030,1040,1050,1060), NGAUSS
+ 1010 CALL BERROR(2)
+ 1020 CALL BERROR(2)
+ 1030 CALL BERROR(2)
+ 1040 CONTINUE
+C     *******   4-31G.
+      E1(1)=.139793208D+04
+      CS1(1)=.174238054D-01
+      E1(2)=.210769781D+03
+      CS1(2)=.122272745D+00
+      E1(3)=.474672569D+02
+      CS1(3)=.435014232D+00
+      E1(4)=.127226263D+02
+      CS1(4)=.559714642D+00
+      E2(1)=.272130332D+02
+      CS2(1)=-.109609439D+00
+      CP2(1)=.704403067D-01
+      E2(2)=.629413435D+01
+      CS2(2)=-.164124890D+00
+      CP2(2)=.343993047D+00
+      E2(3)=.176005125D+01
+      CS2(3)=.114015159D+01
+      CP2(3)=.724514960D+00
+      E2(4)=.461866992D+00
+      CS2(4)=1.0D+00
+      CP2(4)=1.0D+00
+      RETURN
+C
+ 1050 CALL BERROR(2)
+ 1060 CONTINUE
+C       *******  6-31G.
+      E1(1)=8425.85153D+00
+      CS1(1)=0.00188434805D+00
+      E1(2)=1268.5194D+00
+      CS1(2)=0.0143368994D+00
+      E1(3)=289.621414D+00
+      CS1(3)=0.0701096233D+00
+      E1(4)=81.8590040D+00
+      CS1(4)=0.237373266D+00
+      E1(5)=26.2515079D+00
+      CS1(5)=0.473007126D+00
+      E1(6)=9.09472051D+00
+      CS1(6)=0.348401241D+00
+      E2(1)=26.532131D+00
+      CS2(1)=-.107118287D+00
+      CP2(1)= .0719095885D+00
+      E2(2)=6.10175501D+00
+      CS2(2)=-.146163821D+00
+      CP2(2)= .349513372D+00
+      E2(3)=1.69627153D+00
+      CS2(3)=1.12777350D+00
+      CP2(3)= .719940512D+00
+      E2(4)= .445818700D+00
+      CS2(4)=1.0D+00
+      CP2(4)=1.0D+00
+      RETURN
+ 1200 RETURN
+      END
+C*MODULE BASN31  *DECK N31THR
+      SUBROUTINE N31THR(E1,E2,E3,CS1,CS2,CS3,CP2,CP3,NGAUSS,IA)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C        *****  ENERGY OPTIMIZED 4-31G BASIS FOR SECOND         *****
+C        *****  ROW ATOMS                                       *****
+      DIMENSION E1(6),E2(6),E3(6),CS1(6),CS2(6),CS3(6),CP2(6),CP3(6)
+      GO TO (560,560,560,560,560,560,560,560,560,560,10,50,100,120,
+     +     140,280,420,550),IA
+C        *****  SODIUM                                          *****
+   10 GO TO (15,20,25,30,35,40),NGAUSS
+   15 CALL BERROR(2)
+   20 CALL BERROR(2)
+   25 CALL BERROR(2)
+   30 CALL BERROR(2)
+   35 CALL BERROR(2)
+   40 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=9.99320D+03
+      CS1(1)=1.93766D-03
+      E1(2)=1.49989D+03
+      CS1(2)=1.48070D-02
+      E1(3)=3.41951D+02
+      CS1(3)=7.27055D-02
+      E1(4)=9.46796D+01
+      CS1(4)=2.52629D-01
+      E1(5)=2.97345D+01
+      CS1(5)=4.93242D-01
+      E1(6)=1.00063D+01
+      CS1(6)=3.13169D-01
+      E2(1)=1.50963D+02
+      CS2(1)=-3.54208D-03
+      CP2(1)=5.00166D-03
+      E2(2)=3.55878D+01
+      CS2(2)=-4.39588D-02
+      CP2(2)=3.55109D-02
+      E2(3)=1.11683D+01
+      CS2(3)=-1.09752D-01
+      CP2(3)=1.42825D-01
+      E2(4)=3.90201D+00
+      CS2(4)=1.87398D-01
+      CP2(4)=3.38620D-01
+      E2(5)=1.38177D+00
+      CS2(5)=6.46699D-01
+      CP2(5)=4.51579D-01
+      E2(6)=4.66382D-01
+      CS2(6)=3.06058D-01
+      CP2(6)=2.73271D-01
+      E3(1)=4.97966D-01
+      CS3(1)=-2.48503D-01
+      CP3(1)=-2.30225D-02
+      E3(2)=8.43529D-02
+      CS3(2)=-1.31704D-01
+      CP3(2)=9.50359D-01
+      E3(3)=6.66350D-02
+      CS3(3)=1.23352D+00
+      CP3(3)=5.98579D-02
+      E3(4)=2.59544D-02
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+C        *****  MAGNESIUM                                       *****
+   50 GO TO (55,60,65,70,75,80),NGAUSS
+   55 CALL BERROR(2)
+   60 CALL BERROR(2)
+   65 CALL BERROR(2)
+   70 CALL BERROR(2)
+   75 CALL BERROR(2)
+   80 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=1.17228D+04
+      CS1(1)=1.97783D-03
+      E1(2)=1.75993D+03
+      CS1(2)=1.51140D-02
+      E1(3)=4.00846D+02
+      CS1(3)=7.39108D-02
+      E1(4)=1.12807D+02
+      CS1(4)=2.49191D-01
+      E1(5)=3.59997D+01
+      CS1(5)=4.87928D-01
+      E1(6)=1.21828D+01
+      CS1(6)=3.19662D-01
+      E2(1)=1.89180D+02
+      CS2(1)=-3.23717D-03
+      CP2(1)=4.92813D-03
+      E2(2)=4.52119D+01
+      CS2(2)=-4.10079D-02
+      CP2(2)=3.49888D-02
+      E2(3)=1.43563D+01
+      CS2(3)=-1.12600D-01
+      CP2(3)=1.40725D-01
+      E2(4)=5.13886D+00
+      CS2(4)=1.48633D-01
+      CP2(4)=3.33642D-01
+      E2(5)=1.90652D+00
+      CS2(5)=6.16497D-01
+      CP2(5)=4.44940D-01
+      E2(6)=7.05887D-01
+      CS2(6)=3.64829D-01
+      CP2(6)=2.69254D-01
+      E3(1)=9.29340D-01
+      CS3(1)=-2.12290D-01
+      CP3(1)=-2.24192D-02
+      E3(2)=2.69035D-01
+      CS3(2)=-1.07985D-01
+      CP3(2)=1.92270D-01
+      E3(3)=1.17379D-01
+      CS3(3)=1.17584D+00
+      CP3(3)=8.46181D-01
+      E3(4)=4.21061D-02
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+C        *****  ALUMININIUM                                     *****
+  100 GO TO (102,104,106,108,110,112),NGAUSS
+  102 CALL BERROR(2)
+  104 CALL BERROR(2)
+  106 CALL BERROR(2)
+  108 CALL BERROR(2)
+  110 CALL BERROR(2)
+  112 CONTINUE
+C        *****  66-31G                                         *****
+      E1(1)=1.39831D+04
+      CS1(1)=1.94267D-03
+      E1(2)=2.09875D+03
+      CS1(2)=1.48599D-02
+      E1(3)=4.77705D+02
+      CS1(3)=7.28494D-02
+      E1(4)=1.34360D+02
+      CS1(4)=2.46830D-01
+      E1(5)=4.28709D+01
+      CS1(5)=4.87258D-01
+      E1(6)=1.45189D+01
+      CS1(6)=3.23496D-01
+      E2(1)=2.39668D+02
+      CS2(1)=-2.92619D-03
+      CP2(1)=4.60285D-03
+      E2(2)=5.74419D+01
+      CS2(2)=-3.74083D-02
+      CP2(2)=3.31990D-02
+      E2(3)=1.82859D+01
+      CS2(3)=-1.14487D-01
+      CP2(3)=1.36282D-01
+      E2(4)=6.59914D+00
+      CS2(4)=1.15635D-01
+      CP2(4)=3.30476D-01
+      E2(5)=2.49049D+00
+      CS2(5)=6.12595D-01
+      CP2(5)=4.49146D-01
+      E2(6)=9.44545D-01
+      CS2(6)=3.93799D-01
+      CP2(6)=2.65704D-01
+      E3(1)=1.27790D+00
+      CS3(1)=-2.27606D-01
+      CP3(1)=-1.75126D-02
+      E3(2)=3.97590D-01
+      CS3(2)=1.44583D-03
+      CP3(2)=2.44533D-01
+      E3(3)=1.60095D-01
+      CS3(3)=1.09279D+00
+      CP3(3)=8.04934D-01
+      E3(4)=5.56577D-02
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+C        *****  SILICON                                         *****
+  120 GO TO (122,124,126,128,130,132),NGAUSS
+  122 CALL BERROR(2)
+  124 CALL BERROR(2)
+  126 CALL BERROR(2)
+  128 CALL BERROR(2)
+  130 CALL BERROR(2)
+  132 CONTINUE
+C        ***** GORDON'S 66-31G                                  *****
+      E1(1)=1.61921D+04
+      CS1(1)=1.94924D-03
+      E1(2)=2.43609D+03
+      CS1(2)=1.48559D-02
+      E1(3)=5.56001D+02
+      CS1(3)=7.25689D-02
+      E1(4)=1.56813D+02
+      CS1(4)=2.45655D-01
+      E1(5)=5.01692D+01
+      CS1(5)=4.86060D-01
+      E1(6)=1.70300D+01
+      CS1(6)=3.25720D-01
+      E2(1)=2.93350D+02
+      CS2(1)=-2.82991D-03
+      CP2(1)=4.43334D-03
+      E2(2)=7.01173D+01
+      CS2(2)=-3.60737D-02
+      CP2(2)=3.24402D-02
+      E2(3)=2.24301D+01
+      CS2(3)=-1.16808D-01
+      CP2(3)=1.33719D-01
+      E2(4)=8.19425D+00
+      CS2(4)=9.35768D-02
+      CP2(4)=3.26780D-01
+      E2(5)=3.14768D+00
+      CS2(5)=6.01705D-01
+      CP2(5)=4.51139D-01
+      E2(6)=1.21515D+00
+      CS2(6)=4.22072D-01
+C      CS2(6)=4.22207D-01 IN CHEM.PHYS.LETT. 76,163(1980) IS WRONG-MWS
+      CP2(6)=2.64105D-01
+      E3(1)=1.65370D+00
+      CS3(1)=-2.40600D-01
+      CP3(1)=-1.51774D-02
+      E3(2)=5.40760D-01
+      CS3(2)=7.37953D-02
+      CP3(2)=2.75139D-01
+      E3(3)=2.04406D-01
+      CS3(3)=1.04094D+00
+      CP3(3)=7.83008D-01
+      E3(4)=7.23837D-02
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+C        *****  PHOSPHOROUS                                     *****
+  140 GO TO (160,180,200,220,240,260),NGAUSS
+  160 CALL BERROR(2)
+  180 CALL BERROR(2)
+  200 CALL BERROR(2)
+  220 CONTINUE
+C        ***** 44-31G                                           *****
+      E1(1) = 3.018671780D+03
+      CS1(1) = 1.852131370D-02
+      E1(2) = 4.551271210D+02
+      CS1(2) = 1.299048640D-01
+      E1(3) = 1.023147300D+02
+      CS1(3) = 4.551002880D-01
+      E1(4) = 2.761784730D+01
+      CS1(4) = 5.331318610D-01
+      E2(1) = 1.144294010D+02
+      CS2(1) = -2.475029610D-02
+      CP2(1) = 2.741400250D-02
+      E2(2) = 2.658229590D+01
+      CS2(2) = -1.350924600D-01
+      CP2(2) = 1.690791420D-01
+      E2(3) = 7.871888900D+00
+      CS2(3) = 2.277360800D-01
+      CP2(3) = 4.691020890D-01
+      E2(4) = 2.487857250D+00
+      CS2(4) = 8.755931160D-01
+      CP2(4) = 5.181530590D-01
+      E3(1) = 5.075061900D+01
+      CS3(1) = -4.511922300D-02
+      CP3(1) = 3.779071180D-03
+      E3(2) = 1.672862420D+00
+      CS3(2) = -8.504729900D-01
+      CP3(2) = -4.634384050D-02
+      E3(3) = 6.210974120D-01
+      CS3(3) = 1.596285850D+00
+      CP3(3) = 1.033944290D+00
+      E3(4) = 1.670160070D-01
+      CS3(4) = 1.000000000D+00
+      CP3(4) = 1.000000000D+00
+      RETURN
+  240 CALL BERROR(2)
+  260 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=1.94133D+04
+      CS1(1)=1.85160D-03
+      E1(2)=2.90942D+03
+      CS1(2)=1.42062D-02
+      E1(3)=6.61364D+02
+      CS1(3)=6.99995D-02
+      E1(4)=1.85759D+02
+      CS1(4)=2.40079D-01
+      E1(5)=5.91943D+01
+      CS1(5)=4.84762D-01
+      E1(6)=2.00310D+01
+      CS1(6)=3.35200D-01
+      E2(1)=3.39478D+02
+      CS2(1)=-2.78217D-03
+      CP2(1)=4.56462D-03
+      E2(2)=8.10101D+01
+      CS2(2)=-3.60499D-02
+      CP2(2)=3.36936D-02
+      E2(3)=2.58780D+01
+      CS2(3)=-1.16631D-01
+      CP2(3)=1.39755D-01
+      E2(4)=9.45221D+00
+      CS2(4)=9.68328D-02
+      CP2(4)=3.39362D-01
+      E2(5)=3.66566D+00
+      CS2(5)=6.14418D-01
+      CP2(5)=4.50921D-01
+      E2(6)=1.46746D+00
+      CS2(6)=4.03798D-01
+      CP2(6)=2.38586D-01
+      E3(1)=2.15623D+00
+      CS3(1)=-2.52923D-01
+      CP3(1)=-1.77653D-02
+      E3(2)=7.48997D-01
+      CS3(2)=3.28517D-02
+      CP3(2)=2.74058D-01
+      E3(3)=2.83145D-01
+      CS3(3)=1.08125D+00
+      CP3(3)=7.85421D-01
+      E3(4)=9.98317D-02
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+C        *****  SULFUR                                          *****
+  280 GO TO (300,320,340,360,380,400),NGAUSS
+  300 CALL BERROR(2)
+  320 CALL BERROR(2)
+  340 CALL BERROR(2)
+  360 CONTINUE
+C        *****  44-31G                                          *****
+      E1(1) = 3.442124410D+03
+      CS1(1) = 1.849212360D-02
+      E1(2) = 5.189131000D+02
+      CS1(2) = 1.298220220D-01
+      E1(3) = 1.166909030D+02
+      CS1(3) = 4.550417870D-01
+      E1(4) = 3.157164720D+01
+      CS1(4) = 5.330083560D-01
+      E2(1) = 1.274405760D+02
+      CS2(1) = -2.726461060D-02
+      CP2(1) = 2.915199950D-02
+      E2(2) = 2.974766730D+01
+      CS2(2) = -1.424834150D-01
+      CP2(2) = 1.779596760D-01
+      E2(3) = 8.834664280D+00
+      CS2(3) = 2.597043520D-01
+      CP2(3) = 4.836237120D-01
+      E2(4) = 2.817389820D+00
+      CS2(4) = 8.525472950D-01
+      CP2(4) = 4.942553020D-01
+      E3(1) = 3.729185370D+00
+      CS3(1) = -2.775315230D-01
+      CP3(1) = -3.375092630D-02
+      E3(2) = 1.406770170D+00
+      CS3(2) = -4.576434550D-01
+      CP3(2) = 1.457110450D-01
+      E3(3) = 5.481099690D-01
+      CS3(3) = 1.431684270D+00
+      CP3(3) = 8.982887430D-01
+      E3(4) = 1.703809050D-01
+      CS3(4) = 9.999999990D-01
+      CP3(4) = 1.000000000D+00
+      RETURN
+  380 CALL BERROR(2)
+  400 CONTINUE
+C        ***** 66-31G                                           *****
+      E1(1)=2.19171D+04
+      CS1(1)=1.86924D-03
+      E1(2)=3.30149D+03
+      CS1(2)=1.42303D-02
+      E1(3)=7.54146D+02
+      CS1(3)=6.96962D-02
+      E1(4)=2.12711D+02
+      CS1(4)=2.38487D-01
+      E1(5)=6.79896D+01
+      CS1(5)=4.83307D-01
+      E1(6)=2.30515D+01
+      CS1(6)=3.38074D-01
+      E2(1)=4.23735D+02
+      CS2(1)=-2.37677D-03
+      CP2(1)=4.06101D-03
+      E2(2)=1.00710D+02
+      CS2(2)=-3.16930D-02
+      CP2(2)=3.06813D-02
+      E2(3)=3.21599D+01
+      CS2(3)=-1.13317D-01
+      CP2(3)=1.30452D-01
+      E2(4)=1.18079D+01
+      CS2(4)=5.60900D-02
+      CP2(4)=3.27205D-01
+      E2(5)=4.63110D+00
+      CS2(5)=5.92255D-01
+      CP2(5)=4.52851D-01
+      E2(6)=1.87025D+00
+      CS2(6)=4.55006D-01
+      CP2(6)=2.56042D-01
+      E3(1)=2.61584D+00
+      CS3(1)=-2.50374D-01
+      CP3(1)=-1.45105D-02
+      E3(2)=9.22167D-01
+      CS3(2)=6.69570D-02
+      CP3(2)=3.10263D-01
+      E3(3)=3.41287D-01
+      CS3(3)=1.05451D+00
+      CP3(3)=7.54483D-01
+      E3(4)=1.17167D-01
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+C        *****  CHLORINE                                        *****
+  420 GO TO (440,460,480,500,520,540),NGAUSS
+  440 CALL BERROR(2)
+  460 CALL BERROR(2)
+  480 CALL BERROR(2)
+  500 CONTINUE
+C        *****  44-31G                                          *****
+      E1(1) = 3.910302690D+03
+      CS1(1) = 1.837943110D-02
+      E1(2) = 5.895518070D+02
+      CS1(2) = 1.291401230D-01
+      E1(3) = 1.325939240D+02
+      CS1(3) = 4.540448900D-01
+      E1(4) = 3.590354250D+01
+      CS1(4) = 5.344394360D-01
+      E2(1) = 1.477653530D+02
+      CS2(1) = -2.674332300D-02
+      CP2(1) = 2.886446880D-02
+      E2(2) = 3.450607530D+01
+      CS2(2) = -1.446911820D-01
+      CP2(2) = 1.779646700D-01
+      E2(3) = 1.028647150D+01
+      CS2(3) = 2.517035690D-01
+      CP2(3) = 4.869998070D-01
+      E2(4) = 3.311147380D+00
+      CS2(4) = 8.598203810D-01
+      CP2(4) = 4.890184500D-01
+      E3(1) = 4.280284910D+00
+      CS3(1) = -2.703962750D-01
+      CP3(1) = -3.670288510D-02
+      E3(2) = 1.641016670D+00
+      CS3(2) = -3.416297190D-01
+      CP3(2) = 1.918492420D-01
+      E3(3) = 6.144785030D-01
+      CS3(3) = 1.350024480D+00
+      CP3(3) = 8.643376810D-01
+      E3(4) = 1.956594110D-01
+      CS3(4) = 9.999999990D-01
+      CP3(4) = 1.000000000D+00
+      RETURN
+  520 CALL BERROR(2)
+  540 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=2.51801D+04
+      CS1(1)=1.83296D-03
+      E1(2)=3.78035D+03
+      CS1(2)=1.40342D-02
+      E1(3)=8.60474D+02
+      CS1(3)=6.90974D-02
+      E1(4)=2.42145D+02
+      CS1(4)=2.37452D-01
+      E1(5)=7.73349D+01
+      CS1(5)=4.83034D-01
+      E1(6)=2.62470D+01
+      CS1(6)=3.39856D-01
+      E2(1)=4.91765D+02
+      CS2(1)=-2.29739D-03
+      CP2(1)=3.98940D-03
+      E2(2)=1.16984D+02
+      CS2(2)=-3.07137D-02
+      CP2(2)=3.03177D-02
+      E2(3)=3.74153D+01
+      CS2(3)=-1.12528D-01
+      CP2(3)=1.29880D-01
+      E2(4)=1.37834D+01
+      CS2(4)=4.50163D-02
+      CP2(4)=3.27951D-01
+      E2(5)=5.45215D+00
+      CS2(5)=5.89353D-01
+      CP2(5)=4.53527D-01
+      E2(6)=2.22588D+00
+      CS2(6)=4.65206D-01
+      CP2(6)=2.52154D-01
+      E3(1)=3.18649D+00
+      CS3(1)=-2.51830D-01
+      CP3(1)=-1.42993D-02
+      E3(2)=1.14427D+00
+      CS3(2)=6.15890D-02
+      CP3(2)=3.23572D-01
+      E3(3)=4.20377D-01
+      CS3(3)=1.06018D+00
+      CP3(3)=7.43507D-01
+      E3(4)=1.42657D-01
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+C        *****  ARGON                                           *****
+  550 GO TO (551,552,553,554,555,557),NGAUSS
+  551 CALL BERROR(2)
+  552 CALL BERROR(2)
+  553 CALL BERROR(2)
+  554 CALL BERROR(2)
+  555 CALL BERROR(2)
+  557 CONTINUE
+C        ***** 66-31G                                           *****
+      E1(1)=2.83483D+04
+      CS1(1)=1.82526D-03
+      E1(2)=4.25762D+03
+      CS1(2)=1.39686D-02
+      E1(3)=9.69857D+02
+      CS1(3)=6.87073D-02
+      E1(4)=2.73263D+02
+      CS1(4)=2.36204D-01
+      E1(5)=8.73695D+01
+      CS1(5)=4.82214D-01
+      E1(6)=2.96867D+01
+      CS1(6)=3.42043D-01
+      E2(1)=5.75891D+02
+      CS2(1)=-2.15972D-03
+      CP2(1)=3.80665D-03
+      E2(2)=1.36816D+02
+      CS2(2)=-2.90775D-02
+      CP2(2)=2.92305D-02
+      E2(3)=4.38098D+01
+      CS2(3)=-1.10827D-01
+      CP2(3)=1.26467D-01
+      E2(4)=1.62094D+01
+      CS2(4)=2.76999D-02
+      CP2(4)=3.23510D-01
+      E2(5)=6.46084D+00
+      CS2(5)=5.77613D-01
+      CP2(5)=4.54896D-01
+      E2(6)=2.65114D+00
+      CS2(6)=4.88688D-01
+      CP2(6)=2.56630D-01
+      E3(1)=3.86028D+00
+      CS3(1)=-2.55592D-01
+      CP3(1)=-1.59197D-02
+      E3(2)=1.41373D+00
+      CS3(2)=3.78066D-02
+      CP3(2)=3.24646D-01
+      E3(3)=5.16646D-01
+      CS3(3)=1.08056D+00
+      CP3(3)=7.43990D-01
+      E3(4)=1.73888D-01
+      CS3(4)=1.00000D+00
+      CP3(4)=1.00000D+00
+      RETURN
+  560 CALL BERROR(2)
+      RETURN
+      END
+C*MODULE BASN31  *DECK N31FOU
+      SUBROUTINE N31FOU(E1,E2,E3,CS1,CS2,CS3,CP2,CP3,E4,CS4,CP4,ED,
+     +                 DD,NGAUSS,IA)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C        *****  ENERGY OPTIMIZED 4-31G BASIS FOR THIRD          *****
+C        *****  ROW ATOMS                                       *****
+      DIMENSION E1(6),E2(6),E3(6),CS1(6),CS2(6),CS3(6),CP2(6),CP3(6),
+     *          E4(6),CS4(6),CP4(6),ED(6),DD(6)
+      GO TO (800,800,800,800,800,800,800,800,800,800,800,800,800,800,
+     +     800,800,800,800,10,40,70,100,130,160,190,220,250,280,310,
+     +     340),IA
+C        *****  POTASSIUM                                       *****
+   10 GO TO (12,14,16,18,20,30),NGAUSS
+   12 CALL BERROR(2)
+   14 CALL BERROR(2)
+   16 CALL BERROR(2)
+   18 CALL BERROR(2)
+   20 CALL BERROR(2)
+   30 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=3.159442D+04
+      CS1(1)=1.828010D-03
+      E1(2)=4.744330D+03
+      CS1(2)=1.399403D-02
+      E1(3)=1.080419D+03
+      CS1(3)=6.887129D-02
+      E1(4)=3.042338D+02
+      CS1(4)=2.369760D-01
+      E1(5)=9.724586D+01
+      CS1(5)=4.829040D-01
+      E1(6)=3.302495D+01
+      CS1(6)=3.404795D-01
+      E2(1)=6.227625D+02
+      CS2(1)=-2.502976D-03
+      CP2(1)=4.094637D-03
+      E2(2)=1.478839D+02
+      CS2(2)=-3.315550D-02
+      CP2(2)=3.145199D-02
+      E2(3)=4.732735D+01
+      CS2(3)=-1.226387D-01
+      CP2(3)=1.351558D-01
+      E2(4)=1.751495D+01
+      CS2(4)=5.353643D-02
+      CP2(4)=3.390500D-01
+      E2(5)=6.922722D+00
+      CS2(5)=6.193860D-01
+      CP2(5)=4.629455D-01
+      E2(6)=2.768277D+00
+      CS2(6)=4.345878D-01
+      CP2(6)=2.242638D-01
+      E3(1)=1.184802D+01
+      CS3(1)=1.277689D-02
+      CP3(1)=-1.221377D-02
+      E3(2)=4.079211D+00
+      CS3(2)=2.098767D-01
+      CP3(2)=-6.900537D-03
+      E3(3)=1.763481D+00
+      CS3(3)=-3.095274D-03
+      CP3(3)=2.007466D-01
+      E3(4)=7.889270D-01
+      CS3(4)=-5.593884D-01
+      CP3(4)=4.281332D-01
+      E3(5)=3.503870D-01
+      CS3(5)=-5.134760D-01
+      CP3(5)=3.970156D-01
+      E3(6)=1.463440D-01
+      CS3(6)=-6.598035D-02
+      CP3(6)=1.104718D-01
+      E4(1)=7.168010D-01
+      CS4(1)=-5.237772D-02
+      CP4(1)=3.164300D-02
+      E4(2)=2.337410D-01
+      CS4(2)=-2.798503D-01
+      CP4(2)=-4.046160D-02
+      E4(3)=3.867500D-02
+      CS4(3)=1.141547D+00
+      CP4(3)=1.012029D+00
+      E4(4)=1.652100D-02
+      CS4(4)=1.0D+00
+      CP4(4)=1.0D+00
+      RETURN
+C        *****  CALCIUM                                         *****
+   40 GO TO (42,44,46,48,50,60),NGAUSS
+   42 CALL BERROR(2)
+   44 CALL BERROR(2)
+   46 CALL BERROR(2)
+   48 CALL BERROR(2)
+   50 CALL BERROR(2)
+   60 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=3.526486D+04
+      E1(2)=5.295503D+03
+      E1(3)=1.206020D+03
+      E1(4)=3.396839D+02
+      E1(5)=1.086264D+02
+      E1(6)=3.692103D+01
+      CS1(1)=1.813501D-03
+      CS1(2)=1.388493D-02
+      CS1(3)=6.836162D-02
+      CS1(4)=2.356188D-01
+      CS1(5)=4.820639D-01
+      CS1(6)=3.429819D-01
+      E2(1)=7.063096D+02
+      E2(2)=1.678187D+02
+      E2(3)=5.382558D+01
+      E2(4)=2.001638D+01
+      E2(5)=7.970279D+00
+      E2(6)=3.212059D+00
+      CS2(1)=2.448225D-03
+      CS2(2)=3.241504D-02
+      CS2(3)=1.226219D-01
+      CS2(4)=-4.316965D-02
+      CS2(5)=-6.126995D-01
+      CS2(6)=-4.487540D-01
+      CP2(1)=4.020371D-03
+      CP2(2)=3.100601D-02
+      CP2(3)=1.337279D-01
+      CP2(4)=3.367983D-01
+      CP2(5)=4.631281D-01
+      CP2(6)=2.257532D-01
+      E3(1)=1.419518D+01
+      E3(2)=4.880828D+00
+      E3(3)=2.160390D+00
+      E3(4)=9.878990D-01
+      E3(5)=4.495170D-01
+      E3(6)=1.873870D-01
+      CS3(1)=1.084500D-02
+      CS3(2)=2.088333D-01
+      CS3(3)=3.150338D-02
+      CS3(4)=-5.526518D-01
+      CS3(5)=-5.437997D-01
+      CS3(6)=-6.669342D-02
+      CP3(1)=-1.289621D-02
+      CP3(2)=-1.025198D-02
+      CP3(3)=1.959781D-01
+      CP3(4)=4.357933D-01
+      CP3(5)=3.996452D-01
+      CP3(6)=9.713636D-02
+      E4(1)=1.032271D+00
+      E4(2)=3.811710D-01
+      E4(3)=6.513100D-02
+      E4(4)=2.601000D-02
+      CS4(1)=-4.439720D-02
+      CS4(2)=-3.284563D-01
+      CS4(3)=1.163010D+00
+      CP4(1)=-4.298621D-01
+      CP4(2)=6.935829D-03
+      CP4(3)=9.705933D-01
+      CS4(4)=1.0D+00
+      CP4(4)=1.0D+00
+      RETURN
+C        *****  SCANDIUM                                       *****
+   70 GO TO (72,74,76,78,80,90),NGAUSS
+   72 CALL BERROR(2)
+   74 CALL BERROR(2)
+   76 CALL BERROR(2)
+   78 CALL BERROR(2)
+   80 CALL BERROR(2)
+   90 CONTINUE
+C        *****  66-31G                                         *****
+      E1(1)=3.908898D+04
+      E1(2)=5.869792D+03
+      E1(3)=1.336910D+03
+      E1(4)=3.766031D+02
+      E1(5)=1.204679D+02
+      E1(6)=4.098032D+01
+      CS1(1)=1.803263D-03
+      CS1(2)=1.380769D-02
+      CS1(3)=6.800396D-02
+      CS1(4)=2.347099D-01
+      CS1(5)=4.815690D-01
+      CS1(6)=3.445652D-01
+      E2(1)=7.862852D+02
+      E2(2)=1.868870D+02
+      E2(3)=6.000935D+01
+      E2(4)=2.225883D+01
+      E2(5)=8.885149D+00
+      E2(6)=3.609211D+00
+      CS2(1)=2.451863D-03
+      CS2(2)=3.259579D-02
+      CS2(3)=1.238242D-01
+      CS2(4)=-4.359890D-02
+      CS2(5)=-6.177181D-01
+      CS2(6)=-4.432823D-01
+      CP2(1)=4.039530D-03
+      CP2(2)=3.122570D-02
+      CP2(3)=1.349833D-01
+      CP2(4)=3.424793D-01
+      CP2(5)=4.623113D-01
+      CP2(6)=2.177524D-01
+      E3(1)=2.984355D+01
+      E3(2)=9.542383D+00
+      E3(3)=4.056790D+00
+      E3(4)=1.704703D+00
+      E3(5)=7.062340D-01
+      E3(6)=2.795360D-01
+      CS3(1)=-2.586302D-03
+      CS3(2)=7.188424D-02
+      CS3(3)=2.503260D-01
+      CS3(4)=-2.991003D-01
+      CS3(5)=-7.446818D-01
+      CS3(6)=-1.799776D-01
+      CP3(1)=-6.096652D-03
+      CP3(2)=-2.628884D-02
+      CP3(3)=5.091001D-02
+      CP3(4)=3.798097D-01
+      CP3(5)=5.170883D-01
+      CP3(6)=1.829772D-01
+      E4(1)=1.065609D+00
+      E4(2)=4.259330D-01
+      E4(3)=7.632000D-02
+      E4(4)=2.959400D-02
+      CS4(1)=6.482978D-02
+      CS4(2)=3.253756D-01
+      CS4(3)=-1.170806D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-2.938440D-01
+      CP4(2)=9.235323D-02
+      CP4(3)=9.847930D-01
+      CP4(4)=1.0D+00
+      ED(1)=1.114701D+01
+      ED(2)=2.821043D+00
+      ED(3)=8.196200D-01
+      ED(4)=2.214680D-01
+      DD(1)=8.747672D-02
+      DD(2)=3.795635D-01
+      DD(3)=7.180393D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  TITANIUM                                        *****
+  100 GO TO (102,104,106,108,110,120),NGAUSS
+  102 CALL BERROR(2)
+  104 CALL BERROR(2)
+  106 CALL BERROR(2)
+  108 CALL BERROR(2)
+  110 CALL BERROR(2)
+  120 CONTINUE
+C        *****  66-31G                                  *****
+      E1(1)=4.315295D+04
+      E1(2)=6.479571D+03
+      E1(3)=1.475675D+03
+      E1(4)=4.156991D+02
+      E1(5)=1.330006D+02
+      E1(6)=4.527222D+01
+      CS1(1)=1.791872D-03
+      CS1(2)=1.372392D-02
+      CS1(3)=6.762830D-02
+      CS1(4)=2.337642D-01
+      CS1(5)=4.810696D-01
+      CS1(6)=3.462280D-01
+      E2(1)=8.746826D+02
+      E2(2)=2.079785D+02
+      E2(3)=6.687918D+01
+      E2(4)=2.487347D+01
+      E2(5)=9.968441D+00
+      E2(6)=4.063826D+00
+      CS2(1)=2.431008D-03
+      CS2(2)=3.233027D-02
+      CS2(3)=1.242520D-01
+      CS2(4)=-3.903905D-02
+      CS2(5)=-6.171789D-01
+      CS2(6)=-4.473097D-01
+      CP2(1)=4.017679D-03
+      CP2(2)=3.113966D-02
+      CP2(3)=1.349077D-01
+      CP2(4)=3.431672D-01
+      CP2(5)=4.625760D-01
+      CP2(6)=2.154603D-01
+      E3(1)=3.364363D+01
+      E3(2)=1.087565D+01
+      E3(3)=4.628225D+00
+      E3(4)=1.950126D+00
+      E3(5)=8.094520D-01
+      E3(6)=3.204740D-01
+      CS3(1)=-2.940358D-03
+      CS3(2)=7.163103D-02
+      CS3(3)=2.528915D-01
+      CS3(4)=-2.966401D-01
+      CS3(5)=-7.432215D-01
+      CS3(6)=-1.853520D-01
+      CP3(1)=-6.311620D-03
+      CP3(2)=-2.697638D-02
+      CP3(3)=5.316847D-02
+      CP3(4)=3.845549D-01
+      CP3(5)=5.127662D-01
+      CP3(6)=1.811135D-01
+      E4(1)=1.224148D+00
+      E4(2)=4.842630D-01
+      E4(3)=8.409600D-02
+      E4(4)=3.203600D-02
+      CS4(1)=6.351465D-02
+      CS4(2)=3.151404D-01
+      CS4(3)=-1.162595D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-2.112070D-01
+      CP4(2)=7.771998D-02
+      CP4(3)=9.898214D-01
+      CP4(4)=1.0D+00
+      ED(1)=1.369085D+01
+      ED(2)=3.513154D+00
+      ED(3)=1.040434D+00
+      ED(4)=2.869620D-01
+      DD(1)=8.589418D-02
+      DD(2)=3.784671D-01
+      DD(3)=7.161239D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  VANADIUM                                        *****
+  130 GO TO (132,134,136,138,140,150),NGAUSS
+  132 CALL BERROR(2)
+  134 CALL BERROR(2)
+  136 CALL BERROR(2)
+  138 CALL BERROR(2)
+  140 CALL BERROR(2)
+  150 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=4.735433D+04
+      E1(2)=7.110787D+03
+      E1(3)=1.619591D+03
+      E1(4)=4.563379D+02
+      E1(5)=1.460606D+02
+      E1(6)=4.975791D+01
+      CS1(1)=1.784513D-03
+      CS1(2)=1.366754D-02
+      CS1(3)=6.736122D-02
+      CS1(4)=2.330552D-01
+      CS1(5)=4.806316D-01
+      CS1(6)=3.474802D-01
+      E2(1)=9.681484D+02
+      E2(2)=2.302821D+02
+      E2(3)=7.414591D+01
+      E2(4)=2.764107D+01
+      E2(5)=1.111475D+01
+      E2(6)=4.543113D+00
+      CS2(1)=2.410599D-03
+      CS2(2)=3.207243D-02
+      CS2(3)=1.245942D-01
+      CS2(4)=-3.482177D-02
+      CS2(5)=-6.167374D-01
+      CS2(6)=-4.509844D-01
+      CP2(1)=3.995005D-03
+      CP2(2)=3.104061D-02
+      CP2(3)=1.347747D-01
+      CP2(4)=3.437279D-01
+      CP2(5)=4.628759D-01
+      CP2(6)=2.135547D-01
+      E3(1)=3.764050D+01
+      E3(2)=1.228238D+01
+      E3(3)=5.233366D+00
+      E3(4)=2.208950D+00
+      E3(5)=9.178800D-01
+      E3(6)=3.634120D-01
+      CS3(1)=-3.233199D-03
+      CS3(2)=7.130744D-02
+      CS3(3)=2.543820D-01
+      CS3(4)=-2.933887D-01
+      CS3(5)=-7.415695D-01
+      CS3(6)=-1.909410D-01
+      CP3(1)=-6.494056D-03
+      CP3(2)=-2.753453D-02
+      CP3(3)=5.516284D-02
+      CP3(4)=3.879672D-01
+      CP3(5)=5.090258D-01
+      CP3(6)=1.803840D-01
+      E4(1)=1.392781D+00
+      E4(2)=5.439130D-01
+      E4(3)=9.147600D-02
+      E4(4)=3.431200D-02
+      CS4(1)=6.139703D-02
+      CS4(2)=3.061130D-01
+      CS4(3)=-1.154890D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-1.891265D-01
+      CP4(2)=8.005453D-02
+      CP4(3)=9.877399D-01
+      CP4(4)=1.0D+00
+      ED(1)=1.605025D+01
+      ED(2)=4.160063D+00
+      ED(3)=1.243265D+00
+      ED(4)=3.442770D-01
+      DD(1)=8.599899D-02
+      DD(2)=3.802996D-01
+      DD(3)=7.127659D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  CHROMIUM                                        *****
+  160 GO TO (162,164,166,168,170,180),NGAUSS
+  162 CALL BERROR(2)
+  164 CALL BERROR(2)
+  166 CALL BERROR(2)
+  168 CALL BERROR(2)
+  170 CALL BERROR(2)
+  180 CONTINUE
+C        ***** 66-31G                                           *****
+      E1(1)=5.178981D+04
+      E1(2)=7.776849D+03
+      E1(3)=1.771385D+03
+      E1(4)=4.991588D+02
+      E1(5)=1.597982D+02
+      E1(6)=5.447021D+01
+      CS1(1)=1.776182D-03
+      CS1(2)=1.360476D-02
+      CS1(3)=6.706925D-02
+      CS1(4)=2.323104D-01
+      CS1(5)=4.802410D-01
+      CS1(6)=3.487653D-01
+      E2(1)=1.064328D+03
+      E2(2)=2.532138D+02
+      E2(3)=8.160924D+01
+      E2(4)=3.048193D+01
+      E2(5)=1.229439D+01
+      E2(6)=5.037722D+00
+      CS2(1)=2.399669D-03
+      CS2(2)=3.194886D-02
+      CS2(3)=1.250868D-01
+      CS2(4)=-3.221866D-02
+      CS2(5)=-6.172284D-01
+      CS2(6)=-4.525936D-01
+      CP2(1)=3.986997D-03
+      CP2(2)=3.104662D-02
+      CP2(3)=1.350518D-01
+      CP2(4)=3.448865D-01
+      CP2(5)=4.628571D-01
+      CP2(6)=2.110426D-01
+      E3(1)=4.156291D+01
+      E3(2)=1.367627D+01
+      E3(3)=5.844390D+00
+      E3(4)=2.471609D+00
+      E3(5)=1.028308D+00
+      E3(6)=4.072500D-01
+      CS3(1)=-3.454216D-03
+      CS3(2)=7.218428D-02
+      CS3(3)=2.544820D-01
+      CS3(4)=-2.934534D-01
+      CS3(5)=-7.385455D-01
+      CS3(6)=-1.947157D-01
+      CP3(1)=-6.722497D-03
+      CP3(2)=-2.806471D-02
+      CP3(3)=5.820028D-02
+      CP3(4)=3.916988D-01
+      CP3(5)=5.047823D-01
+      CP3(6)=1.790290D-01
+      E4(1)=1.571464D+00
+      E4(2)=6.055800D-01
+      E4(3)=9.856100D-02
+      E4(4)=3.645900D-02
+      CS4(1)=5.892219D-02
+      CS4(2)=2.976055D-01
+      CS4(3)=-1.147506D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-1.930100D-01
+      CP4(2)=9.605620D-02
+      CP4(3)=9.817609D-01
+      CP4(4)=1.0D+00
+      ED(1)=1.841930D+01
+      ED(2)=4.812661D+00
+      ED(3)=1.446447D+00
+      ED(4)=4.004130D-01
+      DD(1)=8.650816D-02
+      DD(2)=3.826699D-01
+      DD(3)=7.093772D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  MANGANESE                                       *****
+  190 GO TO (192,194,196,198,200,210),NGAUSS
+  192 CALL BERROR(2)
+  194 CALL BERROR(2)
+  196 CALL BERROR(2)
+  198 CALL BERROR(2)
+  200 CALL BERROR(2)
+  210 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=5.634714D+04
+      E1(2)=8.460943D+03
+      E1(3)=1.927325D+03
+      E1(4)=5.432343D+02
+      E1(5)=1.739905D+02
+      E1(6)=5.936005D+01
+      CS1(1)=1.771580D-03
+      CS1(2)=1.357081D-02
+      CS1(3)=6.690605D-02
+      CS1(4)=2.318541D-01
+      CS1(5)=4.799046D-01
+      CS1(6)=3.495737D-01
+      E2(1)=1.165412D+03
+      E2(2)=2.773276D+02
+      E2(3)=8.947278D+01
+      E2(4)=3.348256D+01
+      E2(5)=1.354037D+01
+      E2(6)=5.557972D+00
+      CS2(1)=2.388751D-03
+      CS2(2)=3.181708D-02
+      CS2(3)=1.254670D-01
+      CS2(4)=-2.955431D-02
+      CS2(5)=-6.175160D-01
+      CS2(6)=-4.544458D-01
+      CP2(1)=3.977318D-03
+      CP2(2)=3.103112D-02
+      CP2(3)=1.351894D-01
+      CP2(4)=3.457387D-01
+      CP2(5)=4.629205D-01
+      CP2(6)=2.090592D-01
+      E3(1)=4.583532D+01
+      E3(2)=1.518777D+01
+      E3(3)=6.500710D+00
+      E3(4)=2.751583D+00
+      E3(5)=1.145404D+00
+      E3(6)=4.536870D-01
+      CS3(1)=-3.665856D-03
+      CS3(2)=7.231971D-02
+      CS3(3)=2.544486D-01
+      CS3(4)=-2.910380D-01
+      CS3(5)=-7.359860D-01
+      CS3(6)=-1.997617D-01
+      CP3(1)=-6.887578D-03
+      CP3(2)=-2.846816D-02
+      CP3(3)=6.031832D-02
+      CP3(4)=3.938961D-01
+      CP3(5)=5.013769D-01
+      CP3(6)=1.792264D-01
+      E4(1)=1.757999D+00
+      E4(2)=6.670220D-01
+      E4(3)=1.051290D-01
+      E4(4)=3.841800D-02
+      CS4(1)=5.628572D-02
+      CS4(2)=2.897491D-01
+      CS4(3)=-1.140653D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-5.035024D-01
+      CP4(2)=2.345011D-01
+C           THE FOLLOWING NUMBER IS 0.914157 IN THE PAPER,
+C           BUT THIS IS A MISPRINT, AND THE CORRECT VALUE IS HERE:
+      CP4(3)=9.141257D-01
+      CP4(4)=1.0D+00
+      ED(1)=2.094355D+01
+      ED(2)=5.510486D+00
+      ED(3)=1.665038D+00
+      ED(4)=4.617330D-01
+      DD(1)=8.672702D-02
+      DD(2)=3.841883D-01
+      DD(3)=7.069071D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  IRON                                            *****
+  220 GO TO (222,224,226,228,230,240),NGAUSS
+  222 CALL BERROR(2)
+  224 CALL BERROR(2)
+  226 CALL BERROR(2)
+  228 CALL BERROR(2)
+  230 CALL BERROR(2)
+  240 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=6.113262D+04
+      E1(2)=9.179342D+03
+      E1(3)=2.090857D+03
+      E1(4)=5.892479D+02
+      E1(5)=1.887543D+02
+      E1(6)=6.444629D+01
+      CS1(1)=1.766111D-03
+      CS1(2)=1.353038D-02
+      CS1(3)=6.673128D-02
+      CS1(4)=2.314823D-01
+      CS1(5)=4.797058D-01
+      CS1(6)=3.501976D-01
+      E2(1)=1.259980D+03
+      E2(2)=2.998761D+02
+      E2(3)=9.684917D+01
+      E2(4)=3.631020D+01
+      E2(5)=1.472996D+01
+      E2(6)=6.066075D+00
+      CS2(1)=2.438014D-03
+      CS2(2)=3.224048D-02
+      CS2(3)=1.265724D-01
+      CS2(4)=-3.139902D-02
+      CS2(5)=-6.207593D-01
+      CS2(6)=-4.502914D-01
+      CP2(1)=4.028019D-03
+      CP2(2)=3.144647D-02
+      CP2(3)=1.368317D-01
+      CP2(4)=3.487236D-01
+      CP2(5)=4.617931D-01
+      CP2(6)=2.043058D-01
+      E3(1)=5.043485D+01
+      E3(2)=1.683929D+01
+      E3(3)=7.192086D+00
+      E3(4)=3.053420D+00
+      E3(5)=1.273643D+00
+      E3(6)=5.040910D-01
+      CS3(1)=-3.873256D-03
+      CS3(2)=7.196598D-02
+      CS3(3)=2.556591D-01
+      CS3(4)=-2.882837D-01
+      CS3(5)=-7.342822D-01
+      CS3(6)=-2.049353D-01
+      CP3(1)=-7.017128D-03
+      CP3(2)=-2.877660D-02
+      CP3(3)=6.181383D-02
+      CP3(4)=3.954946D-01
+      CP3(5)=4.989059D-01
+      CP3(6)=1.791251D-01
+      E4(1)=1.950316D+00
+      E4(2)=7.367210D-01
+      E4(3)=1.141770D-01
+      E4(4)=4.114800D-02
+      CS4(1)=5.694869D-02
+      CS4(2)=2.882915D-01
+      CS4(3)=-1.138159D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-4.593796D-01
+      CP4(2)=2.852139D-01
+      CP4(3)=9.076485D-01
+      CP4(4)=1.0D+00
+      ED(1)=2.314994D+01
+      ED(2)=6.122368D+00
+      ED(3)=1.846601D+00
+      ED(4)=5.043610D-01
+      DD(1)=8.876935D-02
+      DD(2)=3.896319D-01
+      DD(3)=7.014816D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  COBALT                                          *****
+  250 GO TO (252,254,256,258,260,270),NGAUSS
+  252 CALL BERROR(2)
+  254 CALL BERROR(2)
+  256 CALL BERROR(2)
+  258 CALL BERROR(2)
+  260 CALL BERROR(2)
+  270 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=6.614899D+04
+      E1(2)=9.933077D+03
+      E1(3)=2.262816D+03
+      E1(4)=6.379154D+02
+      E1(5)=2.044122D+02
+      E1(6)=6.982538D+01
+      CS1(1)=1.759787D-03
+      CS1(2)=1.348162D-02
+      CS1(3)=6.649342D-02
+      CS1(4)=2.307939D-01
+      CS1(5)=4.792919D-01
+      CS1(6)=3.514097D-01
+      E2(1)=1.378841D+03
+      E2(2)=3.282694D+02
+      E2(3)=1.060946D+02
+      E2(4)=3.983275D+01
+      E2(5)=1.618622D+01
+      E2(6)=6.667788D+00
+      CS2(1)=2.376276D-03
+      CS2(2)=3.167450D-02
+      CS2(3)=1.262888D-01
+      CS2(4)=-2.584552D-02
+      CS2(5)=-6.183491D-01
+      CS2(6)=-4.567008D-01
+      CP2(1)=3.971488D-03
+      CP2(2)=3.108174D-02
+      CP2(3)=1.357439D-01
+      CP2(4)=3.476827D-01
+      CP2(5)=4.626340D-01
+      CP2(6)=2.051632D-01
+      E3(1)=5.452355D+01
+      E3(2)=1.829783D+01
+      E3(3)=7.867348D+00
+      E3(4)=3.340534D+00
+      E3(5)=1.393756D+00
+      E3(6)=5.513260D-01
+      CS3(1)=-3.993004D-03
+      CS3(2)=7.409663D-02
+      CS3(3)=2.542000D-01
+      CS3(4)=-2.921657D-01
+      CS3(5)=-7.318703D-01
+      CS3(6)=-2.040784D-01
+      CP3(1)=-7.290772D-03
+      CP3(2)=-2.926027D-02
+      CP3(3)=6.564150D-02
+      CP3(4)=4.000652D-01
+      CP3(5)=4.950236D-01
+      CP3(6)=1.758240D-01
+      E4(1)=2.151947D+00
+      E4(2)=8.110630D-01
+      E4(3)=1.210170D-01
+      E4(4)=4.303700D-02
+      CS4(1)=5.379843D-02
+      CS4(2)=2.759971D-01
+      CS4(3)=-1.129692D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-2.165496D-01
+      CP4(2)=1.240488D-01
+      CP4(3)=9.724064D-01
+      CP4(4)=1.0D+00
+      ED(1)=2.559306D+01
+      ED(2)=6.800990D+00
+      ED(3)=2.051647D+00
+      ED(4)=5.556710D-01
+      DD(1)=9.004748D-02
+      DD(2)=3.931703D-01
+      DD(3)=6.976844D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  NICKEL                                          *****
+  280 GO TO (282,284,286,288,290,300),NGAUSS
+  282 CALL BERROR(2)
+  284 CALL BERROR(2)
+  286 CALL BERROR(2)
+  288 CALL BERROR(2)
+  290 CALL BERROR(2)
+  300 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=7.139635D+04
+      E1(2)=1.072084D+04
+      E1(3)=2.442129D+03
+      E1(4)=6.884265D+02
+      E1(5)=2.206153D+02
+      E1(6)=7.539373D+01
+      CS1(1)=1.753003D-03
+      CS1(2)=1.343122D-02
+      CS1(3)=6.627041D-02
+      CS1(4)=2.302508D-01
+      CS1(5)=4.790186D-01
+      CS1(6)=3.523444D-01
+      E2(1)=1.492532D+03
+      E2(2)=3.554013D+02
+      E2(3)=1.149534D+02
+      E2(4)=4.322043D+01
+      E2(5)=1.759710D+01
+      E2(6)=7.257765D+00
+      CS2(1)=2.370714D-03
+      CS2(2)=3.160566D-02
+      CS2(3)=1.266335D-01
+      CS2(4)=-2.417037D-02
+      CS2(5)=-6.187775D-01
+      CS2(6)=-4.576770D-01
+      CP2(1)=3.967554D-03
+      CP2(2)=3.109479D-02
+      CP2(3)=1.359517D-01
+      CP2(4)=3.485136D-01
+      CP2(5)=4.625498D-01
+      CP2(6)=2.035186D-01
+      E3(1)=5.935261D+01
+      E3(2)=2.002181D+01
+      E3(3)=8.614561D+00
+      E3(4)=3.660531D+00
+      E3(5)=1.528111D+00
+      E3(6)=6.040570D-01
+      CS3(1)=-4.162002D-03
+      CS3(2)=7.425111D-02
+      CS3(3)=2.541360D-01
+      CS3(4)=-2.903477D-01
+      CS3(5)=-7.302121D-01
+      CS3(6)=-2.076057D-01
+      CP3(1)=-7.421452D-03
+      CP3(2)=-2.953410D-02
+      CP3(3)=6.731852D-02
+      CP3(4)=4.016660D-01
+      CP3(5)=4.926623D-01
+      CP3(6)=1.756893D-01
+      E4(1)=2.379276D+00
+      E4(2)=8.858390D-01
+      E4(3)=1.285290D-01
+      E4(4)=4.519500D-02
+      CS4(1)=5.157888D-02
+      CS4(2)=2.707611D-01
+      CS4(3)=-1.124770D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-1.887663D-01
+      CP4(2)=1.015199D-01
+      CP4(3)=9.790906D-01
+      CP4(4)=1.0D+00
+      ED(1)=2.819147D+01
+      ED(2)=7.523584D+00
+      ED(3)=2.271228D+00
+      ED(4)=6.116030D-01
+      DD(1)=9.098881D-02
+      DD(2)=3.958208D-01
+      DD(3)=6.947154D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  COPPER                                          *****
+  310 GO TO (312,314,316,318,320,330),NGAUSS
+  312 CALL BERROR(2)
+  314 CALL BERROR(2)
+  316 CALL BERROR(2)
+  318 CALL BERROR(2)
+  320 CALL BERROR(2)
+  330 CONTINUE
+C        *****  66-31G                                          *****
+      E1(1)=7.679438D+04
+      E1(2)=1.153070D+04
+      E1(3)=2.626575D+03
+      E1(4)=7.404903D+02
+      E1(5)=2.373528D+02
+      E1(6)=8.115818D+01
+      CS1(1)=1.748161D-03
+      CS1(2)=1.339602D-02
+      CS1(3)=6.610885D-02
+      CS1(4)=2.298265D-01
+      CS1(5)=4.787675D-01
+      CS1(6)=3.530739D-01
+      E2(1)=1.610814D+03
+      E2(2)=3.836367D+02
+      E2(3)=1.241733D+02
+      E2(4)=4.674678D+01
+      E2(5)=1.906569D+01
+      E2(6)=7.871567D+00
+      CS2(1)=2.364055D-03
+      CS2(2)=3.153635D-02
+      CS2(3)=1.269452D-01
+      CS2(4)=-2.262840D-02
+      CS2(5)=-6.192080D-01
+      CS2(6)=-4.585393D-01
+      CP2(1)=3.963307D-03
+      CP2(2)=3.110223D-02
+      CP2(3)=1.361350D-01
+      CP2(4)=3.492914D-01
+      CP2(5)=4.624780D-01
+      CP2(6)=2.020102D-01
+      E3(1)=6.445732D+01
+      E3(2)=2.185212D+01
+      E3(3)=9.405343D+00
+      E3(4)=3.999168D+00
+      E3(5)=1.670297D+00
+      E3(6)=6.596270D-01
+      CS3(1)=-4.331075D-03
+      CS3(2)=7.412307D-02
+      CS3(3)=2.542108D-01
+      CS3(4)=-2.874843D-01
+      CS3(5)=-7.291436D-01
+      CS3(6)=-2.113951D-01
+      CP3(1)=-7.523725D-03
+      CP3(2)=-2.975687D-02
+      CP3(3)=6.849654D-02
+      CP3(4)=4.027141D-01
+      CP3(5)=4.908490D-01
+      CP3(6)=1.759268D-01
+      E4(1)=2.600088D+00
+      E4(2)=9.630940D-01
+      E4(3)=1.361610D-01
+      E4(4)=4.733200D-02
+      CS4(1)=5.027577D-02
+      CS4(2)=2.650040D-01
+      CS4(3)=-1.120155D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-1.702911D-01
+      CP4(2)=9.310133D-02
+      CP4(3)=9.814336D-01
+      CP4(4)=1.0D+00
+      ED(1)=3.085341D+01
+      ED(2)=8.264985D+00
+      ED(3)=2.495332D+00
+      ED(4)=6.676580D-01
+      DD(1)=9.199905D-02
+      DD(2)=3.985021D-01
+      DD(3)=6.917897D-01
+      DD(4)=1.0D+00
+      RETURN
+C        *****  ZINC                                            *****
+  340 GO TO (342,344,346,348,350,360),NGAUSS
+  342 CALL BERROR(2)
+  344 CALL BERROR(2)
+  346 CALL BERROR(2)
+  348 CALL BERROR(2)
+  350 CALL BERROR(2)
+  360 CONTINUE
+C        ***** 66-31G                                           *****
+      E1(1)=8.240094D+04
+      E1(2)=1.237255D+04
+      E1(3)=2.818351D+03
+      E1(4)=7.945717D+02
+      E1(5)=2.547232D+02
+      E1(6)=8.713880D+01
+      CS1(1)=1.743329D-03
+      CS1(2)=1.335966D-02
+      CS1(3)=6.594365D-02
+      CS1(4)=2.294151D-01
+      CS1(5)=4.785453D-01
+      CS1(6)=3.537753D-01
+      E2(1)=1.732569D+03
+      E2(2)=4.127149D+02
+      E2(3)=1.336780D+02
+      E2(4)=5.038585D+01
+      E2(5)=2.058358D+01
+      E2(6)=8.505940D+00
+      CS2(1)=2.361459D-03
+      CS2(2)=3.150177D-02
+      CS2(3)=1.272774D-01
+      CS2(4)=-2.145928D-02
+      CS2(5)=-6.197652D-01
+      CS2(6)=-4.590180D-01
+      CP2(1)=3.963125D-03
+      CP2(2)=3.113411D-02
+      CP2(3)=1.363931D-01
+      CP2(4)=3.501266D-01
+      CP2(5)=4.623179D-01
+      CP2(6)=2.004995D-01
+      E3(1)=6.936492D+01
+      E3(2)=2.362082D+01
+      E3(3)=1.018471D+01
+      E3(4)=4.334082D+00
+      E3(5)=1.810918D+00
+      E3(6)=7.148410D-01
+      CS3(1)=-4.440098D-03
+      CS3(2)=7.505253D-02
+      CS3(3)=2.533111D-01
+      CS3(4)=-2.881897D-01
+      CS3(5)=-7.267052D-01
+      CS3(6)=-2.133439D-01
+      CP3(1)=-7.689262D-03
+      CP3(2)=-2.997982D-02
+      CP3(3)=7.082411D-02
+      CP3(4)=4.046141D-01
+      CP3(5)=4.882325D-01
+      CP3(6)=1.751970D-01
+      E4(1)=2.823842D+00
+      E4(2)=1.039543D+00
+      E4(3)=1.432640D-01
+      E4(4)=4.929600D-02
+      CS4(1)=4.898543D-02
+      CS4(2)=2.592793D-01
+      CS4(3)=-1.115711D+00
+      CS4(4)=1.0D+00
+      CP4(1)=-1.586763D-01
+      CP4(2)=8.379327D-02
+      CP4(3)=9.840547D-01
+      CP4(4)=1.0D+00
+      ED(1)=3.370764D+01
+      ED(2)=9.061106D+00
+      ED(3)=2.738383D+00
+      ED(4)=7.302940D-01
+      DD(1)=9.262648D-02
+      DD(2)=4.002980D-01
+      DD(3)=6.896608D-01
+      DD(4)=1.0D+00
+      RETURN
+  800 CALL BERROR(2)
+      RETURN
+      END

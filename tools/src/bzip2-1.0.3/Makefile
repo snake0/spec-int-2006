@@ -1,0 +1,109 @@
+# Generated automatically from Makefile.in by configure.
+
+SHELL=/bin/sh
+
+subdirs = @subdirs@
+top_srcdir = .
+srcdir = .
+prefix = /var/services/homes/spparmar/spec2006/tools/output
+exec_prefix = ${prefix}
+bindir = $(exec_prefix)/bin
+infodir = $(prefix)/info
+libdir = $(prefix)/lib
+mandir = $(prefix)/man/man1
+
+CC = gcc
+CPPFLAGS = -I/var/services/homes/spparmar/spec2006/tools/output/include  
+CFLAGS = $(CPPFLAGS)  -fPIC $(BZIP2_CFLAGS)
+LDFLAGS = -L/var/services/homes/spparmar/spec2006/tools/output/lib  
+LIBS =  
+INSTALL = @INSTALL@
+RANLIB = ranlib
+RM = /bin/rm
+AR = /usr/bin/ar
+CMP = /usr/bin/cmp
+
+OBJS= blocksort.o  \
+      huffman.o    \
+      crctable.o   \
+      randtable.o  \
+      compress.o   \
+      decompress.o \
+      bzlib.o
+
+all: libbz2.a bzip2 bzip2recover test
+
+bzip2: libbz2.a bzip2.o
+	$(CC) $(CFLAGS) -o $@ bzip2.o $(LDFLAGS) -L. -lbz2 $(LIBS)
+
+bzip2recover: bzip2recover.o
+
+libbz2.a: $(OBJS)
+	$(RM) -f libbz2.a
+	$(AR) cq libbz2.a $(OBJS)
+	$(RANLIB) libbz2.a
+
+test: bzip2
+	./bzip2 -1  < sample1.ref > sample1.rb2
+	./bzip2 -2  < sample2.ref > sample2.rb2
+	./bzip2 -3  < sample3.ref > sample3.rb2
+	./bzip2 -d  < sample1.bz2 > sample1.tst
+	./bzip2 -d  < sample2.bz2 > sample2.tst
+	./bzip2 -ds < sample3.bz2 > sample3.tst
+	$(CMP) sample1.bz2 sample1.rb2 
+	$(CMP) sample2.bz2 sample2.rb2
+	$(CMP) sample3.bz2 sample3.rb2
+	$(CMP) sample1.tst sample1.ref
+	$(CMP) sample2.tst sample2.ref
+	$(CMP) sample3.tst sample3.ref
+
+install: bzip2 bzip2recover
+	test -d $(DESTDIR)$(bindir) || mkdir -p $(DESTDIR)$(bindir)
+	test -d $(DESTDIR)$(libdir) || mkdir -p $(DESTDIR)$(libdir)
+	test -d $(DESTDIR)$(mandir) || mkdir -p $(DESTDIR)$(mandir)
+	test -d $(DESTDIR)$(prefix)/include || mkdir -p $(DESTDIR)$(prefix)/include
+	cp -f bzip2        $(DESTDIR)$(bindir)/bzip2
+	cp -f bzip2        $(DESTDIR)$(bindir)/bunzip2
+	cp -f bzip2        $(DESTDIR)$(bindir)/bzcat
+	cp -f bzip2recover $(DESTDIR)$(bindir)/bzip2recover
+	chmod a+x $(DESTDIR)$(bindir)/bzip2
+	chmod a+x $(DESTDIR)$(bindir)/bunzip2
+	chmod a+x $(DESTDIR)$(bindir)/bzcat
+	chmod a+x $(DESTDIR)$(bindir)/bzip2recover
+	cp -f bzip2.1 $(DESTDIR)$(mandir)
+	chmod a+r     $(DESTDIR)$(mandir)/bzip2.1
+	cp -f bzlib.h $(DESTDIR)$(prefix)/include
+	chmod a+r     $(DESTDIR)$(prefix)/include/bzlib.h
+	cp -f libbz2.a $(DESTDIR)$(libdir)
+	chmod a+r      $(DESTDIR)$(libdir)/libbz2.a
+	$(RANLIB) $(DESTDIR)$(libdir)/libbz2.a
+
+clean: 
+	$(RM) -f *.o libbz2.a bzip2 bzip2recover \
+	sample1.rb2 sample2.rb2 sample3.rb2 \
+	sample1.tst sample2.tst sample3.tst \
+
+realclean: clean
+	$(RM) -f config.h config.log config.status config.cache stamp-h \
+        stamp-h.in Makefile
+
+# automatic re-running of configure if the ocnfigure.in file has changed
+${srcdir}/configure: configure.in
+	cd ${srcdir} && autoconf
+
+# autoheader might not change config.h.in, so touch a stamp file
+${srcdir}/config.h.in: stamp-h.in
+${srcdir}/stamp-h.in: configure.in
+	cd ${srcdir} && autoheader
+	echo timestamp > ${srcdir}/stamp-h.in
+
+config.h: stamp-h
+stamp-h: config.h.in config.status
+	./config.status
+
+Makefile: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
+

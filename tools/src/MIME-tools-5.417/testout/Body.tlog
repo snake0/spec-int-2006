@@ -1,0 +1,59 @@
+1..18
+
+** Checking class: MIME::Body::Scalar
+1: MIME::Body::Scalar: opened for writing
+1: ok 1
+
+2: MIME::Body::Scalar: able to open body for reading?
+2: ok 2
+
+3: MIME::Body::Scalar: getlines method works?
+3: ok 3
+
+4: MIME::Body::Scalar: seek(SEEK_START) plus read works?
+4: ok 4
+
+5: MIME::Body::Scalar: tell and seek(SEEK_CUR) works?
+5: ok 5
+
+6: MIME::Body::Scalar: seek(SEEK_CUR) plus read works?
+6: ok 6
+
+7: MIME::Body::Scalar: getline works?
+7: ok 7
+
+8: MIME::Body::Scalar: as_lines works?
+8: ok 8
+
+9: MIME::Body::Scalar: as_string works?
+9: ok 9
+
+** Checking class: MIME::Body::File
+10: MIME::Body::File: opened for writing
+10: ok 10
+
+11: MIME::Body::File: able to open body for reading?
+11: ok 11
+
+12: MIME::Body::File: getlines method works?
+12: ok 12
+
+13: MIME::Body::File: seek(SEEK_START) plus read works?
+13: ok 13
+
+14: MIME::Body::File: tell and seek(SEEK_CUR) works?
+14: ok 14
+
+15: MIME::Body::File: seek(SEEK_CUR) plus read works?
+15: ok 15
+
+16: MIME::Body::File: getline works?
+16: ok 16
+
+17: MIME::Body::File: as_lines works?
+17: ok 17
+
+18: MIME::Body::File: as_string works?
+18: ok 18
+
+END

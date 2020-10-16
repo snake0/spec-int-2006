@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>481.wrf: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>481.wrf<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>481.wrf</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>National Center for Atmospheric Research (NCAR) in collaboration
+with multiple government agencies, universities, and others.</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Weather Forecasting</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>481.wrf is based on the Weather Research and Forecasting (WRF) Model, which is a
+next-generation mesocale numerical weather prediction system designed
+to serve both operational forecasting and atmospheric research
+needs. </p>
+
+<p>WRF features multiple dynamical cores, a 3-dimensional
+variational (3DVAR) data assimilation system, and a software
+architecture allowing for computational parallelism and system
+extensibility. The parallel portions of the code have been
+turned off for SPEC CPU2006 as the interest here is in single
+processor performance. </p>
+
+<p>WRF is suitable for a broad spectrum of
+applications across scales ranging from meters to thousands of
+kilometers.</p>
+
+<p>WRF version 2.0.2 is used in the benchmark version, 481.wrf.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>The WRF Standard Initialization (SI) software is used to create
+the data sets. The June 2001 SI data archived at
+NCAR is used as data sets. The data is 10 km from 1200 UTC June 11 -
+1200 UTC Jun 12 2001 at 3 h interval.</p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>The temperature at a certain grid point is printed for every
+time step and validated.</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>Fortran 90 and C</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>481.wrf requires the netCDF library for I/O. netCDF is packaged as
+part of the source, but may need to be configured for your system.  
+SPEC_CPU portability options are provided.</p>
+
+<p>481.wrf uses unformatted I/O to read its data files.  By default, files
+with 4-byte headers will be read.  If your system requires 8-byte headers,
+please set</p>
+<pre>
+  wrf_data_header_size = 8
+</pre>
+<p>in the 481.wrf section of your config file.</p>
+
+<hr />
+
+<h2>References</h2>
+
+<ul>
+<li><a href="http://www.wrf-model.org/index.php">http://www.wrf-model.org/index.php</a>
+</li>
+</ul>
+
+<hr />
+
+<p>Last updated: 23 May 2006</p>
+</body>
+</html>

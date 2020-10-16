@@ -1,0 +1,83 @@
+1..10
+
+1: Is it good?
+1:   IsGood: "1"
+1:   Error: ""
+1:   Encoded: "Subject: =?ISO-8859-1?Q?Oc=E9_3165_Network_Copier_down_for_maintenance?="
+1:   Decoded: "Subject: Oc\E9 3165 Network Copier down for maintenance"
+1:   Expectd: "Subject: Oc\E9 3165 Network Copier down for maintenance"
+1: ok 1
+
+2: Is it good?
+2:   IsGood: ""
+2:   Error: "unterminated \22=?..?..?=\22 in \22Subject: =?ISO-8859-1?Q?Oc=E9_3165_Network_Copier_down_for_maintenance?\22 (pos 9)\n"
+2:   Encoded: "Subject: =?ISO-8859-1?Q?Oc=E9_3165_Network_Copier_down_for_maintenance?"
+2:   Decoded: "Subject: =?ISO-8859-1?Q?Oc=E9_3165_Network_Copier_down_for_maintenance?"
+2:   Expectd: ""
+2: ok 2
+
+3: Is it good?
+3:   IsGood: ""
+3:   Error: "unterminated \22=?..?..?=\22 in \22Subject: =?ISO-8859-1?Q?Oc=E9_3165_Network_Copier_down_for_maintenance\22 (pos 9)\n"
+3:   Encoded: "Subject: =?ISO-8859-1?Q?Oc=E9_3165_Network_Copier_down_for_maintenance"
+3:   Decoded: "Subject: =?ISO-8859-1?Q?Oc=E9_3165_Network_Copier_down_for_maintenance"
+3:   Expectd: ""
+3: ok 3
+
+4: Is it good?
+4:   IsGood: "1"
+4:   Error: ""
+4:   Encoded: "=?US-ASCII?Q?Keith_Moore?= <moore@cs.utk.edu>"
+4:   Decoded: "Keith Moore <moore@cs.utk.edu>"
+4:   Expectd: "Keith Moore <moore@cs.utk.edu>"
+4: ok 4
+
+5: Is it good?
+5:   IsGood: "1"
+5:   Error: ""
+5:   Encoded: "=?ISO-8859-1?Q?Keld_J=F8rn_Simonsen?= <keld@dkuug.dk>"
+5:   Decoded: "Keld J\F8rn Simonsen <keld@dkuug.dk>"
+5:   Expectd: "Keld J\F8rn Simonsen <keld@dkuug.dk>"
+5: ok 5
+
+6: Is it good?
+6:   IsGood: "1"
+6:   Error: ""
+6:   Encoded: "=?ISO-8859-1?Q?Andr=E9_?=(<- one space) Pirard <PIRARD@vm1.ulg.ac.be>"
+6:   Decoded: "Andr\E9 (<- one space) Pirard <PIRARD@vm1.ulg.ac.be>"
+6:   Expectd: "Andr\E9 (<- one space) Pirard <PIRARD@vm1.ulg.ac.be>"
+6: ok 6
+
+7: Is it good?
+7:   IsGood: "1"
+7:   Error: ""
+7:   Encoded: "=?ISO-8859-1?Q?Andr=E9_?= (<- two spaces) Pirard <PIRARD@vm1.ulg.ac.be>"
+7:   Decoded: "Andr\E9  (<- two spaces) Pirard <PIRARD@vm1.ulg.ac.be>"
+7:   Expectd: "Andr\E9  (<- two spaces) Pirard <PIRARD@vm1.ulg.ac.be>"
+7: ok 7
+
+8: Is it good?
+8:   IsGood: "1"
+8:   Error: ""
+8:   Encoded: "=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?==?ISO-8859-2?B?dSB1bmRlcnN0YW5kIHRoZSBleGFtcGxlLg==?==?US-ASCII?Q?.._cool!?="
+8:   Decoded: "If you can read this you understand the example... cool!"
+8:   Expectd: "If you can read this you understand the example... cool!"
+8: ok 8
+
+9: Is it good?
+9:   IsGood: "1"
+9:   Error: ""
+9:   Encoded: "=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?=\n\09=?ISO-8859-2?B?dSB1bmRlcnN0YW5kIHRoZSBleGFtcGxlLg==?=\n\09=?US-ASCII?Q?.._cool!?="
+9:   Decoded: "If you can read this you understand the example... cool!"
+9:   Expectd: "If you can read this you understand the example... cool!"
+9: ok 9
+
+10: Is it good?
+10:   IsGood: "1"
+10:   Error: ""
+10:   Encoded: "=?ISO-8859-1?Q?=5F-=5F?="
+10:   Decoded: "_-_"
+10:   Expectd: "_-_"
+10: ok 10
+
+END

@@ -1,0 +1,64 @@
+1..17
+
+** Read a bogus file (this had better fail...)
+1: parse failed as expected?
+1: ok 1
+
+** Parse in the crlf.hdr file:
+2: parse of good file succeeded as expected?
+2: ok 2
+
+** Did we get all the fields?
+3: got all fields we expected?
+3: ok 3
+
+** Could we get() the 'subject'? (it'll end in \r\n)
+4: got the subject okay?
+4:   Subject: "EMPLOYMENT: CHICAGO, IL UNIX/CGI/WEB/DBASE\0D\n"
+4: ok 4
+
+** Could we replace() the 'Subject', and get it as 'SUBJECT'?
+5: able to set Subject, and get SUBJECT?
+5: ok 5
+
+** Does the count() method work?
+6: count method working?
+6: ok 6
+
+** Create a custom structured field, and extract parameters
+7: got the parameter hash?
+7: ok 7
+
+8: got the default field?
+8: ok 8
+
+9: got the name?
+9: ok 9
+
+10: got the length?
+10: ok 10
+
+11: got the setting?
+11: ok 11
+
+** Output to a desired file
+12: output is a decent size?
+12: ok 12
+
+** Parse in international header, decode and unfold it
+13: Q decoding okay?
+13: ok 13
+
+14: B encoding and compositing okay?
+14: ok 14
+
+** Parse in header with 'From ', and check field order
+15: field order preserved under stringify?
+15: ok 15
+
+16: field order preserved under stringify after fields added?
+16: ok 16
+
+17: field order is preserved under stringify after decoding?
+17: ok 17
+

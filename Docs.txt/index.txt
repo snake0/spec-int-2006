@@ -1,0 +1,246 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+                           SPEC CPU2006 Documentation
+
+   To check for possible updates to the SPEC CPU2006 documentation, see
+   www.spec.org/cpu2006/Docs.
+
+Suggested reading order:
+
+   If you are just getting started with SPEC CPU2006, here is a suggested
+   reading order:
+
+    1. Start with readme1st.html to get an overview of the suite and the
+       process.
+
+    2. Use system-requirements.html to help you choose which computer to use
+       as your first test system.
+
+    3. Once you've chosen the test system, install the suite, using
+       install-guide-unix.html or install-guide-windows.html.
+
+    4. Read at least the first part of runspec.html, because runspec is the
+       primary tool in the suite. It is used to build the benchmarks, run
+       them, and report on their results. You should read at least section 1
+       through section 3.1 of that document.
+
+    5. After that, you can pick and choose which documents to read based on
+       where your needs may take you. The list in the next section can help
+       you decide. Note that the run rules will need to be studied carefully
+       if you plan to quote results in public.
+
+List of documents
+
+   The following documents are included on the SPEC CPU2006 DVD. New features
+   for CPU2006 are highlighted.
+
+   config.html
+
+   SPEC CPU2006 provides benchmarks in source code form, which are compiled
+   under control of SPEC's toolset. A config file controls how they are
+   compiled, and also controls various settings for your tests. If you are
+   new to the suite, you will probably start with an existing config file,
+   such as one downloaded from www.spec.org/cpu2006. Eventually, you will
+   either want to understand the details of what is inside that config file,
+   or you will want to write your own. This document tells you how.
+
+   New features for CPU2006 include a preprocessor, section specifiers that
+   apply to multiple benchmarks or which inherit from other benchmarks, and a
+   host of other convenience features. In addition, the document has a new
+   tutorial chapter on using feedback directed optimization.
+
+   credits.html
+
+   Information about the contributors to SPEC CPU2006.
+
+   errata.html
+
+   Debugging and errata information.
+
+   flag-description.html
+
+   When the benchmarks are compiled, compilation flags (such as -O5 or
+   -unroll) are detected and automatically reported by the tools. A flag
+   description file helps the tools recognize such flags and describe them in
+   reports. The tester is responsible for providing a flag description file
+   to go with his or her config file. This document tells you how to write a
+   flag description file.
+
+   Note that if you are just getting started with CPU2006, you may find that
+   your starter config file already points to a valid flags description, via
+   the config file flagsurl field.
+
+   Automated flag reporting is new with CPU2006.
+
+   install-guide-unix.html
+
+   How to install SPEC CPU2006 on Unix, Linx, and Mac OS X systems. Includes
+   an example installation and an example of running the first benchmark.
+
+   install-guide-windows.html
+
+   How to install SPEC CPU2006 on Microsoft Windows systems. Includes an
+   example installation and an example of running the first benchmark.
+
+   legal.html
+
+   Copyright notice and other legal information.
+
+   makevars.html
+
+   Advanced users of the suite who want to understand exactly how the
+   benchmarks are built can use this file to help decipher the process.
+
+   readme1st.html
+
+   Written in the form of questions and answers, this document provides
+   useful background information to the SPEC CPU benchmarks, explains which
+   system components are measured, gives a high-level overview of the
+   benchmarking steps, summarizes the contents of the CPU2006 package, and
+   details types of metrics available with the suite.
+
+   runrules.html
+
+   The SPEC CPU2006 Run and reporting rules. These must be followed for
+   generating publicly disclosed results. If you plan to quote results in
+   public, you will need to study these rules carefully.
+
+   Changes for CPU2006 include clarifications regarding CPU counting;
+   clarification on requirements for estimates; unlimited, but consistent
+   flags for base; no feedback in base; a detailed discussion of run time
+   dynamic optimization; clarifications in the safety rule regarding C++
+   exceptions and and regarding accuracy; and a re-written philosophy
+   statement.
+
+   runspec.html
+
+   Information on the "runspec" command, which is the primary user interface
+   for running SPEC CPU2006 benchmarks and reporting results.
+
+   New features for CPU2006 include new methods for sharing an installation
+   among multiple users; optional version checking against www.spec.org; CSV
+   output for spreadsheets; emailing of reports; the ability to specify min
+   and max for the graphs; and a feature to preview what a report will look
+   like prior to running the test.
+
+   runspec-avoidance.html
+
+   Some users prefer to avoid using the SPEC-supplied toolset, because they
+   have specialized tasks that require more direct access to the benchmarks.
+   Such tasks might include instrumenting the code, doing performance traces,
+   or debugging an experimental compiler. This document describes how you can
+   use SPEC's tools for the minimal purpose of just generating work
+   directories, for use as a private sandbox.
+
+   This document is retitled for CPU2006 (it used to be called
+   "execution_without_SPEC_tools") and it uses new techniques, notably --fake
+
+   sample-sysinfo-program.pl
+
+   A SPEC result includes a system description. If your system allows it, you
+   may be able to automate part of the process of gathering a system
+   description. This perl script provides an example of how that might be
+   done. Note: some web browsers may refuse to open a file of type ".pl". If
+   clicking on the link doesn't work, try saving the file and opening it with
+   your favorite text editor.
+
+   Automated system descriptions are new with CPU2006.
+
+   system-requirements.html
+
+   A list of the hardware and software needed in order to run the SPEC
+   CPU2006 suite.
+
+   The system requirements for CPU2006 are significantly different from the
+   requirements for CPU2000.
+
+   techsupport.html
+
+   Information on SPEC technical support.
+
+   tools-build.html
+
+   How to build (or re-build) the tools such as runspec
+
+   utility.html
+
+   How to use various utilities, such as specinvoke, specdiff, and specmake.
+
+   Several new utilities are added for CPU2006, including the ability to
+   extract a flags file, and to easily move around in run directory trees.
+
+Benchmark Documentation
+
+    Integer Benchmarks
+
+   400.perlbench  C   PERL Programming Language      
+   401.bzip2      C   Compression                    
+   403.gcc        C   C Compiler                     
+   429.mcf        C   Combinatorial Optimization     
+   445.gobmk      C   Artificial Intelligence: go    
+   456.hmmer      C   Search Gene Sequence           
+   458.sjeng      C   Artificial Intelligence: chess 
+   462.libquantum C   Physics: Quantum Computing     
+   464.h264ref    C   Video Compression              
+   471.omnetpp    C++ Discrete Event Simulation      
+   473.astar      C++ Path-finding Algorithms        
+   483.xalancbmk  C++ XML Processing                 
+
+    Floating Point Benchmarks
+
+   410.bwaves    Fortran   Fluid Dynamics                   
+   416.gamess    Fortran   Quantum Chemistry                
+   433.milc      C         Physics: Quantum Chromodynamics  
+   434.zeusmp    Fortran   Physics / CFD                    
+   435.gromacs   C/Fortran Biochemistry/Molecular Dynamics  
+   436.cactusADM C/Fortran Physics / General Relativity     
+   437.leslie3d  Fortran   Fluid Dynamics                   
+   444.namd      C++       Biology / Molecular Dynamics     
+   447.dealII    C++       Finite Element Analysis          
+   450.soplex    C++       Linear Programming, Optimization 
+   453.povray    C++       Image Ray-tracing                
+   454.calculix  C/Fortran Structural Mechanics             
+   459.GemsFDTD  Fortran   Computational Electromagnetics   
+   465.tonto     Fortran   Quantum Chemistry                
+   470.lbm       C         Fluid Dynamics                   
+   481.wrf       C/Fortran Weather Prediction               
+   482.sphinx3   C         Speech recognition               
+
+   Some individual benchmark in the suite have additional documents, found in
+   the benchmark "Docs" subdirectory on your installed benchmark tree, or on
+   the CPU2006 distribution media. For example, additional information about
+   465.tonto may be found in:
+
+   $SPEC/benchspec/CPU2006/401.bzip2/Docs/465.tonto.html (Unix)
+   or
+   %SPEC%\benchspec\CPU2006\401.bzip2\Docs\465.tonto.html (Windows)
+
+Original Sources
+
+   On the SPEC distribution media (DVD), you will find:
+
+ original.src/README Information about freely-available sources
+                     that have been incorporated in SPEC CPU2006
+
+     ----------------------------------------------------------------------
+
+   Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+   All Rights Reserved

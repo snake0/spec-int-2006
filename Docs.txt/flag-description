@@ -1,0 +1,1213 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+                        CPU2006 Flag Description Format
+
+    Last updated: 20 Mar 2006 11:17am jh/cds
+
+   ABSTRACT
+   This document describes the CPU2006 flags description file format.
+
+     ----------------------------------------------------------------------
+
+   (To check for possible updates to this document, please see
+   http://www.spec.org/cpu2006/)
+
+  Overview
+
+   Selecting one of the following will take you to the detailed table of
+   contents for that section:
+
+   Purpose
+
+   1. Flag Description Sources
+
+   2. Flag Description Format
+
+   3. Flag Description Attributes
+
+  Detailed Contents
+
+   Purpose
+
+   1 Flag Description Sources and Reporting
+
+   1.1 Sources
+
+   1.1.1 Suite-wide flags file
+
+   1.1.2 Per-benchmark flags files
+
+   1.1.3 User flags file
+
+   1.2 Reporting
+
+   1.2.1 Flags dump
+
+   1.2.2 Per-result flags report
+
+   1.2.3 Effect on other outputs
+
+   2 Flag Description Format
+
+   2.1 Enclosing tags
+
+   2.2 HTML comments are supported
+
+   2.3 Informational elements
+
+   2.3.1 Regarding embedded HTML
+
+   2.3.2 Suggested file name
+
+   2.3.3 Page title
+
+   2.3.4 Style sheet
+
+   2.3.5 Header (top level)
+
+   2.3.6 Headers for each class
+
+   2.3.7 Platform settings
+
+   2.4 Individual flag description
+
+   3 Flag Description Elements and Attributes
+
+   3.1 Flag name
+
+   3.2 Flag class
+
+   3.2.1 "mandatory" class
+
+   3.2.2 "forbidden" class
+
+   3.2.3 "portability" class
+
+   3.2.4 "optimization" class
+
+   3.2.5 "compiler" class
+
+   3.2.6 "other" class
+
+   3.2.7 "unknown" class
+
+   3.3 Regular expression
+
+   3.3.1 Default regular expression (the common case)
+
+   3.3.2 Full Perl regular expressions may be used
+
+   3.3.3 Substituting captured text
+
+   3.3.4 When \b won't work
+
+   3.3.5 Regular expression references
+
+   3.4 Descriptive text
+
+   3.5 Referencing other flags
+
+   3.5.1 "flag" attribute (reference by name)
+
+   3.5.1.1 "flagtext" attribute (providing parameters)
+
+   3.5.2 "text" attribute (reference by inserting text)
+
+   3.5.2.1Splitters
+
+   3.6 List of compilers
+
+   3.7 Example flag text
+
+   3.8 Example replacements
+
+   3.9 Controlling flag display
+
+   3.10 Other attributes
+
+   4 Other elements
+
+   5 Precedence
+
+     ----------------------------------------------------------------------
+
+Purpose
+
+   SPEC CPU2006 provides benchmarks in source code form, which are compiled
+   under control of SPEC's toolset. Compilation flags (such as -O5 or
+   -unroll) are detected and reported by the tools, with the help of flag
+   description files. A flag description file provides information such as:
+
+     * Whether a flag is to be considered under SPEC's rules for
+       "Portability"
+     * Whether a flag is allowed at all, or is "Forbidden"
+     * How to describe a flag in reports (e.g. "the -unroll flag allows loop
+       bodies to be duplicated")
+     * How to recognize a flag. Is it spelled "-unroll 4", or is it
+       "/unroll=4"? Or how about "-unroll:{inner=4,outer=4,tuplesmax=31K}"
+       with each of the three subsections considered as optional?
+
+   Flag description files are XML-based. This document covers the format of a
+   flags description file and the valid values for the various attributes.
+
+   This document assumes that you have at least some familiarity with
+   creating HTML documents (via writing HTML, that is, not by having
+   something else generate HTML on your behalf). Familiarity with XML is not
+   essential, although you might find it useful to understand some of the
+   basic concepts of XML. The definitive source for knowledge of XML is
+   www.w3.org, but if you're looking for an introduction, you might do better
+   to try your favorite search engine with the phrase "XML introduction".
+
+     ----------------------------------------------------------------------
+
+1. Flag Description Sources and Reporting
+
+  1.1 Sources
+
+   Flag descriptions come from three sources: the benchmark tools (Suite-wide
+   flags file), the benchmarks (Per-benchmark flags files), and the tester
+   (User flags files). The formats of all files are identical; they differ
+   primarily in what may appear in each.
+
+    1.1.1 Suite-wide flags file
+
+   The suite-wide flags file contains flags that are applied to all
+   compilations and are in general not switchable (the "mandatory" class;
+   flag classes will be explained more fully later). Flags listed in this
+   file are not typically reported. It is supplied by SPEC as
+   $SPEC/benchspec/flags_mandatory.xml.
+
+   If SPEC should need to update the suite-wide flags file, it will be posted
+   at the SPEC web site. You can update your local copy using runspec
+   --update_flags.
+
+    1.1.2 Per-benchmark flags files
+
+   The per-benchmark flags files describe optional portability flags and
+   flags that are applied by default (such as those in
+   $SPEC/benchspec/CPU2006/nnn.benchmark/Spec/object.pm $bench_flags).
+   Per-benchmark flags files are supplied by SPEC as
+   $SPEC/benchspec/CPU2006/nnn.benchmark/Spec/flags.xml.
+
+   If SPEC should need to update the per-benchmark flags files, they will be
+   posted at the SPEC web site. You can update your local copies using
+   runspec --update_flags.
+
+    1.1.3 User flags file
+
+   The user's flag description file describes compilation flags used by the
+   tester. The user's flag description file may be named in the config file
+   (by the flagsurl variable) or on the runspec command line using the
+   --flagsurl switch. The file's location may be specified as either a path
+   on the local file system or as a file://, ftp://, or http:// URL. HTTPS is
+   not supported.
+
+   User flag descriptions are saved within the raw result file so that the
+   result may be reformatted without requiring access to the flags file. The
+   stored flag descriptions can be updated: if you use runspec --rawformat
+   --flagsurl=newflags.xml the new flag descriptions will override any stored
+   in the raw result file. The flag descriptions stored in the raw file will
+   be removed if the result is formatted with the 'noflags' pseudo-flags file
+   (--flagsurl noflags).
+
+  1.2 Reporting
+
+   Flag description files are used directly in two reports, and have an
+   effect on several other kinds of reports.
+
+    1.2.1 Flags dump
+
+   A "flags dump" can be generated by flag_dump (see utility.html). A flags
+   dump is an HTML version of all the flags from an XML flags description
+   file.
+
+    1.2.2 Per-result flags report
+
+   A "per-result flags report", such as CINT2006.030.flags.html, is generated
+   by runspec --output_format flags (see runspec.html). A per-result flags
+   report includes descriptions only for the flags that were used in that
+   particular test.
+
+   Per-result flags reports can be regenerated using runspec --rawformat.
+   This feature can come in very handy if you need to update your user flags
+   file after you have completed your measurement run. For example, if a flag
+   changes its meaning with a new compiler version, or you find that you have
+   committed tyopgraphical errors that cause flags to unexpectedly be
+   reported as "unknown", runspec --rawformat can easily be rerun as needed.
+   You can also regenerate reports after using runspec --update_flags.
+
+    1.2.3 Effect on other outputs
+
+   In addition, various other result reports draw on the flags description
+   files in order to correctly classify flags. For example, if run #30 uses
+   benchmarks compiled with OPTIMIZE=-unroll=4, then each of
+   CINT2006.030.html, CINT2006.030.txt, CINT2006.030.pdf, and CINT2006.030.ps
+   will mention that -unroll=4 was used as an optimization flag.
+
+     ----------------------------------------------------------------------
+
+2. Flag Description Format
+
+   As you read this description, you may find it useful to refer to the
+   examples included with the kit: ($SPEC/Docs/flags-simple.xml and/or
+   $SPEC/Docs/flags-advanced.xml). It will probably be best if you look at
+   them as plain text, rather than in a browser, since browsers will attempt
+   to interpret their contents.
+
+  2.1 Enclosing tags
+
+   A flags description file is an XML 1.0 file that conforms to the SPEC CPU
+   flags description DTD. The first lines of the flags file must be
+
+   <xml version="1.0"?> <!DOCTYPE flagsdescription SYSTEM
+   "http://www.spec.org/dtd/cpuflags1.dtd" > <flagsdescription>
+
+   As you might expect, the file MUST end with a line that is simply
+
+   </flagsdescription>
+
+  2.2 HTML comments are supported
+
+   Standard HTML-style comments are supported. It is suggested that you use
+   comments near the top of the file to describe its purpose, the system to
+   which it applies, etc. These comments must NOT come before the DOCTYPE
+   declaration.
+
+  2.3 Informational elements
+
+   A few elements are available for providing text outside of the context of
+   individual flags. If these elements appear, they must appear in the
+   following order: filename, title, style, header, platform_settings. Only
+   the title is mandatory.
+
+    2.3.1 Regarding embedded HTML
+
+   A flags description file is an XML document. Flag descriptions commonly
+   include HTML. However, embedding HTML within XML poses a challenge,
+   because XML parsers are promised that ampersand (&) and left angle bracket
+   (<) do not appear unless used as XML markup. The solution is to hide
+   embedded HTML by enclosing it within CDATA sections. (Alternatively,
+   individual brackets could be escaped one at a time, but this is not
+   recommended.)
+
+   A CDATA section begins with '<![CDATA[' and ends with ']]>'. Any text
+   between the start and end tags will not be touched by the XML parser. Of
+   course, the CDATA end tag may not appear unescaped in the enclosed text.
+
+   For example:
+
+ <header><![CDATA[
+ <p>This is an <i>ACME Corporation</i> flags description.</p>
+ <p>Please read it.</p>
+ ]]></header>
+
+   CPU2006 reports are compliant with the XHTML 1.0 Strict standard. Care
+   should be taken that any HTML markup used does not cause reports to become
+   invalid or not well-formed.
+
+   There is an on-line validator which may be used to check those elements.
+   Because the flag descriptions for a per-result flags report have the same
+   markup as in the flag dump, validating the flags dump (as generated by
+   flag_dump) will ensure that per-result flags reports are also valid.
+
+   For convenience, flag descriptions that do not include any HTML will have
+   <p>...</p> added to them. For example:
+
+ <flag name="F-fstrength-reduce" class="optimization">
+       <![CDATA[
+       <p>Perform the optimizations of loop strength reduction and elimination of
+       iteration variables.</p>
+       ]]>
+ </flag>
+
+   could also be said as:
+
+ <flag name="F-fstrength-reduce" class="optimization">
+       Perform the optimizations of loop strength reduction and elimination of
+       iteration variables.
+ </flag>
+
+   Automatic addition of <p>...</p> is the only HTML that gets added
+   automatically; otherwise, you're on your own for writing valid HTML. If
+   you do write any of your own HTML, <p>...</p> is not added, because the
+   paragraph tags might interfere with whatever else you had set out to do.
+   In fact, if you include any left or right angle brackets (whether for HTML
+   or just because you'd like to say that "3 > 2", the automatic addition of
+   <p>...</p> does not occur.
+
+    2.3.2 Suggested file name
+
+   There may be times when the flag file may move around without a filename,
+   such as when it is enclosed in a raw result file.
+
+   In order to be able to save those files with "nice" names, the
+   <filename>...</filename> element may be used to suggest the base of a file
+   name.
+
+   For example:
+
+ <!-- I would like the filename to begin with "ACME-flags-file" -->
+ <filename>ACME-flags-file</filename>
+
+   There is no guarantee that all tools which might save a copy of the flags
+   file will use the contents of this element. Thus its status as a
+   "suggestion".
+
+    2.3.3 Page title
+
+   Using the <title>...</title> element, you can define text which will be
+   used to form the HTML page title for a flags dump (commonly seen as the
+   window title for the browser). This text is also used as the initial
+   header on the page.
+
+   The <title> element is not used for results reporting; it is only used
+   when dumping the flags to an HTML file.
+
+   Because it is used in the page title, this element must not contain any
+   HTML markup.
+
+   For example:
+
+ <title>SPEC CPU2006 Flag Description for 400.perlbench</title>
+
+    2.3.4 Style sheet
+
+   SPEC CPU2006 reports use structural HTML with presentation controlled by
+   CSS. Most discrete elements are identified by a class or an ID (or both)
+   so that they can be styled with a great degree of control. There is a
+   common style sheet, as well as style sheets containing tweaks for screen
+   output and for print output. They contain code to handle everything that
+   the tools output by default.
+
+   If you'd like to define some classes for use in your own markup, or if
+   you'd like to override some of the default CSS, you may do so by using the
+   <style>...</style> element. Doing so will affect both per-result flags
+   reports and the flags dump.
+
+   As mentioned above, because the flag description file is parsed as XML,
+   some things in the CSS (such as left angle brackets) must be escaped. It
+   is easiest to just enclose all of the CSS in a CDATA section.
+
+   For example:
+
+ <style><![CDATA[
+ body { background: red; }
+ ]]></style>
+
+    2.3.5 Header (top level)
+
+   Within a <header>...</header> element you can provide some HTML which will
+   be part of the flags dump.
+
+   The contents of this section will be inserted verbatim into the flags dump
+   after the top-level header and before the start of the flag descriptions.
+   If it is non-empty, it must be well-formed and valid XHTML 1.0. If in
+   doubt, validate it.
+
+   For example:
+
+ <header><![CDATA[
+ <p>This is a flags description.</p>
+ <p>Please read it.</p>
+ ]]></header>
+
+   The header sections in the user flag description file only appears in the
+   flags dump (as generated by the flag_dump utility); it does not appear in
+   a per-result flags report.
+
+    2.3.6 Headers for each class
+
+   It is possible to provide some HTML which will appear in a flags dump at
+   the top of each class section, before the flags in that section. This text
+   is also specified with the header element; the only difference is that a
+   "class" attribute is added.
+
+   For example, for general notes about optimization flags, use something
+   like this:
+
+ <header class="optimization"><![CDATA[
+ <p>Some suboptions either enable or disable a feature.</p>
+
+ <p>Suboption values and their effects:</p>
+ <ul>
+  <li>1, on, true - enable the feature</li>
+  <li>0, off, false - disable the feature</li>
+ </ul>
+
+ <p>These values are not case sensitive.</p>
+ </p>
+ ]]></header>
+
+    2.3.7 Platform settings
+
+   The <platform_settings>...</platform_settings>... element may be used to
+   describe system tunables or other performance-relevant items that are not
+   compilation flags and are therefore invisible to the SPEC tools. Items
+   commonly covered here may include (but are certainly not limited to)
+   methods for disabling hardware, environment variable settings, and
+   descriptions of submit commands.
+
+   The platform settings element is inserted verbatim at the end of both the
+   flags dump and the per-result flag report. For example:
+
+ <platform_settings><![CDATA[
+
+ <p>One or more system tunables may also be used.  If so, they are
+ mentioned under "Operating System Notes", and are defined below:</p>
+
+    <ul>
+    <li>HEAPMAX:  /etc/system parameter, sets the heap  size in kilobytes</li>
+    <li>STACKMAX: /etc/system parameter, sets the stack size in kilobytes</li>
+    </ul>
+
+ ]]></platform_settings>
+
+  2.4 Individual flag description
+
+   The description of each individual flag is enclosed in <flag>...</flag>
+   tags. Because the format of the XML can be validated (and because the
+   parser is inflexible), some items must be specified as attributes within
+   the opening <flag ... > tag, and others must be standalone elements inside
+   the flag element. The text of the flag description itself is the text
+   within the flag section; it is not called out by any special element or
+   attribute name.
+
+   Because of these restrictions, there is effectively only one proper place
+   for each item. Here's an example that contains every option:
+
+ <flag name="F-Ox" class="optimization" regexp="-O(\d+)\b" compilers="cc,c++">
+     <example>-O3</example>
+     <ex_replacement>3</ex_replacement>
+     <![CDATA[
+ <!-- Because this comment appears within the CDATA section, it will also
+ appear in the HTML output. -->
+ <p>-O$1 enables optimization at level $1.</p>
+     ]]>
+     <include flag="F-Qunroll" />
+     <include text="F-inline=$1" />
+     <display enable="1" />
+ </flag>
+
+   Because whitespace is largely ignored (except within quoted and CDATA
+   sections), the above can be rendered in a much more readable fashion:
+
+ <flag name="F-Ox"
+       class="optimization"
+       regexp="-O(\d+)\b"
+       compilers="cc,c++"
+       >
+
+     <example>
+     -O3
+     </example>
+
+     <include flag="F-Qunroll" />
+     <include text="F-inline=$1" />
+     <display enable="1" />
+     <ex_replacement>3</ex_replacement>
+
+     <![CDATA[
+ <!-- Because this comment appears within the CDATA section, it will also
+ appear in the HTML output. -->
+ <p>-O$1 enables optimization at level $1.</p>
+     ]]>
+
+ </flag>
+
+   All of the options are fully explained in the sections below.
+
+     ----------------------------------------------------------------------
+
+3. Flag Description Elements and Attributes
+
+   A flag description has three mandatory and several optional items.
+
+  3.1 Flag name (mandatory)
+
+   Each flag must have a name attribute. This is a simple way to refer to the
+   flag or group of flags that are described. It may appear in some
+   human-readable outputs (if alternative example text is not supplied), and
+   is also used to construct link anchors. It must be unique. If it is not, a
+   validating parser will reject it. Because it is used to construct anchors,
+   there are some restrictions on its composition.
+
+   The full specification is spelled out in the "Name" production (#5) in XML
+   1.0 section 2.3. Basically, a name must begin with a letter, a colon, or
+   an underscore. After that, it may be composed of letters, digits, periods,
+   hyphens ('-'), underscores, or colons.
+
+   One problem with these restrictions is evident when attempting to use the
+   name to construct a default regexp for a flag. Very few flags begin with a
+   letter, underscore, or colon. See the regexp section for a rundown of the
+   naming conventions that can be used to get around those restrictions.
+
+   Names are also used for an important relationship: The tools allow you to
+   relate flags (such as -g) to specific compilers (such as
+   /opt/strawberry/f95). You can relate more than one flag with identical
+   spelling (for the human) to differing compilers; for example
+   /opt/strawberry/cc might also have its own -g switch with its own meaning.
+   This is all kept straight by putting compilers into their own class and
+   then allowing individual flags to reference them using a compiler
+   attribute. For example:
+
+    <flag name="g_cc"            regexp="-g"
+          class="optimization"
+          compilers="strawberrycc">
+    Enables debugging.  Does not disable optimization.
+    </flag>
+
+    <flag name="g_f95"           regexp="-g"
+          class="optimization"
+          compilers="strawberryf95">
+    Enables debugging.  Disables optimization.
+    </flag>
+
+    <flag name="strawberrycc"
+          class="compiler"
+          regexp="/opt/strawberry/cc" >
+    C compiler
+    </flag>
+
+    <flag name="strawberryf95"
+          class="compiler"
+          regexp="/opt/strawberry/f95" >
+    Fortran 95 compiler
+    </flag>
+
+   Notice above the use of the compiler names to link them to their switches.
+
+  3.2 Flag class (mandatory)
+
+   Each flag must also have a class attribute, which determines how the flag
+   is reported. There are 7 possible classes.
+
+    3.2.1 "mandatory" class
+
+   These are flags that are supplied by SPEC for every compilation. With a
+   few exceptions, they are not overridable. Flags in the "mandatory" class
+   are not listed on per-result flags reports, but they do appear in the dump
+   of the suite-wide flags file, $SPEC/benchspec/flags_mandatory.xml.
+
+    3.2.2 "forbidden" class
+
+   These are flags that may not be used. If "forbidden" flags are present,
+   that does not prevent you from doing a run; but such flags will be
+   prominently displayed in red on the result pages and in the per-result
+   flags file.
+
+    3.2.3 "portability" class
+
+   Flags in this class are candidates for consideration as portability as
+   defined in the CPU2006 run rules section 2.1.5. For example, the flags
+   description file for 465.tonto classifies -DLANGUAGE_FORTRAN_90 as
+   portability; if your system needs it, your config file might say:
+
+    465.tonto=default:
+    PORTABILITY = -DLANGUAGE_FORTRAN_90
+
+   and the reports of your runs will mention the use of -DLANGUAGE_FORTRAN_90
+   in the Portability Flags section. But note that the appearance of a flag
+   in the "portability" class in a flag description file is not alone enough
+   to meet rule 2.1.5; the tested platform must actually need the flag.
+
+   Portability flags are required to appear in configuration variables that
+   contain the string PORTABILITY; if you use a flag from the portability
+   class in a configuration variable such as OPTIMIZATION, COPTIMIZATION,
+   etc, this will be flagged as a error.
+
+    3.2.4 "optimization" class
+
+   Flags in this class are considered to be "optimization" flags. If any
+   flags in this class are used in a configuration variable that are intended
+   for portability flags, such as PORTABILITY, CXXPORTABILITY, etc, this will
+   be noted in the results.
+
+    3.2.5 "compiler" class
+
+   This class is used only to match the invocation strings for compilers
+   (remember, the full text of the command line is parsed). Items in this
+   class will be displayed on the per-result flags report. Additionally,
+   during subsequent matches on a particular benchmark binary, the presence
+   of flags in this class are remembered. It is this special memory that
+   enables flags to be selectively matched based on the compilers attribute.
+
+    3.2.6 "other" class
+
+   This class is used for flags and other things that are neither
+   optimization nor portability. These include flags that specify locations
+   to the compiler, flags that change the compiler's verbosity, etc. Items in
+   this class will be displayed on the per-result flags report.
+
+    3.2.7 "unknown" class
+
+   This class is used internally in the tools. Flags in this class will
+   always be listed in the "unknown flags" section on the per-result flag
+   report. This should not be used in a flags description file; after all, if
+   it's listed there, it isn't unknown, is it?
+
+  3.3 Regular expression (mandatory, but defaulted)
+
+   Each flag must have a regexp attribute, which is a Perl-style regular
+   expression that can be used to pick the flag out of a string of
+   characters. This requirement may seem daunting, but for many flags, a
+   carefully-chosen name will yield a default regexp that will work.
+
+   If you've not seen regular expressions before, suggestions for reading may
+   be found below.
+
+    3.3.1 Default regular expression (the common case)
+
+   Commonly, a regular expression can be generated by default from the flag
+   name, especially if flag names are chosen with knowledge of both the XML
+   name rules and knowledge of the defaults described in this section.
+
+   As noted in the name section, there are some restrictions that make it
+   nearly impossible to construct an XML name that is exactly the same as the
+   flag text itself. This is primarily because most flags begin with a hyphen
+   ("-") or a forward slash ("/"). Hypens may not be the first character in
+   an XML name, and forward slashes are not allowed at all. Because of that,
+   there are some standard transformations that the tools will do in order to
+   construct a default regular expression from a flag name. The following
+   steps will be performed in the order listed:
+
+    1. If a flag name begins with the string "F-", the "F" will be stripped,
+       and the remainder used as the basis for the default regexp. Thus a
+       flag named "F-fast" will generate a default regexp that matches
+       "-fast". This takes care of a common case for Unix systems.
+
+    2. If a flag name begins with the string "f-", the "f-" will be stripped,
+       and "[-/]" will be prepended to it. In addition, the regexp will have
+       "(?i)" added to the beginning to cause it to match in a
+       case-insensitive fashion. Thus a flag named "f-optimize" will generate
+       a default regexp that will match any of "/OPTIMIZE", "-OPTIMIZE",
+       "-Optimize", or "/OpTiMiZe". This takes care of a common case for
+       Windows systems.
+
+    3. The default composition of a name does not allow it to contain an
+       equals ("=") symbol; since this is common in many flags, the next
+       decision is made based on whether or not a colon is present, as a
+       standin for equals.
+
+         1. If the string contains a colon (":") then the first (and only the
+            first) occurence of a colon will be converted to an equal symbol.
+            Thus a flag named "F-DBYTEORDER:1234" will match
+            "-DBYTEORDER=1234".
+
+         2. If the string does not contain a colon, then the default regexp
+            value will have
+
+            (?:=\S*)?
+
+            appended to it. In this pattern, "=" matches an equals sign -
+            that is, it is not a pattern metacharacter, unlike all the rest
+            of this regular expression. The "\S*" says that a string of
+            non-blank characters is optional. The "(?:pattern)" notation
+            groups the pattern inside the parentheses so that the "?"
+            operator that immediately follows the closing parentheses applies
+            to it, thus allowing 0 or 1 instances of the whole thing.
+
+            The overall effect of "(?:=\S*)?" is thus to optionally match an
+            equals sign and a value that does not contain whitespace. This
+            should be sufficient to catch most forms of basic definition: a
+            flag named "F-DFOO" will catch use of "-DFOO", "-DFOO=", and
+            "-DFOO=bar".
+
+    4. Finally, we will keep the default regular expression from matching
+       longer flags that have the above as the first part of the string. For
+       example, we do not want "-DSPEC_CPU_SOLARIS" to match
+       "-DSPEC_CPU_SOLARIS_SPARC" (since that would leave "_SPARC" alone and
+       unknown). Usually, "\b" (match a word boundary) is added to the end.
+       But if the flag does not end with an alphanumeric, then "(?=\s|$)"
+       will be appended to the regexp, which says to accept either white
+       space or end of string. (You'll find more about this way of
+       recognizing the end of a switch in section 3.3.4, below.)
+
+   Note that if this sequence of transformations does not yield an acceptable
+   regular expression, it will be necessary to provide one explicitly via the
+   regexp attribute. Some hints for doing so are given in the next few
+   sections.
+
+   Some cases in which the default regular expression is not sufficient:
+
+     * The flag marker is a forward slash, but is not allowed to be a dash;
+       or it is neither.
+     * There is no flag marker, as when matching the name of a library that
+       is linked directly (that is, not via -l).
+
+    3.3.2 Full Perl regular expressions may be used
+
+   When the text of a flag is not constant, a more complex regular expression
+   must be used. In that case, nearly any of the full range of Perl regular
+   expression features may be used: backreferences, negative and positive
+   look-ahead and look-behind assertions, minimal matching, etc. The only
+   features that may not be used are ones marked "experimental" in the Perl
+   documentation or ones which involve evaluating Perl code inside the
+   regular expression.
+
+    3.3.3 Substituting captured text
+
+   Captured backreferences may be substituted into the flag description text
+   and included flags . For example, in the following (inadequate) flag
+   description:
+
+ <flag name="xO"
+       class="optimization"
+       regexp="-xO([0-9]+)\b">
+ This flag enables optimization at level $1.
+ </flag>
+
+   The regexp would match any flag which consisted of the characters "-xO"
+   followed by one or more digits. The digits are "captured" by the
+   parentheses that surround [0-9]+ and made available to the text. So for a
+   flag like "-xO5", the text produced in the flag report would read
+
+   This flag enables optimization at level 5.
+
+   This feature allows complex flags (such as a flag that causes the compiler
+   to pass a bunch of flags directly to the linker) to be compactly
+   described. There's no reason you couldn't simply list each variation
+   separately; in cases where there are only two or three possibilities, that
+   may be preferable. But if you want to get fancy, you can.
+
+   To insert a literal dollar sign into replacement text, prefix it with a
+   backslash ("\", as in \$VMSDirName). To insert a literal backslash, prefix
+   it with another backslash.
+
+    3.3.4 When \b won't work
+
+   If your flag ends with a non-alphanumeric character, \b is not the correct
+   way to end it. The reason is that \b is a zero-width assertion that
+   matches the boundary between a "word" (alphanumeric) character and a
+   non-"word" character. For most flags, \b is just the thing, since both
+   whitespace and the end of the string are considered by Perl to be
+   "non-word" characters.
+
+   But what about when you have a flag that does not end in an alphanumeric
+   character? Say you have a flag that will appear on the compilation command
+   line as '-fpsafe-'. You can't use \b because the last character in that
+   flag is a dash. It's time for the "zero-width positive lookahead
+   assertion", that is, (?=pattern), with pattern set to match either
+   whitespace or end of string:
+
+ (?=\s|$)
+
+   So for the example above, the full regexp would be
+
+ -fpsafe-(?=\s|$)
+
+   That will ensure that your flag description matches only the string
+   '-fpsafe-' and not something like '-fpsafe-all'.
+
+   In fact, you could safely replace all occurrences of \b with the construct
+   above. But \b is more concise and looks a lot less confusing, so we'll use
+   that wherever we can.
+
+    3.3.5 Regular expression references
+
+   You can learn about Perl's regular expression capabilities by typing any
+   of these three commands:
+
+    specperldoc perlretut
+    specperldoc perlrequick
+    specperldoc perlre
+
+   You'll find the same information on many systems by typing "man perl", or
+   you can try http://perldoc.perl.org/perl.html. Jeffrey Friedl has also
+   written a book called Mastering Regular Expressions which you might find
+   helpful.
+
+  3.4 Descriptive text (mandatory)
+
+   With one exception, all flags must have descriptive text. After all, the
+   whole point of this exercise is to locate and describe the flags being
+   used. This text is what's contained in the <flag...> element, so there's
+   no special attribute or element name for it.
+
+   The only time a description may be omitted is in the case of non-displayed
+   flags. Those flags must not have descriptive text. See the controlling
+   display section for more information.
+
+  3.5 Referencing other flags (optional)
+
+   If the use of a flag implies the use or setting of another flag or flags,
+   that may be noted. To do this, use the empty tag <include /> . This tag
+   has two attributes and can be used multiple times to reference more than
+   one flag.
+
+    3.5.1 "flag" attribute (reference by name)
+
+   This attribute allows you to implicitly include other flags by name. This
+   attribute may only appear once per <include /> tag and must contain the
+   name of only one flag. Included flags appear in per-result flags reports
+   if they come from user flag description files. Flags that come from SPEC's
+   own distribution (Suite-wide flags file or Per-benchmark flags files) are
+   linked to descriptions posted at SPEC's web site. For example:
+
+ <flag name="F-DSPEC_CPU_X64"
+       class="portability">
+ <include flag="SPEC_CPU_LITTLEENDIAN" />
+ <include flag="MYSWAP" />
+ <include flag="NEED_VA_COPY" />
+ <include flag="SPEC_CPU_NO_NV_PRESERVES_UV" />
+ This macro indicates that the benchmark is being built on an x64 (AMD64-compatible)
+ system.
+ </flag>
+
+   If -DSPEC_CPU_X64 is used either explicitly or as the result of the use of
+   another flag, it also implies that the flags named SPEC_CPU_LITTLEENDIAN,
+   MYSWAP, NEED_VA_COPY, and SPEC_CPU_NO_NV_PRESERVES_UV are also used.
+
+   Note that flags included in this way, because they are referred to by
+   name, must also be described. If an attempt is made to include a flag that
+   is not described, runspec will abort. A validating XML parser would also
+   be able to detect this problem.
+
+      3.5.1.1 "flagtext" attribute (providing parameters)
+
+   For flags which are implicitly included by name, this attribute allows you
+   to specify the forms that those flags would have taken were they specified
+   directly. Without this attribute, there are two possibly undesireable
+   actions that the tools take:
+
+    1. The included flag's example text is used as the text of the link.
+    2. When the description of the implicitly included flag is output, any
+       backreferences are substituted with the contents of the
+       ex_replacements array.
+
+   Obviously, if the included flag has only one form (such as -fast) for
+   which the example is correct, and the description contains no
+   backreferences to be substituted, then this attribute is unnecessary. This
+   is the common case.
+
+   However, for flags that take values or have backreferences in their
+   descriptive text, this attribute is very useful. Consider the following
+   flag description:
+
+ <flag name="xtarget"
+       class="optimization"
+       regexp="-xtarget=\S+\b">
+ <example>-xtarget=tb9000, -xtarget=native</example>
+ <![CDATA[
+     <p>This flag is a convenience option which is used to set various system-
+     specific scheduler parameters.  The following values are valid:</p>
+        <ul>
+         <li>tb1: Set parameters suitable for the TurboBlaster 1 processor</li>
+         <li>tb2: Set parameters suitable for the TurboBlaster 2 processor</li>
+         <li>tb9000: Set parameters suitable for TurboBlaster 9000 processor.</li>
+         <li>native: Set parameters for the current processor.</li>
+        </ul>
+ ]]>
+ </flag>
+
+   Let's say there's another flag (-unrolltb2) that automatically sets
+   -xtarget=tb2, like this:
+
+ <flag name="F-unrolltb2" class="optimization">
+ <include flag="xtarget" />
+ Unroll optimally for Turboblaster 2.  Also sets xtarget for the TurboBlaster 2.
+ </flag>
+
+   Using -unrolltb2 would result in a description that would look something
+   like this:
+
+     * -unrolltb2
+     * * Unroll optimally for Turboblaster 2. Also sets xtarget for the
+            TurboBlaster 2.
+
+          * Includes
+               * -xtarget=tb9000, -xtarget=native
+
+       .
+       .
+       .
+
+     * -xtarget=tb9000, -xtarget=native
+     * * This flag is a convenience option which is used to set various
+            system- specific scheduler parameters. The following values are
+            valid:
+
+               * tb1: Set parameters suitable for the TurboBlaster 2
+                 processor
+               * tb2: Set parameters suitable for the TurboBlaster 2
+                 processor
+               * tb9000: Set parameters suitable for TurboBlaster 9000
+                 processor.
+               * native: Set parameters for the current processor.
+
+   Not very accurate, is it? The two sections might be separated by
+   substantial space (as indicated by the three dots above), so when readers
+   get to the second description they might not recall exactly what form of
+   -xtarget is in use today, and the description will be of limited value.
+
+   However, using the flagtext attribute, as in
+
+ <include flag="xtarget" flagtext="-xtarget=tb2" />
+
+   would result in a description that looks more like
+
+     * -unrolltb2
+     * * Unroll optimally for Turboblaster 2. Also sets xtarget for the
+            TurboBlaster 2.
+
+          * Includes
+               * -xtarget=tb2
+
+       .
+       .
+       .
+
+     * -xtarget=tb2
+     * * This flag is a convenience option which is used to set various
+            system- specific scheduler parameters. The following values are
+            valid:
+
+               * tb1: Set parameters suitable for the TurboBlaster 2
+                 processor
+               * tb2: Set parameters suitable for the TurboBlaster 2
+                 processor
+               * tb9000: Set parameters suitable for TurboBlaster 9000
+                 processor.
+               * native: Set parameters for the current processor.
+
+   As you can see above, it's clear from both the text used for the link as
+   well as the name of the described flag that -xtarget=tb2 is the flag that
+   is actually included.
+
+    3.5.2 "text" attribute (reference by inserting text)
+
+   This attribute allows you to add the text of flags back into the flags
+   list that is being processed. The text listed is subject to backreference
+   substitution. For example:
+
+ <flag name="fast"
+       class="optimization"
+       regexp="-fast(32|64)\b">
+ <include text="-g$1" />
+ This switch is not for going slowly.
+ </flag>
+
+   With this flag description, -fast32 or -fast64 cause either -g32 or -g64
+   to be put back into the list of flags to be parsed. The inclusions will go
+   back into the same variable from which they came.
+
+   Since they're parsed as regular flags, the new flags need to be described.
+   If they are not, the per-result flags report will put them in the
+   "unknown" flag section.
+
+      3.5.2.1 Splitters
+
+   Flag insertion by text is a powerful feature that allows complex
+   multi-switch flags to be decomposed and parsed as if they were several
+   individual flags.
+
+   For example, given the PathScale-style multi-switch flag
+   -OPT:Ofast:ro=3:fast_sqrt, the following flag description would break it
+   up into its constituent parts:
+
+ <flag name="F-OPT:all"
+       class="optimization"
+       regexp="-OPT:([^:\s]+):(.+)\b">
+ <include text="-OPT:$1" />
+ <include text="-OPT:$2" />
+ <display enable="0" />
+ </flag>
+
+   The regular expression matches -OPT: followed by some text that does not
+   contain a colon or white space (which is captured), followed by a colon
+   and other text (which is also captured). Both instances of saved text are
+   reinserted into the flags variable prepended by "-OPT:". In other words,
+   it effectively causes the original long string
+
+ -OPT:Ofast:ro=3:fast_sqrt
+
+   to be replaced by
+
+ -OPT:Ofast -OPT:ro=3:fast_sqrt
+
+   and then (as it iterates again) by
+
+ -OPT:Ofast -OPT:ro=3 -OPT:fast_sqrt
+
+   All that's left is to describe each individual flag. So the complete form
+   of the above example would be something like:
+
+ <!-- Splitter for -OPT flags -->
+ <flag name="F-OPT:all"
+       class="optimization"
+       regexp="-OPT:([^:\s]+):(.+)\b">
+ <include text="-OPT:$1" />
+ <include text="-OPT:$2" />
+ <display enable="0" />
+ </flag>
+
+ <flag name="F-OPT:Ofast"
+       class="optimization"
+       regexp="-OPT:Ofast\b">
+ -OPT:Ofast tells the compiler to turn on Every Known Optimization mode.
+ </flag>
+
+ <flag name="F-OPT:ro"
+       class="optimization"
+       regexp="-OPT:ro=(\d+)">
+ Specifies the level of acceptable departure from source language
+ floating-point, round-off, and overflow semantics. [...]
+ </flag>
+
+ <flag name="F-OPT:fast_sqrt"
+       class="optimization"
+       regexp="-OPT:Ofast_sqrt\b">
+ Replaces calls to the accurate but slow square root implementation
+ with calls to fast_sqrt, which is only accurate to within 37 ulp.
+ </flag>
+
+  3.6 List of compilers (optional)
+
+   The compilers attribute will allow you to specify that a particular flag
+   only applies to a particular set of compilers. The value for this
+   attribute is a comma-separated list of flag names. The flags referenced
+   must be in the compiler class.
+
+  3.7 Example flag text (optional, but defaulted)
+
+   The example attribute allows the specification of text other than the name
+   attribute to be used for display, as in the report formats and the HTML
+   flag dump. Note that unlike name, example does not need to be unique. For
+   example, if two compilers have the same flag text with different meanings,
+   example can be set identically for both:
+
+ <flag name="cc-Ox"
+       class="optimization"
+       regexp="-O(\d+)\b"
+       compilers="cc">
+ <example>-O1 through -O4</example>
+ <![CDATA[
+ <p>This flag enables optimization at level <i>x</i>.  Explanation of levels is as
+ follows:</p>
+ <ol>
+   <li> Basic, kindergarten-level optimization.</li>
+   <li> Good optimization.  You should use this unless it breaks your program.</li>
+   <li> The best optimization that we know how to do, except ZZZ.</li>
+   <li> Like #3, but adds ZZZ.</li>
+ </ol>
+ ]]>
+ </flag>
+
+ <flag name="f90-Ox"
+       class="optimization"
+       regexp="-O(\d+)\b"
+       compilers="f90">
+ <example>-O1 through -O4</example>
+ <![CDATA[
+ <p>This flag enables optimization at level <i>x</i>.  Explanation of levels is as
+ follows:</p>
+ <ol>
+   <li> Basic, kindergarten-level optimization.</li>
+   <li> Good optimization.  You should use this unless it breaks your program.</li>
+   <li> The best optimization that we know how to do.</li>
+   <li> Like #3, but works even when column 72 is overpunched.</li>
+ </ol>
+ ]]>
+ </flag>
+
+   If no example flag text is given, the flag name will be used for display.
+   If the flag name begins with 'F' or 'f', it will be removed; if the flag
+   name begins with 'D', a hyphen will be added at the foront; and if it
+   contains a ":", the first such will be changed to an equals sign. (These
+   changes roughly parallel the changes that are made for generation of
+   default regular expressions.)
+
+  3.8 Example replacements (optional)
+
+   The ex_replacement attribute allows you to specify replacements for $1,
+   $2, etc in the descriptive text. These would normally come from text
+   captured by the regexp during flag matching; when the regexp is not being
+   used for matching (as when doing a flags dump), these replacements will be
+   used.
+
+   This attribute may be specified multiple times.
+
+   For example:
+
+ <flag name="cc-Ox"
+       class="optimization"
+       regexp="-O(\d+)\b"
+       compilers="cc">
+ <example>-Ox</example>
+ <ex_replacement>1 - 5</ex_replacement>
+ This flag enables optimization at level $1.
+ </flag>
+
+ <flag name="f90-Ox"
+       class="optimization"
+       regexp="-O(\d+)\b"
+       compilers="f90">
+ <example>-Ox</example>
+ <ex_replacement>1 - 5</ex_replacement>
+ This flag enables optimization at level $1.
+ </flag>
+
+  3.9 Controlling display
+
+   Flag descriptions that serve only to "split" multiple-option flags into
+   smaller, more matchable chunks generally won't have any descriptive text
+   (since they perform a function other than describing a flag). These
+   special "splitter" flags do not necessarily need to show up in the flag
+   report; in that case, display can be disabled by use of the display
+   element and its single attribute enable.
+
+   Note that disabling display of a particular flag description is only
+   allowed if the flag in question contains no descriptive text and ONLY
+   includes other flags by textual insertion. For example:
+
+ <!-- Splitter for -OPT flags -->
+ <flag name="F-OPT:all"
+       class="optimization"
+       regexp="-OPT:([^:\s]+):(.+)\b">
+ <include text="-OPT:$1" />
+ <include text="-OPT:$2" />
+ <display enable="0" />
+ </flag>
+
+   See section 3.5.2 for an explanation of how this description works.
+
+   This rule is ignored when generating a flags dump.
+
+   The rule is also ignored when results are formatted for review, with the
+   runspec --review switch.
+
+  3.10 Other attributes
+
+   Inclusion of other attributes (whether intentionally or by typo) will be
+   flagged as an error and cause the flag description file being read to be
+   ignored.
+
+4 Other Elements
+
+   Inclusion of other elements (whether intentionally or by typo) will be
+   flagged as an error and cause the flag description file being read to be
+   ignored.
+
+5 Precedence
+
+   Flags in each file are processed in the order in which they appear; there
+   is no explicit precedence mechanism. If a description matches more than
+   100 times when processing flags for a single benchmark, that description
+   will be disabled, a warning emitted, and processing will continue.

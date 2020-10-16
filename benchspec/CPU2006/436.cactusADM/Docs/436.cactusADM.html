@@ -1,0 +1,95 @@
+<!-- saved from url=(0022)http://internet.e-mail -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>436.cactusADM: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>436.cactusADM<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>436.cactusADM</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Malcolm Tobias &lt;mtobias &#x5b;at&#x5d; wustl.edu&gt;<br />
+Washington University School of Medicine<br />
+Center for Computational Biology<br />
+700 S. Euclid Ave., Rm. 101<br />
+Campus Box 8036<br />
+St. Louis, MO 63110, USA</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Physics / General Relativity</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>CactusADM is a combination of Cactus, an open source problem solving 
+environment, and 
+BenchADM, a computational kernel representative of many applications 
+in numerical relativity (ADM stands for ADM formalism developed by Arnowitt, 
+Deser and Misner). CactusADM 
+solves the Einstein evolution equations, which describe how spacetime curves 
+as response to its matter content, and are a set of ten coupled nonlinear 
+partial differential equations, in their
+standard ADM 3+1 formulation. 
+A staggered-leapfrog numerical
+method is used to carry out the update.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>The program requires a parameter file BenchADM.par. This file
+defines the grid size, as well as the number of iterations which
+the code will run. The input file can be modified to print out
+timing information, but this has not been implemented in CPU2006.
+The initial data represents flat space. Geodesic slicing is used. </p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>The iteration, time, and gxx and gyz components of the metric which 
+are coordinate-dependent descriptions of the space time are printed for 
+validation.</p>   
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>Fortran 90, ANSI C</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>None</p>
+
+<hr />
+
+<h2>References</h2>
+
+<ul>
+<li>The Cactus Code web site:<br />
+<a href=
+"http://www.cactuscode.org">http://www.cactuscode.org</a></li>
+</ul>
+
+<hr />
+
+<p>Last updated: 26 June 2006</p>
+</body>
+</html>

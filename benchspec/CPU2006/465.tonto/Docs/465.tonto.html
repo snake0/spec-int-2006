@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>465.tonto: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>465.tonto<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>465.tonto</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Daniel J. Grimwood &lt;reaper &#x5b;at&#x5d; theochem.uwa.edu.au&gt;</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Quantum Crystallography</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>Tonto<a href="#ref1"><sup>1</sup></a> is an open source quantum
+chemistry package, designed by Dylan Jayatilaka and Daniel J.
+Grimwood. Objectives include simplicity and portability; aspects
+not seen in many quantum chemistry codes. The code is easily
+extendable by chemists with limited programming skills and time,
+and is easy to understand and use<a href=
+"#ref2"><sup>2</sup></a>.</p>
+
+<p>Tonto is written within an object oriented design, in Fortran
+95. It uses derived types and modules to represent classes. Classes
+range from integers and text files, through to atoms, spacegroups
+and molecules. There is a "self" variable in most routines, which
+should be familiar from many OO languages. Tonto uses dynamic
+memory instead of common blocks, and uses array operations where
+possible.</p>
+
+<p>The profiles of Tonto calculations are typical of many <i>ab
+initio</i> quantum chemistry packages. That is, a large portion is
+dedicated to the evaluation of integrals between products of
+Gaussian basis functions.</p>
+
+<p>The SPEC reference calculation is in the field of quantum
+crystallography. It places a constraint on a molecular Hartree-Fock
+wavefunction calculation to better match experimental X-ray
+diffraction data<a href="#ref3"><sup>3</sup></a>. It is expected
+that other similar properties calculated from the constrained
+wavefunction should also agree better with experiment.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>The input file contains the crystal structure, atom positions,
+and basis functions, and experimental X-ray diffraction data. It
+then gives calculation parameters, and does the calculation. The
+crystal structure, atom positions, and X-ray data are from the
+literature<a href="#ref4"><sup>4</sup></a>.</p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>The main output file is regularly updated to show how far the
+calculation is from the final answer. Once the final model
+wavefunction is obtained, the X-ray diffraction data calculated
+from it are printed out together with the experimental data and
+compared. The chi<sup>2</sup> of one means the calculated and
+experimental data sets agree to within experimental accuracy.</p>
+
+<p>The coefficients for the wavefunction are stored in the file
+"n2o4.molecular_orbitals,restricted,ascii". Although not done so in
+the 465.tonto reference calculation, this data can then be used to
+calculate other properties of the system, such as the Electron
+Localisation Function or the electrostatic potential<a href=
+"#ref5"><sup>5</sup></a>.</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>Fortran 95</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>Tonto makes extensive use of new features added to the Fortran
+language with the Fortran 90/95 standards (such as generic
+interfaces and vector subscripts). Some older compilers may not
+have complete support for these features; therefore, users may wish
+to obtain the most recent update of their compiler before trying
+Tonto.</p>
+
+<hr />
+
+<h2>References</h2>
+
+<ul>
+<li><a name="ref1" id="ref1">1</a> Tonto home page - <a href=
+"http://www.theochem.uwa.edu.au/tonto/">http://www.theochem.uwa.edu.au/tonto/</a></li>
+
+<li><a name="ref2" id="ref2">2</a> D. Jayatilaka and D. J.
+Grimwood, <a href=
+"http://www.springerlink.com/link.asp?id=12ru3b2712y2wex3"><i>Computational
+Science - ICCS 2003</i>, <b>2660</b>, 142-151, (2003)</a></li>
+
+<li><a name="ref3" id="ref3">3</a> D. Jayatilaka and D. J.
+Grimwood, <a href=
+"http://dx.doi.org/10.1107/S0108767300013155"><i>Acta Cryst.</i>,
+A<b>57</b>, 76-86, (2001)</a></li>
+
+<li><a name="ref4" id="ref4">4</a> M. Messerschmidt, A. Wagner, M.
+W. Wong and P. Luger, <a href=
+"http://dx.doi.org/10.1021/ja011802c"><i>J. Am. Chem. Soc.</i>,
+<b>124(5)</b>, 732-733, (2002)</a></li>
+
+<li><a name="ref5" id="ref5">5</a> D. J. Grimwood, I. Bytheway and
+D. Jayatilaka, <a href="http://dx.doi.org/10.1002/jcc.10238"><i>J.
+Comp. Chem.</i>, <b>24(4)</b>, 470-483, (2003)</a></li>
+</ul>
+
+<hr />
+
+<p>Last updated: 7 March 2006</p>
+</body>
+</html>

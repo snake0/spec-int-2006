@@ -1,0 +1,38 @@
+# Microsoft Developer Studio Generated Dependency File, included by expat_static.mak
+
+.\xmlparse.c : \
+	".\expat.h"\
+	".\expat_external.h"\
+	".\internal.h"\
+	".\macconfig.h"\
+	".\winconfig.h"\
+	".\xmlrole.h"\
+	".\xmltok.h"\
+	
+
+.\xmlrole.c : \
+	".\ascii.h"\
+	".\expat_external.h"\
+	".\internal.h"\
+	".\macconfig.h"\
+	".\winconfig.h"\
+	".\xmlrole.h"\
+	".\xmltok.h"\
+	
+
+.\xmltok.c : \
+	".\ascii.h"\
+	".\asciitab.h"\
+	".\expat_external.h"\
+	".\iasciitab.h"\
+	".\internal.h"\
+	".\latin1tab.h"\
+	".\macconfig.h"\
+	".\nametab.h"\
+	".\utf8tab.h"\
+	".\winconfig.h"\
+	".\xmltok.h"\
+	".\xmltok_impl.c"\
+	".\xmltok_impl.h"\
+	".\xmltok_ns.c"\
+	

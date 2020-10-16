@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags1.dtd">
+
+<!-- This file defines flags that appear in the sources for 434.zeusmp.
+
+  Copyright (C) 2005 Standard Performance Evaluation Corporation
+
+  $Revision: 4254 $
+  $Date: 2006-05-21 19:31:24 -0400 (Sun, 21 May 2006) $
+-->
+<flagsdescription>
+
+<filename>434.zeusmp.flags</filename>
+
+<title>434.zeusmp Flags</title>
+
+<header>
+<![CDATA[
+<p>These are flags that appear in the benchmark sources, categorized as to
+whether they are portability candidates, mandatory, or forbidden.
+</p>
+]]>
+</header>
+
+<flag name="DSPEC_CPU" class="mandatory">
+This is a mandatory flag as it fixes a Fortran standard violation.
+</flag>
+
+
+</flagsdescription>

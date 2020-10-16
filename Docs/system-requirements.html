@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<link rel="STYLESHEET" href="css/cpu2006docs.css" type="text/css" />
+<style type="text/css">
+</style>
+<title>Requirements SPEC CPU2006</title>
+<!-- You'll want a nice wide screen when editing this .......................................................................... -->
+
+</head>
+
+<body> 
+<h1>SPEC CPU2006 System Requirements</h1>
+
+<p style="font-size:80%">Last updated: 3 June 2006 jh/mc/jr
+<br />(To check for possible updates to this document, please 
+see <a href="http://www.spec.org/cpu2006/Docs/"> http://www.spec.org/cpu2006/Docs/</a> ) </p>
+
+<p>To run and install SPEC CPU2006, you will need:</p>
+
+<ol>
+   <li><p> A computer system running UNIX, Microsoft Windows, or Mac OS X.  The benchmark suite includes a toolset.
+   Pre-compiled versions of the toolset are provided that are expected to work with:</p>
+     <ul>
+      <li>AIX: PowerPC systems running AIX 5L V5.1 or later</li>
+      <li>HP-UX: IPF running HP-UX 11iv2</li>
+      <li>HP-UX: HP-UX 11iv2 on PA-RISC </li>
+      <li>Irix: MIPS running IRIX</li>
+      <li>Linux/PPC: PowerPC-based Linux systems with GLIBC 2.2.1+, built on YellowDog</li>
+      <li>MacOS X: MacOS X 10.2.8+ on PowerPC G3+ </li>
+      <li>MacOS X: MacOS X 10.4.3+ on x86 </li>
+      <li>Redhat 6.2: x86- or x64-based Linux systems with GLIBC 2.1.3+</li>
+      <li>RHAS: Red Hat Enterprise Linux AS 3, and/or SGI ProPack 3</li>
+      <li>SLES: SuSE Enterprise Linux 9 on IA64</li>
+      <li>Solaris: SPARC with Solaris 8 and later</li>
+      <li>Solaris: x86 or x64 with Solaris 10 and later</li>
+      <li>SuSE: 64-bit AMD64 Linux systems</li>
+      <li>Windows: Microsoft Windows XP and Windows Server</li>
+     </ul>
+     <p>For systems not listed in above, such as earlier or later versions of the above systems, you may find that the tools
+     also work, but SPEC has not tested them.  Windows systems that are not based on NT, such as Windows 95, Windows 98, and
+     Windows ME, will definitely NOT work.  Please see the <a href="#port">Portability Notes</a> below.</p>
+
+     <p>In addition to the above list, there are several toolsets that are provided as a courtesy.  These toolsets are
+     expected to work, but have been tested much less extensively.   More importantly, the benchmarks themselves have not
+     been ported to these systems, so if you use one of them, you should be prepared to spend time on the porting effort.
+     Please see the <a href="#port">Portability Notes</a> below.</p>
+
+     <ul>
+      <li>FreeBSD 5.4: x86, built with GCC 3.4.2</li>
+      <li>FreeBSD 6.x: x86, built with GCC 3.4.4</li>
+      <li>NetBSD 2.1: x86, built with GCC 3.3.3</li>
+      <li>OpenBSD 3.8: x86, built with GCC 3.3.5</li>
+      <li>Tru64: Alpha Tru64 UNIX V4.0F or later</li>
+     </ul>
+   
+   </li>
+
+
+   <li><p> A DVD drive </p></li>
+
+   <li><p>Memory: typically 1GB on 32-bit systems, exclusive of OS/overhead; but more may be required:</p>
+   
+   <ul>
+      <li><p>The CPU2006 benchmarks (code + workload) have been designed to fit within about 1GB of physical memory, which is
+      within the capabilities of systems that allow user applications to use 32 bits of virtual memory (i.e. 4GB of virtual
+      address space).</p></li>
+
+      <li><p> SPEC is aware that some systems that are commonly described as "32-bit" may provide a smaller number of bits to
+      user applications, for example if one or more bits are reserved to privileged code.  SPEC is also aware that there are
+      many ways to spend profligate amounts of virtual memory.  Therefore, although 32-bit systems are within the design
+      center for the CPU2006 suites, SPEC does not guarantee any particular memory size for the benchmarks, nor that they
+      will necessarily fit on all systems that are described as 32-bit. </p></li>
+
+      <li><p>The 1GB of RAM for the benchmarks (in 32-bit mode) does not include space needed for the operating system and
+      other non-SPEC tasks on the system under test.</p></li>
+    
+      <li><p>Typically, 64-bit environments will require 2GB for some of the benchmarks in the suite.</p></li>
+
+      <li><p>Attempting to run the suite with insufficient memory is strongly discouraged, as you will end up
+      measuring the speed of your paging file, not the speed of your system running compute intensive workloads.</p></li>
+
+      <li><p>More memory will be needed if you run multi-copy SPECrates: generally 1GB for 32-bit, 
+      or 2GB for 64-bit, for each copy you plan to run.</p></li>
+    </ul></li>
+
+   <li><p> Disk space:</p>
+
+       <ul>
+        <li><p>Typically you will need at least 8GB of disk space to install and run the suite.  However, space needs can
+        vary greatly depending upon your usage and system.  The 8GB estimate is based on the following:</p>
+
+     <ol>
+        <li>Unpacked and installed, the suite takes approximately 1.5 to 2GB of disk space.</li>
+
+        <li>When compiling your own binaries, the size of the build directories and resulting objects will vary depending
+        upon your system, compiler, and compiler options.  Estimate at least 2 to 3GB of disk space per build.  If you plan
+        to maintain multiple sets of binaries, each set will need space.</li>
+
+        <li>A single run (using binaries you have built, or using pre built binaries from a separate source) takes an
+        additional 2 to 3GB of disk space.  
+  
+         <p>Note: If you plan to run SPECrate with multiple copies, estimate an additional 2 to 3GB of disk space per copy.
+         Note that SPECrate must be run using a single file system, so large runs will likely require some form of hardware
+         or software disk striping.</p></li>
+     </ol></li>
+
+        <li><p>Minimum requirement: It is possible to run with about 5GB of disk space if: you are running only single-CPU
+        metrics; you delete the build directories after the build is done; and you clean run directories between tests.  See
+        the discussion of disk space in <a href="runspec.html#section1.4.2">runspec.html</a> for more information about
+        managing disk space.  </p></li>
+       </ul>
+
+         <p class="commentarystart" style="margin-top:0.1cm"> <i>Note:</i> links to SPEC CPU2006 documents on this web page
+         assume that you are reading the page from a directory that also contains the other SPEC CPU2006 documents.  If by
+         some chance you are reading this web page from a location where the links do not work, try accessing the referenced
+         documents at one of the following locations:</p>
+         <ul class="commentaryul">
+         <li class="commentaryli"><a href="http://www.spec.org/cpu2006/Docs/">www.spec.org/cpu2006/Docs/</a></li>
+         <li class="commentaryli">The <tt><b>$SPEC/Docs/</b></tt> directory on a system where SPEC CPU2006 has been
+         installed.</li>
+         <li class="commentaryli">The <tt><b>Docs/</b></tt>directory on your SPEC CPU2006 distribution DVD.</li>
+         </ul>
+         <p class="commentaryend"> </p>
+         </li>
+
+
+
+
+   <li><p> Since SPEC supplies only source code for the benchmarks, you will need either:</p>
+
+      <ol style="list-style:lower-alpha">
+      <li>A set of compilers for the result(s) you intend to measure:
+
+          <ol style="list-style:decimal">
+          <li>For SPECint2006: Both C99 and C++98 compilers</li>
+          <li>For SPECfp2006:  All three of C99, C++98 and Fortran-95 compilers</li>
+          </ol>
+
+       <p>--or--</p></li>
+
+       <li>A pre-compiled set of benchmark executables, given to you by another user of the same revision of SPEC CPU2006,
+       and any run-time libraries that may be required for those executables.</li>
+       </ol>
+
+      <p>Please notice that you cannot generate a valid CPU2006 result unless you meet all of requirement 5.a.1 or 5.a.2 or
+      5.b.  For example, if you are attempting to build the floating point suite but lack a Fortran-95 compiler, you will not
+      be able to measure a SPECfp2006 result.</p></li>
+
+</ol>
+
+<h2 id="port">Portability Notes</h2>
+
+   <p>SPEC CPU2006 is a source code benchmark, and portability of that source code is one of the chief goals of SPEC CPU2006.
+   SPEC has invested substantial effort to make the benchmarks portable across a wide variety of hardware architectures,
+   operating systems, and compilers.  During the development of SPEC CPU2006 testing was done on over 15 different hardware
+   architectures and operating systems (including many variations of Unix, Linux, Microsoft Windows and the Mac OS). </p>
+
+   <p>Despite SPEC's testing efforts, certain portability problems are likely to arise from time to time.  For example:</p>
+    <ul>
+
+       <li> <p>Some platforms may not have a Fortran-95 compiler available.</p></li>
+
+       <li> <p>Some older compilers may not include all the features needed to run the entire suite.</p></li>
+
+       <li> <p>Sometimes, a new release of a compiler or operating system may introduce new behavior that is incompatible
+       with one of the benchmarks.</p></li>
+
+    </ul>
+
+   <p>If you visit <a href="http://www.spec.org/cpu2006/">http://www.spec.org/cpu2006/</a>  and look up results for SPEC
+   CPU2006, you will find combinations of OS and compiler versions that are known to work.  For example, if a vendor reports
+   a SPECint2006 result on the SuperHero 4 using SuperHero Unix V4.0 with SuperHero C V4.0 and SuperHero C++ V4.0, you may
+   take that as an assertion by the vendor that the listed versions of Unix, C, and C++ will successfully compile and run the
+   SPEC CINT2006 suite on the listed machine.</p>
+
+   <p>For systems that have not (yet) been reported by vendors, SPEC can provide limited technical support to resolve
+   portability issues.  See <a href="techsupport.html">techsupport.html</a> for information.</p>
+
+<hr />
+<p>Copyright (C) 2006 Standard Performance Evaluation Corporation
+<br />All Rights Reserved</p>
+</body>
+</html>
+

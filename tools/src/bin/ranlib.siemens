@@ -1,0 +1,36 @@
+#! /bin/sh
+#
+#  simulate "ranlib" with mips ar ts
+#  (mainly for makefile compatibility)
+#
+PATH=/bin:/usr/bin
+Myname=`basename "$0"`
+while :
+do
+        case "$1" in
+                -*)
+                        echo "$Myname: usage : $Myname filename..." 1>&2
+                        exit 2
+                        ;;
+                *)
+                        break
+                        ;;
+        esac
+done
+
+case "$#" in
+        0)
+                echo "$Myname: usage : $Myname filename..." 1>&2
+                exit 2
+                ;;
+esac
+
+for afile
+{
+    /usr/ccs/bin/ar ts "$afile" >/dev/null
+        # /usr/ccs/bin/ is in the search path for ReliantUnix users
+        # once they have installed the C compiler, so
+        # just "ar" should be equivalent. RW
+}
+exit 0
+

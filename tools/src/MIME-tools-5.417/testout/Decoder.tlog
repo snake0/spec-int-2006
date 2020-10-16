@@ -1,0 +1,33 @@
+1..8
+
+** Using gzip: 1
+** Encoding/decoding of base64
+1: size of ./testin/fun.txt == size of ./testout/fun.de1
+1: ok 1
+
+** Encoding/decoding of quoted-printable
+2: size of ./testin/fun.txt == size of ./testout/fun.de2
+2: ok 2
+
+** Encoding/decoding of 7bit
+3: ok 3
+
+** Encoding/decoding of 8bit
+4: ok 4
+
+** Encoding/decoding of binary
+5: size of ./testin/fun.txt == size of ./testout/fun.de5
+5: ok 5
+
+** Encoding/decoding of x-gzip64
+6: size of ./testin/fun.txt == size of ./testout/fun.de6
+6: ok 6
+
+** Encoding/decoding of x-uuencode
+7: size of ./testin/fun.txt == size of ./testout/fun.de7
+7: ok 7
+
+** Encoding/decoding of binhex not supported -- skipping test
+8: ok 8
+
+END

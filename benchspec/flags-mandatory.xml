@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription
+    SYSTEM "http://www.spec.org/dtd/cpuflags1.dtd"
+>
+
+<!-- This file defines flags in the 'mandatory' class; that is, flags which are
+     automatically supplied by the tools for ALL benchmarks.
+     Flags in this class are ignored when doing per-flag checks for a
+     particular run (because they are always present), but _are_
+     output in the full flag report.
+
+  Copyright (C) 2005-2006 Standard Performance Evaluation Corporation
+
+  $Revision$
+  $Date$
+-->
+<flagsdescription>
+
+<!-- Normal flags files should suggest a name for themselves. -->
+<filename>flags_mandatory</filename>
+
+<title>SPEC CPU2006 Default Flags</title>
+
+<header>
+<![CDATA[
+<h2>SPEC CPU2006 Default Flags</h2>
+
+<p>These are the flags that are universally supplied by the tools harness.</p>
+]]>
+</header>
+
+<flag name="DSPEC_CPU" class="mandatory">
+The preprocessor macro SPEC_CPU is defined for all benchmarks compiled
+by the CPU2006 tools harness.
+</flag>
+
+<flag name="USPEC_CPU" class="forbidden">
+It is forbidden to undefine this mandatory flag.
+</flag>
+
+<flag name="DNDEBUG" class="mandatory">
+The preprocessor macro NDEBUG is defined for all benchmarks compiled
+by the CPU2006 tools harness.  It is used to disable asserts() in codes
+that use them.
+</flag>
+
+<flag name="UNDEBUG" class="forbidden">
+It is forbidden to undefine this mandatory flag.
+</flag>
+
+<flag name="DSPEC_CPU_WINDOWS" class="mandatory">
+The preprocessor macro SPEC_CPU_WINDOWS is defined for all benchmarks
+compiled by the CPU2006 tools harness on Microsoft Windows systems.
+</flag>
+
+<flag name="compile_opt" class="mandatory" regexp="-c\b">
+This is a part of the default setting for OBJOPT for all platforms.  It
+causes an object file to be generated from source.
+</flag>
+
+<flag name="unix_output" class="mandatory" regexp="-o [^\s\&quot;]+">
+This option is used to specify the name of the output file on non-Windows platforms.
+</flag>
+
+<flag name="unix_mathlib" class="mandatory" regexp="-lm\b">
+This is the default setting for MATHLIBOPT on non-Windows platforms.
+</flag>
+
+<flag name="windows_compout" class="mandatory" regexp="-Fo\S+\b">
+This option is used to specify the name of the output object file on Windows platforms.
+</flag>
+
+<flag name="windows_ldout" class="mandatory" regexp="-Fe\S+\b">
+This option is used to specify the name of the output executable on Windows platforms.
+</flag>
+
+<flag name="DSPEC_CPU_ILP32" class="portability">
+This option is used to indicate that the host system's integers, longs, and
+pointers are 32-bits wide.  Not all benchmarks recognize this macro, but
+the preferred practice for data model selection applies the flags to all
+benchmarks; this flag description is a placeholder for those benchmarks that
+do not recognize this macro.
+</flag>
+
+<flag name="DSPEC_CPU_P64" class="portability">
+This option is used to indicate that the host system's integers and longs,
+are 32-bits wide, and pointers are 64-bits wide.  Not all benchmarks
+recognize this macro, but the preferred practice for data model selection
+applies the flags to all benchmarks; this flag description is a placeholder
+for those benchmarks that do not recognize this macro.
+</flag>
+
+<flag name="DSPEC_CPU_LP64" class="portability">
+This option is used to indicate that the host system's integers are 32-bits
+wide, and longs and pointers are 64-bits wide.  Not all benchmarks
+recognize this macro, but the preferred practice for data model selection
+applies the flags to all benchmarks; this flag description is a placeholder
+for those benchmarks that do not recognize this macro.
+</flag>
+
+<flag name="DSPEC_CPU_ILP64" class="portability">
+This option is used to indicate that the host system's integers, longs,
+and pointers are 64-bits wide.  Not all benchmarks recognize this macro,
+but the preferred practice for data model selection applies the flags to
+all benchmarks; this flag description is a placeholder for those benchmarks
+that do not recognize this macro.
+</flag>
+
+</flagsdescription>

@@ -1,0 +1,28 @@
+$name        = 'fp';
+$units       = 'SPECfp';	# The '2006' is added later
+$metric      = 'CFP2006';
+$output      = 1;
+@benchmarks = qw(
+	410.bwaves
+	416.gamess
+	433.milc
+	434.zeusmp
+        435.gromacs
+	436.cactusADM
+	437.leslie3d
+        444.namd
+        447.dealII
+        450.soplex
+        453.povray
+        454.calculix
+        459.GemsFDTD
+        465.tonto
+        470.lbm
+        481.wrf
+        482.sphinx3
+        998.specrand
+);
+     
+$no_output = { '998.specrand' => 1 };
+
+1;

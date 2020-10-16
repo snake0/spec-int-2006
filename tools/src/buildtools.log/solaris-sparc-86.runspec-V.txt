@@ -1,0 +1,31 @@
+runspec v3496 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'solaris-sparc' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 86pre
+ Benchmarks version: 86pre
+      Tools version: 86pre
+    runspec version: 3496 ($Id: runspec 3496 2005-12-16 21:11:52Z cloyce $)
+
+Tools information:
+ Tools package installed: solaris-sparc
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 95621 | 10    |  237504 | 16-Dec-2005 22:33:51 | specmake
+0755 | 95621 | 10    | 1585104 | 16-Dec-2005 22:33:51 | specperl
+0755 | 95621 | 10    |   24528 | 16-Dec-2005 22:34:33 | specinvoke
+0755 | 95621 | 10    |   29116 | 16-Dec-2005 22:34:33 | specinvoke_pm
+0755 | 95621 | 10    |  114488 | 16-Dec-2005 22:33:51 | specbzip2
+0755 | 95621 | 10    |   40148 | 16-Dec-2005 22:34:33 | specmd5sum
+0755 | 95621 | 10    |    7585 | 17-Dec-2005 00:08:47 | specdiff
+0755 | 95621 | 10    |   85718 | 17-Dec-2005 00:08:47 | specpp
+0755 | 95621 | 10    |   75037 | 17-Dec-2005 00:08:47 | runspec
+0775 | 95621 | 10    |    1520 | 31-Aug-2005 15:31:57 | runspec.bat
+
+Version info for specinvoke (/spec/cpu2006/bin/specinvoke): Version: 3478
+Version info for specmake (/spec/cpu2006/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/spec/cpu2006/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/spec/cpu2006/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/spec/cpu2006/bin/specperl): This is specperl, v5.8.7 built for sun4-solaris
+                           For more detail on specperl, say 'specperl -V'

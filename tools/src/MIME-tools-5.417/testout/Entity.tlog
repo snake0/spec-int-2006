@@ -1,0 +1,170 @@
+1..29
+
+** Testing build()
+1: Path: with no Filename, got default content-type.name
+1:   Got: "short.txt"
+1: ok 1
+
+2: Path: with no Filename, got default content-disp.filename
+2:   Got: "short.txt"
+2: ok 2
+
+3: Path: with no Filename, got default recommended filename
+3:   Got: "short.txt"
+3: ok 3
+
+4: Path: with explicitly undef Filename, got no filename
+4:   Got: undef
+4: ok 4
+
+5: Path: verified explicit 'Filename'
+5:   Got: "foo.txt"
+5: ok 5
+
+6: Type: default ok
+6:   Got: "text/plain"
+6: ok 6
+
+7: Type: explicit ok
+7:   Got: "text/foo"
+7: ok 7
+
+8: Encoding: -SUGGEST yields 7bit
+8:   Got: "7bit"
+8: ok 8
+
+9: Encoding: -SUGGEST yields qp
+9:   Got: "quoted-printable"
+9: ok 9
+
+10: Encoding: -SUGGEST yields base64
+10:   Got: "base64"
+10: ok 10
+
+11: Charset: default ok
+11:   Got: undef
+11: ok 11
+
+12: Charset: explicit
+12:   Got: "iso8859-1"
+12: ok 12
+
+** Create an entity
+13: built a message
+13: ok 13
+
+** Check body
+14: old-style body call ok
+14: ok 14
+
+** Output msg1 to explicit filehandle glob
+15: wrote msg1 to filehandle glob
+15: ok 15
+
+** Output msg2 to selected filehandle
+16: write msg2 to selected filehandle
+16: ok 16
+
+** Compare
+17: message files are same length
+17: ok 17
+
+** Parse it back in, to check syntax
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? 0
+** debug:       encoding?         binary
+** debug:       effective type?   text/plain
+** debug:       is this evil? 'short.txt'
+** debug:       it's ok
+** debug:       planning to use 'short.txt'
+** debug:       outputting body to disk file: testout/short.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? 0
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? 'mime-sm.gif'
+** debug:       it's ok
+** debug:       planning to use 'mime-sm.gif'
+** debug:       outputting body to disk file: testout/mime-sm.gif
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? 0
+** debug:       encoding?         quoted-printable
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16459-1.txt'
+** debug:       outputting body to disk file: testout/msg-16459-1.txt
+** debug:    parsing part 4...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? 0
+** debug:       encoding?         binary
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16459-2.txt'
+** debug:       outputting body to disk file: testout/msg-16459-2.txt
+** debug:    process_epilogue
+18: parsed msg1 back in
+18: ok 18
+
+19: preambles match (0 == 0)
+19:   Pre1: ""
+19:   Pre2: ""
+19: ok 19
+
+20: epilogues match (0 == 0)
+20:   Epi1: ""
+20:   Epi2: ""
+20: ok 20
+
+** Check the number of parts
+21: number of parts is correct (4)
+21: ok 21
+
+** Check attachment 1 [the GIF]
+22: GIF is right size (real = 3501, this = 3501)
+22: ok 22
+
+23: GIF has correct MIME type
+23: ok 23
+
+** Check attachment 3 [the short message]
+24: getline gets correct value (IO = IO::Wrap=REF(0x1a0a200), <This is the first and last line, with no CR at the end.>, <This is the first and last line, with no CR at the end.>)
+24: ok 24
+
+25: MIME type okay
+25: ok 25
+
+26: MIME encoding okay
+26: ok 26
+
+** Write it out, and compare
+27: msg2 same size as msg3
+27: ok 27
+
+** Duplicate
+28: msg3 size (5840) is same as dup3 size (5840)
+28: ok 28
+
+** Test signing
+** Write it out again, after synching
+** Purge the files
+29: purge worked
+29: ok 29
+

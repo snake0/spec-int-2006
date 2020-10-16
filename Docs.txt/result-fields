@@ -1,0 +1,709 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+                        SPEC CPU2006 Result File Fields
+
+    Last updated: 25 June 2006 jlh/cds
+
+   ABSTRACT
+   This document describes the various fields in a SPEC CPU2006 result
+   disclosure.
+
+     ----------------------------------------------------------------------
+
+   (To check for possible updates to this document, please see
+   http://www.spec.org/cpu2006/)
+
+  Overview
+
+   Selecting one of the following will take you to the detailed table of
+   contents for that section:
+
+   1. Benchmarks
+
+   2. Major sections
+
+   3. Hardware description
+
+   4. Software description
+
+  Detailed Contents
+
+   1. Benchmarks
+
+   1.1 Benchmarks by suite
+
+   1.1.1 Benchmarks in the CFP2006 suite
+
+   1.1.2 Benchmarks in the CINT2006 suite
+
+   1.2 Benchmarks by language
+
+   1.2.1 C Benchmarks
+
+   1.2.2 C++ Benchmarks
+
+   1.2.3 Fortran Benchmarks
+
+   1.2.4 Benchmarks using both Fortran and C
+
+   2. Major sections
+
+   2.1 Top bar
+
+   2.1.1 CFP2006 Result
+
+   2.1.2 CINT2006 Result
+
+   2.1.3 SPECfp2006
+
+   2.1.4 SPECfp_base2006
+
+   2.1.5 SPECfp_rate2006
+
+   2.1.6 SPECfp_rate_base2006
+
+   2.1.7 SPECint2006
+
+   2.1.8 SPECint_base2006
+
+   2.1.9 SPECint_rate2006
+
+   2.1.10 SPECint_rate_base2006
+
+   2.1.11 CPU2006 license #
+
+   2.1.12 Hardware Availability
+
+   2.1.13 Software Availability
+
+   2.1.14 Test date
+
+   2.1.15 Test sponsor
+
+   2.1.16 Tested by
+
+   2.2 Result table
+
+   2.2.1 Benchmark
+
+   2.2.2 Copies
+
+   2.2.3 Seconds
+
+   2.2.4 Ratio
+
+   2.3 Notes/Tuning Information
+
+   2.3.1 Compiler Invocation Notes
+
+   2.3.2 Portability Notes
+
+   2.3.3 Base Tuning Notes
+
+   2.3.4 Peak Tuning Notes
+
+   2.3.5 Operating System Notes
+
+   2.3.6 Platform Notes
+
+   2.3.7 Component Notes
+
+   2.3.8 General Notes
+
+   2.4 Compilation Flags Used
+
+   2.4.1Compiler Invocation
+
+   2.4.2Portability Flags
+
+   2.4.3Optimization Flags
+
+   2.4.4Other Flags
+
+   2.4.5Unknown Flags
+
+   2.4.6Forbidden Flags
+
+   2.5 Errors
+
+   3. Hardware description
+
+   3.1 CPU Name
+
+   3.2 CPU Characteristics
+
+   3.3 CPU MHz
+
+   3.4 FPU
+
+   3.5 CPU(s) enabled
+
+   3.6 CPU(s) orderable
+
+   3.7 Primary Cache
+
+   3.8 Secondary Cache
+
+   3.9 L3 Cache
+
+   3.10 Other Cache
+
+   3.11 Memory
+
+   3.12 Disk Subsystem
+
+   3.13 Other Hardware
+
+   4. Software description
+
+   4.1 Operating System
+
+   4.2 Auto Parallel
+
+   4.3 Compiler
+
+   4.4 File System
+
+   4.5 System State
+
+   4.6 Base Pointers
+
+   4.7 Peak Pointers
+
+   4.8 Other Software
+
+     ----------------------------------------------------------------------
+
+                           1. SPEC CPU2006 Benchmarks
+
+1.1 Benchmarks by suite
+
+  1.1.1 Benchmarks in the CFP2006 suite
+
+   The CFP2006 suite is comprised of 17 floating-point compute intensive
+   codes; 6 in Fortran, 3 in C, 4 in C++, and 4 which contain both Fortran
+   and C.
+
+    1. 410.bwaves (Fortran)
+    2. 416.gamess (Fortran)
+    3. 433.milc (C)
+    4. 434.zeusmp (Fortran)
+    5. 435.gromacs (Fortran and C)
+    6. 436.cactusADM (Fortran and C)
+    7. 437.leslie3d (Fortran)
+    8. 444.namd (C++)
+    9. 447.dealII (C++)
+   10. 450.soplex (C++)
+   11. 453.povray (C++)
+   12. 454.calculix (Fortran and C)
+   13. 459.GemsFDTD (Fortran)
+   14. 465.tonto (Fortran)
+   15. 470.lbm (C)
+   16. 481.wrf (Fortran and C)
+   17. 482.sphinx3 (C)
+
+  1.1.2 Benchmarks in the CINT2006 suite
+
+   The CINT2006 suite is comprised of 12 integer-compute-intensive codes; 9
+   in C and 3 in C++.
+
+    1. 400.perlbench (C)
+    2. 401.bzip2 (C)
+    3. 403.gcc (C)
+    4. 429.mcf (C)
+    5. 445.gobmk (C)
+    6. 456.hmmer (C)
+    7. 458.sjeng (C)
+    8. 462.libquantum (C)
+    9. 464.h264ref (C)
+   10. 471.omnetpp (C++)
+   11. 473.astar (C++)
+   12. 483.xalancbmk (C++)
+
+1.2 Benchmarks by language
+
+  1.2.1 C Benchmarks
+
+   (Also, "C Benchmarks (except as noted below)")
+
+   Nine benchmarks in the CINT2006 suite are written in C:
+
+     * 400.perlbench
+     * 401.bzip2
+     * 403.gcc
+     * 429.mcf
+     * 445.gobmk
+     * 456.hmmer
+     * 458.sjeng
+     * 462.libquantum
+     * 464.h264ref
+
+   Three benchmarks in the CFP2006 suite are written in C:
+
+     * 433.milc
+     * 470.lbm
+     * 482.sphinx3
+
+  1.2.2 C++ Benchmarks
+
+   (Also, "C++ Benchmarks (except as noted below)")
+
+   Three benchmarks in the CINT2006 suite are written in C++:
+
+     * 471.omnetpp
+     * 473.astar
+     * 483.xalancbmk
+
+   Four benchmarks in the CFP2006 suite are written in C++:
+
+     * 444.namd
+     * 447.dealII
+     * 450.soplex
+     * 453.povray
+
+  1.2.3 Fortran Benchmarks
+
+   (Also, "Fortran Benchmarks (except as noted below)")
+
+   There are no benchmarks in the CINT2006 suite written in Fortran.
+
+   Six benchmarks in the CFP2006 suite are written in Fortran:
+
+     * 410.bwaves
+     * 416.gamess
+     * 434.zeusmp
+     * 437.leslie3d
+     * 459.GemsFDTD
+     * 465.tonto
+
+  1.2.4 Benchmarks using both Fortran and C
+
+   (Also, "Benchmarks using both Fortran and C (except as noted below)")
+
+   There are no benchmarks in the CINT2006 suite written in a mixture of
+   Fortran and C.
+
+   Four benchmarks in the CFP2006 suite are written using both Fortran and C:
+
+     * 435.gromacs
+     * 436.cactusADM
+     * 454.calculix
+     * 481.wrf
+
+     ----------------------------------------------------------------------
+
+                               2. Major sections
+
+2.1 Top bar
+
+   More detailed information about metrics is in sections 4.3.1 and 4.3.2 of
+   the CPU2006 Run and Reporting Rules.
+
+  2.1.1 CFP2006 Result
+
+   This result is from the CFP2006 suite.
+
+  2.1.2 CINT2006 Result
+
+   This result is from the CINT2006 suite.
+
+  2.1.3 SPECfp2006
+
+   The geometric mean of seventeen normalized ratios (one for each floating
+   point benchmark) when compiled with aggressive optimization for each
+   benchmark.
+
+   More detailed information about this metric is in section 4.3.1 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.4 SPECfp_base2006
+
+   The geometric mean of seventeen normalized ratios when compiled with
+   conservative optimization for each benchmark.
+
+   More detailed information about this metric is in section 4.3.1 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.5 SPECfp_rate2006
+
+   The geometric mean of seventeen normalized throughput ratios when compiled
+   with aggressive optimization for each benchmark.
+
+   More detailed information about this metric is in section 4.3.2 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.6 SPECfp_rate_base2006
+
+   The geometric mean of seventeen normalized throughput ratios when compiled
+   with conservative optimization for each benchmark.
+
+   More detailed information about this metric is in section 4.3.2 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.7 SPECint2006
+
+   The geometric mean of twelve normalized ratios (one for each integer
+   benchmark) when compiled with aggressive optimization for each benchmark.
+
+   More detailed information about this metric is in section 4.3.1 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.8 SPECint_base2006
+
+   The geometric mean of twelve normalized ratios when compiled with
+   conservative optimization for each benchmark.
+
+   More detailed information about this metric is in section 4.3.1 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.9 SPECint_rate2006
+
+   The geometric mean of twelve normalized throughput ratios when compiled
+   with aggressive optimization for each benchmark.
+
+   More detailed information about this metric is in section 4.3.2 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.10 SPECint_rate_base2006
+
+   The geometric mean of twelve normalized throughput ratios when compiled
+   with conservative optimization for each benchmark.
+
+   More detailed information about this metric is in section 4.3.2 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.1.11 CPU2006 license #
+
+   The SPEC CPU license number of the organization or individual that ran the
+   result.
+
+  2.1.12 Hardware Availability
+
+   (Also, "Hardware Avail")
+
+   The date when all the hardware necessary to run the result is generally
+   available. For example, if the CPU is available in Aug-2005, but the
+   memory is not available until Oct-2005, then the hardware availability
+   date is Oct-2005 (unless some other component pushes it out farther).
+
+  2.1.13 Software Availability
+
+   (Also, "Software Avail")
+
+   The date when all the software necessary to run the result is generally
+   available. For example, if the operating system is available in Aug-2005,
+   but the compiler or other libraries are not available until Oct-2005, then
+   the software availability date is Oct-2005 (unless some other component
+   pushes it out farther).
+
+  2.1.14 Test date
+
+   The date when the test is run. This value is supplied by the tester; the
+   time reported by the system under test is recorded in the raw result file.
+
+  2.1.15 Test sponsor
+
+   The name of the organization or individual that sponsored the test.
+   Generally, this is the name of the license holder.
+
+  2.1.16 Tested by
+
+   The name of the organization or individual that ran the test. If there are
+   installations in multiple geographic locations, sometimes that will also
+   be listed in this field. This field only appears if the test sponsor is
+   different than the the organization that ran the benchmarks.
+
+2.2 Result table
+
+   In addition to the graph, the results of the individual benchmark runs are
+   also presented in table form.
+
+  2.2.1 Benchmark
+
+   The name of the benchmark.
+
+  2.2.2 Copies
+
+   For throughput (rate) runs, this column indicates the number of benchmark
+   copies that were run simultaneously.
+
+  2.2.3 Seconds
+
+   For speed runs, this is the amount of time in seconds that the benchmark
+   took to run. For throughput (rate) runs, it is the amount of time between
+   the start of the first copy and the end of the last copy.
+
+  2.2.4 Ratio
+
+   This is the ratio of benchmark run time to the run time on the reference
+   platform.
+
+2.3 Notes/Tuning Information
+
+   (Also, "Notes/Tuning Information (Continued)")
+
+   This section is where the tester provides notes about compiler flags used,
+   system settings, and other items that do not have dedicated fields
+   elsewhere in the result.
+
+   Run rules relating to these items can be found in section 4.2.4 of the
+   CPU2006 Run and Reporting Rules.
+
+  2.3.1 Compiler Invocation Notes
+
+   (Also, "Compiler Invocation Notes (Continued)")
+
+   This section is where the tester provides notes about how the various
+   compilers were invoked, whether any special paths had to be used, etc.
+
+  2.3.2 Portability Notes
+
+   (Also, "Portability Notes (Continued)")
+
+   This section is where the tester provides notes about portability options
+   and flags used to build the various benchmarks.
+
+  2.3.3 Base Tuning Notes
+
+   (Also, "Base Tuning Notes (Continued)")
+
+   This section is where the tester provides notes about baseline
+   optimization options and flags used to build the various benchmarks.
+
+  2.3.4 Peak Tuning Notes
+
+   (Also, "Peak Tuning Notes (Continued)")
+
+   This section is where the tester provides notes about peak optimization
+   options and flags used to build the various benchmarks.
+
+  2.3.5 Operating System Notes
+
+   (Also, "Operating System Notes (Continued)")
+
+   This section is where the tester provides notes about changes to the
+   default operating system state and other OS-specific tuning information.
+
+  2.3.6 Platform Notes
+
+   (Also, "Platform Notes (Continued)")
+
+   This section is where the tester provides notes about changes to the
+   default hardware state and other non-OS-specific tuning information.
+
+  2.3.7 Component Notes
+
+   (Also, "Component Notes (Continued)")
+
+   This section is where the tester provides information about various
+   components needed to build a particular system. This section is only used
+   if the system under test is built from parts and not sold as a whole
+   system.
+
+  2.3.8 General Notes
+
+   (Also, "General Notes (Continued)")
+
+   This section is where the tester provides notes about things not covered
+   in the other notes sections.
+
+2.4 Compilation Flags Used
+
+   (Also, "Compilation Flags Used (Continued)")
+
+   This section is generated automatically by the benchmark tools. It details
+   compilation flags used and provides links (in the HTML and PDF result
+   formats) to descriptions of those flags.
+
+  2.4.1 Compiler Invocation
+
+   (Also, "Base Compiler Invocation" and "Peak Compiler Invocation")
+
+   This section lists the ways that the various compilers are invoked.
+
+  2.4.2 Portability Flags
+
+   (Also, "Base Portability Flags" and "Peak Portability Flags")
+
+   This section lists compilation flags that are used for portability.
+
+  2.4.3 Optimization Flags
+
+   (Also, "Base Optimization Flags" and "Peak Optimization Flags")
+
+   This section lists compilation flags that are used for optimization.
+
+  2.4.4 Other Flags
+
+   (Also, "Base Other Flags" and "Peak Other Flags")
+
+   This section lists compilation flags that are classified as neither
+   portability nor optimization.
+
+  2.4.5 Unknown Flags
+
+   (Also, "Base Unknown Flags" and "Peak Unknown Flags")
+
+   This section of the reports lists compilation flags used that are not
+   described in any flags description file. Results with unknown flags are
+   marked "invalid" and may not be published. This marking may be removed by
+   reformatting the result using a flags file that describes all of the
+   unknown flags.
+
+  2.4.6 Forbidden Flags
+
+   (Also, "Base Forbidden Flags" and "Peak Forbidden Flags")
+
+   This section of the reports lists compilation flags used that are
+   designated as "forbidden". Results using forbidden flags are marked
+   "invalid" and may not be published.
+
+2.5 Errors
+
+   This section is automatically inserted by the benchmark tools when there
+   are errors present that prevent the result from being a valid reportable
+   result.
+
+     ----------------------------------------------------------------------
+
+                            3. Hardware description
+
+   Run rules relating to these items can be found in section 4.2.2 of the
+   CPU2006 Run and Reporting Rules.
+
+  3.1 CPU Name
+
+   A manufacturer-determined processor formal name.
+
+  3.2 CPU Characteristics
+
+   Technical characteristics to help identify the processor.
+
+  3.3 CPU MHz
+
+   The clock frequency of the CPU, expressed in megahertz.
+
+  3.4 FPU
+
+   The type of floating-point unit used in the system.
+
+  3.5 CPU(s) enabled
+
+   The number of CPUs that were enabled and active during the benchmark run.
+   More information about CPU counting is in the run rules.
+
+  3.6 CPU(s) orderable
+
+   The number of CPUs that can be ordered in a system of the type being
+   tested.
+
+  3.7 Primary Cache
+
+   Description (size and organization) of the CPU's primary cache. This cache
+   is also referred to as "L1 cache".
+
+  3.8 Secondary Cache
+
+   Description (size and organization) of the CPU's secondary cache. This
+   cache is also referred to as "L2 cache".
+
+  3.9 L3 Cache
+
+   Description (size and organization) of the CPU's tertiary, or "Level 3"
+   cache.
+
+  3.10 Other Cache
+
+   Description (size and organization) of any other levels of cache memory.
+
+  3.11 Memory
+
+   Description of the system main memory configuration. End-user options that
+   affect performance, such as arrangement of memory modules, interleaving,
+   latency, etc, are documented here.
+
+  3.12 Disk Subsystem
+
+   A description of the disk subsystem (size, type, and RAID level if any) of
+   the storage used to hold the benchmark tree during the run.
+
+  3.13 Other Hardware
+
+   Any additional equipment added to improve performance.
+
+     ----------------------------------------------------------------------
+
+                            4. Software description
+
+   Run rules relating to these items can be found in section 4.2.3 of the
+   CPU2006 Run and Reporting Rules.
+
+  4.1 Operating System
+
+   The operating system name and version. If there are patches applied that
+   affect performance, they must be disclosed in the notes.
+
+  4.2 Auto Parallel
+
+   Were multiple threads/cores/chips employed by a parallelizing compiler?
+   Note that a speed run that uses a parallelizing compiler causes a single
+   instance of a benchmark to run using multiple CPUs; this is different from
+   a rate run, which typically distributes N instances over N CPUs.
+
+  4.3 Compiler
+
+   The names and versions of all compilers, preprocessors, and performance
+   libraries used to generate the result.
+
+  4.4 File System
+
+   The type of the filesystem used to contain the run directories.
+
+  4.5 System State
+
+   The state (sometimes called "run level") of the system while the
+   benchmarks were being run. Generally, this is "single user", "multi-user",
+   "default", etc.
+
+  4.6 Base Pointers
+
+   Indicates whether all the benchmarks in base used 32-bit pointers, 64-bit
+   pointers, or a mixture. For example, if the C and C++ benchmarks used
+   32-bit pointers, and the Fortran benchmarks used 64-bit pointers, then
+   "32/64-bit" would be reported here.
+
+  4.7 Peak Pointers
+
+   Indicates whether all the benchmarks in peak used 32-bit pointers, 64-bit
+   pointers, or a mixture.
+
+  4.8 Other Software
+
+   Any performance-relevant non-compiler software used, including third-party
+   libraries, accelerators, etc.
+
+     ----------------------------------------------------------------------
+
+   Copyright (c) 2006 Standard Performance Evaluation Corporation
+   All Rights Reserved
+
+   W3C XHTML 1.0
+   W3C CSS

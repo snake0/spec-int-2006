@@ -1,0 +1,1459 @@
+C  9 DEC 03 - MWS - SYNCH COMMON BLOCK RUNOPT
+C  7 AUG 02 - CP,HL - ITERATIVE ISOTROPIC IEF-PCM/EFP
+C 17 APR 02 - MWS - SYNCH UP EFMULT AND FRGINF COMMON
+C  8 OCT 01 - HL  - PARALLELIZE PCM 
+C 25 JUN 01 - MWS - ALTER COMMON BLOCK WFNOPT
+C 13 JUN 01 - MWS - IEFFRG: DAF RECORD USED TO PASS IFR VALUES
+C 11 OCT 00 - PB  - STATIC PART OF EFP CONTRIBUTION TO PCM
+C
+C*MODULE EFPCM  *DECK ENUADD
+      SUBROUTINE ENUADD(DMATM1,VEC,VEC_I,VEC_TEST,VEC_EFP,
+     *                 VEC_QD,NTSX,L2)
+C
+      IMPLICIT DOUBLE PRECISION (A-H, O-Z)
+C
+      CHARACTER*8 FRGNME
+C
+      LOGICAL GOPARR,MASWRK,DSKWRK
+C
+      PARAMETER (MXPT=100, MXFRG=50, MXFGPT=MXPT*MXFRG, MXATM=500,
+     *           MXTS=2500, MXTSPT=2*MXTS)
+      PARAMETER (MXSP=250)
+C
+      DIMENSION VEC(L2),VEC_I(L2),VEC_TEST(L2),VEC_EFP(NTSX),
+     *          VEC_QD(NTSX),DMATM1(NTSX,NTSX)
+C
+      COMMON /EFMULT/ EFC(3,MXFGPT),EFCHG(2,MXFGPT),EFATRM(MXFGPT),
+     *                EFBTRM(MXFGPT),EFATRM2(MXFGPT),EFBTRM2(MXFGPT),
+     *                EFDIP(3,MXFGPT),EFQAD(6,MXFGPT),
+     *                EFOCT(10,MXFGPT),FRGNME(MXFGPT)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+C
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMEFP/ VEC_MUL(MXTS),AIND_PROJ(MXTS),FIND_PROJ(MXTS),
+     *                PB_MUL, PC_MUL,PB_POL,PC_POL,
+     *                P_FF,P_NF,P_FN,P_I,P_IBIS,P_J,P_NUCC,P_NUCCBIS,
+     *                ENPCM
+      COMMON /PCMITR/ IPCMIT,LIST(MXSP+1),IMUL,MXDIIS,RCUT(2),
+     *                THRES,NREG,MXITR1,MXITR2
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+      PARAMETER (ZERO = 0.00D+00, ONE = 1.00D+00)
+      PARAMETER (HALF = 0.5D+00)
+C
+C----INITIALIZATION-OF-THE-VARIABLES-USED-IN-THIS-ROUTINE
+C---ELECTRIC-POTENTIAL--FROM-THE-MULTIPOLES-OF-EFP
+C
+      NUM2=(NUM*NUM+NUM)/2
+      CALL VCLR(VEC_I,1,NUM2)
+      CALL VCLR(Q_FS,1,MXTS)
+      CALL VCLR(VEC_MUL,1,MXTS)
+      CALL VCLR(VEC_EFP,1,NTS)
+      CALL VCLR(VEC_QD,1,NTS)
+      P_NF=ZERO
+      P_FF=ZERO
+      P_FN=ZERO
+      Q_FSTOT=ZERO
+      DUM=ZERO
+C
+C     CRIS: THIS PART IS SKIPPED IN ITERATIVE SCHEME
+C
+      IF (IPCMIT.EQ.0) THEN
+C
+      DO 300 ITS=1,NTS
+         XI=XCTS(ITS)
+         YI=YCTS(ITS)
+         ZI=ZCTS(ITS)
+C
+       DO 500 I=1,NMTTPT
+           ALFA=EFATRM(I)
+           BETA=EFBTRM(I)
+           XX=EFQAD(1,I)
+           YY=EFQAD(2,I)
+           ZZ=EFQAD(3,I)
+           XY=EFQAD(4,I)
+           XZ=EFQAD(5,I)
+           YZ=EFQAD(6,I)
+           DUM=XX+YY+ZZ
+           QXX=(3.0D+00*XX-DUM)/2.0D+00
+           QYY=(3.0D+00*YY-DUM)/2.0D+00
+           QZZ=(3.0D+00*ZZ-DUM)/2.0D+00
+           QXY=1.5D+00*XY
+           QXZ=1.5D+00*XZ
+           QYZ=1.5D+00*YZ
+C--------------------------------------------------
+           DX = XCTS(ITS)-EFC(1,I)
+           DY = YCTS(ITS)-EFC(2,I)
+           DZ = ZCTS(ITS)-EFC(3,I)
+C---------------------------------------------------
+           R2=(EFC(1,I)-XI)**2+(EFC(2,I)-YI)**2
+     *     +(EFC(3,I)-ZI)**2
+           R = SQRT(R2)
+           FACT=ONE-(BETA*EXP(-ALFA*R2))
+           VEC_EFP(ITS)=VEC_EFP(ITS) + FACT*EFCHG(1,I)/R + EFCHG(2,I)/R
+C------DIPOLE-PART------
+           VEC_MUL(ITS) = VEC_MUL(ITS) + FACT*(EFDIP(1,I)*DX
+     *     +EFDIP(2,I)*DY+EFDIP(3,I)*DZ)/(R*R2)
+C----QUADRUPOLE-PART-
+           VEC_QD(ITS)=VEC_QD(ITS)+FACT*(QXX*3.0D+00*DX*DX
+     *                                  +QYY*3.0D+00*DY*DY
+     *                                  +QZZ*3.0D+00*DZ*DZ
+     *                                  +QXY*6.0D+00*DX*DY
+     *                                  +QXZ*6.0D+00*DX*DZ
+     *                                  +QYZ*6.0D+00*DY*DZ)
+     *     /(3.0D+00*R2*R2*R)
+C        WRITE(IW,*)'DIPOLE-TEST',EFDIP(1,I),R
+ 500    CONTINUE
+        VEC_MUL(ITS)=VEC_EFP(ITS)+VEC_MUL(ITS)+VEC_QD(ITS)
+C--------------------------------------------------------
+ 300    CONTINUE
+C---------------------------------------------------
+C            WRITE(IW,*)'CHECK-2ND'
+C----------HERE-THE-TOTAL-CONTRIBUTIONS-FROM-THE-MULTIPOLE-EXPANSION-IS
+C-----CALCULATED-
+C
+           DO ITS=1,NTS
+C------------CALCULATES-THE-INDUCED-CHARGE-
+              DO JTS=1,NTS
+                Q_FS(ITS)=Q_FS(ITS)+DMATM1(ITS,JTS)*VEC_MUL(JTS)
+              ENDDO
+             Q_FS(ITS)=Q_FS(ITS)*AS(ITS)
+C             WRITE(IW,*)'Q_FS',Q_FS(ITS)
+             Q_FSTOT=Q_FSTOT+Q_FS(ITS)
+           ENDDO
+C           WRITE(IW,*)'Q_FSTOT',Q_FSTOT
+C----------------------------------------------------------------
+C ----- NUCLEI-INDUCED APAARENT CHARGES
+      DO  ITS = 1, NTS
+         XI=XCTS(ITS)
+         YI=YCTS(ITS)
+         ZI=ZCTS(ITS)
+         VEC_QD(ITS) = ZERO
+         DO  JATOM = 1, NAT
+            XL=C(1,JATOM)
+            YL=C(2,JATOM)
+            ZL=C(3,JATOM)
+            RIL= SQRT((XI-XL)**2+(YI-YL)**2+(ZI-ZL)**2)
+            VEC_QD(ITS) = VEC_QD(ITS) + ZAN(JATOM)/RIL
+         ENDDO
+      ENDDO
+      DO ITS = 1, NTS
+         QSN(ITS) = ZERO
+         DO JTS = 1, NTS
+            QSN(ITS) = QSN(ITS)+DMATM1(ITS,JTS)*VEC_QD(JTS)
+C         WRITE(6,*)'QSN-CHECK',QSN(ITS),DMATM1(ITS,JTS),VEC_QD(JTS)
+         ENDDO
+         QSN(ITS) = QSN(ITS)*AS(ITS)
+       ENDDO
+C     CRIS
+      END IF
+C
+C
+C----INTERACTION-(1)-ELECTRONIC-POTENTIAL-AND-INDUCED-CHARGE-(FRAGMENT)
+C
+          DO ITS=1,NTS
+              CALL INTMEP(VEC,XCTS(ITS),YCTS(ITS),ZCTS(ITS))
+              DO IBAS=1,NUM2
+                VEC_I(IBAS)=VEC_I(IBAS)-VEC(IBAS)*Q_FS(ITS)
+C                WRITE(IW,*)'VEC_I-CHECK',VEC(IBAS),Q_FS(ITS)
+              ENDDO
+C
+C------NOW-INDUCED-CHARGE(FRAGMENT)-POTENTIAL(FRAGMENT)----------
+C
+         P_FF=P_FF+VEC_MUL(ITS)*Q_FS(ITS)
+C---------INDUCED-CHARGE(NUCLEI)----POTENTIAL(EFP)----
+         P_FN=P_FN+VEC_MUL(ITS)*QSN(ITS)
+C---------INDUCED-CHARGE(FRAGMENT)----POTENTIAL(NUCLEAR)-------
+        DO 600 JATOM= 1, NAT
+             R2 = (C(1,JATOM)-XCTS(ITS))**2 +
+     *       (C(2,JATOM)-YCTS(ITS))**2 + (C(3,JATOM)-ZCTS(ITS))**2
+             R = SQRT(R2)
+             P_NF = P_NF + Q_FS(ITS)*ZAN(JATOM)/R
+600     CONTINUE
+C--INDUCED-CHARGE(FRAGMENT)---POTENTIAL(NON-ELECTRONIC-INDUCED-DIPOLE)
+        ENDDO
+C            WRITE(IW,*)'CHECK-4TH'
+C---------------------------------------------------
+C         DO ITS=1,NTS
+C          DO J=1,NMTTPT
+C            R2 = (EFC(1,I)-XCTS(ITS))**2+(EFC(2,I)-YCTS(ITS))**2
+C     * +(EFC(3,I)-ZCTS(ITS))**2
+C            R = SQRT(R2)
+C           FACT=ONE-(BETA*EXP(-ALFA*R))
+C           E_NUCC=E_NUCC + FACT*EFCHG(1,I)/R
+C           E_NUCC=E_NUCC +      EFCHG(2,I)/R
+C           CHG_E=CHG_E + QSN(ITS)*E_NUCC
+C         ENDDO
+C       ENDDO
+C--
+C--ADD-V(I,F)-TO-THE-ONE-ELECTRON-HAMILTONIAN
+C----GET-THE-TOTAL-ADDITIVE-ENERGIES-FROM-THIS-ROUTINE
+       IF(MASWRK) WRITE(IW,*)'UNZ-BEFORE',UNZ,P_FF,P_NF,P_FN
+COLD   A_DD = (P_FF+2.0*P_NF)*HALF
+       A_DD = (P_FF+P_NF+P_FN)*HALF
+       UNZ=UNZ+A_DD
+       IF(MASWRK) WRITE(IW,*)'UNZ-AFTER',UNZ
+C       WRITE(IW,*)'CONTRIBUTIONS',P_NF,P_FN,P_FF
+C------------------------------------------------------
+       NH1 = 11
+C       WRITE(IW,*)'NUM',NUM
+       CALL DAREAD(IDAF,IODA,VEC_TEST,NUM2,NH1,0)
+       DO IBAS = 1,NUM2
+C           WRITE(IW,*)'VEC_I',VEC_TEST(IBAS)
+           VEC_TEST(IBAS) = VEC_TEST(IBAS) + VEC_I(IBAS)
+C           WRITE(IW,*)'VEC_I2',VEC(IBAS),VEC_I(IBAS)
+       ENDDO
+C       WRITE(IW,*)'NUM',NUM
+       CALL DAWRIT(IDAF,IODA,VEC_TEST,NUM2,NH1,0)
+C            WRITE(IW,*)'DONE'
+        RETURN
+        END
+C
+C*MODULE EFPCM  *DECK CHGIND
+      SUBROUTINE CHGIND(H1,FA,FB,DENTOT,DIP,ODIP,DMATM1,
+     *                  XEFI,YEFI,ZEFI,EFLD,EFADD,ABFLD,VECMP,
+     *                  VEC_2,VEC_S,
+     *                  EFPUX,EFPUY,EFPUZ,EMPUX,EMPUY,EMPUZ,L2,L1,
+     *                  MCITER,NTSX)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXATM=500, MXPT=100, MXFRG=50, MXFGPT=MXPT*MXFRG,
+     *           MXRT=100, MXTS=2500, MXTSPT=2*MXTS)
+      PARAMETER (MXSP=250)
+C
+      CHARACTER*8 POLNAM,FRGNME
+C
+      LOGICAL OUT
+      LOGICAL GOPARR,MASWRK,DSKWRK
+      LOGICAL DIRSCF,FDIFF,MINMEM
+C
+      COMMON /CONV  / ACURCY,ENUCR,AJUNK(3),DIFF,ITER,ICALCP,ICBET
+      COMMON /EFMULT/ EFC(3,MXFGPT),EFCHG(2,MXFGPT),EFATRM(MXFGPT),
+     *                EFBTRM(MXFGPT),EFATRM2(MXFGPT),EFBTRM2(MXFGPT),
+     *                EFDIP(3,MXFGPT),EFQAD(6,MXFGPT),
+     *                EFOCT(10,MXFGPT),FRGNME(MXFGPT)
+      COMMON /EFPOTD/ METHOD,ISCCHG,MOVE
+      COMMON /EFPPAR/ EFP(3,MXFGPT),EFPOL(9,MXFGPT),
+     *                ENO,DIND(3,MXFGPT),DINDD(3,MXFGPT),POLNAM(MXFGPT)
+      COMMON /ENRGYS/ ENUCRMC,EELCT,ETOT,SZ,SZZ,ECORE,ESCF,EERD,E1,E2,
+     *                VEN,VEE,EPOT,EKIN,ESTATE(MXRT),STATN
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /FRFD  / PPEFX(MXFGPT), PPEFY(MXFGPT), PPEFZ(MXFGPT)
+      COMMON /INDDIP/ TMUX,TMUY,TMUZ,TMUXD,TMUYD,TMUZD,MINMEM
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /OPTSCF/ DIRSCF,FDIFF
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMEFP/ VEC_MUL(MXTS),AIND_PROJ(MXTS),FIND_PROJ(MXTS),
+     *                PB_MUL, PC_MUL,PB_POL,PC_POL,
+     *                P_FF,P_NF,P_FN,P_I,P_IBIS,P_J,P_NUCC,P_NUCCBIS,
+     *                ENPCM
+      COMMON /PCMITR/ IPCMIT,LIST(MXSP+1),IMUL,MXDIIS,RCUT(2),
+     *                THRES,NREG,MXITR1,MXITR2
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+      COMMON /PNUC  / PPNX(MXFGPT),PPNY(MXFGPT),PPNZ(MXFGPT),PNZRF(3)
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+C
+      DIMENSION H1(L2),FA(L2),FB(L2),DENTOT(L2),DIP(L2),ODIP(L2),
+     *          DMATM1(NTSX,NTSX),XEFI(L2),YEFI(L2),ZEFI(L2),
+     *          EFLD(3,NPTTPT),EFADD(3,NPTTPT),ABFLD(3,NPTTPT),
+     *          VECMP(L2),VEC_2(L2),VEC_S(L2),
+     *          EFPUX(NPTTPT),EFPUY(NPTTPT),
+     *          EFPUZ(NPTTPT),EMPUX(NPTTPT),EMPUY(NPTTPT),
+     *          EMPUZ(NPTTPT)
+C
+C
+      PARAMETER (ONE=1.0D+00, GLIM=1.0D-03)
+      PARAMETER (ZERO=0.0D+00, PT5=0.5D+00, DEBYE=2.541766D+00)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DEBUG  /8HDEBUG   /, DBUGME/8HEF      /
+#else
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      DATA DEBUG_STR/"DEBUG   "/, DBUGME_STR/"EF      "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RHF,GVB/8HRHF     ,8HGVB     /
+#else
+      CHARACTER*8 :: GVB_STR
+      EQUIVALENCE (GVB, GVB_STR)
+      CHARACTER*8 :: RHF_STR
+      EQUIVALENCE (RHF, RHF_STR)
+      DATA RHF_STR,GVB_STR/"RHF     ","GVB     "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RMC/8HMCSCF   /
+#else
+      CHARACTER*8 :: RMC_STR
+      EQUIVALENCE (RMC, RMC_STR)
+      DATA RMC_STR/"MCSCF   "/
+#endif
+C
+      SAVE EN0
+C
+C     ---------------------- METHOD 2 -------------------------
+C     CALCULATE ITERATIVELY THE INDUCED DIPOLES ON THE FRAGMENTS
+C     UNTIL SELF-CONSISTENCY IS REACHED, ADD RESULTING FIELD DURING
+C     SAME SCF ITERATION. ITERATION OF INDUCED DIPOLES ALSO COUPLED
+C     TO SCF.
+C     EFADD         - FIELD DUE TO INDUCED DIPOLE
+C     PFX,PFY,PFZ   - TOTAL FIELD, INCLUDING FIELD DUE TO INDUCED DIPOLE
+C
+C     ---------------------- METHOD 3 -------------------------
+C     CALCULATE THE INDUCED DIPOLES ON THE FRAGMENTS ONCE AND ADD
+C     RESULTING FIELD NEXT SCF ITERATION, INDUCED DIPOLE ITERATION
+C     TO SELF CONSITANCY IS THEREFORE DUE ONLY TO COUPLING TO SCF.
+C     EFADD         - FIELD DUE TO INDUCED DIPOLE
+C     PFX,PFY,PFZ   - TOTAL FIELD, EXCLUDING FIELD DUE TO INDUCED DIPOLE
+C     PFXADD ETC.   - TOTAL FIELD, INCLUDING FIELD DUE TO INDUCED DIPOLE
+C
+      OUT  = (EXETYP.EQ.DEBUG  .OR.  EXETYP.EQ.DBUGME)  .AND.  MASWRK
+C
+C      ----- NUCLEAR CONTRIBUTION TO MOLECULAR DIPOLE FIELD -----
+C -- GVB ITERATIONS START AT 1, RHF,UHF,ROHF AT 0!, EN0 IS USUAL TERM --
+C
+C----INITIALIZATION-OF-VARIABLES-NEEDED-FOR-PCM
+C----SOME OF THEM ARE NOT NEEDED BUT KEPT FOR DEBUGGING.
+C
+       CALL VCLR(VEC_2,1,L2)
+       CALL VCLR(VEC_S,1,L2)
+       CALL VCLR(AIND_PROJ,1,MXTS)
+       CALL VCLR(FIND_PROJ,1,MXTS)
+       P_I = ZERO
+       P_IBIS = ZERO
+       P_J = ZERO
+       P_NUCC = ZERO
+       P_NUCCBIS = ZERO
+       Q_INDTOT=ZERO
+       VEC_2_M = ZERO
+       P_M_2 = ZERO
+       VEC_I_EFP=ZERO
+C----------------------------------------------
+      IFIRST = 0
+      IF(SCFTYP.NE.GVB) IFIRST=1
+      IF(SCFTYP.EQ.RMC) THEN
+         IFIRST=2
+         ITER=MCITER
+      END IF
+C
+C     -- GET FIELDS FROM NUCLEI, NUCLEAR CONTRIBUTION TO POLARIZATION --
+C     -- GET THE FIELD DUE TO MULTIPOLE POINTS IN OTHER FRAGMENTS --
+C
+      IF(ITER.EQ.IFIRST) THEN
+         EN0=ENUCR
+         CALL EFNUCP(NAT,ZAN,C,ENUCP)
+C
+         CALL VCLR(Q_IND,1,MXTS)
+         CALL VCLR(PPEFX,1,MXFGPT)
+         CALL VCLR(PPEFY,1,MXFGPT)
+         CALL VCLR(PPEFZ,1,MXFGPT)
+         IF(NFRG.GT.1) CALL FRGFLD(PPEFX,PPEFY,PPEFZ,NMTTPT)
+C
+         CALL VCLR(EFADD,1,3*NPTTPT)
+      ELSE
+         ENUCR=EN0
+         IF(NFRG.GT.1 .AND. METHOD.EQ.3) CALL DIPIT(EFLD,EFADD,NPTTPT)
+      END IF
+C
+      TMUX=ZERO
+      TMUY=ZERO
+      TMUZ=ZERO
+      IF (DIRSCF .AND. FDIFF .AND. SCFTYP .NE. GVB)CALL VCLR(DIP,1,L2)
+C
+      CALL SEQREW(25)
+      INDEX = 1
+      DO 10 IFRG=1,NFRG
+        I1 = INDEX
+        INDEX = INDEX + NPPTS(IFRG)
+        I2 = I1 + NPPTS(IFRG) - 1
+        DO 20 LEFP = I1,I2
+C
+C     ---- POLARIZABILITY TENSOR ALPHA FOR THE POINT ----
+          BETAXX=EFPOL(1,LEFP)
+          BETAYY=EFPOL(2,LEFP)
+          BETAZZ=EFPOL(3,LEFP)
+          BETAXY=EFPOL(4,LEFP)
+          BETAXZ=EFPOL(5,LEFP)
+          BETAYZ=EFPOL(6,LEFP)
+          BETAYX=EFPOL(7,LEFP)
+          BETAZX=EFPOL(8,LEFP)
+          BETAZY=EFPOL(9,LEFP)
+C
+C   -- READ ELECTRIC FIELD INTEGRALS --
+          CALL SQREAD(25,XEFI,L2)
+          CALL SQREAD(25,YEFI,L2)
+          CALL SQREAD(25,ZEFI,L2)
+C
+          IF(OUT)THEN
+            IF (MASWRK) WRITE(IW,9500)
+            CALL PRTRIL(XEFI,L1)
+            CALL PRTRIL(YEFI,L1)
+            CALL PRTRIL(ZEFI,L1)
+          END IF
+C
+C    ---- ELECTRIC FIELD AT THE POINT ----
+           PEX=TRACEP(DENTOT,XEFI,L1)
+           PEY=TRACEP(DENTOT,YEFI,L1)
+           PEZ=TRACEP(DENTOT,ZEFI,L1)
+C
+C    ---- NUCLEAR FIELD AT THE POINT ----
+           PNX=PPNX(LEFP)
+           PNY=PPNY(LEFP)
+           PNZ=PPNZ(LEFP)
+C
+C    ---- SOLVENT APPARENT CHARGE FIELD AT THE POINT ----
+C
+        PQ_X=ZERO
+        PQ_Y=ZERO
+        PQ_Z=ZERO
+C
+        DO 330 ITS = 1,NTS
+          QT = QSN(ITS) + QSE(ITS) + Q_FS(ITS) +Q_IND(ITS)
+          RR = (EFP(1,LEFP)-XCTS(ITS))**2 +
+     *         (EFP(2,LEFP)-YCTS(ITS))**2 +
+     *         (EFP(3,LEFP)-ZCTS(ITS))**2
+          IF(RR.LT.GLIM) GO TO 330
+          RR3 = RR * SQRT(RR)
+          PQ_X = PQ_X + QT *(EFP(1,LEFP)-XCTS(ITS))/RR3
+          PQ_Y = PQ_Y + QT *(EFP(2,LEFP)-YCTS(ITS))/RR3
+          PQ_Z = PQ_Z + QT *(EFP(3,LEFP)-ZCTS(ITS))/RR3
+ 330    CONTINUE
+C
+C        ------------- TOTAL FIELD -------------
+C
+          IF(OUT.AND.MASWRK) WRITE(IW,*) 'PE=',PEX,PEY,PEZ,'PN=',
+     *                                       PNX,PNY,PNZ
+C
+          ABFLD(1,LEFP) = PEX
+          ABFLD(2,LEFP) = PEY
+          ABFLD(3,LEFP) = PEZ
+C
+          IF (METHOD .EQ.3) THEN
+             PFX=PEX+PNX+PPEFX(LEFP)+EFADD(1,LEFP)
+             PFY=PEY+PNY+PPEFY(LEFP)+EFADD(2,LEFP)
+             PFZ=PEZ+PNZ+PPEFZ(LEFP)+EFADD(3,LEFP)
+          ELSE
+             PFXADD=PEX+PNX+PQ_X+PPEFX(LEFP)+EFADD(1,LEFP)
+             PFYADD=PEY+PNY+PQ_Y+PPEFY(LEFP)+EFADD(2,LEFP)
+             PFZADD=PEZ+PNZ+PQ_Z+PPEFZ(LEFP)+EFADD(3,LEFP)
+             PFX=PEX+PNX+PQ_X+PPEFX(LEFP)
+             PFY=PEY+PNY+PQ_Y+PPEFY(LEFP)
+             PFZ=PEZ+PNZ+PQ_Z+PPEFZ(LEFP)
+C----------PRADIPTA-
+             PFX_F=PFXADD-PEX
+             PFY_F=PFYADD-PEY
+             PFZ_F=PFZADD-PEZ
+          END IF
+             EFLD(1,LEFP) = PFX
+             EFLD(2,LEFP) = PFY
+             EFLD(3,LEFP) = PFZ
+C
+C         ------------ INDUCED DIPOLES ------------
+          IF (METHOD .EQ.3) THEN
+             PMUX=(PFX*BETAXX+PFY*BETAXY+PFZ*BETAXZ)
+             PMUY=(PFY*BETAYY+PFX*BETAYX+PFZ*BETAYZ)
+             PMUZ=(PFZ*BETAZZ+PFX*BETAZX+PFY*BETAZY)
+             DIND(1,LEFP)=PMUX
+             DIND(2,LEFP)=PMUY
+             DIND(3,LEFP)=PMUZ
+             PMUX=(PFX*BETAXX+PFY*BETAYX+PFZ*BETAZX)
+             PMUY=(PFY*BETAYY+PFX*BETAXY+PFZ*BETAZY)
+             PMUZ=(PFZ*BETAZZ+PFX*BETAXZ+PFY*BETAYZ)
+             DINDD(1,LEFP)=PMUX
+             DINDD(2,LEFP)=PMUY
+             DINDD(3,LEFP)=PMUZ
+          ELSE
+             PMUX=(PFXADD*BETAXX+PFYADD*BETAXY+PFZADD*BETAXZ)
+             PMUY=(PFYADD*BETAYY+PFXADD*BETAYX+PFZADD*BETAYZ)
+             PMUZ=(PFZADD*BETAZZ+PFXADD*BETAZX+PFYADD*BETAZY)
+             DIND(1,LEFP)=PMUX
+             DIND(2,LEFP)=PMUY
+             DIND(3,LEFP)=PMUZ
+             PMUX=(PFXADD*BETAXX+PFYADD*BETAYX+PFZADD*BETAZX)
+             PMUY=(PFYADD*BETAYY+PFXADD*BETAXY+PFZADD*BETAZY)
+             PMUZ=(PFZADD*BETAZZ+PFXADD*BETAXZ+PFYADD*BETAYZ)
+             DINDD(1,LEFP)=PMUX
+             DINDD(2,LEFP)=PMUY
+             DINDD(3,LEFP)=PMUZ
+C------PRADIPTA-EXTRACT-THE-ELECTRONIC-PART-OF-THE-INDUCED-DIPOLE-
+       EMPUX(LEFP)=PEX*BETAXX+PEY*BETAXY+PEZ*BETAXZ
+       EMPUY(LEFP)=PEY*BETAYY+PEX*BETAYX+PEZ*BETAYZ
+       EMPUZ(LEFP)=PEZ*BETAZZ+PEX*BETAZX+PEY*BETAZY
+C---PRADIPTA-EXTRACT-THE-NON-ELECTRONIC-PART-OF-THE-DIPOLE-MOMENT
+       EFPUX(LEFP)=PFX_F*BETAXX+PFY_F*BETAXY+PFZ_F*BETAXZ
+       EFPUY(LEFP)=PFY_F*BETAYY+PFX_F*BETAYX+PFZ_F*BETAYZ
+       EFPUZ(LEFP)=PFZ_F*BETAZZ+PFX_F*BETAZX+PFY_F*BETAZY
+      END IF
+20    CONTINUE
+10    CONTINUE
+C----------------PCM-MODEL-STARTS-HERE
+C
+C     CRIS: IN ITERATIVE THESE CHARGES ARE ZERO
+C
+            IF (IPCMIT.EQ.0) THEN
+C
+             DO ITS=1,NTS
+                 XI=XCTS(ITS)
+                 YI=YCTS(ITS)
+                 ZI=ZCTS(ITS)
+C                 CX=(XI-XCTS(ITS2))/DR
+C                 CY=(YI-YCTS(ITS2))/DR
+C                 CZ=(ZI-ZCTS(ITS2))/DR
+C                 IND_DIP(ITS)=ZERO
+C----------FIND-THE-COORDINATES-OF-THE-POLARIZABILITY-SITES
+              DO LEFP=1,NPTTPT
+                 XL=EFP(1,LEFP)
+                 YL=EFP(2,LEFP)
+                 ZL=EFP(3,LEFP)
+                 X = XI - XL
+                 Y = YI - YL
+                 Z = ZI - ZL
+                 R2=X*X + Y*Y + Z*Z
+                 R = SQRT(R2)
+                 R3 = R*R*R
+C
+C     HERE THE INDUCED CHARGE COMING FROM THE ELECTRONIC PART OF THE
+C     DIPOLE IS CALCULATED
+C
+            AIND_PROJ(ITS)=AIND_PROJ(ITS)+ (EMPUX(LEFP)*X+EMPUY(LEFP)*Y+
+     *             EMPUZ(LEFP)*Z)/R3
+C
+C    HERE PROJECTS THE FIELD TO THE NORMAL TO THE SURFACE
+           FIND_PROJ(ITS)=FIND_PROJ(ITS)+(EFPUX(LEFP)*X+EFPUY(LEFP)*Y+
+     *                    EFPUZ(LEFP)*Z)/R3
+C
+C     THE NEXT ENDDO ENDS THE LEFP LOOP
+C
+            ENDDO
+C--------THE-NEXT-ENDDO-ENDS-THE-ITS-LOOP-------
+            ENDDO
+C
+            DO ITS=1,NTS
+               Q = ZERO
+               DO JTS=1,NTS
+                 Q=Q+DMATM1(ITS,JTS)*
+     *              (FIND_PROJ(JTS)+AIND_PROJ(JTS))
+               ENDDO
+               Q_IND(ITS)=Q*AS(ITS)
+               Q_INDTOT=Q_INDTOT+Q_IND(ITS)
+            ENDDO
+C CRISEND
+      END IF
+C
+C-----HERE-WE-ADD-THE-CORRECTION-TERM-TO-THE-HAMILTONIAN-IT-IS-COMING
+C----FROM-BOTH-ELECTRONIC-AND-NON-ELECTRONIC-INDUCED-CHARGE-
+           DO ITS=1,NTS
+               XI=XCTS(ITS)
+               YI=YCTS(ITS)
+               ZI=ZCTS(ITS)
+C-----------------------------------------------
+            CALL INTMEP(VECMP,XCTS(ITS),YCTS(ITS),ZCTS(ITS))
+           DO IBAS=1,L2
+            VEC_2(IBAS)=VEC_2(IBAS)-VECMP(IBAS)*Q_IND(ITS)
+C           VEC_S(IBAS)=VEC_S(IBAS)-VECMP(IBAS)*Q_FIND(ITS)
+           ENDDO
+C-----INTERACTION-BETWEEN-NUCLEAR-POTENTIAL-AND-INDUCED-CHARGE-
+C-----IT-WILL-NOT-GO-TO-HAMILTONIAN-RATHER-WE-WILL-USE-THE-OTHER
+C--EQUIVALENT-EXPRESSION-
+            VEC_2M = -TRACEP(DENTOT,VECMP,NUM)
+            VEC_2_M = VEC_2_M + VEC_2M*Q_IND(ITS)
+C----------FOR-DEBUGGING----------
+            VEC_I_EFP=VEC_I_EFP+VEC_2M*Q_FS(ITS)
+C------------------------------------------------
+           DO JATOM = 1, NAT
+            R2 = (C(1,JATOM)-XCTS(ITS))**2 +
+     *          (C(2,JATOM)-YCTS(ITS))**2 + (C(3,JATOM)-ZCTS(ITS))**2
+            R = SQRT(R2)
+            P_I= P_I + Q_IND(ITS)*ZAN(JATOM) / R
+C           P_S= P_S + Q_FIND(ITS)*ZAN(JATOM) / R
+           ENDDO
+C-INTERACTION-BETWEEN-MULTIPOLES-OF-FRAGMENTS-AND-INDUCED-CHARGE
+           P_CH=ZERO
+           DO I=1,NMTTPT
+C---BRING-THE-FOLLOWING-QUANTITIES-FROM-OTHER-ROUTINES
+             XL=EFC(1,I)
+             YL=EFC(2,I)
+             ZL=EFC(3,I)
+C-----------------------------------------------------
+             ALFA=EFATRM(I)
+             BETA=EFBTRM(I)
+             R2=(EFC(1,I)-XCTS(ITS))**2
+     *         +(EFC(2,I)-YCTS(ITS))**2
+     *         +(EFC(3,I)-ZCTS(ITS))**2
+             R=SQRT(R2)
+C---INTERACTION-INVOLVING-THE-CHARGE-
+             FACT=ONE-(BETA*EXP(-ALFA*R2))
+        P_NUCC=P_NUCC+(FACT*EFCHG(1,I)/R + EFCHG(2,I)/R)*Q_IND(ITS)
+C-------INTERACTION-INVOLVING-NON-ELECTRONIC-INDUCED-DIPOLE
+C       P_NUSS=P_NUSS+(FACT*EFCHG(1,I)/R + EFCHG(2,I)/R)*Q_FIND(ITS)
+C----INTERACTION-INVOLVING-THE-DIPOLE
+        P_NUCC = P_NUCC + FACT*(EFDIP(1,I)*(XI-XL)+
+     *          EFDIP(2,I)*(YI-YL)+
+     *          EFDIP(3,I)*(ZI-ZL))*Q_IND(ITS)/(R*R2)
+C---------------------------------------------------
+C       P_NUSS = P_NUSS + FACT*(EFDIP(1,I)*(XI-XL)+
+C    *           EFDIP(2,I)*(YI-YL)+
+C    *           EFDIP(3,I)*(ZI-ZL))*Q_FIND(ITS)/(R*R2)
+C----QUADRUPOLE-PART------------------------------
+            XX=EFQAD(1,I)
+            YY=EFQAD(2,I)
+            ZZ=EFQAD(3,I)
+            XY=EFQAD(4,I)
+            XZ=EFQAD(5,I)
+            YZ=EFQAD(6,I)
+            DUM=XX+YY+ZZ
+            QXX=(3.0D+00*XX-DUM)/2.0D+00
+            QYY=(3.0D+00*YY-DUM)/2.0D+00
+            QZZ=(3.0D+00*ZZ-DUM)/2.0D+00
+            QXY=1.5D+00*XY
+            QXZ=1.5D+00*XZ
+            QYZ=1.5D+00*YZ
+C-------DEFINE-DX-----------------------------------------
+            DX=XI-XL
+            DY=YI-YL
+            DZ=ZI-ZL
+C-----------------------------------------------------------
+        P_NUCC = P_NUCC + FACT*(QXX*3.0D+00*DX*DX+QYY*3.0D+00*DY*DY+
+     *           QZZ*3.0D+00*DZ*DZ
+     *          +QXY*6.0D+00*DX*DY+QXZ*6.0D+00*DX*DZ+QYZ*6.0D+00*DY*DZ)
+     *          *Q_IND(ITS)/(3.0D+00*R2*R2*R)
+C       P_NUSS = P_NUSS + FACT*(QXX*3.0D+00*DX*DX+QYY*3.0D+00*DY*DY+
+C    *           QZZ*3.0D+00*DZ*DZ
+C    *          +QXY*6.0D+00*DX*DY+QXZ*6.0D+00*DX*DZ+QYZ*6.0D+00*DY*DZ)
+C    *          *Q_FIND(ITS)/(3.0D+00*R2*R2*R)
+C-----DEBUGGING-----------------------------------------
+        P_CH=P_CH+(FACT*EFCHG(1,I)/R + EFCHG(2,I)/R)+
+     *         FACT*(EFDIP(1,I)*(XI-XL)+
+     *          EFDIP(2,I)*(YI-YL)+
+     *          EFDIP(3,I)*(ZI-ZL))/(R*R2)
+            ENDDO
+C-------------------------------------------------------------
+C----INTERACTION-BETWEEN-INDUCED-CHARGE--NON-ELECTRONIC-DIPOLE-
+            DO I=1,NPTTPT
+               X=XCTS(ITS)-EFP(1,I)
+               Y=YCTS(ITS)-EFP(2,I)
+               Z=ZCTS(ITS)-EFP(3,I)
+              R2=(EFP(1,I)-XCTS(ITS))**2 + (EFP(2,I)-YCTS(ITS))**2
+     *            +(EFP(3,I)-ZCTS(ITS))**2
+               R= SQRT(R2)
+               R3 = R2*R
+               P_J = P_J + Q_IND(ITS)*(EFPUX(I)*X/R3 +
+     *                     EFPUY(I)*Y/R3 + EFPUZ(I)*Z/R3)
+     *                   + Q_IND(ITS)*(EMPUX(I)*X/R3 +
+     *                     EMPUY(I)*Y/R3 + EMPUZ(I)*Z/R3)
+C
+C              P_JBIS=P_JBIS + Q_FIND(ITS)*(EMPUX(I)*X/R3 +
+C    *                EMPUY(I)*Y/R3 + EMPUZ(I)*Z/R3)
+               P_IBIS = P_IBIS + QSN(ITS)*(EMPUX(I)*X/R3 +
+     *                           EMPUY(I)*Y/R3 + EMPUZ(I)*Z/R3)
+     *                         + QSN(ITS)*(EFPUX(I)*X/R3 +
+     *                           EFPUY(I)*Y/R3 + EFPUZ(I)*Z/R3)
+C              P_NUSSBIS = P_NUSSBIS + Q_FS(ITS)*(EFPUX(I)*X/R3 +
+C    *               EFPUY(I)*Y/R3 + EFPUZ(I)*Z/R3)
+               P_NUCCBIS=P_NUCCBIS + Q_FS(ITS)*(EMPUX(I)*X/R3 +
+     *                               EMPUY(I)*Y/R3 + EMPUZ(I)*Z/R3)
+     *                             + Q_FS(ITS)*(EFPUX(I)*X/R3 +
+     *                               EFPUY(I)*Y/R3 + EFPUZ(I)*Z/R3)
+C---INTERACTION-BETWEEN-NON-ELECTRONIC-CHARGE-NON-ELECTRONIC-DIPOLE
+              P_M_2=P_M_2 + QSE(ITS)*(EFPUX(I)*X+EFPUY(I)*Y+
+     *                      EFPUZ(I)*Z)/R3
+     *                    + QSE(ITS)*(EMPUX(I)*X/R3 +
+     *                      EMPUY(I)*Y/R3 + EMPUZ(I)*Z/R3)
+            ENDDO
+C----THE-NEXT-ENDDO-ENDS-THE-ITS-LOOP
+          ENDDO
+C-WE-ADD-THE-INTERACTION-(1)-TO-THE-HAMILTONIAN-OTHER-TWO-INTERACTIONS
+C-ARE-TO-BE-ACCOUNTED-LATER
+        CALL VADD(H1,1,VEC_2,1,H1,1,L2)
+C
+C       CALL VADD(H1,1,VEC_S,1,H1,1,L2)
+C
+      IF(NFRG.GT.1 .AND. METHOD.EQ.2)CALL DIPIT(EFLD,EFADD,NPTTPT)
+      CALL SEQREW(25)
+C-PRADIPTA
+C       ENUCR=ENUCR+P_I+P_J+P_NUCC+P_NUSS
+      DO 25 LEFP=1,NPTTPT
+         PNX=PPNX(LEFP)
+         PNY=PPNY(LEFP)
+         PNZ=PPNZ(LEFP)
+         PMUX = DIND(1,LEFP)
+         PMUY = DIND(2,LEFP)
+         PMUZ = DIND(3,LEFP)
+         PMUXD = DINDD(1,LEFP)
+         PMUYD = DINDD(2,LEFP)
+         PMUZD = DINDD(3,LEFP)
+         PEX=ABFLD(1,LEFP)
+         PEY=ABFLD(2,LEFP)
+         PEZ=ABFLD(3,LEFP)
+C     HUI LI  WARNING IF INDUCED DIPOLE IS TOO LARGE
+         TOTALP=SQRT(PMUXD*PMUXD+PMUYD*PMUYD+PMUZD*PMUZD)
+         IF(TOTALP .GT. 0.2)THEN
+         IF(MASWRK)WRITE(IW,9999)LEFP,PMUXD,PMUYD,PMUZD,TOTALP
+ 9999    FORMAT(1X,'WARNING: POINT ',I5,' HAS A LARGE INDUCED DIPOLE',
+     *          3F9.4, ' TOTAL: ',F9.4,' D')
+         END IF
+C
+         IF(TOTALP .GT. 0.20D+00)THEN
+         PMUXD=ZERO
+         PMUYD=ZERO
+         PMUZD=ZERO
+         TOTALP=ZERO
+         IF(MASWRK)WRITE(IW,9998)LEFP,PMUXD,PMUYD,PMUZD,TOTALP
+ 9998    FORMAT(1X,'WARNING: POINT ',I5,' HAS BEEN ZEROED OFF       ',
+     *          3F9.4, ' TOTAL: ',F9.4,' D')
+         END IF
+C
+C
+C          ENDDO
+C
+C     ----------- NUCLEAR ENERGY MODIFICATION -----------
+C     ---- PLUS TOTAL ENERGY CORRECTION ACCORDING TO ----
+C     CORRECTION = +1/2*MU*[<SI|F|SI>-FEFP] - 0.5*ALPHA*FMU*[<SI|F|SI>]
+C
+         ENUCR = ENUCR-(PMUX*PNX+PMUY*PNY+PMUZ*PNZ) *PT5
+     *                +(PMUXD*PEX+PMUYD*PEY+PMUZD*PEZ) *PT5
+     *                -(PMUX*PPEFX(LEFP)
+     *                 +PMUY*PPEFY(LEFP)
+     *                 +PMUZ*PPEFZ(LEFP))           *PT5
+     *                -((EFPOL(1,LEFP)*EFADD(1,LEFP)
+     *                  +EFPOL(7,LEFP)*EFADD(2,LEFP)
+     *                  +EFPOL(8,LEFP)*EFADD(3,LEFP))*PEX
+     *                 +(EFPOL(4,LEFP)*EFADD(1,LEFP)
+     *                  +EFPOL(2,LEFP)*EFADD(2,LEFP)
+     *                  +EFPOL(9,LEFP)*EFADD(3,LEFP))*PEY
+     *                 +(EFPOL(5,LEFP)*EFADD(1,LEFP)
+     *                  +EFPOL(6,LEFP)*EFADD(2,LEFP)
+     *                  +EFPOL(3,LEFP)*EFADD(3,LEFP))*PEZ)*PT5
+C
+         ENUCRMC = ENUCR
+C
+C     ----- PREPARE POLARIZED ENVIRONMENT FOR NEXT SCF ITERATION -----
+C
+         CALL SQREAD(25,XEFI,L2)
+         CALL SQREAD(25,YEFI,L2)
+         CALL SQREAD(25,ZEFI,L2)
+C
+C     ----- CALCULATE PERTURBATION DUE TO INDUCED DIPOLES -----
+         IF (DIRSCF .AND. FDIFF .AND. SCFTYP .NE. GVB)THEN
+            DO 30 K=1,L2
+               DIP(K)=DIP(K)-PT5*((PMUX+PMUXD)*XEFI(K)
+     *                      +(PMUY+PMUYD)*YEFI(K)+(PMUZ+PMUZD)*ZEFI(K))
+     *                      +((EFPOL(1,LEFP)*EFADD(1,LEFP)
+     *                        +EFPOL(7,LEFP)*EFADD(2,LEFP)
+     *                        +EFPOL(8,LEFP)*EFADD(3,LEFP))*XEFI(K)
+     *                       +(EFPOL(4,LEFP)*EFADD(1,LEFP)
+     *                        +EFPOL(2,LEFP)*EFADD(2,LEFP)
+     *                        +EFPOL(9,LEFP)*EFADD(3,LEFP))*YEFI(K)
+     *                       +(EFPOL(5,LEFP)*EFADD(1,LEFP)
+     *                        +EFPOL(6,LEFP)*EFADD(2,LEFP)
+     *                        +EFPOL(3,LEFP)*EFADD(3,LEFP))*ZEFI(K))*PT5
+ 30         CONTINUE
+C
+C     --- IF REGULAR SCF PERTURBATION ADDED TO H1 AS IT IS CALCULTD ---
+         ELSE
+            DO 40 K=1,L2
+               H1(K)=H1(K)-PT5*((PMUX+PMUXD)*XEFI(K)
+     *                    +(PMUY+PMUYD)*YEFI(K)+(PMUZ+PMUZD)*ZEFI(K))
+     *                    +((EFPOL(1,LEFP)*EFADD(1,LEFP)
+     *                      +EFPOL(7,LEFP)*EFADD(2,LEFP)
+     *                      +EFPOL(8,LEFP)*EFADD(3,LEFP))*XEFI(K)
+     *                     +(EFPOL(4,LEFP)*EFADD(1,LEFP)
+     *                      +EFPOL(2,LEFP)*EFADD(2,LEFP)
+     *                      +EFPOL(9,LEFP)*EFADD(3,LEFP))*YEFI(K)
+     *                     +(EFPOL(5,LEFP)*EFADD(1,LEFP)
+     *                      +EFPOL(6,LEFP)*EFADD(2,LEFP)
+     *                      +EFPOL(3,LEFP)*EFADD(3,LEFP))*ZEFI(K))*PT5
+40       CONTINUE
+C-----------------------
+         END IF
+C
+         TMUX=TMUX+PMUX
+         TMUY=TMUY+PMUY
+         TMUZ=TMUZ+PMUZ
+ 25   CONTINUE
+CC--------------------------------------------------------
+        ENUCR=ENUCR + PT5*(P_I +P_IBIS + P_NUCC +P_NUCCBIS)
+     *              + PT5*P_J
+C        WRITE(6,*)'AFTER POL',PT5*(P_I+P_IBIS+P_NUCC+P_NUCCBIS)
+C     *                        + PT5*P_J
+C        WRITE(6,*)'DIFF',P_I -P_IBIS,P_NUCC-P_NUCCBIS
+C---------------------------------------
+       ENUCRMC=ENUCR
+C
+C--------------
+      TMUXD=TMUX*DEBYE
+      TMUYD=TMUY*DEBYE
+      TMUZD=TMUZ*DEBYE
+C
+C     ----- ADD DIFFERENCE IN PERTURBATION WHEN DIRSCF AND FDIFF -----
+C
+      IF(SCFTYP .EQ. RHF) THEN
+         IF(DIRSCF  .AND.  FDIFF) THEN
+            IF(ITER.EQ.1) CALL VCLR(ODIP,1,L2)
+            CALL VADD(H1,1,DIP,1,H1,1,L2)
+            CALL VSUB(ODIP,1,DIP,1,ODIP,1,L2)
+            CALL VADD(FA,1,ODIP,1,FA,1,L2)
+            CALL DCOPY(L2,DIP,1,ODIP,1)
+         END IF
+      ELSE
+         IF(DIRSCF  .AND.  FDIFF .AND. SCFTYP .NE. GVB) THEN
+            IF(ITER .EQ. 1)CALL VCLR(ODIP,1,L2)
+            CALL VADD(H1,1,DIP,1,H1,1,L2)
+            CALL VSUB(ODIP,1,DIP,1,ODIP,1,L2)
+            CALL VADD(FA,1,ODIP,1,FA,1,L2)
+            CALL VADD(FB,1,ODIP,1,FB,1,L2)
+            CALL DCOPY(L2,DIP,1,ODIP,1)
+         END IF
+      END IF
+C
+C     --- FOR MINMEM AND GVB H1+PERTURBATION MUST BE WRITTEN TO DAF ---
+C
+      CALL DAWRIT(IDAF,IODA,H1,L2,80,0)
+      IF (MINMEM .OR. SCFTYP .EQ. GVB .OR. SCFTYP .EQ. RMC) THEN
+         CALL DAWRIT(IDAF,IODA,H1,L2,11,0)
+      END IF
+C
+        RETURN
+ 9500 FORMAT(/1X,'X, Y, AND Z COMPONENTS OF THE ELECTRIC FIELD',
+     *       ' ONE ELECTRON INTEGRALS')
+      END
+C*MODULE EFPCM   *DECK IEFFR
+      SUBROUTINE IEFFR(EF3)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DIMENSION EF3(3,*)
+      PARAMETER (MXFRG=50)
+      COMMON /FMCOM / X(1)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+C
+C         GET DYNAMIC MEMORY FOR -IEFFRG-
+C
+      NMTPTS = NMTTPT
+      CALL VALFM(LOADFM)
+      LIFR = LOADFM + 1
+      LAST = LIFR   + NMTPTS
+      NEED = LAST - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      CALL IEFFRG(EF3,X(LIFR),NMPTS)
+C
+      CALL RETFM(NEED)
+      RETURN
+      END
+C*MODULE EFPCM   *DECK IEFFRG
+      SUBROUTINE IEFFRG(EF3,IFR,NMTPTS)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION EF3(3,*),IFR(NMTPTS)
+C
+      PARAMETER (MXTS=2500, MXTSPT=2*MXTS, MXSP=250, MXFRG=50)
+C
+      LOGICAL GOPARR,MASWRK,DSKWRK
+C
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+C
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      COMMON /PCMAG / I_NESF,L_AST
+      COMMON /PCMDAT/ EPS,EPSINF,DR,RSOLV,VMOL,TCE,STEN,DSTEN,
+     *                CMF,TABS,ICOMP,IFIELD,ICAV,IDISP
+      COMMON /PCMPLY/ XE(MXSP),YE(MXSP),ZE(MXSP),RE(MXSP),SSFE(MXSP),
+     *                ISPHE(MXTS),STOT,VOL,NESF,NESFP,NC(30),NESFF
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+      DATA ZERO, PT5, ONE /0.0D+00, 0.5D+00, 1.0D+00/
+      DATA FPI/12.56637062D+00/
+C
+C     ----- CONTRIBUTIONS FROM EFFECTIVE FRAGMENTS -----
+C
+      IF(MASWRK) WRITE(6,*) 'IN IEFFR',EPS,NTS
+      FACT=FPI*EPS/(EPS-ONE)
+      CALL DAREAD(IDAF,IODA,IFR,NMTPTS,266,1)
+C
+C     1) ELECTROSTATIC TERMS
+C
+      IF(MASWRK) WRITE(6,*)'BEFORE SOLVENT'
+      LEFD=0
+      DO IFRG=1,NFRG
+      DO IIEFD=1,NMPTS(IFRG)
+        LEFD=LEFD+1
+        IF(MASWRK) WRITE(6,*)LEFD,(EF3(K,LEFD),K=1,3)
+      ENDDO
+      ENDDO
+      IF(IEFC.EQ.1) CALL DIEFC(EF3)
+      IF(MASWRK) WRITE(6,*)'AFTER SOLVENT CHARGE'
+      LEFD=0
+      DO IFRG=1,NFRG
+      DO IIEFD=1,NMPTS(IFRG)
+        LEFD=LEFD+1
+        IF(MASWRK) WRITE(6,*)LEFD,(EF3(K,LEFD),K=1,3)
+      ENDDO
+      ENDDO
+      IF(IEFD.EQ.1) CALL DIEFD(EF3)
+C     WRITE(6,*)'AFTER SOLVENT DIPOLE'
+C     LEFD=0
+C     DO IFRG=1,NFRG
+C     DO IIEFD=1,NMPTS(IFRG)
+C       LEFD=LEFD+1
+C       WRITE(6,*)LEFD,(EF3(K,LEFD),K=1,3)
+C     ENDDO
+C     ENDDO
+      IF(IEFQ.EQ.1) CALL DIEFQ(EF3)
+      IF(IEFO.EQ.1) CALL DIEFO(EF3)
+C     WRITE(6,*)'POL: BEFORE SOLVENT'
+C     LEFP=0
+C     DO IFRG=1,NFRG
+C     DO IIEFD=1,NPPTS(IFRG)
+C       LEFP=LEFP+1
+C       LEFPP=LEFP+NMTTPT
+C       WRITE(6,*)LEFPP,(EF3(K,LEFPP),K=1,3)
+C     ENDDO
+C     ENDDO
+      IF(IEFP.EQ.1) CALL DIEFP(EF3)
+C     WRITE(6,*)'POL: AFTER SOLVENT'
+C     LEFP=0
+C     DO IFRG=1,NFRG
+C     DO IIEFD=1,NPPTS(IFRG)
+C       LEFP=LEFP+1
+C       LEFPP=LEFP+NMTTPT
+C       WRITE(6,*)LEFPP,(EF3(K,LEFPP),K=1,3)
+C     ENDDO
+C     ENDDO
+C
+C     2) CAVITY TERMS
+C
+C     LOOP ON FRAGMENT-POINTS
+C
+       LEFD=0
+       IK = 0
+       NSPHERE=0
+       DO 100 IFRG=1,NFRG
+       DO 100 IIEFD=1,NMPTS(IFRG)
+        LEFD=LEFD+1
+        IF(IIEFD.GT.3) GO TO 100
+        IK = IK + 1
+        IF(IFR(IK).EQ.1) NSPHERE=NSPHERE+1
+        NSJ=NESFP+NSPHERE
+        IF(MASWRK) WRITE(6,*)
+     *      'IK,IFR(IK),NSJ,I_NESF',IK,IFR(IK),NSJ,I_NESF
+        DO IC=1,3
+          SESE=ZERO
+          CALL OVERFR(NSJ,IC,I_NESF,SESE)
+          DOVERS = FACT*PT5*SESE
+          IF(MASWRK) WRITE(6,*)'CAVITY',LEFD,DOVERS
+          EF3(IC,LEFD) = EF3(IC,LEFD)+DOVERS
+        ENDDO
+ 100  CONTINUE
+C
+      RETURN
+      END
+C*MODULE EFPCM  *DECK OVERFR
+      SUBROUTINE OVERFR(NSJ,IC,I_NESF,SESE)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXTS=2500, MXTSPT=2*MXTS, MXSP=250)
+C
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMPLY/ XE(MXSP),YE(MXSP),ZE(MXSP),RE(MXSP),SSFE(MXSP),
+     *                ISPHE(MXTS),STOT,VOL,NESF,NESFP,NC(30),NESFF
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+      DATA ZERO/0.0D+00/
+C
+      SESE=ZERO
+      DO ITS=1,NTS
+       QT=QSE(ITS)+QSN(ITS)+Q_FS(ITS)+Q_IND(ITS)
+       L=ISPHE(ITS)
+C
+       IF(L.LE.I_NESF)THEN
+        IF(L.EQ.NSJ)THEN
+         XNI = - (XE(L) - XCTS(ITS)) / RE(L)
+         YNI = - (YE(L) - YCTS(ITS)) / RE(L)
+         ZNI = - (ZE(L) - ZCTS(ITS)) / RE(L)
+         IF(IC.EQ.1) DN=XNI
+         IF(IC.EQ.2) DN=YNI
+         IF(IC.EQ.3) DN=ZNI
+         SESE=SESE+DN*(QT**2)/AS(ITS)
+        END IF
+       ELSE
+C TO BE CORRECTED!!!!!!!!!
+C       DCENTN=XNI*DERCENTR(L,NSJ,IC,1)+
+C    *         YNI*DERCENTR(L,NSJ,IC,2)+
+C    *         ZNI*DERCENTR(L,NSJ,IC,3)
+C              DN=DERRAD(L,NSJ,IC)+DCENTN
+C              SESE=SESE+DN*(QT**2)/AS(ITS)
+C----   DCENTN=ZERO
+       END IF
+      ENDDO
+C
+      RETURN
+      END
+C*MODULE EFPCM  *DECK DIEFC
+      SUBROUTINE DIEFC(EF3)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      CHARACTER*8 FRGNME
+C
+      LOGICAL GOPARR,MASWRK,DSKWRK
+C
+      PARAMETER (MXPT=100, MXFRG=50, MXFGPT=MXPT*MXFRG, MXTS=2500,
+     *           MXTSPT=MXTS*2)
+C
+      DIMENSION EF3(3,*)
+C
+      COMMON /EFMULT/ EFC(3,MXFGPT),EFCHG(2,MXFGPT),EFATRM(MXFGPT),
+     *                EFBTRM(MXFGPT),EFATRM2(MXFGPT),EFBTRM2(MXFGPT),
+     *                EFDIP(3,MXFGPT),EFQAD(6,MXFGPT),
+     *                EFOCT(10,MXFGPT),FRGNME(MXFGPT)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+C
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+C     EFC - NUCLEI CONTRIBUTION TO NUCLEAR GRADIENTS.
+C
+       DO 305 ITS=1,NTS
+        QT=QSN(ITS)+QSE(ITS)+Q_FS(ITS)+Q_IND(ITS)
+        DO 300 LEFC=1,NMTTPT
+C        IF(.NOT.DOMONO(LEFC)) GO TO 300
+         RS=(XCTS(ITS)-EFC(1,LEFC))**2+
+     *      (YCTS(ITS)-EFC(2,LEFC))**2+
+     *      (ZCTS(ITS)-EFC(3,LEFC))**2
+         DAMP=-EFBTRM(LEFC)*EXP(-EFATRM(LEFC)*RS)
+         CNSTNT=QT*EFCHG(1,LEFC)*((1+DAMP)/RS+2*EFATRM(LEFC)
+     *         *DAMP)/SQRT(RS)
+         CNSTNT=CNSTNT + QT*EFCHG(2,LEFC)/(RS*SQRT(RS))
+         IF(ITS.EQ.1 .AND. MASWRK) 
+     *        WRITE(6,*)'CHARGE',LEFC,EFCHG(1,LEFC)
+         DO 295 LC=1,3
+          IF(LC.EQ.1) CLC=XCTS(ITS)
+          IF(LC.EQ.2) CLC=YCTS(ITS)
+          IF(LC.EQ.3) CLC=ZCTS(ITS)
+          EF3(LC,LEFC)=EF3(LC,LEFC)-(EFC(LC,LEFC)-CLC)*CNSTNT
+ 295     CONTINUE
+ 300    CONTINUE
+ 305   CONTINUE
+C
+      RETURN
+      END
+C*MODULE EFPCM  *DECK DIEFD
+      SUBROUTINE DIEFD(EF3)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      CHARACTER*8 FRGNME
+C
+      DIMENSION EF3(3,*)
+      DIMENSION CNST3(3)
+C
+      PARAMETER (MXTS=2500, MXTSPT=MXTS*2, MXPT=100, MXFRG=50,
+     *           MXFGPT=MXPT*MXFRG)
+C
+      COMMON /EFMULT/ EFC(3,MXFGPT),EFCHG(2,MXFGPT),EFATRM(MXFGPT),
+     *                EFBTRM(MXFGPT),EFATRM2(MXFGPT),EFBTRM2(MXFGPT),
+     *                EFDIP(3,MXFGPT),EFQAD(6,MXFGPT),
+     *                EFOCT(10,MXFGPT),FRGNME(MXFGPT)
+      COMMON /FGRAD / DEF(3,MXFGPT),DEFT(3,MXFRG),TORQ(3,MXFRG),
+     *                EFCENT(3,MXFRG),FRGMAS(MXFRG),FRGMI(6,MXFRG),
+     *                ATORQ(3,MXFRG)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+C     EFD - NUCLEI CONTRIBUTION TO NUCLEAR GRADIENTS.
+C
+      DO 140 ITS=1,NTS
+       QT=QSN(ITS)+QSE(ITS)+Q_FS(ITS)+Q_IND(ITS)
+C      WRITE(6,*)'ITS,QT',ITS,QT
+       LEFD=0
+       DO 120 IFRG=1,NFRG
+       DO 120 IIEFD=1,NMPTS(IFRG)
+        LEFD=LEFD+1
+C       IF(.NOT.DODIPO(LEFD)) GO TO 120
+           RS=(XCTS(ITS)-EFC(1,LEFD))**2+
+     *        (YCTS(ITS)-EFC(2,LEFD))**2+
+     *        (ZCTS(ITS)-EFC(3,LEFD))**2
+           R3=RS*SQRT(RS)
+           DAMP=EFBTRM(LEFD)*EXP(-EFATRM(LEFD)*RS)
+           CNSTT1=QT*(3*(1-DAMP)/(R3*RS)-2*EFATRM(LEFD)*DAMP/R3)*
+     *         (EFDIP(1,LEFD)*(XCTS(ITS)-EFC(1,LEFD))+
+     *          EFDIP(2,LEFD)*(YCTS(ITS)-EFC(2,LEFD))+
+     *          EFDIP(3,LEFD)*(ZCTS(ITS)-EFC(3,LEFD)))
+           CNSTT2=QT*(1-DAMP)/R3
+           DO 100 LC=1,3
+             IF(LC.EQ.1)CLC=XCTS(ITS)
+             IF(LC.EQ.2)CLC=YCTS(ITS)
+             IF(LC.EQ.3)CLC=ZCTS(ITS)
+            CNST3(LC)=CNSTT2*EFDIP(LC,LEFD)
+            CNST4=CNSTT1*(EFC(LC,LEFD)-CLC)
+            CNST5=CNST3(LC)+CNST4
+C           WRITE(6,*)'LC',LC,CNSTT2,EFDIP(LC,LEFD),CNSTT1,
+C    *               (EFC(LC,LEFD)-CLC)
+            EF3(LC,LEFD)=EF3(LC,LEFD)-CNST5
+ 100      CONTINUE
+         DO 105 LC=1,3
+         LCM=LC-1
+         LC2=MOD(LCM+1,3)+1
+         LC3=MOD(LCM+2,3)+1
+          IF(LC2.EQ.1)CLC2=XCTS(ITS)
+          IF(LC2.EQ.2)CLC2=YCTS(ITS)
+          IF(LC2.EQ.3)CLC2=ZCTS(ITS)
+          IF(LC3.EQ.1)CLC3=XCTS(ITS)
+          IF(LC3.EQ.2)CLC3=YCTS(ITS)
+          IF(LC3.EQ.3)CLC3=ZCTS(ITS)
+         ATORQ(LC,IFRG)=ATORQ(LC,IFRG)+CNST3(LC2)*
+     $   (CLC3-EFC(LC3,LEFD))
+     $   -CNST3(LC3)*(CLC2-EFC(LC2,LEFD))
+ 105     CONTINUE
+ 120   CONTINUE
+ 140  CONTINUE
+      RETURN
+      END
+C*MODULE EFPCM  *DECK DIEFO
+      SUBROUTINE DIEFO(EF3)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      CHARACTER*8 FRGNME
+C
+      PARAMETER (MXTS=2500, MXPT=100, MXFRG=50, MXFGPT=MXPT*MXFRG,
+     *           MXTSPT=MXTS*2)
+C
+      DIMENSION EF3(3,*)
+C
+      LOGICAL DOMONO,DODIPO,DOQUAD,DOOCTU
+C
+      COMMON /DOMULT/ DOMONO(MXFGPT),DODIPO(MXFGPT),DOQUAD(MXFGPT),
+     *                DOOCTU(MXFGPT)
+      COMMON /EFMULT/ EFC(3,MXFGPT),EFCHG(2,MXFGPT),EFATRM(MXFGPT),
+     *                EFBTRM(MXFGPT),EFATRM2(MXFGPT),EFBTRM2(MXFGPT),
+     *                EFDIP(3,MXFGPT),EFQAD(6,MXFGPT),
+     *                EFOCT(10,MXFGPT),FRGNME(MXFGPT)
+      COMMON /FGRAD / DEF(3,MXFGPT),DEFT(3,MXFRG),TORQ(3,MXFRG),
+     *                EFCENT(3,MXFRG),FRGMAS(MXFRG),FRGMI(6,MXFRG),
+     *                ATORQ(3,MXFRG)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+      DATA ONE/1.0D+00/
+      DATA PT5,THREE/0.5D+00,3.0D+00/
+      DATA FIVE,SIX/5.0D+00,6.0D+00/
+      DATA GLIM/1.0D-14/
+      DATA QLIM/1.0D-07/
+C
+C     EFO - NUCLEI CONTRIBUTION TO NUCLEAR GRADIENTS.
+C
+       I=0
+       DO 380 IFRG=1,NFRG
+       DO 380 IIEFQ=1,NMPTS(IFRG)
+       I=I+1
+      IF(.NOT.DOOCTU(I)) GO TO 380
+      ALFA = EFATRM(I)
+      BETA = EFBTRM(I)
+C
+C REPLACE THIRD MOMENTS IN ARRAY SM WITH ELECTRIC OCTUPOLE TENSORS
+C
+      XXX2 = EFOCT(1,I)*PT5
+      YYY2 = EFOCT(2,I)*PT5
+      ZZZ2 = EFOCT(3,I)*PT5
+      XXY2 = EFOCT(4,I)*PT5
+      XXZ2 = EFOCT(5,I)*PT5
+      XYY2 = EFOCT(6,I)*PT5
+      YYZ2 = EFOCT(7,I)*PT5
+      XZZ2 = EFOCT(8,I)*PT5
+      YZZ2 = EFOCT(9,I)*PT5
+      XYZ2 = EFOCT(10,I)*PT5
+      DUMX = XXX2 + XYY2 + XZZ2
+      DUMY = XXY2 + YYY2 + YZZ2
+      DUMZ = XXZ2 + YYZ2 + ZZZ2
+      XXX2 = FIVE * XXX2 - THREE * DUMX
+      YYY2 = FIVE * YYY2 - THREE * DUMY
+      ZZZ2 = FIVE * ZZZ2 - THREE * DUMZ
+      XXY2 = FIVE * XXY2 - DUMY
+      XXZ2 = FIVE * XXZ2 - DUMZ
+      XYY2 = FIVE * XYY2 - DUMX
+      YYZ2 = FIVE * YYZ2 - DUMZ
+      XZZ2 = FIVE * XZZ2 - DUMX
+      YZZ2 = FIVE * YZZ2 - DUMY
+      XYZ2 = FIVE * XYZ2
+      DO 370 J = 1,NTS
+      QT=QSN(J)+QSE(J)+Q_FS(J)+Q_IND(J)
+      X = XCTS(J) - EFC(1,I)
+      Y = YCTS(J) - EFC(2,I)
+      Z = ZCTS(J) - EFC(3,I)
+      XX = X*X
+      YY = Y*Y
+      ZZ = Z*Z
+      XY=X*Y
+      XZ=X*Z
+      YZ=Y*Z
+      XXX = XX*X
+      YYY = YY*Y
+      ZZZ = ZZ*Z
+      XXY = XX*Y
+      XXZ = XX*Z
+      XYY = X*YY
+      YYZ = YY*Z
+      XZZ = X*ZZ
+      YZZ = Y*ZZ
+      XYZ = X*Y*Z
+      R2 = XX + YY + ZZ
+      IF(R2.LT.GLIM) GO TO 370
+      R7 = R2 * R2 * R2 * SQRT(R2)
+      RRX = R2 * X
+      RRY = R2 * Y
+      RRZ = R2 * Z
+      TERM = XXX2 * (FIVE*XXX - THREE*RRX)
+     *     + YYY2 * (FIVE*YYY - THREE*RRY)
+     *     + ZZZ2 * (FIVE*ZZZ - THREE*RRZ)
+     *     + XXY2 * (FIVE*XXY - RRY)*THREE
+     *     + XXZ2 * (FIVE*XXZ - RRZ)*THREE
+     *     + XYY2 * (FIVE*XYY - RRX)*THREE
+     *     + YYZ2 * (FIVE*YYZ - RRZ)*THREE
+     *     + XZZ2 * (FIVE*XZZ - RRX)*THREE
+     *     + YZZ2 * (FIVE*YZZ - RRY)*THREE
+     *     + XYZ2 * (FIVE*XYZ)*SIX
+      FACT = ONE
+      DFACT=0
+      IF(ABS(ALFA).GT.QLIM)THEN
+       FACT = ONE - (BETA * EXP (-ALFA * R2))
+       DFACT=2*ALFA*BETA*EXP(-ALFA*R2)
+      END IF
+      CNST1=QT*TERM*(DFACT-7*FACT/R2)/(R7*5)
+      CNSTX = QT*FACT*
+     * (XXX2*(15*XX)+30*XXY2*XY+30*XXZ2*XZ+
+     *  XYY2*(15*YY)+XZZ2*(15*ZZ)
+     *  +30*XYZ2*YZ)/(5*R7)
+      CNSTXB = QT*FACT*
+     * (XXX2*(-6*XX)-6*YYY2*XY-6*ZZZ2*XZ-6*XXY2*XY-6*XXZ2*XZ+
+     *  XYY2*(-6*XX)-6*YYZ2*XZ+XZZ2*(-6*XX)-
+     *  6*YZZ2*XY)/(5*R7)
+      CNSTY = QT*FACT*
+     * (YYY2*(15*YY)+30*YYZ2*YZ+30*XYY2*XY+
+     *  YZZ2*(15*ZZ)+XXY2*(15*XX)
+     *  +30*XYZ2*XZ)/(5*R7)
+      CNSTYB = QT*FACT*
+     * (YYY2*(-6*YY)-6*ZZZ2*YZ-6*XXX2*XY-6*YYZ2*YZ-6*XYY2*XY+
+     *  YZZ2*(-6*YY)-6*XZZ2*XY+XXY2*(-6*YY)-
+     *  6*XXZ2*YZ)/(5*R7)
+      CNSTZ = QT*FACT*
+     * (ZZZ2*(15*ZZ)+30*XZZ2*XZ+30*YZZ2*YZ+
+     *  XXZ2*(15*XX)+YYZ2*(15*YY)
+     *  +30*XYZ2*XY)/(5*R7)
+      CNSTZB = QT*FACT*
+     * (ZZZ2*(-6*ZZ)-6*XXX2*XZ-6*YYY2*YZ-6*XZZ2*XZ-6*YZZ2*YZ+
+     *  XXZ2*(-6*ZZ)-6*XXY2*YZ+YYZ2*(-6*ZZ)-
+     *  6*XYY2*XZ)/(5*R7)
+C
+      EF3(1,I)=EF3(1,I)-(CNST1*X+CNSTX+CNSTXB)
+      EF3(2,I)=EF3(2,I)-(CNST1*Y+CNSTY+CNSTYB)
+      EF3(3,I)=EF3(3,I)-(CNST1*Z+CNSTZ+CNSTZB)
+       ATORQ(1,IFRG)=ATORQ(1,IFRG)+CNSTY*Z-CNSTZ*Y
+       ATORQ(2,IFRG)=ATORQ(2,IFRG)+CNSTZ*X-CNSTX*Z
+       ATORQ(3,IFRG)=ATORQ(3,IFRG)+CNSTX*Y-CNSTY*X
+CPAUL
+ 370   CONTINUE
+ 380   CONTINUE
+      RETURN
+      END
+C*MODULE EFPCM  *DECK DIEFP
+      SUBROUTINE DIEFP(EF3)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      CHARACTER*8 POLNAM
+C
+      DIMENSION EF3(3,*)
+      DIMENSION CNST3(3)
+C
+      PARAMETER (MXTS=2500, MXPT=100, MXFRG=50, MXFGPT=MXPT*MXFRG,
+     *           MXTSPT=MXTS*2)
+C
+      COMMON /EFPPAR/ EFP(3,MXFGPT),EFPOL(9,MXFGPT),
+     *                ENO,DIND(3,MXFGPT),DINDD(3,MXFGPT),POLNAM(MXFGPT)
+      COMMON /FGRAD / DEF(3,MXFGPT),DEFT(3,MXFRG),TORQ(3,MXFRG),
+     *                EFCENT(3,MXFRG),FRGMAS(MXFRG),FRGMI(6,MXFRG),
+     *                ATORQ(3,MXFRG)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+      DATA PT5/0.5D+00/
+C
+C     FIXED INDUCED DIPOLE - NUCLEI CONTRIBUTION TO NUCLEAR GRADIENTS.
+C
+      IF(IEFP.EQ.1)THEN
+       DO 140 ITS=1,NTS
+        QT=QSN(ITS)+QSE(ITS)+Q_FS(ITS)+Q_IND(ITS)
+       LEFP=0
+       DO 120 IFRG=1,NFRG
+       DO 120 IIEFD=1,NPPTS(IFRG)
+       LEFP=LEFP+1
+         RS=(XCTS(ITS)-EFP(1,LEFP))**2+(YCTS(ITS)-EFP(2,LEFP))**2+
+     *      (ZCTS(ITS)-EFP(3,LEFP))**2
+         R3=RS*SQRT(RS)
+         CNSTT1=QT*3*
+     *       PT5*((DIND(1,LEFP)+DINDD(1,LEFP))*(XCTS(ITS)-EFP(1,LEFP))+
+     *           (DIND(2,LEFP)+DINDD(2,LEFP))*(YCTS(ITS)-EFP(2,LEFP))+
+     *           (DIND(3,LEFP)+DINDD(3,LEFP))*(ZCTS(ITS)-EFP(3,LEFP)))
+     *           /(R3*RS)
+         CNSTT2=QT/R3
+C
+         DO 100 LC=1,3
+          IF(LC.EQ.1)CLC=XCTS(ITS)
+          IF(LC.EQ.2)CLC=YCTS(ITS)
+          IF(LC.EQ.3)CLC=ZCTS(ITS)
+         CNST3(LC)=CNSTT2*PT5*(DIND(LC,LEFP)+DINDD(LC,LEFP))
+         CNST4=CNSTT1*(EFP(LC,LEFP)-CLC)
+         CNST5=CNST3(LC)+CNST4
+CPAUL
+          LEFPP=LEFP+NMTTPT
+         EF3(LC,LEFPP)=EF3(LC,LEFPP)-CNST5
+ 100     CONTINUE
+         DO 105 LC=1,3
+         LCM=LC-1
+         LC2=MOD(LCM+1,3)+1
+         LC3=MOD(LCM+2,3)+1
+          IF(LC2.EQ.1)CLC2=XCTS(ITS)
+          IF(LC2.EQ.2)CLC2=YCTS(ITS)
+          IF(LC2.EQ.3)CLC2=ZCTS(ITS)
+          IF(LC3.EQ.1)CLC3=XCTS(ITS)
+          IF(LC3.EQ.2)CLC3=YCTS(ITS)
+          IF(LC3.EQ.3)CLC3=ZCTS(ITS)
+         ATORQ(LC,IFRG)=ATORQ(LC,IFRG)+CNST3(LC2)*
+     $   (CLC3-EFP(LC3,LEFP))
+     $   -CNST3(LC3)*(CLC2-EFP(LC2,LEFP))
+ 105     CONTINUE
+ 120    CONTINUE
+ 140   CONTINUE
+      END IF
+C
+      RETURN
+      END
+C*MODULE EFPCM  *DECK DIEFQ
+      SUBROUTINE DIEFQ(EF3)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      CHARACTER*8 FRGNME
+C
+      LOGICAL DOMONO,DODIPO,DOQUAD,DOOCTU
+C
+      DIMENSION EF3(3,*)
+C
+      PARAMETER (MXTS=2500, MXPT=100, MXFRG=50, MXFGPT=MXPT*MXFRG,
+     *           MXTSPT=MXTS*2)
+C
+      COMMON /DOMULT/ DOMONO(MXFGPT),DODIPO(MXFGPT),DOQUAD(MXFGPT),
+     *                DOOCTU(MXFGPT)
+      COMMON /EFMULT/ EFC(3,MXFGPT),EFCHG(2,MXFGPT),EFATRM(MXFGPT),
+     *                EFBTRM(MXFGPT),EFATRM2(MXFGPT),EFBTRM2(MXFGPT),
+     *                EFDIP(3,MXFGPT),EFQAD(6,MXFGPT),
+     *                EFOCT(10,MXFGPT),FRGNME(MXFGPT)
+      COMMON /FGRAD / DEF(3,MXFGPT),DEFT(3,MXFRG),TORQ(3,MXFRG),
+     *                EFCENT(3,MXFRG),FRGMAS(MXFRG),FRGMI(6,MXFRG),
+     *                ATORQ(3,MXFRG)
+      COMMON /FRGINF/ NMPTS(MXFRG),NMTTPT,IEFC,IEFD,IEFQ,IEFO,
+     *                NPPTS(MXFRG),NPTTPT,IEFP,
+     *                NRPTS(MXFRG),NRTTPT,IREP,ICHGP,NFRG
+      COMMON /PCMCHG/ QSN(MXTS),QSE(MXTS),PB,PX,PC,UNZ,QNUC,FN,FE,
+     *                Q_FS(MXTS),Q_IND(MXTS)
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+C
+C     EFQ - NUCLEI CONTRIBUTION TO NUCLEAR GRADIENTS.
+C
+       LEFQ=0
+       DO 120 IFRG=1,NFRG
+       DO 120 IIEFQ=1,NMPTS(IFRG)
+       LEFQ=LEFQ+1
+       IF(.NOT.DOQUAD(LEFQ)) GO TO 120
+       XX=EFQAD(1,LEFQ)
+       YY=EFQAD(2,LEFQ)
+       ZZ=EFQAD(3,LEFQ)
+       XY=EFQAD(4,LEFQ)
+       XZ=EFQAD(5,LEFQ)
+       YZ=EFQAD(6,LEFQ)
+       DUM=XX+YY+ZZ
+       QXX=(3*XX-DUM)/2
+       QYY=(3*YY-DUM)/2
+       QZZ=(3*ZZ-DUM)/2
+       QXY=1.5D+00*XY
+       QXZ=1.5D+00*XZ
+       QYZ=1.5D+00*YZ
+       DO 100 ITS=1,NTS
+        QT=QSN(ITS)+QSE(ITS)+Q_FS(ITS)+Q_IND(ITS)
+        DX=XCTS(ITS)-EFC(1,LEFQ)
+        DY=YCTS(ITS)-EFC(2,LEFQ)
+        DZ=ZCTS(ITS)-EFC(3,LEFQ)
+        RS=DX*DX+DY*DY+DZ*DZ
+        R5=RS*RS*SQRT(RS)
+        R7=RS*R5
+        DAMP=EFBTRM(LEFQ)*EXP(-EFATRM(LEFQ)*RS)
+        CNSTNT=QT*((2*EFATRM(LEFQ)*DAMP/R5-5*(1-DAMP)/R7)
+     *        *(QXX*(3*DX*DX)+QYY*(3*DY*DY)+QZZ*(3*DZ*DZ)
+     *         +QXY*6*DX*DY+QXZ*6*DX*DZ+QYZ*6*DY*DZ)/3
+     *       -(1-DAMP)*(QXX*2+QYY*2+QZZ*2)/(3*R5))
+        CNSTR=QT*2*(1-DAMP)/R5
+        CNSTX=CNSTR*(QXX*DX+QXY*DY+QXZ*DZ)
+        CNSTY=CNSTR*(QXY*DX+QYY*DY+QYZ*DZ)
+        CNSTZ=CNSTR*(QXZ*DX+QYZ*DY+QZZ*DZ)
+        EF3(1,LEFQ)=EF3(1,LEFQ)-CNSTNT*DX-CNSTX
+        EF3(2,LEFQ)=EF3(2,LEFQ)-CNSTNT*DY-CNSTY
+        EF3(3,LEFQ)=EF3(3,LEFQ)-CNSTNT*DZ-CNSTZ
+       ATORQ(1,IFRG)=ATORQ(1,IFRG)+CNSTY*DZ-CNSTZ*DY
+       ATORQ(2,IFRG)=ATORQ(2,IFRG)+CNSTZ*DX-CNSTX*DZ
+       ATORQ(3,IFRG)=ATORQ(3,IFRG)+CNSTX*DY-CNSTY*DX
+ 100   CONTINUE
+ 120  CONTINUE
+      RETURN
+      END

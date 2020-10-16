@@ -1,0 +1,352 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>
+   SPEC CPU2006 Documentation
+</title>
+<!-- You'll want a nice wide screen when editing this .......................................................................... -->
+
+<link rel="STYLESHEET" href="css/cpu2006docs.css" type="text/css" />
+<style type="text/css">
+.newterm {font-style:italic; font-weight:bold;}
+p.docname { font-size:120%; margin: 1.7em 0em .3em; font-family: sans-serif;}
+p.docdescr {margin:.2em 2em 1em; font-family:serif; }
+body { background: white; color: black; }
+</style>
+</head>
+<body>
+
+
+<h1>SPEC CPU2006 Documentation </h1>
+<p style="font-size:80%">To check for possible updates to the SPEC CPU2006 documentation, see <a
+href="http://www.spec.org/cpu2006/Docs">www.spec.org/cpu2006/Docs</a>.</p>
+
+
+<h2 id="order">Suggested reading order:</h2>
+
+  <p>If you are just getting started with SPEC CPU2006, here is a suggested reading order:</p> 
+
+<ol>
+    <li><p>Start with <a href="readme1st.html">readme1st.html</a> to get an overview of the suite and the process.
+   </p></li>
+
+    <li><p>Use <a href="system-requirements.html">system-requirements.html</a> to help you choose which computer to use as your
+    first test system.</p></li>
+
+    <li><p>Once you've chosen the test system, install the suite, using <a
+    href="install-guide-unix.html">install-guide-unix.html</a> or <a
+    href="install-guide-windows.html">install-guide-windows.html</a>.</p></li>
+
+    <li><p>Read at least the first part of <a href="runspec.html">runspec.html</a>, because <tt>runspec</tt> is the primary
+    tool in the suite. It is used to build the benchmarks, run them, and report on their results.  You should read at least
+    <a href="runspec.html#section1">section 1</a> through <a href="runspec.html#section3.1">section 3.1</a> of
+    that document.</p></li>
+
+    <li><p>After that, you can pick and choose which documents to read based on where your needs may take you.  The list in
+    the next section can help you decide.  Note that the <a href="runrules.html">run rules</a> will need to be studied
+    carefully if you plan to quote results in public.</p></li>
+</ol>
+
+<h2 id="doclist">List of documents</h2>
+
+    <p> The following documents are included on the SPEC CPU2006 DVD.  <span class="new">New features for CPU2006
+      are highlighted.</span></p>
+
+<!--    <p>
+      You can download the entire doc set as either a <a href="CPU2006-docs.tar.bz2">UNIX tar.bz2</a> or a <a
+      href="CPU2006-docs.zip">WINDOWS zip</a> archive file; or just access
+      them individually below.
+    </p>
+--> 
+
+<p class="docname"><a href="config.html">config.html</a></p>
+     <p class="docdescr">SPEC CPU2006 provides benchmarks in source code form, which are compiled under control of SPEC's
+     toolset.  A config file controls how they are compiled, and also controls various settings for your tests.  If you are
+     new to the suite, you will probably start with an existing config file, such as one downloaded from <a
+     href="http://www.spec.org/cpu2006">www.spec.org/cpu2006</a>.  Eventually, you will either want to understand the details
+     of what is inside that config file, or you will want to write your own.  This document tells you how.  </p>
+     
+     <p class="docdescr"><span class="new">New features for CPU2006</span> include a  <a
+     href="config.html#sectionVII">preprocessor</a>, section specifiers that apply to <a
+     href="config.html#sectionI.C.3">multiple benchmarks</a> or which <a href="config.html#inherit_from">inherit</a> from
+     other benchmarks, and a host of other convenience features.  In addition, the document has a new tutorial chapter on <a
+     href="config.html#sectionVI">using feedback directed optimization</a>.</p>
+
+<p class="docname"><a href="credits.html">credits.html</a></p>
+   <p class="docdescr"> Information about the contributors to SPEC CPU2006.</p>
+
+<p class="docname"><a href="errata.html">errata.html</a></p>
+   <p class="docdescr">    Debugging and errata information.</p>
+
+<p class="docname"><a href="flag-description.html">flag-description.html</a></p>
+   <p class="docdescr">    When the benchmarks are compiled, compilation flags (such as <span class="ttnobr">-O5</span> or
+   <span class="ttnobr">-unroll</span>) are detected and automatically reported by the tools.  A flag description file helps
+   the tools recognize such flags and describe them in reports.  The tester is responsible for providing a flag description
+   file to go with his or her config file.  This document tells you how to write a flag description file. </p>
+
+   <p class="docdescr">Note that if you are just getting started with CPU2006, you may find that your starter config file
+   already points to a valid flags description, via the config file <a href="config.html#flagsurl">flagsurl</a> field.</p>
+   
+   <p class="docdescr"><span class="new">Automated flag reporting is new with CPU2006.</span></p>
+
+<p class="docname"><a href="install-guide-unix.html">install-guide-unix.html</a></p>
+   <p class="docdescr">    How to install SPEC CPU2006 on Unix, Linx, and Mac OS X systems.  Includes an example installation
+   and an example of running the first benchmark. </p>
+
+<p class="docname"><a href="install-guide-windows.html">install-guide-windows.html</a></p>
+   <p class="docdescr">    How to install SPEC CPU2006 on Microsoft Windows systems.  Includes an example installation and an
+   example of running the first benchmark. </p>
+
+<p class="docname"><a href="legal.html">legal.html</a></p>
+   <p class="docdescr">    Copyright notice and other legal information.</p>
+
+<p class="docname"><a href="makevars.html">makevars.html</a></p>
+   <p class="docdescr">    Advanced users of the suite who want to understand exactly how the benchmarks are built can use
+   this file to help decipher the process.</p>
+
+<p class="docname"><a href="readme1st.html">readme1st.html</a></p>
+   <p class="docdescr">    Written in the form of questions and answers, this document provides useful 
+   <a href="readme1st.html#Q1">background information</a> to the SPEC CPU benchmarks, explains <a href="readme1st.html#Q5">which 
+   system components are measured</a>, gives a high-level <a href="readme1st.html#Q10">overview of the benchmarking steps</a>, 
+   summarizes the <a href="readme1st.html#Q8">contents of the CPU2006 package</a>, and details types of 
+   <a href="readme1st.html#Q13">metrics available</a> with the suite.</p>
+
+<p class="docname"><a href="runrules.html">runrules.html</a></p>
+   <p class="docdescr">    The SPEC CPU2006 Run and reporting rules. These must be followed for generating publicly disclosed
+   results.  If you plan to quote results in public, you will need to study these rules carefully.  </p>
+   
+   <p class="docdescr"><span class="new">Changes for CPU2006 include </span> clarifications regarding <a
+   href="runrules.html#cpucount">CPU counting</a>; clarification on requirements for <a
+   href="runrules.html#rule_4.8">estimates</a>; unlimited, but <a href="runrules.html#rule_2.2.2">consistent</a> flags for
+   base; <a href="runrules.html#rule_2.2.3">no feedback in base</a>; a detailed discussion of <a
+   href="runrules.html#rule_3.6">run time dynamic optimization</a>; clarifications in <a href="runrules.html#rule_2.2.1">the
+   safety rule</a> regarding C++ exceptions and and regarding accuracy; and a re-written <a
+   href="runrules.html#rule_1">philosophy</a> statement.</p>
+
+<p class="docname"><a href="runspec.html">runspec.html</a></p>
+   <p class="docdescr">    Information on the "<tt>runspec</tt>" command, which is the primary user interface for running
+   SPEC CPU2006 benchmarks and reporting results.  </p>
+   
+   <p class="docdescr"><span class="new">New features for CPU2006</span> include new methods for <a
+   href="runspec.html#section1.5"> sharing an installation among multiple users</a>; optional <a
+   href="runspec.html#check_version">version checking</a> against www.spec.org; <a href="runspec.html#out">CSV output</a> for
+   spreadsheets; <a href="runspec.html#out">emailing of reports</a>; the ability to specify min and max for the <a
+   href="runspec.html#graphmax">graphs</a>; and a feature to <a href="runspec.html#fakereportable">preview what a report will
+   look like</a> prior to running the test.</p>
+
+<p class="docname"><a href="runspec-avoidance.html">runspec-avoidance.html</a></p>
+   <p class="docdescr">    Some users prefer to avoid using the SPEC-supplied toolset, because they have specialized tasks
+   that require more direct access to the benchmarks.  Such tasks might include instrumenting the code, doing performance
+   traces, or debugging an experimental compiler.  This document describes how you can use SPEC's tools for the minimal
+   purpose of just generating work directories, for use as a private sandbox.  </p>
+   
+   <p class="docdescr"><span class="new">This document is retitled for CPU2006</span> (it used to be called
+   "execution_without_SPEC_tools") and it uses new techniques, notably <span class="ttnobr">--fake</span></p>
+
+<p class="docname"><a href="sample-sysinfo-program.pl">sample-sysinfo-program.pl</a></p>
+   <p class="docdescr">    A SPEC result includes a system description.  If your system allows it, you may be able to
+   automate part of the process of gathering a system description.  This perl script provides an example of how that might be
+   done.  Note: some web browsers may refuse to open a file of type "<tt>.pl</tt>".  If clicking on the link doesn't work,
+   try saving the file and opening it with your favorite text editor.  </p>
+   
+   <p class="docdescr"><span class="new">Automated system descriptions are new with CPU2006.</span>  </p>
+
+<p class="docname"><a href="system-requirements.html">system-requirements.html </a></p>
+   <p class="docdescr">    A list of the hardware and software needed in order to run the SPEC CPU2006 suite.  </p>
+   
+   <p class="docdescr"><span class="new">The system requirements for CPU2006 are significantly different from the
+   requirements for CPU2000.</span></p>
+
+<p class="docname"><a href="techsupport.html">techsupport.html</a></p>
+   <p class="docdescr">    Information on SPEC technical support.</p>
+
+<p class="docname"><a href="tools-build.html">tools-build.html</a></p>
+   <p class="docdescr">    How to build (or re-build) the tools such as <tt>runspec</tt></p>
+
+<p class="docname"><a href="utility.html">utility.html</a></p>
+   <p class="docdescr">    How to use various utilities, such as specinvoke, specdiff, and specmake.  </p>
+   
+   <p class="docdescr"><span class="new">Several new utilities are added for CPU2006</span>, including the ability to <a
+   href="utility.html#extract_flags">extract a flags file</a>, and to easily <a href="utility.html#ogo">move around</a> in
+   run directory trees. </p>
+
+<h2 id="benchdocs">Benchmark Documentation</h2>
+
+<h4>Integer Benchmarks</h4>
+<table class="l2">
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/400.perlbench.html">400.perlbench</a></td>
+   <td>C</td>
+   <td>PERL Programming Language      </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/401.bzip2.html">401.bzip2</a></td>
+   <td>C</td>
+   <td>Compression     </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/403.gcc.html">403.gcc</a></td>
+   <td>C</td>
+   <td>C Compiler        </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/429.mcf.html">429.mcf</a></td>
+   <td>C</td>
+   <td>Combinatorial Optimization       </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/445.gobmk.html">445.gobmk</a></td>
+   <td>C</td>
+   <td>Artificial Intelligence: go</td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/456.hmmer.html">456.hmmer</a></td>
+   <td>C</td>
+   <td>Search Gene Sequence</td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/458.sjeng.html">458.sjeng</a></td>
+   <td>C</td>
+   <td>Artificial Intelligence: chess</td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/462.libquantum.html">462.libquantum</a></td>
+   <td>C</td>
+   <td>Physics: Quantum Computing       </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/464.h264ref.html">464.h264ref</a></td>
+   <td>C</td>
+   <td>Video Compression</td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/471.omnetpp.html">471.omnetpp</a></td>
+   <td>C++</td>
+   <td>Discrete Event Simulation       </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/473.astar.html">473.astar</a></td>
+   <td>C++</td>
+   <td>Path-finding Algorithms </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/483.xalancbmk.html">483.xalancbmk</a></td>
+   <td>C++</td>
+   <td>XML Processing  </td>
+</tr>
+</table>
+
+<h4>Floating Point Benchmarks</h4>
+
+<table class="l2">
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/410.bwaves.html">410.bwaves</a></td>
+   <td>Fortran</td>
+   <td>Fluid Dynamics  </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/416.gamess.html">416.gamess</a></td>
+   <td>Fortran</td>
+   <td>Quantum Chemistry   </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/433.milc.html">433.milc</a></td>
+   <td>C</td>
+   <td>Physics: Quantum Chromodynamics</td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/434.zeusmp.html">434.zeusmp</a></td>
+   <td>Fortran</td>
+   <td>Physics / CFD</td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/435.gromacs.html">435.gromacs</a></td>
+   <td>C/Fortran</td>
+   <td>Biochemistry/Molecular Dynamics      </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/436.cactusADM.html">436.cactusADM</a></td>
+   <td>C/Fortran</td>
+   <td>Physics / General Relativity     </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/437.leslie3d.html">437.leslie3d</a></td>
+   <td>Fortran</td>
+   <td>Fluid Dynamics   </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/444.namd.html">444.namd</a></td>
+   <td>C++</td>
+   <td>Biology / Molecular Dynamics </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/447.dealII.html">447.dealII</a></td>
+   <td>C++</td>
+   <td>Finite Element Analysis </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/450.soplex.html">450.soplex</a></td>
+   <td>C++</td>
+   <td>Linear Programming, Optimization </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/453.povray.html">453.povray</a></td>
+   <td>C++</td>
+   <td>Image Ray-tracing     </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/454.calculix.html">454.calculix</a></td>
+   <td>C/Fortran</td>
+   <td>Structural Mechanics    </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/459.GemsFDTD.html">459.GemsFDTD</a></td>
+   <td>Fortran</td>
+   <td>Computational Electromagnetics  </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/465.tonto.html">465.tonto</a></td>
+   <td>Fortran</td>
+   <td>Quantum Chemistry       </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/470.lbm.html">470.lbm</a></td>
+   <td>C</td>
+   <td>Fluid Dynamics  </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/481.wrf.html">481.wrf</a></td>
+   <td>C/Fortran</td>
+   <td>Weather Prediction  </td>
+</tr>
+<tr>
+   <td><a href="http://www.spec.org/auto/cpu2006/Docs/482.sphinx3.html">482.sphinx3</a></td>
+   <td>C</td>
+   <td>Speech recognition      </td>
+</tr>
+</table>
+
+<p> Some individual benchmark in the suite have additional documents, found in the benchmark "Docs" subdirectory on your
+installed benchmark tree, or on the CPU2006 distribution media.
+For example, additional information about 465.tonto may be found in:</p>
+
+<p class="codeexample">$SPEC/benchspec/CPU2006/401.bzip2/Docs/465.tonto.html (Unix) 
+<br />or
+<br />%SPEC%\benchspec\CPU2006\401.bzip2\Docs\465.tonto.html (Windows)</p>
+
+<h2 id="original">Original Sources</h2>
+
+<p>On the SPEC distribution media (DVD), you will find:</p>
+
+<pre>
+original.src/README Information about freely-available sources
+                    that have been incorporated in SPEC CPU2006
+</pre>
+
+<hr />
+<p>Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+<br />All Rights Reserved</p>
+</body>
+</html>
+

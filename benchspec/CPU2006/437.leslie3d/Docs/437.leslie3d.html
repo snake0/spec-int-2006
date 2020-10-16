@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>437.leslie3d: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>437.leslie3d<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>437.leslie3d</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Dr. Christopher Stone &lt;chris.stone &#x5b;at&#x5d; ae.gatech.edu&gt;<br />
+Research Engineer II<br />
+Computational Combustion Lab (CCL)<br />
+Aerospace Engineering Department<br />
+Georgia Institute of Technology<br />
+Atlanta, GA 30332 USA</p>
+
+<p>Prof. Suresh Menon &lt;suresh.menon &#x5b;at&#x5d; ae.gatech.edu&gt;<br />
+Aerospace Engineering Department<br />
+Georgia Institute of Technology<br />
+Atlanta, GA 30332 USA</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Computational Fluid Dynamics (CFD)</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>437.leslie3d is derived from LESlie3d (<i>L</i>arge-<i>E</i>ddy <i>S</i>imulations with
+<i>L</i>inear-<i>E</i>ddy Model in <i>3D</i>), a research-level
+Computational Fluid Dynamics (CFD) code. It is the primary solver used
+to investigate a wide array of turbulence phenomena such as mixing,
+combustion, acoustics and general fluid mechanics. </p>
+
+<p>For CPU2006, the program has
+been set up a to solve a test problem which represents a subset of
+such flows, namely the temporal mixing layer. This type of flow occurs in the
+mixing regions of all combustors that employ fuel injection (which is
+nearly all combustors). Also, this sort of mixing layer is a benchmark
+problem used to understand physics of turbulent mixing. </p>
+
+<p>LESlie3d uses a strongly-conservative, finite-volume algorithm with
+the MacCormack Predictor-Corrector time integration scheme. The
+accuracy is fourth-order spatially and second-order temporally.</p>
+
+<p>The benchmark version, 437.leslie3d, performs limited file I/O to
+isolate the workload to CPU and memory subsystems. A theoretically
+exact problem was choosen for this benchmark to allow direct
+validation.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>Three different input stack sizes, test, train, ref, are available
+for this benchmark. Each size represents an increasing grid resolution
+for the solution. Input parameters include the grid size, flow
+parameters and boundary conditions. 
+</p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>The output for the benchmark is a single text file, leslie3d.out, 
+with analysis information that tracks the momentum thickness through time, 
+which is validated against the provided theoretical data.</p>
+
+<p>The original LESlie3D also writes to the screen; this code has been 
+turned off for the SPEC version, 437.leslie3d.</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>Fortran 90</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>None known.</p>
+
+<hr />
+
+<h2>References</h2>
+
+<ul>
+<li><a href=
+"http://www.ccl.gatech.edu/home_html">www.ccl.gatech.edu</a>
+</li>
+</ul>
+
+<hr />
+
+<p>Last updated: 27 June 2006</p>
+</body>
+</html>

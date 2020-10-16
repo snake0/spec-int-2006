@@ -1,0 +1,132 @@
+runspec started at Mon Apr 14 22:14:38 2014 on "victory"
+runspec is: /var/services/homes/spparmar/spec2006/bin/runspec
+runspec: runspec --noreportable 482.sphinx3
+
+Locating benchmarks...found 31 benchmarks in 12 benchsets.
+Locating output formats: ASCII, config, CSV, flags, HTML, mail, PDF, PostScript, raw, Screen, Submission Check
+Reading config file '/var/services/homes/spparmar/spec2006/config/default.cfg'
+Verbosity = 5
+Action    = validate
+Tune      = base
+Ext       = elider-amd64-m64-gcc42-nn
+Size      = ref
+Machine   = default
+benchmarks= 482.sphinx3
+outputs   = raw,flags,ASCII,PDF,Screen
+username  = root
+Benchmarks selected: 482.sphinx3
+Compiling Binaries
+
+------------------------------------------------------------------------
+  Up to date 482.sphinx3 ref base elider-amd64-m64-gcc42-nn default
+
+
+Parsing Flags
+  Looking at 482.sphinx3 base elider-amd64-m64-gcc42-nn default: done
+Flag Parsing Complete
+
+Setting Up Run Directories
+  Setting up 482.sphinx3 ref base elider-amd64-m64-gcc42-nn default: created (run_base_ref_elider-amd64-m64-gcc42-nn.0001)
+
+-----------------------------------
+Running Benchmarks
+
+-----------------------------------
+  Running (#1) 482.sphinx3 ref base elider-amd64-m64-gcc42-nn default
+Commands to run: 
+    -C /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001
+    -o an4.log -e an4.err ../run_base_ref_elider-amd64-m64-gcc42-nn.0001/sphinx_livepretend_base.elider-amd64-m64-gcc42-nn ctlfile . args.an4
+Specinvoke: /var/services/homes/spparmar/spec2006/bin/specinvoke -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C
+Issuing command '/var/services/homes/spparmar/spec2006/bin/specinvoke -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C'
+Start command: Mon Apr 14 22:14:47 2014 (1397528087)
+Stop command: Mon Apr 14 22:25:44 2014 (1397528744)
+Elapsed time for command: 00:10:57 (657)
+Workload elapsed time (0:1) = 648.458233 seconds
+copy 0 finished @ Mon Apr 14 22:25:36 2014.  Total elapsed time: 648.458233
+comparing files in '/var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001'
+comparing 'an4.log' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=0.001, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+comparing 'considered.out' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=0.0004, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+comparing 'total_considered.out' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=1e-06, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+Specinvoke: /var/services/homes/spparmar/spec2006/bin/specinvoke -E -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -c 1 -e compare.err -o compare.stdout -f compare.cmd
+Issuing command '/var/services/homes/spparmar/spec2006/bin/specinvoke -E -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -c 1 -e compare.err -o compare.stdout -f compare.cmd'
+Start command: Mon Apr 14 22:25:44 2014 (1397528744)
+Stop command: Mon Apr 14 22:25:47 2014 (1397528747)
+Elapsed time for command: 00:00:03 (3)
+Benchmark Times:
+  Start:    Mon Apr 14 22:14:47 2014 (1397528087)
+  Stop:     Mon Apr 14 22:25:44 2014 (1397528744)
+  Elapsed:  00:10:57 (657)
+  Reported: 648 458386000 648.458386
+ Success 482.sphinx3 base ref ratio=30.06, runtime=648.458386
+
+-----------------------------------
+  Running (#2) 482.sphinx3 ref base elider-amd64-m64-gcc42-nn default
+Commands to run: 
+    -C /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001
+    -o an4.log -e an4.err ../run_base_ref_elider-amd64-m64-gcc42-nn.0001/sphinx_livepretend_base.elider-amd64-m64-gcc42-nn ctlfile . args.an4
+Specinvoke: /var/services/homes/spparmar/spec2006/bin/specinvoke -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C
+Issuing command '/var/services/homes/spparmar/spec2006/bin/specinvoke -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C'
+Start command: Mon Apr 14 22:25:47 2014 (1397528747)
+Stop command: Mon Apr 14 22:37:29 2014 (1397529449)
+Elapsed time for command: 00:11:42 (702)
+Workload elapsed time (0:1) = 693.47608 seconds
+copy 0 finished @ Mon Apr 14 22:37:21 2014.  Total elapsed time: 693.47608
+comparing files in '/var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001'
+comparing 'an4.log' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=0.001, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+comparing 'considered.out' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=0.0004, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+comparing 'total_considered.out' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=1e-06, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+Specinvoke: /var/services/homes/spparmar/spec2006/bin/specinvoke -E -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -c 1 -e compare.err -o compare.stdout -f compare.cmd
+Issuing command '/var/services/homes/spparmar/spec2006/bin/specinvoke -E -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -c 1 -e compare.err -o compare.stdout -f compare.cmd'
+Start command: Mon Apr 14 22:37:29 2014 (1397529449)
+Stop command: Mon Apr 14 22:37:34 2014 (1397529454)
+Elapsed time for command: 00:00:05 (5)
+Benchmark Times:
+  Start:    Mon Apr 14 22:25:47 2014 (1397528747)
+  Stop:     Mon Apr 14 22:37:29 2014 (1397529449)
+  Elapsed:  00:11:42 (702)
+  Reported: 693 476202000 693.476202
+ Success 482.sphinx3 base ref ratio=28.10, runtime=693.476202
+
+-----------------------------------
+  Running (#3) 482.sphinx3 ref base elider-amd64-m64-gcc42-nn default
+Commands to run: 
+    -C /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001
+    -o an4.log -e an4.err ../run_base_ref_elider-amd64-m64-gcc42-nn.0001/sphinx_livepretend_base.elider-amd64-m64-gcc42-nn ctlfile . args.an4
+Specinvoke: /var/services/homes/spparmar/spec2006/bin/specinvoke -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C
+Issuing command '/var/services/homes/spparmar/spec2006/bin/specinvoke -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C'
+Start command: Mon Apr 14 22:37:35 2014 (1397529455)
+Stop command: Mon Apr 14 22:48:38 2014 (1397530118)
+Elapsed time for command: 00:11:03 (663)
+Workload elapsed time (0:1) = 654.961472 seconds
+copy 0 finished @ Mon Apr 14 22:48:30 2014.  Total elapsed time: 654.961472
+comparing files in '/var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001'
+comparing 'an4.log' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=0.001, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+comparing 'considered.out' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=0.0004, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+comparing 'total_considered.out' with abstol=, binary=, calctol=0, cw=, floatcompare=1, ignorecase=, obiwan=, reltol=1e-06, skipabstol=, skipobiwan=, skipreltol=, skiptol=
+Specinvoke: /var/services/homes/spparmar/spec2006/bin/specinvoke -E -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -c 1 -e compare.err -o compare.stdout -f compare.cmd
+Issuing command '/var/services/homes/spparmar/spec2006/bin/specinvoke -E -d /var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 -c 1 -e compare.err -o compare.stdout -f compare.cmd'
+Start command: Mon Apr 14 22:48:38 2014 (1397530118)
+Stop command: Mon Apr 14 22:48:41 2014 (1397530121)
+Elapsed time for command: 00:00:03 (3)
+Benchmark Times:
+  Start:    Mon Apr 14 22:37:35 2014 (1397529455)
+  Stop:     Mon Apr 14 22:48:38 2014 (1397530118)
+  Elapsed:  00:11:03 (663)
+  Reported: 654 961631000 654.961631
+ Success 482.sphinx3 base ref ratio=29.76, runtime=654.961631
+Success: 3x482.sphinx3
+Producing Reports
+mach: default
+  ext: elider-amd64-m64-gcc42-nn
+    size: ref
+      set: int
+      set: fp
+           Flag reduction took 0.0014100s
+        format: raw -> /var/services/homes/spparmar/spec2006/result/CFP2006.002.rsf
+        format: flags -> /var/services/homes/spparmar/spec2006/result/CFP2006.002.flags.html
+        format: ASCII -> /var/services/homes/spparmar/spec2006/result/CFP2006.002.txt
+        format: PDF -> /var/services/homes/spparmar/spec2006/result/CFP2006.002.pdf
+        format: Screen -> 
+The log for this run is in /var/services/homes/spparmar/spec2006/result/CPU2006.002.log
+
+runspec finished at Mon Apr 14 22:48:42 2014; 2044 total seconds elapsed

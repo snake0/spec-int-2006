@@ -1,0 +1,15 @@
+runspec started at Thu Apr 17 20:51:31 2014 on "victory"
+runspec is: /var/services/homes/spparmar/spec2006/bin/runspec
+runspec: runspec --fake --loose --size test --tune base ibm
+
+Locating benchmarks...found 31 benchmarks in 12 benchsets.
+Locating output formats: ASCII, config, CSV, flags, HTML, mail, PDF, PostScript, raw, Screen, Submission Check
+Reading config file '/var/services/homes/spparmar/spec2006/config/default.cfg'
+Can't find benchmark 'ibm'
+Can't parse 'ibm' into a benchmark
+
+No benchmarks specified!
+
+The log for this run is in /var/services/homes/spparmar/spec2006/result/CPU2006.003.log
+
+runspec finished at Thu Apr 17 20:51:38 2014; 7 total seconds elapsed

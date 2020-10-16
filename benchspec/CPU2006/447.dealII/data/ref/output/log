@@ -1,0 +1,97 @@
+Refinement cycle: 0
+   Number of degrees of freedom=79
+   Point value=0.111419
+   Estimated error=-0.0202358
+Refinement cycle: 1
+   Number of degrees of freedom=303
+   Point value=0.110124
+   Estimated error=-0.00791284
+Refinement cycle: 2
+   Number of degrees of freedom=457
+   Point value=0.1092
+   Estimated error=-0.00475766
+Refinement cycle: 3
+   Number of degrees of freedom=556
+   Point value=0.106639
+   Estimated error=-0.000775847
+Refinement cycle: 4
+   Number of degrees of freedom=713
+   Point value=0.107309
+   Estimated error=-0.0010652
+Refinement cycle: 5
+   Number of degrees of freedom=1119
+   Point value=0.107202
+   Estimated error=-0.000795717
+Refinement cycle: 6
+   Number of degrees of freedom=1580
+   Point value=0.106944
+   Estimated error=-0.000394584
+Refinement cycle: 7
+   Number of degrees of freedom=2262
+   Point value=0.106749
+   Estimated error=-0.000102753
+Refinement cycle: 8
+   Number of degrees of freedom=2820
+   Point value=0.106684
+   Estimated error=1.7076e-05
+Refinement cycle: 9
+   Number of degrees of freedom=3189
+   Point value=0.106627
+   Estimated error=0.000142291
+Refinement cycle: 10
+   Number of degrees of freedom=4111
+   Point value=0.107025
+   Estimated error=-0.000162701
+Refinement cycle: 11
+   Number of degrees of freedom=5826
+   Point value=0.106996
+   Estimated error=-0.000143924
+Refinement cycle: 12
+   Number of degrees of freedom=7108
+   Point value=0.106982
+   Estimated error=-8.93871e-05
+Refinement cycle: 13
+   Number of degrees of freedom=9914
+   Point value=0.106963
+   Estimated error=-8.11854e-05
+Refinement cycle: 14
+   Number of degrees of freedom=12072
+   Point value=0.10696
+   Estimated error=-4.80589e-05
+Refinement cycle: 15
+   Number of degrees of freedom=13935
+   Point value=0.106953
+   Estimated error=-2.48477e-05
+Refinement cycle: 16
+   Number of degrees of freedom=16055
+   Point value=0.106928
+   Estimated error=-2.79415e-05
+Refinement cycle: 17
+   Number of degrees of freedom=17477
+   Point value=0.106926
+   Estimated error=-2.43329e-05
+Refinement cycle: 18
+   Number of degrees of freedom=19094
+   Point value=0.106932
+   Estimated error=1.86921e-05
+Refinement cycle: 19
+   Number of degrees of freedom=20562
+   Point value=0.106942
+   Estimated error=3.59644e-05
+Refinement cycle: 20
+   Number of degrees of freedom=21921
+   Point value=0.106896
+   Estimated error=2.79675e-05
+Refinement cycle: 21
+   Number of degrees of freedom=25363
+   Point value=0.106862
+   Estimated error=9.29358e-06
+Refinement cycle: 22
+   Number of degrees of freedom=25409
+   Point value=0.106934
+   Estimated error=5.21284e-05
+Refinement cycle: 23
+   Number of degrees of freedom=26855
+   Point value=0.107018
+   Estimated error=5.19699e-05
+

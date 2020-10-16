@@ -1,0 +1,50 @@
+#
+# Makefile for SPEC's hacked-up md5sum
+# Copyright (C) 2003 Standard Performance Evaluation Corporation
+#
+# $Id: Makefile.in 2348 2005-02-04 03:00:06Z cloyce $
+
+# @configure_input@
+
+
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+bindir      = @bindir@
+
+CC=@CC@
+OPTIMIZE=@OPTIMIZE@
+DEFS=@DEFS@
+CPPFLAGS=@CPPFLAGS@ -I. -Ilib
+CFLAGS=@CFLAGS@ $(DEFS) $(OPTIMIZE) $(EXTRA_CFLAGS) $(SPECMD5_CFLAGS)
+LIBS=@LIBS@ $(EXTRA_LIBS)
+LDFLAGS=-Llib @LDFLAGS@ $(EXTRA_LDFLAGS)
+STRIP=@STRIP@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+LIBSRC=lib/error.c lib/getline.c lib/getopt.c lib/getopt1.c \
+       lib/long-options.c lib/md5.c lib/strtol.c lib/strtoul.c \
+       lib/strtoull.c lib/xmalloc.c
+
+# For multi-architecture support
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+all: specmd5sum
+
+specmd5sum: md5sum.o $(LIBSRC) lib/xmalloc.h
+	(cd lib; $(MAKE) libtu.a)
+	$(CC) $(LDFLAGS) -o $@ md5sum.o -ltu $(LIBS)
+	$(STRIP) $@
+
+install: specmd5sum
+	$(INSTALL_PROGRAM) specmd5sum $(bindir)
+
+clean:
+	(cd lib && $(MAKE) clean)
+	rm -f specmd5sum core *.o
+
+distclean: clean
+	(cd lib && $(MAKE) distclean)
+	rm -rf Makefile config.h config.log config.cache config.status stamp-h

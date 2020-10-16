@@ -1,0 +1,692 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags1.dtd">
+
+<!-- This file defines flags that appear in the sources for 435.gromacs.
+
+  Copyright (C) 2005 Standard Performance Evaluation Corporation
+
+  $Revision: 4254 $
+  $Date: 2006-05-21 19:31:24 -0400 (Sun, 21 May 2006) $
+-->
+<flagsdescription>
+
+<filename>435.gromacs.flags</filename>
+
+<title>435.gromacs Flags</title>
+
+<header>
+<![CDATA[
+<p>These are flags that appear in the benchmark sources, categorized as to
+whether they are portability candidates, mandatory, or forbidden.
+</p>
+]]>
+</header>
+
+<flag name="currdir_inc" class="mandatory" regexp="-I\.(?:\s+|$)">
+<example>-I.</example>
+This flag is included automatically by Spec/object.pm.
+</flag>
+
+<flag name="DALLOW_OFFDIAG_LT_HALFDIAG" class="forbidden">
+This is just an development/debug flag for testing degenerate
+cases. All routines in Gromacs can work with general triclinic
+simulation cells instead of only rectangular ones. In normal
+simulations skewed cells are always restored, but this
+#define can be used to allow degenerate cells for testing. In that
+case we need to include some extra stuff in neighborsearching, which
+makes the code somewhat slower. It is NEVER used for production runs.
+</flag>
+
+<flag name="DBUFSIZE" class="forbidden">
+Default length of some line input buffers (char arrays) when reading
+from text files.
+</flag>
+
+<flag name="DCHECK_MPI_ENV" class="forbidden">
+On some hosts a particular environment variable (e.g. LAM_WORLD) will
+be set if an MPI environment/daemon is started. If this define is set
+to a variable name a check is done to start a parallel run. It is NOT
+enabled by default.
+</flag>
+
+<flag name="DCPLUSPLUS" class="forbidden">
+Old, non-standard flag for detecting C++ compilers when Gromacs is
+called as a library from C++ code. We're gradually moving to the ANSI
+__cplusplus instead.
+</flag>
+
+<flag name="DCYLDEBUG" class="forbidden">
+Debug flag for cylindrical pulling.  Never used by default.
+</flag>
+
+<flag name="DDEBSW" class="forbidden">
+Flag to enable separate debugging of the tabulated switched nonbonded
+interactions.  Never used by default.
+</flag>
+
+<flag name="DDEBUG" class="forbidden">
+Define to get lots of debug messages on stdout and stdlog.  Never used
+by default.
+</flag>
+
+<flag name="DDEBUG2" class="forbidden">
+Even more (=everything) debug messages.  Never used by default.
+</flag>
+
+<flag name="DDEBUGEBIN" class="forbidden">
+Debug flag for our energy bin code. Not enabled by default.
+</flag>
+
+<flag name="DDEBUGGCT" class="forbidden">
+Debug flag for "General Coupling Theory".  Never used by default.
+</flag>
+
+<flag name="DDEBUGIDEF" class="forbidden">
+Debug flag for interaction definition blocks.  Never used by default.
+</flag>
+
+<flag name="DDEBUGMSHIFT" class="forbidden">
+Debug flag for molecular shift code.  Never used by default.
+</flag>
+
+<flag name="DDEBUGPAR" class="forbidden">
+Debug flag for general parallel send/receive calls.  Never used by
+default.
+</flag>
+
+<flag name="DDEBUGRBIN" class="forbidden">
+Debug flag to create a small test program for checking parallel data
+aggregation.  Never used by default.
+</flag>
+
+<flag name="DDEBUGSHAKE" class="forbidden">
+Debug flag for SHAKE, which is one of the bond constraint
+algorithms. Never enabled by default.
+</flag>
+
+<flag name="DDEBUG_GMX" class="forbidden">
+By default the debug_gmx() function does nothing. When this flag is
+set, it writes the current node id, file, and line number to the
+standard log (if available), or alternatively stderr.  Never used by
+default.
+</flag>
+
+<flag name="DDEBUG_NRNB" class="forbidden">
+Flag to debug the flop accounting (just used for statistics).  Never
+used by default.
+</flag>
+
+<flag name="DDEBUG_PBC" class="forbidden">
+Debug flag for the periodic boundary condition code.  Never enabled by
+default.
+</flag>
+
+<flag name="DDEBUG_PRES" class="forbidden">
+Debug flag for pressure calculation code.  Never enabled by default.
+</flag>
+
+<flag name="DDISABLE_WATERWATER_LOOPS" class="forbidden">
+This flag disables the water-water optimized inner loops. Nowadays it
+is just for debugging.
+</flag>
+
+<flag name="DDOUBLE" class="forbidden">
+Defined when compiling a double precision Gromacs version.
+</flag>
+
+<flag name="DFALSE" class="forbidden">
+if FALSE is defined we use it as a boolean value, otherwise we define
+it to 0.
+</flag>
+
+<flag name="DFFTW_NAME_FFTW" class="forbidden">
+Precision prefix (d,s, etc) when using the FFTW library calls. The
+SPEC version is compiled without FFTW.
+</flag>
+
+<flag name="DFFT_WORKSPACE" class="forbidden">
+Whether to use extra workspace for FFTs. This is enabled by default,
+but since the SPEC version is compile without FFTW it does not have
+any effect.
+</flag>
+
+<flag name="DGROMACS_MAGIC" class="forbidden">
+Magic number written at the start of frames in binary files, so we can
+identify them as Gromacs files.
+</flag>
+
+<flag name="DHACK" class="forbidden">
+Embarrassing debug hack to test part of the PPPM algorithm. Not used
+anymore.
+</flag>
+
+<flag name="DHAVE_BOOL" class="forbidden">
+Defined if the system has a "bool" type (otherwise we define it).
+</flag>
+
+<flag name="DHAVE_CONFIG_H" class="mandatory">
+This should always be defined when running gromacs, since it means the
+configuration file is present. When including Gromacs headers as a
+library from external code it is not defined.
+</flag>
+
+<flag name="DHAVE_FSEEKO" class="forbidden">
+Defined if the system has 64-bit file access.
+</flag>
+
+<flag name="DHAVE_LIBMASSV_ANY" class="forbidden">
+Defined if the IBM MASS libraries are present. This code is disabled
+in the SPEC version.
+</flag>
+
+<flag name="DHAVE_MOTIF" class="forbidden">
+Defined if the Motif library is present, so we can do some graphical
+stuff.  This code is disabled in the SPEC version.
+</flag>
+
+<flag name="DHAVE_REAL" class="forbidden">
+</flag>
+
+<flag name="DHAVE_STRCASECMP" class="forbidden">
+Defined if the system has strcasecmp(), otherwise we define one.
+</flag>
+
+<flag name="DHAVE_STRDUP" class="forbidden">
+Defined if the system has strdup(), otherwise we define one.
+</flag>
+
+<flag name="DHAVE_UNISTD_H" class="forbidden">
+Defined if the include header unistd.h exists, otherwise we define the
+necessary functions.
+</flag>
+
+<flag name="DINT_MAX" class="forbidden">
+This is ANSI C, and defined in limits.h to be the largest value of an
+integer.
+</flag>
+
+<flag name="DINVSQRT_DONE" class="forbidden">
+Convenience define in header.
+</flag>
+
+<flag name="DMASTER_ID" class="forbidden">
+mdrun/systest.h is deprecated, it was only used with the early
+dedicated gromacs hardware.
+</flag>
+
+<flag name="DMAX" class="forbidden">
+Macro for a max(a,b) function.
+</flag>
+
+<flag name="DMIN" class="forbidden">
+Macro for a min(a,b) function.
+</flag>
+
+<flag name="DMPI_TEST" class="forbidden">
+Debug flag for MPI, introduce extra checking for each call.  This part
+is disabled in the SPEC code.
+</flag>
+
+<flag name="DM_2PI" class="forbidden">
+Math value for 2.0*PI (we first check if the system defines it)
+</flag>
+
+<flag name="DM_PI" class="forbidden">
+Math value for PI (we first check if the system defines it)
+</flag>
+
+<flag name="DM_PI_2" class="forbidden">
+Math value for Pi/2 (we first check if the system defines it)
+</flag>
+
+<flag name="DM_SQRT2" class="forbidden">
+Mathematical value for sqrt(2) (we first check if the system defines it)
+</flag>
+
+<flag name="DNO_CLOCK" class="forbidden">
+Defined if no clock routines are available. Just used for statistics
+anyway, and the output is disabled in the SPEC code.
+</flag>
+
+<flag name="DNO_GETPID" class="forbidden">
+Defined if it is not possible to get a process ID from the
+system. This is just used as an optional way to get a real 'random'
+random seed. This part of the code is not used in the SPEC test.
+</flag>
+
+<flag name="DNO_PIPE" class="forbidden">
+Defined if no pipes are available on this system. Only used to
+compress/uncompress IO on-the-fly, not enabled in the SPEC test.
+</flag>
+
+<flag name="DNO_PWUID" class="forbidden">
+Defined if pwd.h is not present, so we cannot get name/uid of the
+user. This is only used to add a comment at the top of a log file,
+which anyway is disabled in the SPEC code.
+</flag>
+
+<flag name="DNS5DB" class="forbidden">
+Debug flag for grid-based neighborsearching.
+</flag>
+
+<flag name="DPRAGMAS" class="forbidden">
+Add a cray pragma to ignore vector dependencies in the next loop if
+set. Not enabled by default.
+</flag>
+
+<flag name="DSAFE" class="forbidden">
+Used to check and work around an old compiler bug. No longer used by
+default.
+</flag>
+
+<flag name="DSEGV" class="forbidden">
+Deprecated debugging option.
+</flag>
+
+<flag name="DSOFTWARE_INVSQRT" class="forbidden">
+Defined when the Gromacs software version of 1/sqrt(x) is used. Not
+enabled in the SPEC version.
+</flag>
+
+<flag name="DSOFTWARE_RECIP" class="forbidden">
+Defined when the Gromacs software version of 1/x is used. Not enabled
+in the SPEC version.
+</flag>
+
+<flag name="DSOFTWARE_SQRT" class="forbidden">
+Defined when the Gromacs software version of sqrt(x) is used. Not
+enabled in the SPEC version.
+</flag>
+
+<flag name="DSORTNLIST" class="forbidden">
+Debug/hacking flag to test if neighborlist quicksorting helps. Not
+enabled by default.
+</flag>
+
+<flag name="DSPEC_CPU" class="mandatory">
+</flag>
+
+<flag name="DSPEC_CPU_USE_SYSTEM_XDR" class="forbidden">
+System XDR libraries are used instead of build-in version.
+</flag>
+
+<flag name="DSPEC_CPU_WINDOWS" class="mandatory">
+Portabilty for windows
+</flag>
+
+<flag name="DSPEC_CPU_APPEND_UNDERSCORE" class="portability">
+For compilers that export symbols in uppercase with an underscore.
+</flag>
+
+
+<flag name="DSQR" class="forbidden">
+Macro to define a shortcut for (x*x)
+</flag>
+
+<flag name="DSTRAND" class="forbidden">
+Defined (by default) to select the Boxmuller algorithm for a gaussian
+random gnerator
+</flag>
+
+<flag name="DSYSVBFUNC" class="forbidden">
+The file mdrun/bfunc.h was used with our early dedicated hardware, but
+is now deprecated.
+</flag>
+
+<flag name="DTABLES" class="forbidden">
+Debug/hacking flag to control the use of tabulated interactions for
+short-range Ewald corrections.
+</flag>
+
+<flag name="DTEST_MPI_SUM" class="forbidden">
+Debug/hacking flag to test alternative communication strategy. Not
+used by default.
+</flag>
+
+<flag name="DTRUE" class="forbidden">
+if TRUE is defined we use it as a boolean value, otherwise we define
+it to 1.
+</flag>
+
+<flag name="DUSE_AXP_ASM" class="forbidden">
+Defined when Alpha AXP assembly vectorized versions of sqrt(x) are
+used. This part is disabled in the SPEC code.
+</flag>
+
+<flag name="DUSE_FORTRAN" class="forbidden">
+Defined when Fortran77 inner loops are enabled.
+</flag>
+
+<flag name="DUSE_GMX_XDR" class="forbidden">
+Use our own portable implementation of XDR for input/output
+files. This is always used in the SPEC code to ensure we have the same
+code on all platforms.
+</flag>
+
+<flag name="DUSE_LOCAL_BUFFERS" class="forbidden">
+Use extra buffers for vectorized innerloops.  This part is entirely
+disabled in the SPEC code.
+</flag>
+
+<flag name="DUSE_MPI" class="forbidden">
+Compile a parallel MPI version when set.
+</flag>
+
+<flag name="DUSE_PPC_ALTIVEC" class="forbidden">
+Use Altivec assembly innerloops on PowerPC.
+</flag>
+
+<flag name="DUSE_PVM3" class="forbidden">
+Use PVM for parallel runs.  This is no longer supported.
+</flag>
+
+<flag name="DUSE_SGI_FPE" class="forbidden">
+Use SGI extensions to catch floating point exceptions.  This part is
+disabled in the SPEC code.
+</flag>
+
+<flag name="DUSE_THREADS" class="forbidden">
+Development/hacking flag to enable threads. Not used.
+</flag>
+
+<flag name="DUSE_VECTOR" class="forbidden">
+Optimize inner loops for a vector architecture. Not used.
+</flag>
+
+<flag name="DUSE_X86TRUNC" class="forbidden">
+Use x86 inline assembly truncation.  This part is disabled in the SPEC
+code.
+</flag>
+
+<flag name="DUSE_X86_SSE2" class="forbidden">
+Use x86 SSE2 double precision assembly inner loops.  This part is
+disabled in the SPEC code.
+</flag>
+
+<flag name="DUSE_X86_SSE_AND_3DNOW" class="forbidden">
+Use x86 SSE and AMD 3DNow single precision assembly loops.  This part
+is disabled in the SPEC code.
+</flag>
+
+<flag name="DUSE_XDR" class="forbidden">
+Use XDR format for portable input/output files.  This is always enabled
+now.
+</flag>
+
+<flag name="DVECTORIZATION_BUFLENGTH" class="forbidden">
+Size of the buffers used for vectorized innerloops on some
+architectures. All the DVECTORIZE_INVSQRT... defines below control
+which inner loops were vectorized.  This code is disabled in the SPEC
+version.
+</flag>
+
+<flag name="DVECTORIZE_INVSQRT" class="forbidden">
+See above.
+</flag>
+
+<flag name="DVECTORIZE_INVSQRT_S" class="forbidden">
+See above.
+</flag>
+
+<flag name="DVECTORIZE_INVSQRT_W" class="forbidden">
+See above.
+</flag>
+
+<flag name="DVECTORIZE_INVSQRT_WW" class="forbidden">
+See above.
+</flag>
+
+<flag name="DVECTORIZE_RECIP" class="forbidden">
+Vectorize the 1/x reciprocal in the inner loops.  This code is disabled
+in the SPEC version.
+</flag>
+
+<flag name="DWIN32" class="forbidden">
+Defined when running on native 32-bit MS windows, used for alternative header
+includes.
+</flag>
+
+<flag name="DWIN64" class="forbidden">
+Defined when running on native 64-bit MS windows, used for alternative
+header includes.
+</flag>
+
+<flag name="DWITHOUT_FFTW" class="forbidden">
+Defined when we are compiling without the FFTW library (which is
+normally the case for the SPEC version).
+</flag>
+
+<flag name="D_386_" class="forbidden">
+Defined when the CPU is an x86.  This code has been disabled in the SPEC
+version.
+</flag>
+
+<flag name="D_3dview_h" class="forbidden">
+</flag>
+
+<flag name="D_PI" class="forbidden">
+If M_PI isn't set to the value of math PI, we try to set it from _PI
+if available, or eventually define it ourselves
+
+</flag>
+
+<flag name="D_SPECIAL_VAR_ARG" class="forbidden">
+Some old compilers did not understand standard ANSI variable
+argument functions, and this is a workaround. It will not affect any
+modern compiler, and is disabled by default.
+</flag>
+
+<flag name="D_WIN32" class="forbidden">
+Defined when native 32-bit MS windows is used. Only used to include
+alternative headers for portability.
+</flag>
+
+<flag name="D_WIN64" class="forbidden">
+Defined when native 64-bit MS windows is used. Only used to include
+alternative headers for portability.
+</flag>
+
+<flag name="D__386__" class="forbidden">
+Defined when the CPU is an x86.  This code has been disabled in the SPEC
+version.
+</flag>
+
+<flag name="D__CYGWIN32__" class="forbidden">
+Defined when CYGWIN under windows is used. Only used to include
+alternative headers for portability.
+</flag>
+
+<flag name="D__CYGWIN__" class="forbidden">
+Defined when CYGWIN under windows is used. Only used to include
+alternative headers for portability.
+</flag>
+
+<flag name="D__GENERAL__" class="forbidden">
+mdrun/general.h is a completely deprecated file (it was used with
+early dedicated hardware). It is not used, and not included by any
+other file.
+</flag>
+
+<flag name="D__GNUC__" class="forbidden">
+Defined when the GCC compiler is used.  This code has been disabled in
+the SPEC version.
+</flag>
+
+<flag name="D__PGI" class="forbidden">
+Defined when the Portland compiler is used.  This code has been
+disabled in the SPEC version.
+</flag>
+
+<flag name="D__STDC__" class="forbidden">
+Not used in my codebase, but it is defined when using an ANSI C compiler.
+</flag>
+
+<flag name="D__sgi" class="forbidden">
+Defined on SGI systems, used to enable floating point exception
+checks.  This code has been disabled in the SPEC version.
+</flag>
+
+<flag name="header_guard" class="forbidden" regexp="[-/]D_(?:binio|bondf|buffer|calch|calcmu|callf77|comlib|complex|comtest|confio|copyrite|delay|detectcpu|disre|do_fit|do_md|do_nm|dummies|ebin|edsam|enxio|ewald|ewald_util|fatal|fftgrid|fftw_wrapper|filenm|force|futil|genalg|gmx_system_xdr|gmxfio|grompp|gstat|idef|ifunc|init|inner|invblock|ionize|list|macros|main|maths|matio|mdatom|mdatoms|mdebin|mdrun|memdump|memtab|memtest|metacode|mshift|mvdata|names|network|nhash|nr|nrama|nrjac|nrnb|ns|nsb|nsgrid|orires|pbc|pdbio|pdebug|physics|pme|poisson|pppm|princ|pull|pull_internal|random|rbin|rdgroup|readcomp|readinp|renum|reorder|replace|rmpbc|rwtop|sheader|shift|shift_util|sim_util|simple|smalloc|sortwater|split|statusio|statutil|strdb|string2|struc2|superb|symtab|sync|synclib|sysstuff|systest|tags|tgroup|tpxio|transfer|trnio|txtdump|typedefs|update|utils|vcm|vec|viewit|vveclib|wgms|wman|wnblist|writeps|xdrf|xmdrun|xtcio|xvgr)_h(?:=\S*)?\b">
+<example>
+-D_binio_h,
+-D_bondf_h,
+-D_buffer_h,
+-D_calch_h,
+-D_calcmu_h,
+-D_callf77_h,
+-D_comlib_h,
+-D_complex_h,
+-D_comtest_h,
+-D_confio_h,
+-D_copyrite_h,
+-D_delay_h,
+-D_detectcpu_h,
+-D_disre_h,
+-D_do_fit_h,
+-D_do_md_h,
+-D_do_nm_h,
+-D_dummies_h,
+-D_ebin_h,
+-D_edsam_h,
+-D_enxio_h,
+-D_ewald_h,
+-D_ewald_util_h,
+-D_fatal_h,
+-D_fftgrid_h,
+-D_fftw_wrapper_h,
+-D_filenm_h,
+-D_force_h,
+-D_futil_h,
+-D_genalg_h,
+-D_gmx_system_xdr_h,
+-D_gmxfio_h,
+-D_grompp_h,
+-D_gstat_h,
+-D_idef_h,
+-D_ifunc_h,
+-D_init_h,
+-D_inner_h,
+-D_invblock_h,
+-D_ionize_h,
+-D_list_h,
+-D_macros_h,
+-D_main_h,
+-D_maths_h,
+-D_matio_h,
+-D_mdatom_h,
+-D_mdatoms_h,
+-D_mdebin_h,
+-D_mdrun_h,
+-D_memdump_h,
+-D_memtab_h,
+-D_memtest_h,
+-D_metacode_h,
+-D_mshift_h,
+-D_mvdata_h,
+-D_names_h,
+-D_network_h,
+-D_nhash_h,
+-D_nr_h,
+-D_nrama_h,
+-D_nrjac_h,
+-D_nrnb_h,
+-D_ns_h,
+-D_nsb_h,
+-D_nsgrid_h,
+-D_orires_h,
+-D_pbc_h,
+-D_pdbio_h,
+-D_pdebug_h,
+-D_physics_h,
+-D_pme_h,
+-D_poisson_h,
+-D_pppm_h,
+-D_princ_h,
+-D_pull_h,
+-D_pull_internal_h,
+-D_random_h,
+-D_rbin_h,
+-D_rdgroup_h,
+-D_readcomp_h,
+-D_readinp_h,
+-D_renum_h,
+-D_reorder_h,
+-D_replace_h,
+-D_rmpbc_h,
+-D_rwtop_h,
+-D_sheader_h,
+-D_shift_h,
+-D_shift_util_h,
+-D_sim_util_h,
+-D_simple_h,
+-D_smalloc_h,
+-D_sortwater_h,
+-D_split_h,
+-D_statusio_h,
+-D_statutil_h,
+-D_strdb_h,
+-D_string2_h,
+-D_struc2_h,
+-D_superb_h,
+-D_symtab_h,
+-D_sync_h,
+-D_synclib_h,
+-D_sysstuff_h,
+-D_systest_h,
+-D_tags_h,
+-D_tgroup_h,
+-D_tpxio_h,
+-D_transfer_h,
+-D_trnio_h,
+-D_txtdump_h,
+-D_typedefs_h,
+-D_update_h,
+-D_utils_h,
+-D_vcm_h,
+-D_vec_h,
+-D_viewit_h,
+-D_vveclib_h,
+-D_wgms_h,
+-D_wman_h,
+-D_wnblist_h,
+-D_writeps_h,
+-D_xdrf_h,
+-D_xmdrun_h,
+-D_xtcio_h,
+-D_xvgr_h
+</example>
+These macros are standard C duplicate-include guards for
+the corresponding header files.
+</flag>
+
+
+<flag name="Deven" class="forbidden">
+Macro to check if a number is even.
+</flag>
+
+<flag name="Dfclose" class="forbidden">
+Some old compilers had a macro clashing with the ANSI C fclose()
+function, so to make sure we #undef it if necessary.
+</flag>
+
+<flag name="Di386" class="forbidden">
+Defined when the CPU is an x86.  This code has been disabled in the SPEC
+version.
+</flag>
+
+<flag name="Dmax" class="forbidden">
+Macro for a max(a,b) function.
+</flag>
+
+<flag name="Dmin" class="forbidden">
+Macro for a min(a,b) function.
+</flag>
+
+<flag name="Drewind" class="forbidden">
+Some old compilers had a macro clashing with the ANSI C rewind()
+function, so to make sure we #undef it if necessary.
+</flag>
+
+
+</flagsdescription>

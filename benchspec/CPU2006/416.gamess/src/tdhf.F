@@ -1,0 +1,4513 @@
+C  9 DEC 03 - OQ  - F2NONS,DFCKNS: ADD NPARAM ARGUMENT
+C  3 SEP 03 - SPW - ALPHAF,CALVAB: ADD CIS ARGUMENT TO TWOEI CALL
+C 16 JUN 03 - HL  - CHANGES FOR PCM GRADIENTS
+C 12 DEC 02 - KRG - TDHFX: AXE SPHERICAL HARMONIC USE
+C  6 SEP 01 - MWS - ADD DUMMY ARGUMENTS TO NAMEIO CALL
+C 25 JUN 01 - MWS - USE COMMON BLOCK WFNOPT
+C 11 OCT 00 - BM  - CHANGES FOR IEF SOLVATION AND LOCAL FIELD EFFECTS
+C 11 JUN 00 - MWS - ALPHAF,CALUAB: ALWAYS ALLOCATE HONDO INTEGRAL BUFFER
+C  9 APR 99 - MWS - DFCKNS: SAVE ADDED TO WORK AROUND XLF V5 PROBLEM
+C 12 NOV 98 - GDF - CHANGE BIT PACKING TO ISHIFT
+C 28 SEP 97 - BM  - BMAKEUF: SOLVE FULL UAB, EPSAB: TRANSP. UDMS INDICES
+C 28 SEP 97 - MWS - CONVERT PARALLEL CALLS FROM TCGMSG TO DDI
+C 18 MAR 97 - BM,MWS  - CHANGES THROUGHOUT FOR PCM POLARIZABILITIES
+C 18 DEC 96 - MWS - ALPHAF,CALUAB: ADJUST CALLS TO TWOEI ROUTINE.
+C 29 SEP 96 - MWS - ALPHAF,CALUAB: REDUCE GHONDO BUFFER TO MAX NEEDED
+C 27 OCT 95 - MWS - ALLOW 10 INPUT FREQUENCIES
+C 12 NOV 94 - MWS - REMOVE FTNCHEK WARNINGS
+C 11 AUG 94 - HK  - NEW MODULE FOR ANALYTIC NLO CALCULATION
+C
+C*MODULE TDHF    *DECK TDHFX
+      SUBROUTINE TDHFX
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      LOGICAL PK,PANDK,BLOCK,RETDHF,TDDEB,EXTRAH
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+C
+      PARAMETER (MXATM=500, NNAM=19, MXRT=100)
+      PARAMETER (MXTS=2500, MXTSPT=2*MXTS)
+C
+      COMMON /ENRGYS/ ENUCR,EELCT,ETOT,SZ,SZZ,ECORE,ESCF,EERD,E1,E2,
+     X                VEN,VEE,EPOT,EKIN,ESTATE(MXRT),STATN
+      COMMON /FMCOM / X(1)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PKFIL / PK,PANDK,BLOCK
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PCMF  / IPCDER,IFAST,Q2(MXTS),CHG2N(MXTS)
+      COMMON /PCMPAR/ IPCM,NFT26,NFT27,IRPPCM,IEF,IP_F
+      COMMON /PCMTES/ CCX,CCY,CCZ,XCTS(MXTSPT),YCTS(MXTSPT),
+     *                ZCTS(MXTSPT),AS(MXTS),RDIF,NVERT(MXTS),NTS
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      COMMON /TDOPT / RETDHF,TDDEB,EXTRAH,IFREQ
+C
+      DIMENSION QNAM(NNAM),KQNAM(NNAM)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA TDHFIN/8HTDHF    /
+#else
+      CHARACTER*8 :: TDHFIN_STR
+      EQUIVALENCE (TDHFIN, TDHFIN_STR)
+      DATA TDHFIN_STR/"TDHF    "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA QNAM /8HRETDHF  ,8HTDDEB   ,8HEXTRAH  ,
+     X           8HGTHG    ,8HGEFISH  ,8HGIDRI   ,8HGOKE    ,
+     X           8HBSHG    ,8HBEOPE   ,8HBOR     ,8HMAXITA  ,
+     X           8HMAXITU  ,8HATOL    ,8HBTOL    ,8HNFREQ   ,
+     X           8HFREQ    ,8HINIB    ,8HINIG    ,8HILOCF   /
+#else
+      CHARACTER*8 :: QNAM_STR(NNAM)
+      EQUIVALENCE (QNAM, QNAM_STR)
+      DATA QNAM_STR/"RETDHF  ","TDDEB   ","EXTRAH  ",
+     X           "GTHG    ","GEFISH  ","GIDRI   ","GOKE    ",
+     X           "BSHG    ","BEOPE   ","BOR     ","MAXITA  ",
+     X           "MAXITU  ","ATOL    ","BTOL    ","NFREQ   ",
+     X           "FREQ    ","INIB    ","INIG    ","ILOCF   "/
+#endif
+      DATA KQNAM/0,0,0,0,0,0,0,0,0,0,1,1,3,3,1,103,1,1,1/
+      DATA ZERO/0.0D+00/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+C     ----- TIME DEPENDENT HARTREE-FOCK -----
+C     THIS MODULE FOR THE COMPUTATION OF NON-LINEAR OPTICAL
+C     PROPERTIES, INCLUDING FREQUENCY DEPENDENT ONES, WAS
+C     WRITTEN BY HENRY KURTZ AND PRAKASHAN KORAMBATH AT THE
+C     UNIVERSITY OF MEMPHIS, CIRCA 1993.
+C
+      IF(NQMT.LT.NUM) THEN
+         IF(MASWRK) WRITE(IW,*) 'SORRY, RUNTYP=TDHF CANNOT DO ISPHER=1'
+         CALL ABRT
+      END IF
+C
+      NORB = NUM
+      NCLOSE = NE/2
+C
+C  SET DEFAULT
+C
+      JRET = 0
+      RETDHF = .TRUE.
+      TDDEB  = .FALSE.
+      EXTRAH = .FALSE.
+      GTHG   = .TRUE.
+      GEFISH = .TRUE.
+      GIDRI  = .TRUE.
+      GOKE   = .TRUE.
+      BSHG   = .TRUE.
+      BEOPE  = .TRUE.
+      BOR    = .TRUE.
+      MAXITA = 100
+      MAXITU = 100
+      ATOL = 1.0D-05
+      BTOL = 1.0D-05
+      NFREQ = 1
+      FREQ(1) = 0.0D+00
+C
+C B. MENNUCCI/1999
+C     BETA AND GAMMA CALCULATIONS:
+C     INIB=0 (NO BETA)
+C          1 (ONLY NONITERATIVE BETA)
+C          2 (ITERATIVE AND NONITERATIVE BETA)
+C     INIG=0 (NO GAMMA)
+C          1 (ONLY NONITERATIVE GAMMA)
+C          2 (ITERATIVE AND NONITERATIVE GAMMA)
+C
+      INIB=0
+      INIG=0
+C
+C     LOCAL FIELD CORRECTION FOR IN SOLVENT CALCULATION
+C     ILOCF=0  NO (DEFAULT)
+C     ILOCF=1
+C
+      ILOCF=0
+C
+      CALL NAMEIO (IR,JRET,TDHFIN,NNAM,QNAM,KQNAM,RETDHF,TDDEB,EXTRAH,
+     *             GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,MAXITA,MAXITU,
+     *             ATOL,BTOL,NFREQ,FREQ,INIB,INIG,ILOCF,
+     *             0,0,0,0,0,
+     *    0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0,
+     *    0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0)
+      IF (JRET.GT.1) THEN
+         IF (MASWRK) WRITE(IW,*) 'ERROR IN $TDHF GROUP'
+         CALL ABRT
+      END IF
+      IF(INIG.EQ.1.AND.INIB.EQ.1) THEN
+         IF (MASWRK) WRITE(IW,*)
+     X      'ERROR IN NON ITERATIVE OPTIONS IN $TDHF GROUP:'
+         IF (MASWRK) WRITE(IW,*)
+     X      'WHEN YOU USE INIG=1 INIB MUST BE 2'
+         CALL ABRT
+      END IF
+      IF (MASWRK) THEN
+         WRITE (IW,200) GTHG,BSHG,GEFISH,BEOPE,GIDRI,BOR,GOKE
+ 200     FORMAT (/'      ----------'/
+     X            '      TDHF INPUT'/
+     X            '      ----------'//
+     X            '    GTHG   = ',L1,'    BSHG  = ',L1,/,
+     X            '    GEFISH = ',L1,'    BEOPE = ',L1,/,
+     X            '    GIDRI  = ',L1,'    BOR   = ',L1,/,
+     X            '    GOKE   = ',L1)
+         WRITE (IW,210) ATOL,MAXITA,BTOL,MAXITU
+  210    FORMAT ('    ATOL   = ',D10.3,'   MAXITA = ',I3,/,
+     X           '    BTOL   = ',D10.3,'   MAXITU = ',I3)
+         WRITE (IW,220) (FREQ(IFRE),IFRE=1,NFREQ)
+  220    FORMAT (' REQUESTED ENERGIES (A.U.) = ',3F10.5)
+         WRITE (IW,201) INIB,INIG
+  201    FORMAT (/'     -------------------------'/
+     X            '  -- NON ITERATIVE CALCULATION --'/
+     X            '     -------------------------'/
+     X            '     INIB = ',I3,' INIG = ',I3)
+      END IF
+C
+C  CALCULATE ENERGY AND WAVEFUNCTION FOR SYSTEM
+C
+      NOPK=1
+      PK = .FALSE.
+      CALL ENERGX
+      CALL ELMOMC
+      IF (ETOT.EQ.ZERO  .AND.  EXETYP.NE.CHECK) THEN
+         IF(MASWRK) WRITE (IW,*) 'SCF FAILED TO CONVERGE, BOMBING...'
+         CALL ABRT
+      END IF
+C
+C  DO TDHF CALCULATIONS OF POLARIZABILITY AND/OR HYPERPOLARIZABILITY
+C
+      NSQR = NORB*NORB
+C
+      CALL VALFM (LOADFM)
+      MV  = LOADFM + 1
+      MEI = MV  + NSQR
+      M1  = MEI + NORB
+      M2  = M1  + NSQR
+      M3  = M2  + NSQR
+      M4  = M3  + NSQR
+      M5  = M4  + NSQR
+      M6  = M5  + NSQR
+      M7  = M6  + NSQR
+      M8  = M7  + NSQR
+      M9  = M8  + NSQR
+      M10 = M9  + NSQR
+      M11 = M10 + NSQR
+      M12 = M11 + NSQR
+      LAST= M12 + NSQR
+C
+C        ADDITIONAL STORAGE FOR -PCM- MODEL
+C
+C     NTESS  = 2
+      NTESS=1
+      NTESI=1
+      NBMCHG = 1
+      IF(IPCM.EQ.1) THEN
+         NTESS=NTS
+         NBMCHG = (NORB*NORB+NORB)/2
+         IF(IEF.NE.0) NTESI=NTS
+      END IF
+C
+      LDMFR  = LAST
+      LIPVT  = LDMFR  + NTESS*NTESS
+      LWORK  = LIPVT  + NTESS
+      LDMATM = LWORK  + NTESS
+      LSE    = LDMATM + NTESS*NTESS
+      LDE    = LSE    + NTESI*NTESI
+      LBMCHG = LDE    + NTESI*NTESI
+      LQ     = LBMCHG + NBMCHG
+      LDQSE  = LQ     + NTESS
+      LDQQ   = LDQSE  + NTESS
+      LDQFR  = LDQQ   + NTESS
+      LDQ    = LDQFR  + NTESS*3
+      LD2QF1 = LDQ    + NTESS*3
+      LD2QF2 = LD2QF1 + NTESS*3*3
+      LD2QF3 = LD2QF2 + NTESS*3*3
+      LD2Q   = LD2QF3 + NTESS*3*3
+      LCQEF  = LD2Q   + NTESS*3*3
+      LQEFF  = LCQEF  + NTESS
+      LELD   = LQEFF  + NTESS
+      LQEF1  = LELD   + NTESS
+      LELD1  = LQEF1  + NTESS*3
+      LDQ1   = LELD1  + NTESS*3
+      LQEFF2 = LDQ1   + NTESS*3
+      LEPA   = LQEFF2 + NTESS
+         LEPB = LEPA + NSQR
+         LAST = LEPB + NSQR
+C
+      NEED = LAST - LOADFM - 1
+      CALL GETFM (NEED)
+C
+C        READ INVERSE D MATRIX FROM DISK
+C
+      IF(IPCM.EQ.1) THEN
+         NTS3 = NTS*NTS
+         CALL SEQREW(NFT26)
+         CALL DERCHK(NDER)
+         IF(NDER.EQ.1.AND.IPCDER.EQ.1) THEN
+            CALL SEQADV(NFT26)
+            CALL SEQADV(NFT26)
+            CALL SEQADV(NFT26)
+            CALL SEQADV(NFT26)
+         END IF
+         IF(IEF.GT.0.AND.IEF.LT.3) THEN
+          CALL SEQADV(NFT26)
+          CALL SEQADV(NFT26)
+          CALL SQREAD(NFT26,X(LSE),NTS3)
+          CALL SQREAD(NFT26,X(LDE),NTS3)
+         END IF
+         CALL SQREAD(NFT26,X(LDMATM),NTS3)
+         CALL SEQREW(NFT26)
+      END IF
+C
+      CALL TDHF (ILOCF,NORB,NTESS,NTESI,NBMCHG,X(MV),X(MEI),
+     *           X(M1),X(M2),X(M3),X(M4),X(M5),
+     *           X(M6),X(M7),X(M8),X(M9),X(M10),X(M11),X(M12),
+     *           X(LDMFR),X(LIPVT),X(LWORK),X(LDMATM),X(LBMCHG),
+     *           X(LSE),X(LDE),
+     *           X(LQ),X(LDQSE),X(LDQQ),X(LCQEF),X(LQEFF2),
+     *           X(LDQFR),X(LDQ),X(LD2QF1),X(LD2QF2),X(LD2QF3),X(LD2Q),
+     *           X(LQEFF),X(LELD),X(LQEF1),X(LELD1),X(LDQ1),
+     *           X(LEPA),X(LEPB))
+C
+      CALL RETFM (NEED)
+      RETURN
+      END
+C*MODULE TDHF    *DECK TDHF
+      SUBROUTINE TDHF (ILOCF,NORB,NTESS,NTESI,NBMCHG,VEC,EIGS,
+     *                 X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12,
+     *                 DMFR,IPVT,WORK,DMATM1,BEMCHG,
+     *                 SE,DE,Q,DQSE,DQQ,CQEF,QEFF2,
+     *                 DQFR,DQ,D2QFR1,D2QFR2,D2QFR3,D2Q,
+     *                 QEFF,ELD,QEF1,ELD1,DQ1,EPA,EPB)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,RETDHF,TDDEB,EXTRAH
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,STATIC
+      LOGICAL DWSAVE,DIRSCF,FDIFF
+C
+      DIMENSION VEC(NORB,NORB), EIGS(NORB)
+      DIMENSION X1(NORB,NORB), X2(NORB,NORB), X3(NORB,NORB)
+      DIMENSION X4(NORB,NORB), X5(NORB,NORB), X6(NORB,NORB)
+      DIMENSION X7(NORB,NORB), X8(NORB,NORB), X9(NORB,NORB)
+      DIMENSION X10(NORB,NORB),X11(NORB,NORB),X12(NORB,NORB)
+      DIMENSION DMFR(NTESS,NTESS),IPVT(NTESS),WORK(NTESS),
+     *          DMATM1(NTESS,NTESS),BEMCHG(NBMCHG),Q(NTESS),
+     *          SE(NTESI,NTESI),DE(NTESI,NTESI),
+     *          DQSE(NTESS),DQQ(NTESS),CQEF(NTESS),QEFF2(NTESS),
+     *          DQFR(NTESS,3),DQ(NTESS,3),D2QFR1(NTESS,3,3),
+     *          D2QFR2(NTESS,3,3),D2QFR3(NTESS,3,3),D2Q(NTESS,3,3),
+     *          QEFF(NTESS),ELD(NTESS),QEF1(3,NTESS),ELD1(3,NTESS),
+     *          DQ1(3,NTESS),EPA(NORB,NORB),EPB(NORB,NORB)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /OPTSCF/ DIRSCF,FDIFF
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PCMDAT/ EPS,EPSINF,DR,RSOLV,VMOL,TCE,STEN,DSTEN,
+     *                CMF,TABS,ICOMP,IFIELD,ICAV,IDISP
+      COMMON /PCMPAR/ IPCM,NFT26,NFT27,IRPPCM,IEF,IP_F
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      COMMON /TDOPT / RETDHF,TDDEB,EXTRAH,IFREQ
+C
+      DATA ZERO/0.0D+00/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+C.. 6/13/91
+C
+      IF(MASWRK) WRITE(IW,9000)
+      DWSAVE = DSKWRK
+      IF(GOPARR  .AND.  .NOT.DIRSCF) DSKWRK=.TRUE.
+C
+C  GET EIGENVECTORS AND ENERGIES FROM PREVIOUS ENERGY CALC.
+C
+      NSQR = NORB*NORB
+      CALL DAREAD(IDAF,IODA,VEC ,NSQR,15,0)
+      CALL DAREAD(IDAF,IODA,EIGS,NORB,17,0)
+C
+C GET SURFACE CHARGES FOR A PCM RUN
+C
+      IF(IPCM.EQ.1  .AND.  ICOMP.EQ.3) THEN
+         IF(EXETYP.EQ.CHECK) THEN
+            CALL VCLR(QEFF,1,NTESS)
+            CALL VCLR(ELD ,1,NTESS)
+         ELSE
+            CALL DAREAD(IDAF,IODA,QEFF,NTESS,332,0)
+            CALL DAREAD(IDAF,IODA,ELD ,NTESS,333,0)
+         END IF
+      END IF
+C
+C VERIFY WHETHER ZERO ENERGY REQUESTED
+C
+      STATIC = .FALSE.
+      IFREQ = 0
+      ITERM = 0
+      DO 10 I=1,NFREQ
+         IF (FREQ(I).LT.1.0D-06) THEN
+            STATIC = .TRUE.
+            ITERM = I
+         END IF
+   10 CONTINUE
+      IF (ITERM.EQ.NFREQ) THEN
+         NFREQ = NFREQ - 1
+      ELSE IF (ITERM.GT.0) THEN
+         DO 20 I=ITERM,NFREQ-1
+            FREQ(I) = FREQ(I+1)
+   20    CONTINUE
+         NFREQ = NFREQ -1
+      END IF
+C
+C CALCULATE ALPHA AT STATIC VALUES
+C
+      IF (STATIC.OR.GEFISH.OR.GOKE.OR.BEOPE.OR.BOR) THEN
+         IWFLA = 0
+         OMEGA = ZERO
+         CALL ALPHAF(ILOCF,IWFLA,NORB,NTESS,NTESI,NBMCHG,VEC,EIGS,
+     X               X1,X2,X3,X4,X5,X6,X7,
+     X               DMFR,DMATM1,BEMCHG,SE,DE,
+     X               Q,DQSE,DQQ,CQEF,DQFR,DQ,
+     X               QEFF,ELD,QEF1,ELD1,DQ1,IPVT,WORK)
+      END IF
+C     IF (GOKE.OR.(STATIC.AND.(GTHG.OR.GEFISH.OR.GIDRI.OR.GOKE
+C    X                         .OR.BSHG.OR.BEOPE.OR.BOR))) THEN
+      IF(INIB.EQ.2.OR.INIG.NE.0) THEN
+         IWFLB=0
+         OMEGA = ZERO
+         CALL CALUAB(NORB,NTESS,NTESI,NBMCHG,IWFLB,VEC,EIGS,
+     *               X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12,
+     *               DMFR,DMATM1,BEMCHG,SE,DE,Q,CQEF,DQSE,QEFF2,
+     *               DQFR,DQ,D2QFR1,D2QFR2,D2QFR3,D2Q,
+     *               QEFF,ELD,QEF1,ELD1,DQ1,EPA,EPB)
+      END IF
+      IF(INIB.NE.0)CALL NBSTAT(NORB,X1,X2,X3,X4,X5,X6)
+      IF(STATIC.AND.INIG.NE.0)
+     X   CALL NGSTAT (NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9)
+C
+      IF(NFREQ.NE.0. .AND. (IPCM.EQ.1. .AND. EXETYP.NE.CHECK)) THEN
+       IF(IEF.EQ.0) THEN
+        CALL NEWD(DMFR,IPVT,WORK,DMATM1,NTESS)
+       ELSEIF(IEF.GE.3) THEN
+        CALL NEWC(DMFR,IPVT,WORK,SE,DE,NTESS)
+       END IF
+      END IF
+C
+C CALCULATE FREQUENCY DEPENDENT VALUES
+C
+      DO 500 I = 1, NFREQ
+        IFREQ = I
+C
+C  READ IN FREQ:  ACTUALLY READ IN AS ENERGY IN EV.
+C
+        OMEGA = FREQ(I)
+        OMEGEV = OMEGA*27.2107D+00
+        IF (OMEGA.LT.1.0D-08) THEN
+           IF(MASWRK) WRITE (IW,401)
+  401      FORMAT (//,' ',65("*"),/,
+     X            ' CALCULATION OF STATIC FIELD QUANTITIES',/,
+     X            ' ',65('*'))
+        ELSE
+           WAVLEN = 1239.85D+00/OMEGEV
+           IF(MASWRK) WRITE (IW,402) OMEGEV,OMEGA,WAVLEN
+  402      FORMAT (//,' ',65("*"),
+     X          /' CALCULATION FOR A FREQUENCY OF ',F10.5,' EV  (',
+     X           F10.5,' A.U.)'/18X,'WAVELENGTH OF ',F9.2,' NM',/,
+     X           ' ',65('*'))
+        END IF
+C
+C  CALCULATE ALPHA(W)
+C
+         IWFLA = 1
+         CALL ALPHAF(ILOCF,IWFLA,NORB,NTESS,NTESI,NBMCHG,VEC,EIGS,
+     X               X1,X2,X3,X4,X5,X6,X7,DMFR,DMATM1,BEMCHG,SE,DE,
+     X               Q,DQSE,DQQ,CQEF,DQFR,DQ,QEFF,ELD,QEF1,ELD1,DQ1
+     X               ,IPVT,WORK)
+         IF(INIB.EQ.0.AND.INIG.EQ.0) GO TO 500
+C
+C  CALCULATE ALPHA(2W)
+C
+         IF (GEFISH.OR.BSHG) THEN
+            IWFLA=2
+            OMEOLD = OMEGA
+            OMEGA = 2.0D+00*OMEGA
+            CALL ALPHAF(ILOCF,IWFLA,NORB,NTESS,NTESI,NBMCHG,VEC,EIGS,
+     X                X1,X2,X3,X4,X5,X6,X7,DMFR,DMATM1,BEMCHG,SE,DE,
+     X                Q,DQSE,DQQ,CQEF,DQFR,DQ,QEFF,ELD,QEF1,ELD1,DQ1
+     X                ,IPVT,WORK)
+            OMEGA = OMEOLD
+         END IF
+C
+C  CALCULATE ALPHA(3W)
+C
+         IF (GTHG) THEN
+            IWFLA=3
+            OMEOLD = OMEGA
+            OMEGA = 3.0D+00*OMEGA
+            CALL ALPHAF(ILOCF,IWFLA,NORB,NTESS,NTESI,NBMCHG,VEC,EIGS,
+     X                X1,X2,X3,X4,X5,X6,X7,DMFR,DMATM1,BEMCHG,SE,DE,
+     X                Q,DQSE,DQQ,CQEF,DQFR,DQ,QEFF,ELD,QEF1,ELD1,DQ1,
+     X                IPVT,WORK)
+            OMEGA = OMEOLD
+         END IF
+C
+C  PERFORM NONITERATIVE BETA CALCULATIONS
+C
+C   OPTICAL RECTIFICATION
+C
+         IF (BOR.AND.(.NOT.GIDRI).AND.EXETYP.NE.CHECK) THEN
+            CALL NONOR (NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12)
+         END IF
+C
+C   ELECTROPTIC POCKELS EFFECT
+C
+         IF (BEOPE.AND.(.NOT.(GEFISH.OR.GOKE))
+     *            .AND.EXETYP.NE.CHECK) THEN
+            CALL NONEOPE (NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12)
+         END IF
+C
+C   SECOND HARMONIC GENERATION
+C
+         IF (BSHG.AND.(.NOT.(GTHG.OR.GEFISH.OR.GIDRI))
+     *            .AND.EXETYP.NE.CHECK) THEN
+            CALL NONBET (NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12)
+         END IF
+C
+C  PERFORM ITERATIVE BETA (SHG AND STATIC)CALCULATIONS
+C
+         IF(GTHG.OR.GEFISH.OR.GIDRI.OR.(INIB.EQ.2.AND.BSHG)) THEN
+            IWFLB = 1
+            CALL CALUAB(NORB,NTESS,NTESI,NBMCHG,IWFLB,VEC,EIGS,
+     *                  X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12,
+     *                  DMFR,DMATM1,BEMCHG,SE,DE,Q,CQEF,DQSE,QEFF2,
+     *                  DQFR,DQ,D2QFR1,D2QFR2,D2QFR3,D2Q,
+     *                  QEFF,ELD,QEF1,ELD1,DQ1,EPA,EPB)
+         END IF
+C
+C PERFORM ITERATIVE BETA (EOPE AND OR) CALCULATIONS
+C
+         IF (GIDRI.OR.(INIB.EQ.2.AND.BOR)) THEN
+            IWFLB = 3
+            CALL CALUAB(NORB,NTESS,NTESI,NBMCHG,IWFLB,VEC,EIGS,
+     *                  X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12,
+     *                  DMFR,DMATM1,BEMCHG,SE,DE,Q,CQEF,DQSE,QEFF2,
+     *                  DQFR,DQ,D2QFR1,D2QFR2,D2QFR3,D2Q,
+     *                  QEFF,ELD,QEF1,ELD1,DQ1,EPA,EPB)
+         END IF
+         IF (GEFISH.OR.GOKE.OR.(INIB.EQ.2.AND.BEOPE)) THEN
+            IWFLB = 2
+            CALL CALUAB(NORB,NTESS,NTESI,NBMCHG,IWFLB,VEC,EIGS,
+     *                  X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12,
+     *                  DMFR,DMATM1,BEMCHG,SE,DE,Q,CQEF,DQSE,QEFF2,
+     *                  DQFR,DQ,D2QFR1,D2QFR2,D2QFR3,D2Q,
+     *                  QEFF,ELD,QEF1,ELD1,DQ1,EPA,EPB)
+         END IF
+         IF(INIG.EQ.0) GO TO 500
+C.......................................................................
+C CALCULATE GAMMA VALUES
+C.......................................................................
+         IF (GTHG.AND.EXETYP.NE.CHECK) THEN
+            CALL NGAMTHG(NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9)
+         END IF
+         IF (GEFISH.AND.EXETYP.NE.CHECK) THEN
+            CALL NGEFISH(NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9)
+         END IF
+         IF (GIDRI.AND.EXETYP.NE.CHECK) THEN
+            CALL NGIDRI(NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9)
+         END IF
+         IF (GOKE.AND.EXETYP.NE.CHECK) THEN
+            CALL NGOKE(NORB,X1,X2,X3,X4,X5,X6,X7,X8,X9)
+         END IF
+  500 CONTINUE
+C
+C PERFORM ITERATIVE GAMMA CALCULATIONS
+C
+       IF(INIG.EQ.2) THEN
+         CALL GAMPCM(NORB,NTESS,NTESI,NBMCHG,
+     *               VEC,EIGS,X1,X2,X3,X4,X5,X6,X7,X8,X9,X10,X11,X12,
+     *               DMFR,DMATM1,BEMCHG,SE,DE,Q,CQEF,DQSE,
+     *               DQFR,DQ,D2QFR1,D2QFR2,D2QFR3,D2Q)
+         IF (MASWRK)
+     *      WRITE(IW,*) '....DONE WITH 2ND HYPERPOLARIZABILITY....'
+         CALL TIMIT(1)
+       END IF
+C
+      DSKWRK = DWSAVE
+      RETURN
+ 9000 FORMAT(/5X,42("-")/
+     *   5X,'TIME-DEPENDENT HARTREE-FOCK NLO PROPERTIES'/5X,42(1H-))
+      END
+C*MODULE TDHF    *DECK ALPHAF
+      SUBROUTINE ALPHAF(ILOCF,IWFLA,NORB,NTS,NTS2,NBMCHG,
+     *                  VEC,EIGS,U,F,G,UOLD,H1,D,DA,
+     *                  DMFR,DMATM1,BEMCHG,SE,DE,
+     *                  Q,DQSE,DQQ,CQEF,DQFR,DQ,
+     *                  QEFF,ELD,QEF1,ELD1,DQ1,IPVT,WORK)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION VEC(NORB,NORB),EIGS(NORB),
+     *          U(NORB,NORB),F(NORB,NORB),
+     *          G(NORB,NORB),UOLD(NORB,NORB),H1(NORB,NORB),
+     *          D(NORB,NORB),DA(NORB,NORB),
+     *          DMFR(NTS,NTS),DMATM1(NTS,NTS),BEMCHG(NBMCHG),
+     *          SE(NTS2,NTS2),DE(NTS2,NTS2),
+     *          Q(NTS),DQSE(NTS),DQQ(NTS),CQEF(NTS),DQFR(NTS,3),
+     *          DQ(NTS,3),QEFF(NTS),ELD(NTS),QEF1(3,NTS),ELD1(3,NTS),
+     *          DQ1(3,NTS),IPVT(NTS),WORK(NTS)
+C
+      CHARACTER*1 ALAB(3)
+C
+      LOGICAL LAST,GOPARR,DSKWRK,MASWRK,PACK2E,SCHWRZ,DIRSCF,FDIFF
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,ABINIT
+      LOGICAL RETDHF,TDDEB,EXTRAH,DAMPH
+C
+      PARAMETER (MXATM=500, MXGTOT=5000, MXSH=1000, MXGSH=30, MXAO=2047)
+C
+      COMMON /FMCOM / X(1)
+      COMMON /IJPAIR/ IA(MXAO)
+      COMMON /INTFIL/ NINTMX,NHEX,NTUPL,PACK2E,INTG76
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOLKST/ NUMAT,MNAT(MXATM),NFIRST(MXATM),NMIDLE(MXATM),
+     *                NLAST(MXATM),NORBS,NELECS,NALPHA,NBETA,NCLMPC,
+     *                NOPEN,NDUMY,FRACT
+      COMMON /MPCGEO/ GEO(3,MXATM)
+      COMMON /N2ELCT/ N2EL
+      COMMON /NSHEL / EX(MXGTOT),GS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     X                CF(MXGTOT),CG(MXGTOT),
+     X                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     X                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OPTSCF/ DIRSCF,FDIFF
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /PCMDIS/ WB,WA,ETA2,GD,EVAC,IDP
+      COMMON /PCMDAT/ EPS,EPSINF,DR,RSOLV,VMOL,TCE,STEN,DSTEN,
+     *                CMF,TABS,ICOMP,IFIELD,ICAV,IDISP
+      COMMON /PCMPAR/ IPCM,NFT26,NFT27,IRPPCM,IEF,IP_F
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      COMMON /TDOPT / RETDHF,TDDEB,EXTRAH,IFREQ
+      COMMON /TDTEMP/ ICEXT
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+C
+      DATA ALAB/'X','Y','Z'/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RHF/8HRHF     /
+#else
+      CHARACTER*8 :: RHF_STR
+      EQUIVALENCE (RHF, RHF_STR)
+      DATA RHF_STR/"RHF     "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA NONE/4HNONE/
+#else
+      CHARACTER*4 :: NONE_STR
+      EQUIVALENCE (NONE, NONE_STR)
+      DATA NONE_STR/"NONE"/
+#endif
+C
+C  ROUTINE FOR THE CALCULATION OF THE FREQUENCY DEPENDENT FIRST-ORDER
+C  RESPONCE MATRICIES UA AND DENSITIES DA.
+C  USED TO COMPUTE THE FREQUENCY DEPENDENT POLARIZABILITY AND FOR
+C  SOLVING THE SECOND-ORDER PROBLEM.
+C... 6/14/91
+C
+      DAMP   = 0.0D+00
+      ABINIT = MPCTYP.EQ.NONE
+      NSCHWZ = 0
+      SCHWRZ = .FALSE.
+      NINT = 0
+      NSQR = NORB*NORB
+      L2   = (NORB*NORB + NORB)/2
+      NSH2 = (NSHELL*NSHELL + NSHELL)/2
+C
+      CALL BASCHK(LMAX)
+                    NANGM =  4
+      IF(LMAX.EQ.2) NANGM =  6
+      IF(LMAX.EQ.3) NANGM = 10
+      IF(LMAX.EQ.4) NANGM = 15
+         MAXG = NANGM**4
+C
+      CALL VALFM (LOADFM)
+      IF (ABINIT) THEN
+         IF (DIRSCF) THEN
+            LBUF   = LOADFM + 1
+            LIBUF  = LBUF
+            LCLINT = LBUF
+            LGHOND = LCLINT + NSH2
+            LDSH   = LGHOND + MAXG
+            LDDIJ  = LDSH   + NSH2
+            LLAST  = LDDIJ  + 16*MXGSH*MXGSH
+         ELSE
+            LBUF   = LOADFM + 1
+            LIBUF  = LBUF   + NINTMX
+            LCLINT = LBUF
+            LGHOND = LBUF
+            LDSH   = LBUF
+            LDDIJ  = LBUF
+            LLAST  = LIBUF  + NINTMX
+         END IF
+         LTWOEI = LLAST
+         LPA    = LLAST
+      ELSE
+         LBUF   = LOADFM + 1
+         LIBUF  = LBUF
+         LCLINT = LBUF
+         LGHOND = LBUF
+         LDSH   = LBUF
+         LDDIJ  = LBUF
+         LTWOEI = LBUF
+         LPA    = LTWOEI + N2EL
+         LLAST  = LPA    + NORB*NORB
+      END IF
+      LF1   = LLAST
+      LF2   = LF1 + NSQR
+      LF3   = LF2 + NSQR
+      LLAST = LF3 + NSQR
+      IF(IPCM.EQ.1) THEN
+         LF1SQ = LLAST
+         LF0S  = LF1SQ+ NSQR
+         LF1S  = LF0S + L2*3
+         LF2S  = LF1S + NSQR
+         LF3S  = LF2S + NSQR
+         LF4S  = LF3S + L2
+         LLAST = LF4S + L2
+      ELSE
+         LF1SQ= LLAST
+         LF0S = LLAST
+         LF1S = LLAST
+         LF2S = LLAST
+         LF3S = LLAST
+         LF4S = LLAST
+      END IF
+      NEED = LLAST - LOADFM - 1
+      CALL GETFM (NEED)
+C
+      IF(EXETYP.EQ.CHECK) GO TO 1200
+C
+      ALPAVG = 0.0D+00
+C
+C COMPUTE OFFSETS FOR U AND G MATRICES
+      IPOSU = 100 + 6*IWFLA
+      IPOSG = 103 + 6*IWFLA
+      IF (MASWRK) WRITE (IW,1000) OMEGA
+ 1000 FORMAT (/,' ',70('.'),/' ALPHA AT ',F10.5,' A.U.',/,
+     X          ' ',70('.'),/)
+C
+C  CHOOSE A COMPONENT
+C  X: ID=1   Y: ID=2   Z: ID=3
+C
+      DO 900 ID = 1,3
+         ICEXT=0
+         LAST = .FALSE.
+C
+C  READ MOPAC TWO-ELECTRON INTEGRALS
+C
+         IF (MPCTYP.NE.NONE  .AND.  N2EL.GT.0)
+     *      CALL DAREAD(IDAF,IODA,X(LTWOEI),N2EL,53,0)
+C
+C  INITIALIZE UOLD TO ZERO
+C
+         CALL VCLR (UOLD,1,NSQR)
+C
+C  CALCULATE THE DIPOLE MATRIX.
+C
+         IF (ABINIT) THEN
+            CALL DAREAD(IDAF,IODA,U,L2,94+ID,0)
+            CALL CPYTSQ(U,H1,NORB,1)
+C
+C   LOCAL FIELD EFFECTS
+C
+            IF(IPCM.NE.0.AND.ILOCF.NE.0) THEN
+            IF(IEF.NE.0) CALL DMQEXTF(SE,DE,NTS2,IWFLA,IPVT,WORK)
+              CALL VCLR (X(LF1SQ),1,NSQR)
+              CALL QEXTF(X(LF1SQ),X(LF2S),X(LF3S),DMATM1,DQSE,
+     *                   DMATM1,SE,Q,DQSE,
+     *                   DMFR,ID,IWFLA,NORB,L2,NTS)
+            END IF
+         ELSE
+            CALL HMU (H1,ID,GEO,NFIRST,NLAST,MNAT,NORB,NUMAT)
+         END IF
+         CALL VCLR (F,1,NSQR)
+C
+C  IF POSSIBLE TRY TO FIND A BETTER STARTING VALUE FOR U TO
+C  GENERATE AN IMPROVED F MATRIX
+C
+         IF (IWFLA.GT.0) THEN
+            IOFFU = 100 + 6*(IWFLA-1)
+            CALL DAREAD(IDAF,IODA,U,NSQR,IOFFU+ID,0)
+            CALL DENSF (U,VEC,D,DA,F,NORB,NCLOSE)
+            IF (ABINIT) THEN
+               IF (DIRSCF) THEN
+                  CALL VCLR (F,1,NSQR)
+                  CALL TWOEI(RHF,.FALSE.,.TRUE.,.FALSE.,.FALSE.,
+     *                       INTG76,SCHWRZ,NINT,NSCHWZ,NORB,L2,
+     *                       DUMMY,DUMMY,IDUMMY,1,
+     *                       X(LCLINT),NSH2,X(LGHOND),MAXG,X(LDDIJ),
+     *                       IA,DUMMY,DUMMY,DUMMY,DUMMY,X(LDSH),D,F,1)
+               ELSE
+                  CALL VCLR (F,1,NSQR)
+                  CALL F2NONS (D,F,X(LBUF),X(LIBUF),NINTMX,NOPK,1)
+               END IF
+               IF(GOPARR) THEN
+                  CALL DDI_GSUMF(2200,F,NSQR)
+                  IF (IBTYP.EQ.1) CALL DDI_DLBRESET
+               END IF
+            ELSE
+               CALL MPCFNS (D,F,X(LPA),X(LTWOEI),N2EL,NORB)
+            END IF
+         END IF
+         CALL VADD (F,1,H1,1,F,1,NSQR)
+C.................................................................
+C  LOOP STARTS HERE
+C.................................................................
+         ICOUNT = 0
+   10    CONTINUE
+         ICOUNT = ICOUNT + 1
+         IF (ICOUNT.GT.MAXITA) LAST = .TRUE.
+C
+C  CREATE G MATRIX.
+C
+         CALL TRANSFF (F,G,VEC,D,NORB)
+C
+C  FORM U MATRIX
+C
+         CALL MAKEUF (U,UOLD,G,EIGS,LAST,NORB,DIFF)
+C
+C  FORM NEW DENSITY MATRIX
+C
+         CALL DENSF (U,VEC,D,DA,F,NORB,NCLOSE)
+C
+C COMPUTE TEST ALPHA TO BE USED FOR A CONVERGENCE TEST
+C
+         ALPHAW = AVAL(H1,D,NORB)
+C
+C  CREATE NEW FOCK MATRIX
+C
+         IF (ABINIT) THEN
+            IF (DIRSCF) THEN
+               CALL VCLR (F,1,NSQR)
+               CALL TWOEI(RHF,.FALSE.,.TRUE.,.FALSE.,.FALSE.,
+     *                    INTG76,SCHWRZ,NINT,NSCHWZ,NORB,L2,
+     *                    DUMMY,DUMMY,IDUMMY,1,
+     *                    X(LCLINT),NSH2,X(LGHOND),MAXG,X(LDDIJ),
+     *                    IA,DUMMY,DUMMY,DUMMY,DUMMY,X(LDSH),D,F,1)
+            ELSE
+               CALL VCLR (F,1,NSQR)
+               CALL F2NONS (D,F,X(LBUF),X(LIBUF),NINTMX,NOPK,1)
+            END IF
+C..............................................................
+C ADD SOLVATION CONTRIBUTIONS
+C..............................................................
+            IF(IPCM.EQ.1) THEN
+               CALL VCLR (X(LF1S),1,NSQR)
+               IF(IWFLA.EQ.0.AND.ICOMP.EQ.3) THEN
+                 CALL WDXEFF(D,X(LF1S),X(LF2S),X(LF3S),X(LF4S),
+     *                       DMATM1,BEMCHG,Q,DQSE,
+     *                       CQEF,QEFF,ELD,QEF1,ELD1,DQ1,
+     *                       ID,NORB,L2,NTS,NFT27)
+               ELSE
+                 CALL WDXMAT(D,X(LF1S),X(LF2S),X(LF3S),
+     *                       DMATM1,BEMCHG,SE,DE,Q,DQSE,
+     *                       DMFR,DQQ,DQFR,DQ,
+     *                       ID,IWFLA,NORB,L2,NTS,NTS2,NFT27)
+               END IF
+               CALL VADD (F,1,X(LF1S),1,F,1,NSQR)
+               IF(ILOCF.NE.0)CALL VADD (F,1,X(LF1SQ),1,F,1,NSQR)
+C
+C   --- ADD DISPERSION INTERACTION (IF IDP=1) ---
+C
+               IF(IDP.EQ.1) THEN
+                 CALL DDISP(D,X(LF3S),X(LF0S),X(LF1S),X(LF2S),X(LF4S),
+     *                      NORB,L2,NFT27)
+                 CALL VADD (F,1,X(LF1S),1,F,1,NSQR)
+               END IF
+            END IF
+C
+C   --- SUM UP PARTIAL FOCK MATRICES ---
+C
+            IF (GOPARR) THEN
+               CALL DDI_GSUMF(2205,F,NSQR)
+               IF (IBTYP.EQ.1) CALL DDI_DLBRESET
+            END IF
+         ELSE
+            CALL MPCFNS (D,F,X(LPA),X(LTWOEI),N2EL,NORB)
+         END IF
+C
+C WARNING: USE OF SYMMETRY DOES NOT YET WORK  (NOSYM IS SET IN THDFX)
+C         CALL SYMHNS (NORB,F)
+C
+         CALL VADD (F,1,H1,1,F,1,NSQR)
+C..............................................................
+C EXTRAPOLATE IF POSSIBLE
+C..............................................................
+C         EXTRAH = .TRUE.
+         IF (EXTRAH) THEN
+            DAMPH=.FALSE.
+            ITERV = 0
+            DAMP0 = 0.0D+00
+            IF (EXTRAH) CALL EXTPNS (DAMP,DAMP0,F,X(LF1),X(LF2),
+     X                               X(LF3),NORB,NSQR,ITERV,2,
+     X                               EXTRAH,DAMPH,.FALSE.,ICOUNT)
+         END IF
+         ICEXT = ICEXT + 1
+C..............................................................
+         IF (.NOT.LAST) GO TO 10
+C
+C COMPUTE ALPHA
+C
+         ALPHAW = AVAL(H1,D,NORB)
+         IF(MASWRK)WRITE (IW,2000) ALAB(ID),ALAB(ID),ALPHAW,
+     X                             DIFF,ICOUNT
+ 2000    FORMAT ('      ALPHA ',A1,A1,' = ',F13.4,
+     X           '      UA CONV. TO',1P,E9.2,' IN ',I3,' ITER.')
+         ALPAVG = ALPAVG + ALPHAW
+C
+C  WRITE OUT U AND G FOR FUTURE USE
+C
+         CALL DAWRIT(IDAF,IODA,U,NSQR,IPOSU+ID,0)
+         CALL DAWRIT(IDAF,IODA,G,NSQR,IPOSG+ID,0)
+C
+C  COMPUTE OTHER COMPONENTS
+C
+         DO 500 IC = 1,3
+            IF (IC.NE.ID) THEN
+               IF (ABINIT) THEN
+                  CALL DAREAD(IDAF,IODA,U,L2,94+IC,0)
+                  CALL CPYTSQ(U,H1,NORB,1)
+               ELSE
+                  CALL HMU (H1,IC,GEO,NFIRST,NLAST,MNAT,NORB,NUMAT)
+               END IF
+               ALPHAW = AVAL(H1,D,NORB)
+               IF(MASWRK)WRITE (IW,3000) ALAB(IC),ALAB(ID),ALPHAW
+ 3000          FORMAT ('      ALPHA ',A1,A1,' = ',F13.4)
+            END IF
+  500    CONTINUE
+  900 CONTINUE
+      ALPAVG = ALPAVG/3.0D+00
+      IF(MASWRK) WRITE (IW,3100) ALPAVG
+ 3100 FORMAT (/,'  ISOTROPIC AVERAGE ALPHA = ',F13.4,' A.U.',/)
+C
+ 1200 CONTINUE
+      CALL RETFM (NEED)
+      IF(MASWRK) WRITE(IW,*) '....DONE WITH POLARIZABILITY....'
+      CALL TIMIT(1)
+      RETURN
+      END
+C*MODULE TDHF    *DECK AVAL
+      DOUBLE PRECISION FUNCTION AVAL (H,D,NORB)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DIMENSION H(NORB,NORB),D(NORB,NORB)
+C
+C  COMPUTE POLARIZABILITY AS TRACE OF H*D
+C
+      SUM = 0.0D+00
+      DO 200 I = 1,NORB
+         DO 100 J = 1,NORB
+            SUM = SUM + H(I,J)*D(J,I)
+  100    CONTINUE
+  200 CONTINUE
+      AVAL = -SUM
+      RETURN
+      END
+C*MODULE TDHF    *DECK CALUAB
+      SUBROUTINE CALUAB(NORB,NTS,NTS2,NBMCHG,IWFLB,VEC,EIGS,
+     *                  UA,UB,F,GA,GB,T,H1,D,SCR,UAB,UOLD1,G,
+     *                  DMFR,DMATM1,BEMCHG,SE,DE,
+     *                  Q,CQEF,DQSE,QEFF2,DQFR,DQ,
+     *                  D2QFR1,D2QFR2,D2QFR3,D2Q,
+     *                  QEFF,ELD,QEF1,ELD1,DQ1,EPA,EPB)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DOUBLE PRECISION MAXU
+C
+      DIMENSION VEC(NORB,NORB),EIGS(NORB),
+     *          UA(NORB,NORB),UB(NORB,NORB),
+     *          F(NORB,NORB),GA(NORB,NORB),GB(NORB,NORB),
+     *          T(NORB,NORB),H1(NORB,NORB),D(NORB,NORB),
+     *          SCR(NORB,NORB),UAB(NORB,NORB),UOLD1(NORB,NORB),
+     *          G(NORB,NORB),DMFR(NTS,NTS),DMATM1(NTS,NTS),
+     *          SE(NTS2,NTS2),DE(NTS2,NTS2),
+     *          BEMCHG(NBMCHG),Q(NTS),CQEF(NTS),DQSE(NTS),QEFF2(NTS),
+     *          DQFR(NTS,3),DQ(NTS,3),D2QFR1(NTS,3,3),D2QFR2(NTS,3,3),
+     *          D2QFR3(NTS,3,3),D2Q(NTS,3,3),QEFF(NTS),ELD(NTS),
+     *          QEF1(3,NTS),ELD1(3,NTS),DQ1(3,NTS),EPA(NORB,NORB),
+     *          EPB(NORB,NORB)
+      DIMENSION IDA(6),IDB(6),IDAA(9),IDBB(9),IUFS(9)
+C
+      CHARACTER*1 ALAB(3)
+      CHARACTER*6 BETYP(4)
+C
+      LOGICAL LAST,GOPARR,DSKWRK,MASWRK,PACK2E,SCHWRZ,DIRSCF,FDIFF
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,ABINIT
+      LOGICAL RETDHF,TDDEB,EXTRAH,DAMPH
+C
+      PARAMETER (MXATM=500, MXGTOT=5000, MXSH=1000, MXGSH=30, MXAO=2047)
+C
+      COMMON /FMCOM / X(1)
+      COMMON /IJPAIR/ IJA(MXAO)
+      COMMON /INTFIL/ NINTMX,NHEX,NTUPL,PACK2E,INTG76
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOLKST/ NUMAT,MNAT(MXATM),NFIRST(MXATM),NMIDLE(MXATM),
+     X                NLAST(MXATM),NORBS,NELECS,NALPHA,NBETA,NCLMPC,
+     X                NOPEN,NDUMY,FRACT
+      COMMON /MPCGEO/ GEO(3,MXATM)
+      COMMON /N2ELCT/ N2EL
+      COMMON /NSHEL / EX(MXGTOT),GS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     X                CF(MXGTOT),CG(MXGTOT),
+     X                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     X                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OPTSCF/ DIRSCF,FDIFF
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /PCMDIS/ WB,WA,ETA2,GD,EVAC,IDP
+      COMMON /PCMDAT/ EPS,EPSINF,DR,RSOLV,VMOL,TCE,STEN,DSTEN,
+     *                CMF,TABS,ICOMP,IFIELD,ICAV,IDISP
+      COMMON /PCMPAR/ IPCM,NFT26,NFT27,IRPPCM,IEF,IP_F
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      COMMON /TDOPT / RETDHF,TDDEB,EXTRAH,IFREQ
+      COMMON /TDTEMP/ ICEXT
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+C
+      DATA BETYP /'STATIC','   SHG','  EOPE','    OR'/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RHF /8HRHF     /
+#else
+      CHARACTER*8 :: RHF_STR
+      EQUIVALENCE (RHF, RHF_STR)
+      DATA RHF_STR/"RHF     "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA NONE/4HNONE/
+#else
+      CHARACTER*4 :: NONE_STR
+      EQUIVALENCE (NONE, NONE_STR)
+      DATA NONE_STR/"NONE"/
+#endif
+      DATA ALAB /'X','Y','Z'/
+      DATA IDA /1,1,1,2,2,3/
+      DATA IDB /1,2,3,2,3,3/
+      DATA IDAA /1,1,1,2,2,2,3,3,3/
+      DATA IDBB /1,2,3,1,2,3,1,2,3/
+      DATA IUFS /1,2,3,2,4,5,3,5,6/
+C
+C THIS ROUTINE CALCULATES ITERATIVELY THE UAB MATRIX AND THEN
+C GENERATES THE APPROPRATE BETA (FIRST HYPERPOLARIZABILITY) VALUES.
+C
+C  IWFLB DENOTES TYPE OF UAB MATRIX CALCULATED: 0 --> U(0,0)
+C                                               1 --> U(W,W)
+C                                               2 --> U(0,W)
+C                                               3 --> U(-W,W)
+C
+      DAMP = 0.00D+00
+      ABINIT = MPCTYP.EQ.NONE
+      ONE=1.0D+00
+      L2 = (NORB*NORB + NORB)/2
+      NSQR = NORB*NORB
+      NSH2 = (NSHELL*NSHELL + NSHELL)/2
+      NINT = 0
+      NSCHWZ = 0
+      SCHWRZ = .FALSE.
+C
+      CALL BASCHK (LMAX)
+                    NANGM =  4
+      IF(LMAX.EQ.2) NANGM =  6
+      IF(LMAX.EQ.3) NANGM = 10
+      IF(LMAX.EQ.4) NANGM = 15
+         MAXG = NANGM**4
+C
+      CALL VALFM (LOADFM)
+      IF (ABINIT) THEN
+         IF (DIRSCF) THEN
+            LBUF   = LOADFM + 1
+            LIBUF  = LBUF
+            LBD    = LBUF
+            LCLINT = LBD + NSQR
+            LGHOND = LCLINT + NSH2
+            LDSH   = LGHOND + MAXG
+            LDDIJ  = LDSH + NSH2
+            LF1    = LDDIJ + 16*MXGSH*MXGSH
+            LF2    = LF1 + NSQR
+            LF3    = LF2 + NSQR
+            LLAST  = LF3 + NSQR
+         ELSE
+            LBUF   = LOADFM + 1
+            LIBUF  = LBUF + NINTMX
+            LBD    = LIBUF + NINTMX
+            LCLINT = LBUF
+            LGHOND = LBUF
+            LDSH   = LBUF
+            LDDIJ  = LBUF
+            LF1    = LBD + NSQR
+            LF2    = LF1 + NSQR
+            LF3    = LF2 + NSQR
+            LLAST  = LF3 + NSQR
+         END IF
+         IF(IPCM.EQ.1) THEN
+            LF0S  = LLAST
+            LF1S  = LF0S+ L2*3
+            LF2S  = LF1S+ NSQR
+            LF3S  = LF2S+ NSQR
+            LF4S  = LF3S+ L2
+            LLAST = LF4S+ L2
+         ELSE
+            LF0S = LLAST
+            LF1S = LLAST
+            LF2S = LLAST
+            LF3S = LLAST
+            LF4S = LLAST
+         END IF
+         LTWOEI = LLAST
+         LPA    = LLAST
+      ELSE
+         LBUF   = LOADFM + 1
+         LIBUF  = LBUF
+         LCLINT = LBUF
+         LGHOND = LBUF
+         LDSH   = LBUF
+         LDDIJ  = LBUF
+         LTWOEI = LBUF
+         LPA    = LTWOEI + N2EL
+         LF1    = LPA + NSQR
+         LF2    = LF1 + NSQR
+         LF3    = LF2 + NSQR
+         LBD    = LF3 + NSQR
+         LLAST  = LBD + NSQR
+      END IF
+      NEED = LLAST - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      IF(EXETYP.EQ.CHECK) GO TO 1200
+C
+      IF (IWFLB.LE.1) THEN
+         IPINC = 6
+         IPOSU = 124 + 24*IWFLB
+      ELSE
+         IPINC = 9
+         IF (IWFLB.EQ.2) THEN
+            IPOSU = 172
+         ELSE
+            IPOSU = 208
+         END IF
+      END IF
+      IPOSG  = IPOSU + IPINC
+      IPOSE  = IPOSG + IPINC
+      IPOSUM = IPOSE + IPINC
+C
+      IF (MASWRK) THEN
+         WRITE (IW,1010)
+ 1010    FORMAT (' ',70('+'))
+         IF (IWFLB.EQ.0) THEN
+             WRITE (IW,4000)
+ 4000        FORMAT (' BETA (STATIC): B(0;0,0)')
+         ELSE IF (IWFLB.EQ.1) THEN
+             WRITE (IW,1000) OMEGA
+ 1000        FORMAT (' BETA (SECOND HARMONIC',
+     X              ' GENERATION): B(-2W;W,W)',
+     X              ' FOR W = ',F10.5,' A.U.')
+         ELSE IF (IWFLB.EQ.2) THEN
+             WRITE (IW,1001) OMEGA
+ 1001        FORMAT (' BETA (ELECTROOPTIC POCKELS',
+     X              ' EFFECT): B(-W;W,0)',
+     X              ' FOR W = ',F10.5,' A.U.')
+         ELSE IF (IWFLB.EQ.3) THEN
+             WRITE (IW,1002) OMEGA
+ 1002        FORMAT (' BETA (OPTICAL RECTIFICATION):',
+     X               ' B(0;W,-W) FOR W= ',F10.5,' A.U.')
+         ELSE
+            CALL ABRT
+         END IF
+         WRITE (IW,1010)
+      END IF
+C
+C  READ MOPAC TWO-ELECTRON INTEGRALS
+C
+      IF (MPCTYP.NE.NONE  .AND.  N2EL.GT.0)
+     *   CALL DAREAD(IDAF,IODA,X(LTWOEI),N2EL,53,0)
+C
+C  LOOP OVER COMPONENTS:
+C  XX,XY,XZ,YY,YZ,ZZ  -OR-  XX,XY,XZ,YX,YY,YZ,ZX,ZY,ZZ
+C
+      BAVX = 0.0D+00
+      BAVY = 0.0D+00
+      BAVZ = 0.0D+00
+      DO 900 ID = 1,IPINC
+      ICEXT = 0
+         IF (IWFLB.LE.1) THEN
+            IA=IDA(ID)
+            IB=IDB(ID)
+         ELSE
+            IA=IDAA(ID)
+            IB=IDBB(ID)
+         END IF
+         LAST = .FALSE.
+C
+C  INITIALIZE ZERO ARRAYS
+C
+         CALL VCLR(UOLD1,1,NSQR)
+         CALL VCLR(UAB,1,NSQR)
+         CALL VCLR(F,1,NSQR)
+C
+C  INPUT U AND GA FROM ALPHA CALCULATIONS
+C
+C U(0,0)
+         IF (IWFLB .EQ. 0) THEN
+            JPU = 100 + IA
+            CALL DAREAD(IDAF,IODA,UA,NSQR,JPU,0)
+            JPG = 103 + IA
+            CALL DAREAD(IDAF,IODA,GA,NSQR,JPG,0)
+            JPU = 100 + IB
+            CALL DAREAD(IDAF,IODA,UB,NSQR,JPU,0)
+            JPG = 103 + IB
+            CALL DAREAD(IDAF,IODA,GB,NSQR,JPG,0)
+C U(W,W)
+         ELSE IF (IWFLB .EQ. 1) THEN
+            JPU = 106 + IA
+            CALL DAREAD(IDAF,IODA,UA,NSQR,JPU,0)
+            JPG = 109 + IA
+            CALL DAREAD(IDAF,IODA,GA,NSQR,JPG,0)
+            JPU = 106 + IB
+            CALL DAREAD(IDAF,IODA,UB,NSQR,JPU,0)
+            JPG = 109 + IB
+            CALL DAREAD(IDAF,IODA,GB,NSQR,JPG,0)
+C U(0,W)
+         ELSE IF (IWFLB .EQ. 2) THEN
+            JPU = 100 + IA
+            CALL DAREAD(IDAF,IODA,UA,NSQR,JPU,0)
+            JPG = 103 + IA
+            CALL DAREAD(IDAF,IODA,GA,NSQR,JPG,0)
+            JPU = 106 + IB
+            CALL DAREAD(IDAF,IODA,UB,NSQR,JPU,0)
+            JPG = 109 + IB
+            CALL DAREAD(IDAF,IODA,GB,NSQR,JPG,0)
+C U(W,-W)
+         ELSE IF (IWFLB .EQ. 3) THEN
+            JPU = 106 + IA
+            CALL DAREAD(IDAF,IODA,UA,NSQR,JPU,0)
+            JPG = 109 + IA
+            CALL DAREAD(IDAF,IODA,GA,NSQR,JPG,0)
+            JPU = 106 + IB
+            CALL DAREAD(IDAF,IODA,SCR,NSQR,JPU,0)
+            CALL TRSPOU (UB,SCR,NORB,2,-ONE)
+            JPG = 109 + IB
+            CALL DAREAD(IDAF,IODA,SCR,NSQR,JPG,0)
+            CALL TRSPOU (GB,SCR,NORB,2,ONE)
+         END IF
+C
+C  CONSTRUCT T-MATRIX ONE TIME
+C
+         CALL TF (UA,GA,UB,GB,T,NORB)
+C
+C  CALCULATE INITIAL DENSITY AND BETA VALUE
+C     X CONTAINS THE CONSTANT PART OF THE DENSITY MATRIX
+C
+         CALL BDENIN (X(LBD),UA,UB,VEC,D,SCR,NORB,NCLOSE)
+C
+C  INITIALIZE UAB WITH BEST GUESS:
+C      FOR STATIC -- INITIALIZE AS ZERO
+C      FOR FIRST FREQ. -- USE STATIC UAB IF POSSIBLE
+C      FOR LATER FREQ. -- USE PREVIOUS FREQ. RESULT
+C                         (THIS MEANS THE INPUT SHOULD PROBABLY
+C                          BE ORDERED)
+C
+         IF (RETDHF) THEN
+            IF (IFREQ.EQ.1) THEN
+               IF (IWFLB.GT.1) THEN
+                  CALL DAREAD(IDAF,IODA,UAB,NSQR,124+IUFS(ID),0)
+               ELSE IF (IWFLB.EQ.1) THEN
+                  CALL DAREAD(IDAF,IODA,UAB,NSQR,124+ID,0)
+               END IF
+            ELSE IF (IFREQ.GT.1) THEN
+               CALL DAREAD(IDAF,IODA,UAB,NSQR,IPOSU+ID,0)
+            END IF
+         END IF
+         CALL BDENUP (X(LBD),UAB,VEC,D,SCR,F,NORB,NCLOSE)
+C
+C INITIALIZE FOCK MATRIX
+C
+         IF (ABINIT) THEN
+            IF (DIRSCF) THEN
+               CALL VCLR (F,1,NSQR)
+               CALL TWOEI(RHF,.FALSE.,.TRUE.,.FALSE.,.FALSE.,
+     *                    INTG76,SCHWRZ,NINT,NSCHWZ,NORB,L2,
+     *                    DUMMY,DUMMY,IDUMMY,1,
+     *                    X(LCLINT),NSH2,X(LGHOND),MAXG,X(LDDIJ),
+     *                    IJA,DUMMY,DUMMY,DUMMY,DUMMY,X(LDSH),D,F,1)
+            ELSE
+               CALL VCLR (F,1,NSQR)
+               CALL F2NONS (D,F,X(LBUF),X(LIBUF),NINTMX,NOPK,1)
+            END IF
+C
+            IF (GOPARR) THEN
+               CALL DDI_GSUMF(2210,F,NSQR)
+               IF (IBTYP.EQ.1) CALL DDI_DLBRESET
+            END IF
+         ELSE
+            CALL MPCFNS (D,F,X(LPA),X(LTWOEI),N2EL,NORB)
+         END IF
+C
+C  LOOP STARTS HERE
+C
+         ICOUNT = 0
+   10    CONTINUE
+         ICOUNT = ICOUNT + 1
+         IF (ICOUNT .GE. MAXITU) LAST = .TRUE.
+C
+C  CREATE G MATRIX.
+C
+         CALL TRANSFF(F,G,VEC,D,NORB)
+C
+C  FORM U MATRIX
+C
+         CALL BMAKEUF (UA,UB,UAB,T,UOLD1,G,EIGS,LAST,NORB,
+     X                 DIFF,IWFLB,MAXU,ICOUNT)
+C
+C  FORM NEW DENSITY MATRIX
+C
+         CALL BDENUP (X(LBD),UAB,VEC,D,SCR,F,NORB,NCLOSE)
+C
+C  CREATE NEW FOCK MATRIX
+C
+         IF (ABINIT) THEN
+            IF (DIRSCF) THEN
+               CALL VCLR (F,1,NSQR)
+               CALL TWOEI(RHF,.FALSE.,.TRUE.,.FALSE.,.FALSE.,
+     *                    INTG76,SCHWRZ,NINT,NSCHWZ,NORB,L2,
+     *                    DUMMY,DUMMY,IDUMMY,1,
+     *                    X(LCLINT),NSH2,X(LGHOND),MAXG,X(LDDIJ),
+     *                    IJA,DUMMY,DUMMY,DUMMY,DUMMY,X(LDSH),D,F,1)
+            ELSE
+               CALL VCLR (F,1,NSQR)
+               CALL F2NONS (D,F,X(LBUF),X(LIBUF),NINTMX,NOPK,1)
+            END IF
+C..............................................................
+C ADD SOLVATION CONTRIBUTIONS
+C..............................................................
+            IF(IPCM.EQ.1) THEN
+              CALL VCLR (X(LF1S),1,NSQR)
+              IF(IWFLB.EQ.0.AND.ICOMP.EQ.3) THEN
+                CALL WD2XEFF(D,X(LF1S),X(LF2S),X(LF3S),X(LF4S),
+     *                       DMATM1,BEMCHG,Q,DQSE,
+     *                       CQEF,QEFF2,QEFF,ELD,QEF1,ELD1,DQ1,
+     *                       IA,IB,NORB,L2,NTS,NFT27)
+              ELSE
+                CALL WD2XMAT(D,X(LF1S),X(LF2S),X(LF3S),
+     *                       DMATM1,BEMCHG,SE,DE,Q,DQSE,CQEF,
+     *                       DMFR,DQFR,DQ,D2QFR1,D2QFR2,D2QFR3,D2Q,
+     *                       IA,IB,IWFLB,NORB,L2,NTS,NTS2,NFT27)
+              END IF
+              CALL VADD(F,1,X(LF1S),1,F,1,NSQR)
+C
+C   --- ADD DISPERSION INTERACTION (IF IDP=1) ---
+C
+              IF(IDP.EQ.1) THEN
+                CALL DDISP(D,X(LF3S),X(LF0S),X(LF1S),X(LF2S),
+     *                     X(LF4S),NORB,L2,NFT27)
+                CALL VADD (F,1,X(LF1S),1,F,1,NSQR)
+              END IF
+            END IF
+C
+            IF (GOPARR) THEN
+               CALL DDI_GSUMF(2115,F,NSQR)
+               IF (IBTYP.EQ.1) CALL DDI_DLBRESET
+            END IF
+         ELSE
+            CALL MPCFNS (D,F,X(LPA),X(LTWOEI),N2EL,NORB)
+         END IF
+C........................
+C EXTRAPOLATE IF POSSIBLE
+C........................
+C         EXTRAH = .TRUE.
+         DAMPH=.FALSE.
+         ITERV = 0
+         DAMP0 = 0.0D+00
+         IF (EXTRAH) CALL EXTPNS (DAMP,DAMP0,F,X(LF1),X(LF2),
+     X                            X(LF3),NORB,NSQR,ITERV,2,
+     X                            EXTRAH,DAMPH,.FALSE.,ICOUNT)
+         ICEXT = ICEXT + 1
+         IF (.NOT.LAST) GO TO 10
+C         WRITE (IW,8383) ICOUNT,CMPTIM
+C 8383    FORMAT (/' CONVERGED IN',I4,' ITERATIONS IN',F10.2,
+C     X            ' SECONDS')
+C         WRITE (IW,8384) MAXU,DIFF
+C 8384    FORMAT (' MAXIMUM UAB ELEMENT =',1P,E12.5,
+C     X           ',  MAXIMUM DIFFERENCE =',1P,E12.5,/)
+C
+C CALL ROUTINE TO CALCULATE EPSILON AND UMINUS OMEGA,OMEGA
+C  EPSILON IN H1 AND UMINUS IN SCR
+C
+         CALL EPSAB (H1,EIGS,EPA,EPB,G,GA,GB,UA,UB,UAB,SCR,NORB,
+     X               NCLOSE,IWFLB,OMEGA)
+         CALL DAWRIT(IDAF,IODA,UAB,NSQR,IPOSU +ID,0)
+         CALL DAWRIT(IDAF,IODA,G  ,NSQR,IPOSG +ID,0)
+         CALL DAWRIT(IDAF,IODA,H1 ,NSQR,IPOSE +ID,0)
+         CALL DAWRIT(IDAF,IODA,SCR,NSQR,IPOSUM+ID,0)
+C
+C  COMPUTE OTHER COMPONENTS
+C
+         DO 500 IC = 1,3
+            CALL VCLR (UAB,1,NSQR)
+            IF (ABINIT) THEN
+               CALL DAREAD(IDAF,IODA,UAB,L2,94+IC,0)
+               CALL CPYTSQ(UAB,H1,NORB,1)
+            ELSE
+               CALL HMU (H1,IC,GEO,NFIRST,NLAST,MNAT,NORB,NUMAT)
+            END IF
+            BETAW = AVAL(H1,D,NORB)
+            IF (MASWRK) THEN
+               IF (IC.EQ.1) THEN
+                  WRITE (IW,3000) ALAB(IC),ALAB(IA),ALAB(IB),BETAW,
+     X                         DIFF,ICOUNT
+ 3000             FORMAT ('   BETA ',A1,A1,A1,' = ',F13.4,
+     X                    '        UAB CONV. TO',1P,E9.2,' IN ',I3,
+     X                    ' ITER.')
+               ELSE
+                  WRITE (IW,3001) ALAB(IC),ALAB(IA),ALAB(IB),BETAW
+ 3001             FORMAT ('   BETA ',A1,A1,A1,' = ',F13.4)
+               END IF
+            END IF
+C
+C  COMPUTE AVERAGE VALUES OF BETA
+C
+      IF (IWFLB .LE. 1) THEN
+C CALCULATE AVERAGE BETA IN THE X-DIRECTION
+            IF ((ID .EQ. 1) .AND. (IC .EQ. 1)) THEN
+                BAVX = BAVX + 3.0D+00 * BETAW
+            ELSE IF ((ID .EQ. 2) .AND. (IC .EQ. 2)) THEN
+                BAVX = BAVX + 2.0D+00 * BETAW
+            ELSE IF ((ID .EQ. 3) .AND. (IC .EQ. 3)) THEN
+                BAVX = BAVX + 2.0D+00 * BETAW
+            ELSE IF (((ID .EQ. 4).OR.(ID .EQ. 6)) .AND. (IC.EQ.1)) THEN
+                BAVX = BAVX + BETAW
+            END IF
+C CALCULATES AVERAGE BETA IN THE Y-DIRECTION
+            IF ((ID .EQ. 4) .AND. (IC .EQ. 2)) THEN
+                BAVY = BAVY + 3.0D+00 * BETAW
+            ELSE IF ((ID .EQ. 2) .AND. (IC .EQ. 1)) THEN
+                BAVY = BAVY + 2.0D+00 * BETAW
+            ELSE IF ((ID .EQ. 5) .AND. (IC .EQ. 3)) THEN
+                BAVY = BAVY + 2.0D+00 * BETAW
+            ELSE IF (((ID .EQ. 1).OR.(ID .EQ. 6)) .AND. (IC.EQ.2)) THEN
+                BAVY = BAVY + BETAW
+            END IF
+C CALCULATES AVERAGE BETA IN THE Z-DIRECTION
+            IF ((ID .EQ. 6) .AND. (IC .EQ. 3)) THEN
+                BAVZ = BAVZ + 3.0D+00 * BETAW
+            ELSE IF ((ID .EQ. 3) .AND. (IC .EQ. 1)) THEN
+                BAVZ = BAVZ + 2.0D+00 * BETAW
+            ELSE IF ((ID .EQ. 5) .AND. (IC .EQ. 2)) THEN
+                BAVZ = BAVZ + 2.0D+00 * BETAW
+            ELSE IF (((ID.EQ.4) .OR. (ID.EQ.1)) .AND. (IC .EQ. 3)) THEN
+                BAVZ = BAVZ + BETAW
+            END IF
+       ELSE
+C
+         IF ((ID .EQ. 1) .AND. (IC .EQ. 1)) THEN
+                BAVX = BAVX + 3.0D+00*BETAW
+         ELSE IF (((ID .EQ. 5) .OR. (ID .EQ. 9)) .AND. (IC .EQ. 1)) THEN
+                BAVX = BAVX + BETAW
+         ELSE IF (((ID .EQ. 2) .OR. (ID .EQ. 4)) .AND. (IC .EQ. 2)) THEN
+                BAVX = BAVX + BETAW
+         ELSE IF (((ID .EQ. 3) .OR. (ID .EQ. 7)) .AND. (IC .EQ. 3)) THEN
+                BAVX = BAVX + BETAW
+         END IF
+C CALCULATES AVERAGE BETA IN Y-DIRECTION
+         IF ((ID .EQ. 5) .AND. (IC .EQ. 2)) THEN
+                BAVY = BAVY + 3.0D+00*BETAW
+         ELSE IF (((ID .EQ. 2) .OR. (ID .EQ. 4)) .AND. (IC .EQ. 1)) THEN
+                BAVY = BAVY + BETAW
+         ELSE IF (((ID .EQ. 1) .OR. (ID .EQ. 9)) .AND. (IC .EQ. 2)) THEN
+                BAVY = BAVY + BETAW
+         ELSE IF (((ID .EQ. 6) .OR. (ID .EQ. 8)) .AND. (IC .EQ. 3)) THEN
+                BAVY = BAVY + BETAW
+         END IF
+C CALCULATES AVERAGE BETA IN THE Z-DIRECTION
+         IF ((ID .EQ. 9) .AND. (IC .EQ. 3)) THEN
+                BAVZ = BAVZ + 3.0D+00 * BETAW
+         ELSE IF (((ID .EQ. 3) .OR. (ID .EQ. 7)) .AND. (IC .EQ. 1)) THEN
+                BAVZ = BAVZ + BETAW
+         ELSE IF (((ID .EQ. 6) .OR. (ID .EQ. 8)) .AND. (IC .EQ. 2)) THEN
+                BAVZ = BAVZ + BETAW
+         ELSE IF (((ID .EQ. 1) .OR. (ID .EQ. 5)) .AND. (IC .EQ. 3)) THEN
+                BAVZ = BAVZ + BETAW
+         END IF
+       END IF
+  500    CONTINUE
+C
+  900  CONTINUE
+C       BAVX = BAVX/5.0D+00
+C       BAVY = BAVY/5.0D+00
+C       BAVZ = BAVZ/5.0D+00
+       BVEC = (BAVX*BAVX+BAVY*BAVY+BAVZ*BAVZ)**0.5D+00
+C
+       IF (MASWRK) THEN
+          WRITE (IW,5001) BETYP(IWFLB+1),BAVX
+          WRITE (IW,5002) BETYP(IWFLB+1),BAVY
+          WRITE (IW,5003) BETYP(IWFLB+1),BAVZ
+          WRITE (IW,5004) BETYP(IWFLB+1),BVEC
+       END IF
+C
+ 1200 CONTINUE
+      CALL RETFM(NEED)
+      IF(MASWRK) WRITE(IW,9010) BETYP(IWFLB+1)
+      CALL TIMIT(1)
+      RETURN
+C
+ 9010 FORMAT(1X,'....DONE WITH ',A6,' HYPERPOLARIZABILITY....')
+ 5001 FORMAT(//,' ',A6,' BETAX VALUE = ',F14.4)
+ 5002 FORMAT(' ',A6,' BETAY VALUE = ',F14.4)
+ 5003 FORMAT(' ',A6,' BETAZ VALUE = ',F14.4,/)
+ 5004 FORMAT(' ',A6,' BETA-V VALUE = ',F14.4,//)
+      END
+C*MODULE TDHF    *DECK BDENIN
+      SUBROUTINE BDENIN (BDCON,UA,UB,C,T1,T2,NORBS,NCLOSE)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION C(NORBS,NORBS),T1(NORBS,NORBS),UA(NORBS,NORBS),
+     X       UB(NORBS,NORBS),T2(NORBS,NORBS),BDCON(NORBS,NORBS)
+C
+C  THIS ROUTINE IS USED TO COMPUTE THE FIRST-ORDER DENSITY
+C
+      CALL VCLR (T1,1,NORBS*NORBS)
+      CALL VCLR (T2,1,NORBS*NORBS)
+C
+C CALCULATE TERM1
+C
+      DO 130 J = 1,NORBS
+         DO 120 L = NCLOSE+1,NORBS
+            S1 = 0.0D+00
+            DO 110 M = 1,NCLOSE
+               S1 = S1 + UB(L,M)*C(J,M)
+  110       CONTINUE
+            T1(L,J) = S1
+  120    CONTINUE
+  130 CONTINUE
+      DO 160 J = 1,NORBS
+         DO 150 K = 1,NCLOSE
+            S2 = 0.0D+00
+            DO 140 L = NCLOSE+1,NORBS
+               S2 = S2 + UA(K,L)*T1(L,J)
+  140       CONTINUE
+            T2(K,J) = S2
+  150    CONTINUE
+  160 CONTINUE
+      DO 190 I = 1,NORBS
+         DO 180 J = 1,NORBS
+            S3 = 0.0D+00
+            DO 170 K = 1,NCLOSE
+               S3 = S3 + C(I,K)*T2(K,J)
+  170       CONTINUE
+            BDCON(I,J) = S3
+  180    CONTINUE
+  190 CONTINUE
+C
+C CALCULATE TERM2
+C
+      DO 230 J = 1,NORBS
+         DO 220 L = 1,NCLOSE
+            S1 = 0.0D+00
+            DO 210 M = NCLOSE+1,NORBS
+               S1 = S1 + UB(L,M)*C(J,M)
+  210       CONTINUE
+            T1(L,J) = S1
+  220    CONTINUE
+  230 CONTINUE
+      DO 260 J = 1,NORBS
+         DO 250 K = NCLOSE+1,NORBS
+            S2 = 0.0D+00
+            DO 240 L = 1,NCLOSE
+               S2 = S2 + UA(K,L)*T1(L,J)
+  240       CONTINUE
+            T2(K,J) = S2
+  250    CONTINUE
+  260 CONTINUE
+      DO 290 I = 1,NORBS
+         DO 280 J = 1,NORBS
+            S3 = 0.0D+00
+            DO 270 K = NCLOSE+1,NORBS
+               S3 = S3 + C(I,K)*T2(K,J)
+  270       CONTINUE
+            BDCON(I,J) = BDCON(I,J) - S3
+  280    CONTINUE
+  290 CONTINUE
+C
+C CALCULATE TERM3
+C
+      DO 330 J = 1,NORBS
+         DO 320 L = NCLOSE+1,NORBS
+            S1 = 0.0D+00
+            DO 310 M = 1,NCLOSE
+               S1 = S1 + UA(L,M)*C(J,M)
+  310       CONTINUE
+            T1(L,J) = S1
+  320    CONTINUE
+  330 CONTINUE
+      DO 360 J = 1,NORBS
+         DO 350 K = 1,NCLOSE
+            S2 = 0.0D+00
+            DO 340 L = NCLOSE+1,NORBS
+               S2 = S2 + UB(K,L)*T1(L,J)
+  340       CONTINUE
+            T2(K,J) = S2
+  350    CONTINUE
+  360 CONTINUE
+      DO 390 I = 1,NORBS
+         DO 380 J = 1,NORBS
+            S3 = 0.0D+00
+            DO 370 K = 1,NCLOSE
+               S3 = S3 + C(I,K)*T2(K,J)
+  370       CONTINUE
+            BDCON(I,J) = BDCON(I,J) + S3
+  380    CONTINUE
+  390 CONTINUE
+C
+C CALCULATE TERM4
+C
+      DO 430 J = 1,NORBS
+         DO 420 L = 1,NCLOSE
+            S1 = 0.0D+00
+            DO 410 M = NCLOSE+1,NORBS
+               S1 = S1 + UA(L,M)*C(J,M)
+  410       CONTINUE
+            T1(L,J) = S1
+  420    CONTINUE
+  430 CONTINUE
+      DO 460 J = 1,NORBS
+         DO 450 K = NCLOSE+1,NORBS
+            S2 = 0.0D+00
+            DO 440 L = 1,NCLOSE
+               S2 = S2 + UB(K,L)*T1(L,J)
+  440       CONTINUE
+            T2(K,J) = S2
+  450    CONTINUE
+  460 CONTINUE
+      DO 490 I = 1,NORBS
+         DO 480 J = 1,NORBS
+            S3 = 0.0D+00
+            DO 470 K = NCLOSE+1,NORBS
+               S3 = S3 + C(I,K)*T2(K,J)
+  470       CONTINUE
+            BDCON(I,J) = BDCON(I,J) - S3
+  480    CONTINUE
+  490 CONTINUE
+C
+      RETURN
+      END
+C*MODULE TDHF    *DECK BDENUP
+      SUBROUTINE BDENUP (BDCON,UAB,C,D,T2,T1,NORBS,NCLOSE)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION C(NORBS,NORBS),D(NORBS,NORBS),BDCON(NORBS,NORBS),
+     X          T2(NORBS,NORBS),UAB(NORBS,NORBS),T1(NORBS,NORBS)
+C
+C  THIS ROUTINE IS USED TO COMPUTE THE FIRST-ORDER DENSITY
+C
+C BDCON IS THE CONSTANT PORTION OF THE DENSITY MATRIX THAT
+C ONLY DEPENDS ON UA AND UB.
+C
+      CALL VCLR (D,1,NORBS*NORBS)
+      DO 100 I = 1,NORBS
+         DO 110 J = 1,NORBS
+            S1 = 0.0D+00
+            S2 = 0.0D+00
+            DO 120 K = 1,NCLOSE
+               S1 = S1 + UAB(I,K)*C(J,K)
+               S2 = S2 + C(I,K)*UAB(K,J)
+  120       CONTINUE
+            T1(I,J) = S1
+            T2(I,J) = S2
+  110    CONTINUE
+  100 CONTINUE
+C
+      DO 350 I = 1,NORBS
+         DO 340 J = 1,NORBS
+            SUM = 0.0D+00
+            DO 330 K = 1,NORBS
+               SUM = SUM + C(I,K)*T1(K,J) - T2(I,K)*C(J,K)
+  330       CONTINUE
+            D(I,J) = D(I,J) + 2.0D+00*(SUM + BDCON(I,J))
+  340    CONTINUE
+  350 CONTINUE
+C
+C      DO 530 I = 1,NORBS
+C         DO 520 J = 1,NORBS
+C            D(I,J) = DA(I,J)*2.0D+00
+C  520    CONTINUE
+C  530 CONTINUE
+C
+      RETURN
+      END
+C*MODULE TDHF    *DECK BETAL1
+      SUBROUTINE BETAL1 (U0A,G0A,U1B,G1B,U1C,G1C,NCLOSE,NORB,TERM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION U0A(NORB,NORB),U1B(NORB,NORB),U1C(NORB,NORB),
+     X          G0A(NORB,NORB),G1B(NORB,NORB),G1C(NORB,NORB)
+C
+C THIS ROUTINE CALCULATES THE TRACE OF UGU MATRICES
+C
+      T1A = TRUGUD(U0A,G1B,U1C,NCLOSE,NORB,NORB)
+      T2A = TRUDGU(U1C,G1B,U0A,NCLOSE,NORB,NORB)
+      T3A = TRUGDU(U1B,G1C,U0A,NCLOSE,NORB,NORB)
+      T4A = TRUGDU(U0A,G1C,U1B,NCLOSE,NORB,NORB)
+      T5A = TRUDGU(U1C,G0A,U1B,NCLOSE,NORB,NORB)
+      T6A = TRUGUD(U1B,G0A,U1C,NCLOSE,NORB,NORB)
+      T1B = TRUGUD(U0A,G1B,U1C,NORB,NCLOSE,NORB)
+      T2B = TRUDGU(U1C,G1B,U0A,NORB,NCLOSE,NORB)
+      T3B = TRUGDU(U1B,G1C,U0A,NORB,NCLOSE,NORB)
+      T4B = TRUGDU(U0A,G1C,U1B,NORB,NCLOSE,NORB)
+      T5B = TRUDGU(U1C,G0A,U1B,NORB,NCLOSE,NORB)
+      T6B = TRUGUD(U1B,G0A,U1C,NORB,NCLOSE,NORB)
+      TERM = T1B-T1A+T2B-T2A+T3A-T3B+T4A-T4B+T5B-T5A+T6B-T6A
+      RETURN
+      END
+C*MODULE TDHF    *DECK BETALL
+      SUBROUTINE BETALL (U2A,G2A,U1B,G1B,U1C,G1C,NCLOSE,NORB,TERM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION U2A(NORB,NORB),U1B(NORB,NORB),U1C(NORB,NORB),
+     X          G2A(NORB,NORB),G1B(NORB,NORB),G1C(NORB,NORB)
+C
+C THIS ROUTINE CALCULATES TRACE OF UGU MATRICES
+C WHEN A,B,C DIRECTIONS ARE DIFFERENT
+C
+      T1A = TRUDGU(U2A,G1B,U1C,NCLOSE,NORB,NORB)
+      T2A = TRUGUD(U1C,G1B,U2A,NCLOSE,NORB,NORB)
+      T3A = TRUGUD(U1B,G1C,U2A,NCLOSE,NORB,NORB)
+      T4A = TRUDGU(U2A,G1C,U1B,NCLOSE,NORB,NORB)
+      T5A = TRUGDU(U1C,G2A,U1B,NCLOSE,NORB,NORB)
+      T6A = TRUGDU(U1B,G2A,U1C,NCLOSE,NORB,NORB)
+      T1B = TRUDGU(U2A,G1B,U1C,NORB,NCLOSE,NORB)
+      T2B = TRUGUD(U1C,G1B,U2A,NORB,NCLOSE,NORB)
+      T3B = TRUGUD(U1B,G1C,U2A,NORB,NCLOSE,NORB)
+      T4B = TRUDGU(U2A,G1C,U1B,NORB,NCLOSE,NORB)
+      T5B = TRUGDU(U1C,G2A,U1B,NORB,NCLOSE,NORB)
+      T6B = TRUGDU(U1B,G2A,U1C,NORB,NCLOSE,NORB)
+      TERM = T1B-T1A+T2B-T2A+T3B-T3A+T4B-T4A+T5A-T5B+T6A-T6B
+      RETURN
+      END
+C*MODULE TDHF    *DECK BETCOM
+      SUBROUTINE BETCOM (U1,G1,U2,G2,NCLOSE,NORB,TERM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION U1(NORB,NORB),U2(NORB,NORB),
+     X          G1(NORB,NORB),G2(NORB,NORB)
+C
+C THIS ROUTINE CALCULATES TRACE OF UGU MATRICES
+C
+      T1A = TRUDGU(U2,G1,U1,NCLOSE,NORB,NORB)
+      T2A = TRUGUD(U1,G1,U2,NCLOSE,NORB,NORB)
+      T3A = TRUGDU(U1,G2,U1,NCLOSE,NORB,NORB)
+      T1B = TRUDGU(U2,G1,U1,NORB,NCLOSE,NORB)
+      T2B = TRUGUD(U1,G1,U2,NORB,NCLOSE,NORB)
+      T3B = TRUGDU(U1,G2,U1,NORB,NCLOSE,NORB)
+      TERM = 2.0D+00*(T1B-T1A+T2B-T2A+T3A-T3B)
+      RETURN
+      END
+C*MODULE TDHF    *DECK BMAKEUF
+      SUBROUTINE BMAKEUF (UA,UB,UAB,T,UOLD1,GAB,EIGS,LAST,NORBS,
+     X                    DIFF,IWFLB,MAXU,ICOUNT)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DOUBLE PRECISION MAXU
+C
+      LOGICAL LAST,RETDHF,TDDEB,GOPARR,DSKWRK,MASWRK,EXTRAH
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+C
+      DIMENSION UA(NORBS,NORBS),UOLD1(NORBS,NORBS),T(NORBS,NORBS),
+     X          EIGS(NORBS),GAB(NORBS,NORBS),UAB(NORBS,NORBS),
+     X          UB(NORBS,NORBS)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      COMMON /TDOPT / RETDHF,TDDEB,EXTRAH,IFREQ
+      COMMON /TDTEMP/ ICEXT
+C
+      DATA HALF/0.5D+00/, TWO/2.0D+00/
+C
+C  THIS ROUTINE CREATES THE NEW TRANSFORMATION MATRIX U
+C  AND THEN VERIFIES CONVERGENCE
+C
+C  CREATE DIAGONAL BLOCKS (OCC,OCC) AND (UNOCC,UNOCC)
+C
+       CALL VCLR (UAB,1,NORBS*NORBS)
+       DO 100 I = 1,NORBS
+C-BM-    DO 110 J = 1,I
+         DO 110 J = 1,NORBS
+           SUM = 0.0D+00
+           IF (I.LE.NCLOSE) THEN
+              DO 120 K = NCLOSE+1,NORBS
+                 SUM = SUM+UA(I,K)*UB(K,J)+UB(I,K)*UA(K,J)
+ 120          CONTINUE
+           ELSE IF ((I.GT.NCLOSE).AND.(J.GT.NCLOSE)) THEN
+              DO 121 K = 1,NCLOSE
+                SUM = SUM+UA(I,K)*UB(K,J)+UB(I,K)*UA(K,J)
+ 121          CONTINUE
+           END IF
+           UAB(I,J) = SUM*HALF
+C-BM-      UAB(J,I) = SUM*HALF
+ 110     CONTINUE
+ 100   CONTINUE
+C
+C  CREATE OFF-DIAGONAL BLOCKS
+C
+       DO 200 K = NCLOSE+1,NORBS
+         DO 190 L = 1,NCLOSE
+C
+C CALCULATE FOR (W,W) VALUES
+C
+           IF (IWFLB.LE.1) THEN
+              UAB(K,L) = (GAB(K,L)+T(K,L))/
+     X                   (EIGS(L)-EIGS(K)-TWO*OMEGA)
+              UAB(L,K) = (GAB(L,K)+T(L,K))/
+     X                   (EIGS(K)-EIGS(L)-TWO*OMEGA)
+           END IF
+C
+C CALCULATE FOR (0,W) VALUES
+C
+           IF (IWFLB.EQ.2) THEN
+              UAB(K,L) = ((GAB(K,L)+T(K,L))/
+     X                   ((EIGS(L)-EIGS(K))-OMEGA))
+              UAB(L,K) = ((GAB(L,K)+T(L,K))/
+     X                   ((EIGS(K)-EIGS(L))-OMEGA))
+           END IF
+C
+C CALCULATE FOR (W,-W) VALUES
+C
+           IF (IWFLB.EQ.3) THEN
+              UAB(K,L) = ((GAB(K,L)+T(K,L))/
+     X                   (EIGS(L)-EIGS(K)))
+              UAB(L,K) = ((GAB(L,K)+T(L,K))/
+     X                   (EIGS(K)-EIGS(L)))
+           END IF
+  190    CONTINUE
+  200  CONTINUE
+C
+C  TEST FOR CONVERGENCE
+C
+       DIFF = 0.0D+00
+       MAXU = 0.0D+00
+       DO 300 I = 1,NORBS
+         DO 290 J = 1,NORBS
+           UDIF = UAB(I,J)-UOLD1(I,J)
+           IF (DIFF.LT.ABS(UDIF)) THEN
+              DIFF = ABS(UDIF)
+              IDIF = I
+              JDIF = J
+           END IF
+           IF (ABS(MAXU).LT.ABS(UAB(I,J)))  THEN
+              MAXU = UAB(I,J)
+              MAXI = I
+              MAXJ = J
+           END IF
+  290    CONTINUE
+  300  CONTINUE
+       IF (TDDEB.AND.MASWRK) THEN
+          WRITE (IW,2929) ICOUNT,ICEXT,MAXI,MAXJ,MAXU,IDIF,JDIF,DIFF
+ 2929     FORMAT (2I4,I5,I4,1P,E15.3,I8,I4,1P,E15.3)
+       END IF
+       IF (DIFF.LT.BTOL) THEN
+           LAST = .TRUE.
+       END IF
+C
+       DO 400 I = 1,NORBS
+         DO 390 J = 1,NORBS
+           UOLD1(I,J) = UAB(I,J)
+  390    CONTINUE
+  400  CONTINUE
+C
+       RETURN
+       END
+C*MODULE TDHF    *DECK DENSF
+      SUBROUTINE DENSF (U,C,D,SCR,TMP,NORBS,NCLOSE)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C  THIS ROUTINE IS USED TO COMPUTE THE FIRST-ORDER DENSITY
+C  FROM CA = C*U
+C
+      DIMENSION C(NORBS,NORBS),TMP(NORBS,NORBS),D(NORBS,NORBS)
+      DIMENSION U(NORBS,NORBS),SCR(NORBS,NORBS)
+C
+C  FORM DENSITY MATRIX      CA*N*C+ + C*N*CA+
+C
+C INTERMEDIATE SUM
+C
+      CALL VCLR (D,1,NORBS*NORBS)
+      DO 110 I = 1,NORBS
+         DO 120 J = 1,NORBS
+            S1 = 0.0D+00
+            S2 = 0.0D+00
+            DO 130 K = 1,NCLOSE
+               S1 = S1 + U(I,K)*C(J,K)
+               S2 = S2 + C(I,K)*U(K,J)
+  130       CONTINUE
+            SCR(I,J) = 2.0D+00*S1
+            TMP(I,J) = 2.0D+00*S2
+  120    CONTINUE
+  110 CONTINUE
+C
+C
+      DO 330 I = 1,NORBS
+         DO 320 J = 1,NORBS
+            SUM = 0.0D+00
+            DO 310 K = 1,NORBS
+               SUM = SUM + C(I,K)*SCR(K,J) - TMP(I,K)*C(J,K)
+  310       CONTINUE
+            D(I,J) = SUM
+  320    CONTINUE
+  330 CONTINUE
+C NOT NEEDED FOR GAMESS
+C      DO 530 I = 1,NORBS
+C         DO 520 J = 1,NORBS
+C            DA(I,J) = D(I,J)*0.5D+00
+C  520    CONTINUE
+C  530 CONTINUE
+C
+      RETURN
+      END
+C*MODULE THDF    *DECK DFCKNS
+      SUBROUTINE DFCKNS(IEXCH,POPLE,DA,FA,GHONDO,NORB,NINT,NPARAM)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL IANDJ,KANDL,SAME,OUT,POPLE
+C
+      DIMENSION DA(NORB,NORB,NPARAM),FA(NORB,NORB,NPARAM),GHONDO(*)
+      DIMENSION IBPOP(4,4)
+C
+      PARAMETER (MXSH=1000, MXGTOT=5000)
+C
+      COMMON /FLIPS / IB(4,3)
+      COMMON /GOUT  / GPOPLE(768),NORG
+      COMMON /INTDEX/ IJGT(225),IJX(225),IJY(225),IJZ(225),IK(225),
+     *                KLGT(225),KLX(225),KLY(225),KLZ(225)
+      COMMON /MISC  / IANDJ,KANDL,SAME
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /SHLG70/ ISH,JSH,KSH,LSH,IJKLXX(4)
+      COMMON /SHLNOS/ QQ4,LIT,LJT,LKT,LLT,LOCI,LOCJ,LOCK,LOCL,
+     *                MINI,MINJ,MINK,MINL,MAXI,MAXJ,MAXK,MAXL,
+     *                NIJX,IJ,KL,IJKL
+      COMMON /SHLT  / TOL,CUTOFF,ICOUNT,OUT
+C
+      PARAMETER (HALF=0.5D+00)
+C
+C-NEXT STATEMENT IS FOR VARIOUS IBM XLF 3.X AND 5.X COMPILERS-
+C
+      SAVE IJN,KLN,IBB,JBB,KBB,LBB
+C
+      DATA IBPOP/0,0,0,0,64,16,4,1,128,32,8,2,192,48,12,3/
+C
+C     ----- FORM NLO FOCK OPERATOR DIRECTLY FROM INTEGRALS -----
+C     NOTE THAT THE DENSITY AND FOCK OPERATOR ARE SQUARE MATRICES
+C     THIS ROUTINE KNOWS ONLY HOW TO DO RHF FOCK OPERATORS
+C
+      IF(POPLE) THEN
+         SAME = ISH .EQ. KSH .AND. JSH .EQ. LSH
+         IBB  = IB(1,IEXCH)
+         JBB  = IB(2,IEXCH)
+         KBB  = IB(3,IEXCH)
+         LBB  = IB(4,IEXCH)
+         MINI = KMIN(ISH)
+         MINJ = KMIN(JSH)
+         MINK = KMIN(KSH)
+         MINL = KMIN(LSH)
+         MAXI = KMAX(ISH)
+         MAXJ = KMAX(JSH)
+         MAXK = KMAX(KSH)
+         MAXL = KMAX(LSH)
+         IANDJ = ISH .EQ. JSH
+         KANDL = KSH .EQ. LSH
+         LOCI = KLOC(ISH)-MINI
+         LOCJ = KLOC(JSH)-MINJ
+         LOCK = KLOC(KSH)-MINK
+         LOCL = KLOC(LSH)-MINL
+      END IF
+C
+      IJN = 0
+      JMAX = MAXJ
+      DO 360 I = MINI,MAXI
+         IF (IANDJ) JMAX = I
+         DO 340 J = MINJ,JMAX
+            IJN = IJN+1
+            IF(POPLE) THEN
+               N1 = IBPOP(IBB,I)+IBPOP(JBB,J)+1+NORG
+            ELSE
+               N1 = IJGT(IJN)
+            END IF
+            LMAX = MAXL
+            KLN = 0
+            DO 320 K =  MINK,MAXK
+               IF (KANDL) LMAX = K
+               DO 300 L = MINL,LMAX
+                  KLN = KLN+1
+                  IF(SAME .AND. KLN.GT.IJN) GO TO 340
+                  IF(POPLE) THEN
+                     NN = N1+IBPOP(KBB,K)+IBPOP(LBB,L)
+                     VAL = GPOPLE(NN)
+                  ELSE
+                     NN = N1+KLGT(KLN)
+                     VAL = GHONDO(NN)
+                  END IF
+C
+                  IF(ABS(VAL).LT.CUTOFF) GO TO 300
+                  NINT = NINT + 1
+C
+                  II = LOCI+I
+                  JJ = LOCJ+J
+                  KK = LOCK+K
+                  LL = LOCL+L
+                  IF (II .GE. JJ) GO TO 100
+                  N = II
+                  II = JJ
+                  JJ = N
+  100             IF (KK .GE. LL) GO TO 120
+                  N = KK
+                  KK = LL
+                  LL = N
+  120             IF (II-KK) 140,160,180
+  140             N = II
+                  II = KK
+                  KK = N
+                  N = JJ
+                  JJ = LL
+                  LL = N
+                  GO TO 180
+  160             IF (JJ .LT. LL) GO TO 140
+  180             CONTINUE
+C
+                  IF(II.EQ.JJ) VAL = VAL*HALF
+                  IF(KK.EQ.LL) VAL = VAL*HALF
+                  IF(II.EQ.KK  .AND.  JJ.EQ.LL) VAL = VAL*HALF
+C
+C      WE NOW HAVE EVERYTHING READY, PUT INTEGRALS INTO FOCK MATRIX
+C
+                   VAL_2 = VAL*HALF
+                   DO IPARAM=1,NPARAM
+                     FA(II,JJ,IPARAM)=FA(II,JJ,IPARAM)
+     *                 +VAL*(DA(KK,LL,IPARAM)+DA(LL,KK,IPARAM))
+                     FA(JJ,II,IPARAM)=FA(JJ,II,IPARAM)
+     *                 +VAL*(DA(KK,LL,IPARAM)+DA(LL,KK,IPARAM))
+                     FA(KK,LL,IPARAM)=FA(KK,LL,IPARAM)
+     *                 +VAL*(DA(II,JJ,IPARAM)+DA(JJ,II,IPARAM))
+                     FA(LL,KK,IPARAM)=FA(LL,KK,IPARAM)
+     *                 +VAL*(DA(II,JJ,IPARAM)+DA(JJ,II,IPARAM))
+                     FA(II,KK,IPARAM)=FA(II,KK,IPARAM)
+     *                 -VAL_2*DA(JJ,LL,IPARAM)
+                     FA(KK,II,IPARAM)=FA(KK,II,IPARAM)
+     *                 -VAL_2*DA(LL,JJ,IPARAM)
+                     FA(II,LL,IPARAM)=FA(II,LL,IPARAM)
+     *                 -VAL_2*DA(JJ,KK,IPARAM)
+                     FA(LL,II,IPARAM)=FA(LL,II,IPARAM)
+     *                 -VAL_2*DA(KK,JJ,IPARAM)
+                     FA(JJ,KK,IPARAM)=FA(JJ,KK,IPARAM)
+     *                 -VAL_2*DA(II,LL,IPARAM)
+                     FA(KK,JJ,IPARAM)=FA(KK,JJ,IPARAM)
+     *                 -VAL_2*DA(LL,II,IPARAM)
+                     FA(JJ,LL,IPARAM)=FA(JJ,LL,IPARAM)
+     *                 -VAL_2*DA(II,KK,IPARAM)
+                     FA(LL,JJ,IPARAM)=FA(LL,JJ,IPARAM)
+     *                 -VAL_2*DA(KK,II,IPARAM)
+                   ENDDO
+  300          CONTINUE
+  320       CONTINUE
+  340    CONTINUE
+  360 CONTINUE
+      RETURN
+      END
+C*MODULE TDHF    *DECK EPSAB
+      SUBROUTINE EPSAB(EIGSAB,EIGS,EPA,EPB,GAB,GA,GB,UA,UB,
+     X           UAB,UDMS,NORBS,NCLOSE,IWFLB,OMEGA)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+C
+      DIMENSION EIGS(NORBS),EIGSAB(NORBS,NORBS),EPA(NORBS,NORBS),
+     X          EPB(NORBS,NORBS),GA(NORBS,NORBS),GB(NORBS,NORBS),
+     X          GAB(NORBS,NORBS),UAB(NORBS,NORBS),
+     X          UA(NORBS,NORBS),UB(NORBS,NORBS),UDMS(NORBS,NORBS)
+C
+      COMMON /TDHFP / ATOL,BTOL,OMG,FREQ(10),MAXA,MAXU,NCL,NFQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+C
+C  THIS ROUTINE CREATES THE NEW EPSILON MATRIX AND UDMS MATRIX
+C
+C  ZERO EPSILON OMEGA OMEGA MATRIX INITIALLY
+C
+        NSQR = NORBS*NORBS
+        CALL VCLR(EIGSAB,1,NSQR)
+C
+C  ZERO UAB MINUS OMEGA,OMEGA MATRIX INITIALLY
+C
+        CALL VCLR(UDMS,1,NSQR)
+C
+        IF ((IWFLB .EQ. 0) .OR. (IWFLB .EQ. 1)) THEN
+                OMVAL = 2.0D+00 * OMEGA
+        ELSE IF (IWFLB .EQ. 3) THEN
+                OMVAL = 0.0D+00
+        ELSE IF (IWFLB .EQ. 2) THEN
+                OMVAL = OMEGA
+        END IF
+C
+C       IF(IPCM.EQ.1.AND.(GOKE.OR.GTHG.OR.GEFISH.OR.GIDRI)) THEN
+        IF(INIG.EQ.2) THEN
+C
+C CALCULATION FOR EPSAB
+C
+C       CALL FHPEPT(GA,GB,UA,UB,EPA,EPB,EIGSAB,NORBS)
+C       CALL FHPEPS(EIGS,EIGSAB,UAB,GAB,OMVAL,NORBS)
+        CALL FHPEPT(GA,GB,UA,UB,EPA,EPB,EIGSAB,NORBS,NORBS)
+        CALL FHPEPS(EIGS,EIGSAB,UAB,GAB,OMVAL,NORBS,NORBS)
+C
+C CALCULATION FOR UMS
+C
+        DO 601 I=1,NORBS
+          DO 501 J=1,NORBS
+            S2=0.0D+00
+            DO 401 K= 1,NORBS
+              S2 = S2 + UA(I,K)*UB(K,J)+UB(I,K)*UA(K,J)
+ 401        CONTINUE
+            UDMS(J,I) = S2-UAB(I,J)
+ 501      CONTINUE
+ 601    CONTINUE
+        RETURN
+C
+        ELSE
+C
+C CALCULATION FOR EPSAB
+C
+         DO 300 I = 1,NCLOSE
+            DO 290 J = 1,NCLOSE
+               S1=0.0D+00
+               DO 280 K = NCLOSE+1, NORBS
+               S1 = S1+ GA(I,K)*UB(K,J)+GB(I,K)*UA(K,J)
+C
+  280          CONTINUE
+               EIGSAB(I,J)=GAB(I,J) + S1 +
+     X                    UAB(I,J)*(EIGS(I)-EIGS(J) + OMVAL)
+  290       CONTINUE
+  300    CONTINUE
+C
+C CALCULATION FOR UMS
+C
+         DO 600 I=1,NORBS
+           DO 500 J=1,NORBS
+             S2=0.0D+00
+             DO 400 K= 1,NORBS
+               S2 = S2 + UA(I,K)*UB(K,J)+UB(I,K)*UA(K,J)
+ 400         CONTINUE
+             UDMS(I,J) = S2-UAB(I,J)
+ 500       CONTINUE
+ 600   CONTINUE
+C
+      END IF
+C
+      RETURN
+      END
+C*MODULE TDHF    *DECK EXTPNS
+      SUBROUTINE EXTPNS(DAMP,DAMP0,H0,H1,H2,H3,NORB,NSQR,ITERV,
+     *                  ITYP,EXTRAH,DAMPH,VSHIFT,ITER)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H0(*),H1(*),H2(*),H3(*)
+C
+      LOGICAL EXTRAH,DAMPH,VSHIFT,EXTPRE,DAMPRE
+C
+      SAVE DAMPRE,EXTPRE
+C
+      COMMON /ACONV / RRSHFT,EXTTOL,DMPTOL,VSHTOL,IEXTIN
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /TDTEMP/ ICALP
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, TWO=2.0D+00, FOUR=4.0D+00)
+      PARAMETER (PT5=0.5D+00, TM17=1.0D-17)
+      PARAMETER (TOL=1.0D-07, TOL1=1.9D+00, TOL2=0.99D+00)
+      PARAMETER (SHRNKF=100.0D+00, DMPMIN=0.01D+00, RSMIN=0.8D+00)
+C
+      DATA DAMPRE,EXTPRE/.FALSE.,.FALSE./
+C
+C     ----- DECODE CONVERGENCE METHOD -----
+C     USE EITHER DAVIDSON'S DAMPING AND EXTRAPOLATION
+C            OR POPLE'S EXTRAPOLATION
+C
+C*      EXTRAH = MOD(MCONV,2) .EQ. 1
+C*      DAMPH  = MOD(MCONV,4) .GE. 2
+C*      VSHIFT = MOD(MCONV,8) .GE. 4
+C
+      ICOUNT = ICALP
+      IF (ITER .GT. 1) GO TO 140
+C
+C     ----- ITER = 1 -----
+C
+      DO 120 I = 1,NSQR
+      H1(I) = H0(I)
+      H2(I) = H0(I)
+  120 CONTINUE
+      GO TO 660
+C
+C     ----- CURRENT FOCK MATRIX IS IN -H0-
+C           GET PREVIOUS FOCK MATRICES (H1,H2,H3) -----
+C
+  140 CALL DAREAD(IDAF,IODA,H1,NSQR,245,0)
+      CALL DAREAD(IDAF,IODA,H2,NSQR,246,0)
+      CALL DAREAD(IDAF,IODA,H3,NSQR,247,0)
+      IF (ITER .GT. 2) GO TO 160
+C
+C     ----- ITER = 2 -----
+C
+      IF (DAMPH) GO TO 320
+      IF ( .NOT. VSHIFT) GO TO 420
+      DAMP = ONE
+      GO TO 320
+C
+C     ----- ITER > 2 -----
+C
+  160 IF (VSHIFT) GO TO 220
+      IF (DAMPRE) GO TO 200
+      IF ( .NOT. DAMPH) GO TO 420
+C*      IF (ABS(DE) .GT. EXTTOL) GO TO 180
+C*      IF (DE .GT. ZERO .AND. ICOUNT .GT. IEXTIN) GO TO 180
+      IF (ICOUNT.GT.IEXTIN) GO TO 180
+      GO TO 420
+C
+  180 DMPTOL = DMPTOL/SHRNKF
+      EXTTOL = EXTTOL/SHRNKF
+      GO TO 300
+C
+C*  200 IF (ABS(DE) .GT. DMPTOL) GO TO 300
+C*      IF (DE .GT. ZERO) GO TO 300
+  200 IF (DAMP .GT. DMPMIN) GO TO 300
+      GO TO 420
+C
+  220 IF ( .NOT. EXTPRE) GO TO 260
+C*      IF (ABS(DE) .GT. EXTTOL) GO TO 240
+C*      IF (DE .GT. ZERO .AND. ICOUNT .GT. IEXTIN) GO TO 240
+      IF (ICOUNT.GT.IEXTIN) GO TO 240
+      GO TO 420
+C
+  240 EXTTOL = EXTTOL/SHRNKF
+      DMPTOL = DMPTOL/SHRNKF
+      RRSHFT = RSMIN
+      ITERV = 0
+      IF (DAMPH) GO TO 300
+      GO TO 620
+C
+C*  260 IF (ABS(DE) .GT. DMPTOL) GO TO 280
+C*      IF (DE .GT. ZERO) GO TO 280
+  260 IF (DAMPH .AND. DAMP .GT. DMPMIN) GO TO 280
+      IF ( .NOT. EXTRAH) GO TO 280
+      IF (RRSHFT .GE. VSHTOL) GO TO 280
+      IF (ITERV .EQ. 0) GO TO 280
+      GO TO 420
+C
+  280 IF (DAMPH) GO TO 300
+      IF (ITERV .LT. 2) GO TO 620
+      IF ( .NOT. EXTRAH) GO TO 620
+      GO TO 440
+C
+C     ----- DAVIDSON'S DAMPING -----
+C
+  300 IF (ICOUNT .LT. IEXTIN) GO TO 320
+      IF ( .NOT. VSHIFT .OR. ITERV .GE. 2) GO TO 360
+C
+  320 DO 340 I = 1,NSQR
+      H0(I) = (H0(I)+DAMP*H1(I))/(ONE+DAMP)
+  340 CONTINUE
+      GO TO 400
+C
+C     ----- ITER > 2 , DAMPING -----
+C
+  360 CUTOFF = PT5-DAMP0
+      DO 380 I = 1,NSQR
+      H0(I) = (H0(I)+DAMP*H1(I))/(ONE+DAMP)
+  380 CONTINUE
+      IF ( .NOT. EXTRAH .OR. CUTOFF .LT. ZERO) GO TO 400
+      DAMPRE = .TRUE.
+      EXTPRE = .TRUE.
+      GO TO 460
+C
+  400 DAMPRE = .TRUE.
+      EXTPRE = .FALSE.
+      GO TO 660
+C
+  420 IF ( .NOT. EXTRAH) GO TO 620
+C
+C     ----- POPLE'S EXTRAPOLATION PROCEDURE
+C
+      DAMPRE = .FALSE.
+      EXTPRE = .TRUE.
+  440 DAMP = ZERO
+  460 CALL DAWRIT(IDAF,IODA,H0,NSQR,245,0)
+      CALL DAWRIT(IDAF,IODA,H1,NSQR,246,0)
+      CALL DAWRIT(IDAF,IODA,H2,NSQR,247,0)
+C
+C     ----- SKIP TO END IF FIRST CYCLE OR AFTER EXTRAPOLATION -----
+C
+      DO 480 I = 1,NSQR
+      H3(I) = H2(I)-H3(I)
+      H2(I) = H1(I)-H2(I)
+      H1(I) = H0(I)-H1(I)
+  480 CONTINUE
+      IF (ICOUNT .LT. IEXTIN .OR. ITER .LT. 4) GO TO 680
+C
+C     ----- FIND DISPLACEMENT DP1,DP2,DP3 -----
+C
+      IF (ITYP .EQ. 2) GO TO 500
+C*      SP11 = TRACEP(H1,H1,L1)
+C*      SP12 = TRACEP(H2,H1,L1)
+C*      SP13 = TRACEP(H3,H1,L1)
+C*      SP22 = TRACEP(H2,H2,L1)
+C*      SP23 = TRACEP(H3,H2,L1)
+C*      SP33 = TRACEP(H3,H3,L1)
+        SP11 = -AVAL(H1,H1,NORB)
+        SP12 = -AVAL(H2,H1,NORB)
+        SP13 = -AVAL(H3,H1,NORB)
+        SP22 = -AVAL(H2,H2,NORB)
+        SP23 = -AVAL(H3,H2,NORB)
+        SP33 = -AVAL(H3,H3,NORB)
+      GO TO 520
+C
+  500 CONTINUE
+      SP11 = DDOT(NSQR,H1,1,H1,1)
+      SP12 = DDOT(NSQR,H2,1,H1,1)
+      SP13 = DDOT(NSQR,H3,1,H1,1)
+      SP22 = DDOT(NSQR,H2,1,H2,1)
+      SP23 = DDOT(NSQR,H3,1,H2,1)
+      SP33 = DDOT(NSQR,H3,1,H3,1)
+  520 CONTINUE
+      DP1 = SQRT(SP11)
+      DP2 = SQRT(SP22)
+      DP3 = SQRT(SP33)
+C
+C     ----- FIND COSINE OF ANGLE BETWEEN SUCCESSIVE DISPLACEMENTS -----
+C
+      COSPHI = SP12/(DP1*DP2)
+C
+C     ----- FIND COSINE OF ANGLE BETWEEN -DP(3)- AND
+C           PLANE OF =DP(1)- AND -DP(2)-.
+C
+      Z = SP11*SP22-SP12*SP12
+      IF ( ABS(Z) .LT. TM17 ) GO TO 680
+      X = (SP13*SP22-SP12*SP23)/Z
+      Y = (SP23*SP11-SP12*SP13)/Z
+      COSPSI = SQRT(X*X*SP11+Y*Y*SP22+TWO*X*Y*SP12)/DP3
+C.
+      WRITE (IW,2319) COSPHI, X,Y,Z,DAMP
+ 2319 FORMAT ('   COSPHI = ',5D15.5)
+C
+C     ----- DO NOT EXTRAPOLATE UNLESS -4- CONSECUTIVE POINTS ARE
+C           NEARLY COPLANAR -----
+C
+      IF (COSPSI .LE. TOL) GO TO 680
+      IF (DAMP .GT. DMPMIN) GO TO 680
+C
+C     ----- EXPRESS -DP(1)- AS X*DP(3)(PROJECTED)+Y*DP(2) -----
+C
+      Y = -Y/X
+      X = ONE/X
+C
+C     ----- TEST IF 2*2 MATRIX HAS REAL EIGENVALUES
+C           BETWEEN -TOL/2 AND +TOL/2 -----
+C
+      XY = Y*Y+FOUR*X
+      IF (XY .LT. ZERO) GO TO 680
+      XY = ABS(Y)+SQRT(XY)
+      IF (XY .LE. TOL1) GO TO 560
+C
+C     ----- IF -4- POINT EXTRAPOLATION IS NOT POSSIBLE,
+C           TRY -3- POINT
+C
+      IF (ABS(COSPHI) .LE. TOL2) GO TO 680
+      X = DP1/(DP2*COSPHI-DP1)
+      DO 540 I = 1,NSQR
+      H0(I) = H0(I)+X*H1(I)
+  540 CONTINUE
+      GO TO 600
+C
+  560 XXX = X/(ONE-X-Y)
+      YYY = (X+Y)/(ONE-X-Y)
+      DO 580 I = 1,NSQR
+      H0(I) = H0(I)+XXX*H2(I)+YYY*H1(I)
+  580 CONTINUE
+C
+  600 CONTINUE
+      ICALP=0
+      CALL DAWRIT(IDAF,IODA,H0,NSQR,245,0)
+      GO TO 680
+C
+C     ----- NO DAMPING OR EXTRAPOLATION -----
+C
+  620 DAMPRE = .FALSE.
+      EXTPRE = .FALSE.
+      DAMP = ZERO
+C
+C     ----- SAVE NEW (MODIFIED) FOCK MATRIX -----
+C
+  660 CALL DAWRIT(IDAF,IODA,H0,NSQR,245,0)
+      CALL DAWRIT(IDAF,IODA,H1,NSQR,246,0)
+      CALL DAWRIT(IDAF,IODA,H2,NSQR,247,0)
+C
+  680 RETURN
+      END
+C*MODULE TDHF    *DECK F2NONS
+      SUBROUTINE F2NONS(D,F,XX,IX,NINTMX,NOPK,NPARAM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /ORDOPT/ NORDER(7)
+      COMMON /PCKLAB/ LABSIZ
+C
+      DIMENSION D(NUM,NUM,NPARAM),F(NUM,NUM,NPARAM),
+     *          XX(NINTMX),IX(NINTMX)
+C
+      PARAMETER (HALF=0.5D+00)
+C
+C     ----- ROUTINE HSTAR FORMS THE SKELETON MATRIX
+C                   F=( H' + H )/2
+C
+C              F(I,J)=(H**(I,J) + H**(J,I))/2
+C
+C     INDICES IN LABELS ARE IN STANDARD ORDER_
+C      I.GE.J , K.GE.L , (IJ).GE.(KL)
+C
+C     ALL CONTRIBUTIONS ARE MADE INTO LOWER HALF OF
+C     SKELETON MATRIX.
+C     ONLY OFF-DIAGONAL ELEMENTS NEED BE DIVIDED BY TWO,
+C     TO OBTAIN THE CORRECT F MATRIX.
+C
+      I = 0
+      J = 0
+      K = 0
+      L = 0
+      NXX = 0
+      IF (NOPK .NE. 1) GO TO 300
+C
+C     ----- INTEGRALS ARE NOT IN SUPERMATRIX FORM (NOPK=.TRUE.) -----
+C
+  120 CONTINUE
+      CALL PREAD(IS,XX,IX,NXX,NINTMX)
+      IF (NXX .EQ. 0) GO TO 220
+      NINT = IABS(NXX)
+      IF (NINT .GT. NINTMX) CALL ABRT
+      DO 200 M = 1,NINT
+C
+                       NPACK = M
+                       IF (LABSIZ .EQ. 2) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX( 2*NPACK - 1 )
+                         IPACK = ISHFT( LABEL, -16 )
+                         JPACK = IAND(  LABEL, 65535 )
+                         LABEL = IX( 2*NPACK     )
+                         KPACK = ISHFT( LABEL, -16 )
+                         LPACK = IAND(  LABEL, 65535 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -48 )
+                         JPACK = IAND( ISHFT( LABEL, -32 ), 65535 )
+                         KPACK = IAND( ISHFT( LABEL, -16 ), 65535 )
+                         LPACK = IAND( LABEL, 65535 )
+#endif
+                       ELSE IF (LABSIZ .EQ. 1) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -24 )
+                         JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                         KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                         LPACK = IAND( LABEL, 255 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         IF ( MOD(NPACK,2) .EQ. 0 ) THEN
+                           LABEL = IX( NPACK/2 )
+                           IPACK = IAND( ISHFT( LABEL, -24 ), 255 )
+                           JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                           LPACK = IAND( LABEL, 255 )
+                         ELSE
+                           LABEL = IX( (NPACK/2)+1 )
+                           IPACK = ISHFT( LABEL, -56 )
+                           JPACK = IAND( ISHFT( LABEL, -48 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL, -40 ), 255 )
+                           LPACK = IAND( ISHFT( LABEL, -32 ), 255 )
+                         END IF
+#endif
+                       END IF
+                       I = IPACK
+                       J = JPACK
+                       K = KPACK
+                       L = LPACK
+C
+C
+      VAL = XX(M)
+      NIJ = I*(I - 1)/2 +J
+      NKL = K*(K - 1)/2 +L
+      IF (NORDER(7) .NE. 1) GO TO 130
+C
+C           USING SQUARE CANONICAL INTEGRAL FILE
+C
+         IF (NKL .GT. NIJ) GO TO 200
+            IF (I .EQ. J) VAL=VAL*HALF
+            IF (K .EQ. L) VAL=VAL*HALF
+C*            IF (NIJ .EQ. NKL) VAL=VAL*HALF
+C
+  130 CONTINUE
+      VAL_2 = VAL*HALF
+      DO IPARAM=1,NPARAM
+        F(I,J,IPARAM)=F(I,J,IPARAM)+VAL*(D(K,L,IPARAM)+D(L,K,IPARAM))
+        F(J,I,IPARAM)=F(J,I,IPARAM)+VAL*(D(K,L,IPARAM)+D(L,K,IPARAM))
+        F(K,L,IPARAM)=F(K,L,IPARAM)+VAL*(D(I,J,IPARAM)+D(J,I,IPARAM))
+        F(L,K,IPARAM)=F(L,K,IPARAM)+VAL*(D(I,J,IPARAM)+D(J,I,IPARAM))
+        F(I,K,IPARAM)=F(I,K,IPARAM)-VAL_2*D(J,L,IPARAM)
+        F(K,I,IPARAM)=F(K,I,IPARAM)-VAL_2*D(L,J,IPARAM)
+        F(I,L,IPARAM)=F(I,L,IPARAM)-VAL_2*D(J,K,IPARAM)
+        F(L,I,IPARAM)=F(L,I,IPARAM)-VAL_2*D(K,J,IPARAM)
+        F(J,K,IPARAM)=F(J,K,IPARAM)-VAL_2*D(I,L,IPARAM)
+        F(K,J,IPARAM)=F(K,J,IPARAM)-VAL_2*D(L,I,IPARAM)
+        F(J,L,IPARAM)=F(J,L,IPARAM)-VAL_2*D(I,K,IPARAM)
+        F(L,J,IPARAM)=F(L,J,IPARAM)-VAL_2*D(K,I,IPARAM)
+      END DO
+  200 CONTINUE
+C
+      IF (NXX .GT. 0) GO TO 120
+C
+C     DONE CONSTRUCTING MATRIX, OFF DIAGONAL ELEMENTS NEED HALVING
+C
+  220 CONTINUE
+C*      L2 = (NUM*NUM+NUM)/2
+C*      CALL DSCAL(L2,HALF,F,1)
+C*      II = 0
+C*      DO 250 I=1,NUM
+C*         F(I,I) = F(I,I)+F(I,I)
+C*  250 CONTINUE
+      CALL SEQREW(IS)
+      RETURN
+C     ******
+C
+C     ----- INTEGRALS ARE IN SUPERMATRIX FORM (NOPK=.FALSE.) -----
+C
+C!! I DON'T KNOW HOW TO DO THIS YET
+  300 CONTINUE
+      CALL ABRT
+      RETURN
+      END
+C*MODULE TDHF    *DECK FFREQ1
+      SUBROUTINE FFREQ1(F, PTOT, PA, PB, NDIM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      PARAMETER (MXATM=500)
+      DIMENSION F(NDIM,NDIM), PTOT(NDIM,NDIM),
+     X          PA(NDIM,NDIM), PB(NDIM,NDIM)
+      COMMON /MOLKST/ NUMAT,NAT(MXATM),NFIRST(MXATM),NMIDLE(MXATM),
+     1                NLAST(MXATM), NORBS, NELECS,NALPHA,NBETA,
+     2                NCLOSE,NOPEN,NDUMY,FRACT
+      COMMON /TWOELE/ GSS(107),GSP(107),GPP(107),GP2(107),HSP(107),
+     1                GSD(107),GPD(107),GDD(107)
+C
+C *** COMPUTE THE REMAINING CONTRIBUTIONS TO THE ONE-CENTRE ELEMENTS.
+C
+      DO 100 II=1,NUMAT
+         IA=NFIRST(II)
+         IB=NMIDLE(II)
+         IC=NLAST(II)
+         NI=NAT(II)
+         DTPOP=0.0D+00
+         PTPOP=0.0D+00
+         PAPOP=0.0D+00
+         GO TO (100,40,30,30,30,20,20,20,20,20) IC-IA+2
+   20    DTPOP=PTOT(IC,IC)+PTOT(IC-1,IC-1)
+     1        +PTOT(IC-2,IC-2)+PTOT(IC-3,IC-3)
+     2        +PTOT(IC-4,IC-4)
+   30    PTPOP=PTOT(IB,IB)+PTOT(IB-1,IB-1)
+     1        +PTOT(IB-2,IB-2)
+         PAPOP=PA(IB,IB)+PA(IB-1,IB-1)
+     1        +PA(IB-2,IB-2)
+   40    CONTINUE
+C
+C     F(S,S)
+C
+         F(IA,IA) = F(IA,IA) + PB(IA,IA)*GSS(NI) + PTPOP*GSP(NI)
+     X                       - PAPOP*HSP(NI) + DTPOP*GSD(NI)
+         IF (NI.LT.3) GO TO 100
+         IPLUS=IA+1
+         DO 70 J=IPLUS,IB
+C
+C     F(P,P)
+C
+         F(J,J) = F(J,J) + PTOT(IA,IA)*GSP(NI) - PA(IA,IA)*HSP(NI)
+     X                   + PB(J,J)*GPP(NI) + (PTPOP-PTOT(J,J))*GP2(NI)
+     X                   - 0.5D+00*(PAPOP-PA(J,J))*(GPP(NI)-GP2(NI))
+     X                   + DTPOP*GPD(NI)
+C
+C     F(S,P)
+C
+         F(IA,J) = F(IA,J) + 2.0D+00*PTOT(IA,J)*HSP(NI)
+     X                     - PA(IA,J)*(HSP(NI)+GSP(NI))
+         F(J,IA) = F(J,IA) + 2.0D+00*PTOT(J,IA)*HSP(NI)
+     X                     - PA(J,IA)*(HSP(NI)+GSP(NI))
+  70  CONTINUE
+C
+C     F(P,P*)
+C
+         IMINUS=IB-1
+         DO 80 J=IPLUS,IMINUS
+            ICC=J+1
+            DO 80 L=ICC,IB
+               F(J,L) = F(J,L) + PTOT(J,L)*(GPP(NI)-GP2(NI))
+     X                         - 0.5D+00*PA(J,L)*(GPP(NI)+GP2(NI))
+               F(L,J) = F(L,J) + PTOT(L,J)*(GPP(NI)-GP2(NI))
+     X                         - 0.5D+00*PA(L,J)*(GPP(NI)+GP2(NI))
+   80 CONTINUE
+  100 CONTINUE
+      RETURN
+      END
+C*MODULE TDHF    *DECK FFREQ2
+      SUBROUTINE FFREQ2(F,PTOT,W,NUMAT,NFIRST,NLAST,NORBS)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION F(NORBS,NORBS), PTOT(NORBS,NORBS),
+     X          NFIRST(*), NLAST(*), W(*)
+C*******************************************************************
+C
+C  TDHF FORMS TWO ELECTRON TWO CENTER REPULSION PART OF THE FOCK
+C  MATRIX
+C ON INPUT PTOT = TOTAL DENSITY MATRIX
+C          P    = ALPHA OR BETA DENSITY MATRIX
+C          W    = TWO ELECTRON INTEGRAL MATRIX
+C
+C  ON OUTPUT F = PARTIAL FOCK MATRIX
+C
+C********************************************************************
+      KK=0
+C
+      DO 160 II=2,NUMAT
+         IIM1 = II - 1
+         IA=NFIRST(II)
+         IB=NLAST(II)
+         DO 150 JJ=1,IIM1
+            JA=NFIRST(JJ)
+            JB=NLAST(JJ)
+C
+            DO 73 I=IA,IB
+               DO 72 J=IA,I
+                  FIJ = 1.0D+00
+                  IF (I.EQ.J) FIJ = 0.5D+00
+                  DO 71 K=JA,JB
+                     DO 70 L=JA,K
+                        FKL = 1.0D+00
+                        IF (K.EQ.L) FKL = 0.5D+00
+                        KK=KK+1
+                        A=W(KK)
+C
+C.      WRITE (6,1234) I,J,K,L,A
+C. 1234 FORMAT ('  ',4I3,F15.5)
+C
+                        AINT=A*FKL*FIJ
+                        F(I,J)=F(I,J)+ AINT*(PTOT(K,L)+PTOT(L,K))
+                        F(J,I)=F(J,I)+ AINT*(PTOT(K,L)+PTOT(L,K))
+                        F(K,L)=F(K,L)+ AINT*(PTOT(I,J)+PTOT(J,I))
+                        F(L,K)=F(L,K)+ AINT*(PTOT(I,J)+PTOT(J,I))
+C
+                        AINT=AINT*0.5D+00
+                        F(I,L)=F(I,L)-AINT*PTOT(J,K)
+                        F(L,I)=F(L,I)-AINT*PTOT(K,J)
+                        F(K,J)=F(K,J)-AINT*PTOT(L,I)
+                        F(J,K)=F(J,K)-AINT*PTOT(I,L)
+                        F(I,K)=F(I,K)-AINT*PTOT(J,L)
+                        F(K,I)=F(K,I)-AINT*PTOT(L,J)
+                        F(J,L)=F(J,L)-AINT*PTOT(I,K)
+                        F(L,J)=F(L,J)-AINT*PTOT(K,I)
+C
+   70                CONTINUE
+   71             CONTINUE
+   72          CONTINUE
+   73       CONTINUE
+  150    CONTINUE
+  160 CONTINUE
+      RETURN
+      END
+C*MODULE TDHF    *DECK HMU
+      SUBROUTINE HMU (H1,ID,COORD,NFIRST,NLAST,NAT,NORBS,NUMAT)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+C  FORM THE DIPOLE MOMENT MATRIX FOR COMPONENT ID
+C
+      COMMON /MULTIP/ DD(107),QQ(107),AM(107),AD(107),AQ(107)
+      DIMENSION H1(NORBS,NORBS), COORD(3,*)
+      DIMENSION NFIRST(NUMAT),NLAST(NUMAT),NAT(NUMAT)
+C
+C  ZERO H1 MATRIX
+C
+      CALL VCLR (H1,1,NORBS*NORBS)
+C
+C  FORM DIPOLE MATRIX
+C
+      DO 110 I = 1,NUMAT
+         IA = NFIRST(I)
+         IB = NLAST(I)
+         NI = NAT(I)
+         DO 90 I1 = IA,IB
+            DO 70 J1 = IA,I1
+               H1(I1,J1) = 0.0D+00
+               IO1 = I1 - IA
+               JO1 = J1 - IA
+               IF ((ID.EQ.1).AND.((JO1.EQ.0).AND.(IO1.EQ.1))) THEN
+                   H1(I1,J1) = DD(NI)
+                   H1(J1,I1) = DD(NI)
+               END IF
+               IF ((ID.EQ.2).AND.((JO1.EQ.0).AND.(IO1.EQ.2))) THEN
+                   H1(I1,J1) = DD(NI)
+                   H1(J1,I1) = DD(NI)
+               END IF
+               IF ((ID.EQ.3).AND.((JO1.EQ.0).AND.(IO1.EQ.3))) THEN
+                   H1(I1,J1) = DD(NI)
+                   H1(J1,I1) = DD(NI)
+               END IF
+   70       CONTINUE
+            H1(I1,I1) = 0.0D+00
+C.. ADDED FOR TRANSLATION OF CENTER FROM ORIGIN
+            H1(I1,I1) = H1(I1,I1) + 1.8879D+00*COORD(ID,I)
+   90    CONTINUE
+  110 CONTINUE
+C
+      RETURN
+      END
+C*MODULE TDHF    *DECK MAKEUF
+      SUBROUTINE MAKEUF (U,UOLD,G,EIGS,LAST,NORBS,DIFF)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION U(NORBS,NORBS),UOLD(NORBS,NORBS),
+     X          EIGS(NORBS),G(NORBS,NORBS)
+C
+      LOGICAL LAST
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+C
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+C
+C  CREATE THE NEW TRANSFORMATION MATRIX U AND THEN VERIFY CONVERGENCE
+C
+C  ZERO MATRIX INITIALLY
+C
+      CALL VCLR (U,1,NORBS*NORBS)
+C
+C  CREATE OFF-DIAGONAL BLOCKS
+C
+      DO 200 K = NCLOSE+1,NORBS
+         DO 190 L = 1,NCLOSE
+            U(L,K) = G(L,K)/(EIGS(K)-EIGS(L)-OMEGA)
+            U(K,L) = G(K,L)/(EIGS(L)-EIGS(K)-OMEGA)
+  190    CONTINUE
+  200 CONTINUE
+C
+C  TEST FOR CONVERGENCE
+C
+      DIFF = 0.0D+00
+      DO 300 I = 1,NORBS
+         DO 290 J = 1,NORBS
+            UDIF = ABS(U(I,J)-UOLD(I,J))
+            IF (DIFF.LT.UDIF) DIFF = UDIF
+  290    CONTINUE
+  300 CONTINUE
+      IF (DIFF.LT.ATOL) THEN
+         LAST = .TRUE.
+      END IF
+C
+      DO 400 I = 1,NORBS
+         DO 390 J = 1,NORBS
+            UOLD(I,J) = U(I,J)
+  390    CONTINUE
+  400 CONTINUE
+C
+      RETURN
+      END
+C*MODULE TDHF    *DECK MPCFNS
+      SUBROUTINE MPCFNS (P,F,PA,W,N2EL,NORB)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL OUT,GOPARR,DSKWRK,MASWRK
+C
+      DIMENSION F(NORB,NORB),P(NORB,NORB),PA(NORB,NORB),W(N2EL)
+C
+      PARAMETER (MXATM=500, ONE=1.00D+00, HALF = 0.50D+00)
+      PARAMETER (TOEV=27.211652D+00, TOHART=ONE/TOEV)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOLKST/ NUMAT,MNAT(MXATM),NFIRST(MXATM),NMIDLE(MXATM),
+     *                NLAST(MXATM),NORBS,NELECS,NALPHA,NBETA,NCLOSE,
+     *                NOPEN,NDUMY,FRACT
+      COMMON /NUMCAL/ NUMCAL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DEBUG /8HDEBUG   /
+#else
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      DATA DEBUG_STR/"DEBUG   "/
+#endif
+      NSQR = NORB*NORB
+      NUMCAL = 1
+C
+C     ----- CREATE TWO ELECTRON FOCK MATRIX.  THE MOPAC ROUTINES
+C           FOCK1 AND 2 REQUIRE THE ALPHA AND BETA DENSITY -----
+C
+      OUT = NPRINT.EQ.5 .OR. EXETYP.EQ. DEBUG .AND. MASWRK
+C
+      CALL VCLR(F,1,NSQR)
+      CALL VCLR(PA,1,NSQR)
+C.      CALL VCLR(PB,1,L2)
+C
+C     ----- ALPHA AND BETA DENSITY = 0.5 TOTAL DENSITY -----
+C
+      CALL DCOPY(NSQR,P,1,PA,1)
+      CALL DSCAL(NSQR,HALF,PA,1)
+C.      CALL DCOPY(L2,PA,1,PB,1)
+C
+C     ----- CALCULATE THE 2-ELECTRON PART OF THE FOCK MATRIX -----
+C
+      CALL FFREQ2 (F,P,W,NUMAT,NFIRST,NLAST,NORB)
+      CALL FFREQ1 (F,P,PA,PA,NORB)
+C
+C     ----- CONVERT BACK TO A.U.'S -----
+C
+      CALL DSCAL(NSQR,TOHART,F,1)
+C
+C     ----- OPTIONAL PRINTOUT -----
+C
+      IF(OUT) THEN
+        WRITE(IW,9040)
+        CALL PRTRIL(F,NUM)
+      END IF
+      RETURN
+C
+ 9040 FORMAT(/10X,'TWO-ELECTRON PART OF FOCK MATRIX (MPCG)')
+      END
+C*MODULE TDHF    *DECK NGAMTHG
+      SUBROUTINE NGAMTHG(NORBS,X,GD3,UD3,G1,U1,GS,USMD,EPS,US)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C.....................................................................
+C  CALCULATE GAMMA(THG) IN A NONITERATIVE FASHION
+C.....................................................................
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      CHARACTER*1 ALAB
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION X(NORBS,NORBS),GD3(NORBS,NORBS),UD3(NORBS,NORBS),
+     X          G1(NORBS,NORBS),U1(NORBS,NORBS),GS(NORBS,NORBS),
+     X          USMD(NORBS,NORBS),EPS(NORBS,NORBS),
+     X          GAMMA(9),US(NORBS,NORBS)
+      DIMENSION ALAB(3),IDA(9),IDB(9),IDC(9),IDD(9),
+     X          IPAIR(3,3)
+      DATA ALAB /'X','Y','Z'/
+      DATA IDA /1,2,3,1,1,2,2,3,3/
+      DATA IDB /1,2,3,1,1,2,2,3,3/
+      DATA IDC /1,2,3,2,3,1,3,1,2/
+      DATA IDD /1,2,3,2,3,1,3,1,2/
+C
+      DATA IPAIR /1,2,3,2,4,5,3,5,6/
+      ONE=1.0D+00
+      MSQ = NORBS*NORBS
+      IF(MASWRK)WRITE (IW,2450) OMEGA
+ 2450 FORMAT (/1X,70('*')/
+     X   ' GAMMA (THIRD HARMONIC GENERATION): G(-3W;W,W,W)',
+     X   ' FOR W = ',F10.5,' A.U.'/1X,70('*')/)
+C
+C GET DATA FROM ALPHA  AND ITERATIVE BETA CALCULATIONS
+C
+      JGARC=121
+      JUARC=118
+      JUREC=106
+      JGREC=109
+      JG2REC=154
+      JU2REC=148
+      JU2MRC=166
+      JEPREC=160
+C
+C LOOP BEGINS FOR THE CALCULATION OF GAMMA(ABCD)
+C
+      GAV = 0.0D+00
+      DO 240 IE=1,9
+C
+         IA=IDA(IE)
+         IB=IDB(IE)
+         IC=IDC(IE)
+         ID=IDD(IE)
+         ICD=IPAIR(IC,ID)
+         IBD=IPAIR(IB,ID)
+         IBC=IPAIR(IB,IC)
+C
+C  READ IN THE FIRST ORDER U3 OMEGA AND G3 OMEGA IN THE DIRECTION A
+C
+C MAKE GD3 OMEGA MATRIX FROM G3 MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JGARC+IA,0)
+         CALL TRSPOU(GD3,X,NORBS,2,ONE)
+C
+C MAKE UD3 OMEGA MATRIX FROM U3 OMEGA MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JUARC+IA,0)
+         CALL TRSPOU(UD3,X,NORBS,2,-ONE)
+C
+         YY=0.0D+00
+         DO 20 IPASS = 1,3
+            IF (IPASS.EQ.1) THEN
+               J2=IB
+               J34=ICD
+            ELSE IF (IPASS.EQ.2) THEN
+               J2=IC
+               J34=IBD
+            ELSE IF (IPASS.EQ.3) THEN
+               J2=ID
+               J34=IBC
+            END IF
+C
+C  READ IN G1,U1,GS,US,UMS,EPS
+C
+C  GET  UB
+            CALL DAREAD(IDAF,IODA,U1,MSQ,JUREC+J2,0)
+C  GET  GB
+            CALL DAREAD(IDAF,IODA,G1,MSQ,JGREC+J2,0)
+C  GET  GCD
+            CALL DAREAD(IDAF,IODA,GS,MSQ,JG2REC+J34,0)
+C  GET  UCD
+            CALL DAREAD(IDAF,IODA,US,MSQ,JU2REC+J34,0)
+C  GET  USMD
+            IF(INIG.EQ.2) THEN
+              CALL DAREAD(IDAF,IODA,EPS,MSQ,JU2MRC+J34,0)
+              DO II=1,NORBS
+              DO JJ=1,NORBS
+                USMD(JJ,II)=EPS(II,JJ)
+              ENDDO
+              ENDDO
+            ELSE
+              CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+            END IF
+C  GET  EPCD
+            CALL DAREAD(IDAF,IODA,EPS,MSQ,JEPREC+J34,0)
+C
+C
+C FIRST KIND
+C
+            YY = YY+TRSUB(UD3,G1,US,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(USMD,G1,UD3,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(UD3,G1,US,NORBS,NCLOSE,NORBS)
+            YY = YY+TRSUB(USMD,G1,UD3,NORBS,NCLOSE,NORBS)
+C
+C SECOND KIND
+C
+            YY = YY+TRSUB(UD3,GS,U1,NCLOSE,NORBS,NORBS)
+            YY = YY+TRSUB(U1,GS,UD3,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(UD3,EPS,U1,NORBS,NCLOSE,NORBS)
+            YY = YY-TRSUB(U1,EPS,UD3,NORBS,NCLOSE,NORBS)
+C
+C THIRD KIND
+C
+            YY = YY+TRSUB(U1,GD3,US,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(USMD,GD3,U1,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(U1,GD3,US,NORBS,NCLOSE,NORBS)
+            YY = YY+TRSUB(USMD,GD3,U1,NORBS,NCLOSE,NORBS)
+C
+   20    CONTINUE
+         GAMMA(IE) = YY
+C
+C CALCULATE THE AVERAGE GAMMA VALUE
+C
+         GAV = GAV + YY
+C
+C WRITE GAMMA(ABCD)
+C
+         IF (MASWRK)
+     X   WRITE(IW,3000) ALAB(IA),ALAB(IB),ALAB(IC),ALAB(ID),GAMMA(IE)
+3000     FORMAT ('   GAMMA ',A1,A1,A1,A1,' = ',F16.4)
+C
+ 240  CONTINUE
+      GAVE = GAV/5.0D+00
+      IF(MASWRK) THEN
+         WRITE(IW,4000) GAVE
+         WRITE(IW,*) '....DONE WITH THG 2ND HYPERPOLARIZABILITY....'
+      END IF
+      CALL TIMIT(1)
+      RETURN
+4000  FORMAT (/,'   AVERAGE GAMMA VALUE = ',F16.4,' A.U.',/)
+      END
+C*MODULE TDHF    *DECK NGEFISH
+      SUBROUTINE NGEFISH(NORB,X,GD3,UD3,G1,U1,GS,USMD,EPS,US)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C.....................................................................
+C  CALCULATE GAMMA(DC-EFISHG) IN A NONITERATIVE FASHION
+C.....................................................................
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      CHARACTER*1 ALAB
+      COMMON /IOFILE/ IR,IW,IPU,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION X(NORB,NORB),GD3(NORB,NORB),UD3(NORB,NORB),
+     X          G1(NORB,NORB),U1(NORB,NORB),GS(NORB,NORB),
+     X          USMD(NORB,NORB),EPS(NORB,NORB),
+     X          GAMMA(15),US(NORB,NORB)
+      DIMENSION ALAB(3),IDA(15),IDB(15),IDC(15),IDD(15),
+     X          IP(3,3),IPAIR(3,3)
+      DATA ALAB /'X','Y','Z'/
+      DATA IDA /1,2,3,1,1,2,2,3,3,1,1,2,2,3,3/
+      DATA IDB /1,2,3,2,3,1,3,1,2,1,1,2,2,3,3/
+      DATA IDC /1,2,3,1,1,2,2,3,3,2,3,1,3,1,2/
+      DATA IDD /1,2,3,2,3,1,3,1,2,2,3,1,3,1,2/
+      DATA IP /1,2,3,2,4,5,3,5,6/
+      DATA IPAIR /1,4,7,2,5,8,3,6,9/
+C
+      ONE=1.0D+00
+      MSQ = NORB*NORB
+      IF(MASWRK)WRITE (IW,2460) OMEGA
+ 2460 FORMAT (/1X,70('*')/1X,'GAMMA (DC-EFISHG): G(-2W;W,W,0)',
+     X        ' FOR W = ',F10.5,' A.U.'/1X,70('*')/)
+C
+C   REQUIRED RECORDS FROM POLARIZABILITY CALCULATIONS
+C
+C   -------------------------------------------------------
+C        0    W    2W    3W
+C
+C       -02- -08-  -14-  -20-  -U- MATRIX FOR -X- DIRECTION
+C       -03- -09-  -15-  -21-  -U- MATRIX FOR -Y- DIRECTION
+C       -04- -10-  -16-  -22-  -U- MATRIX FOR -Z- DIRECTION
+C       -05- -11-  -17-  -23-  -G- MATRIX FOR -X- DIRECTION
+C       -06- -12-  -18-  -24-  -G- MATRIX FOR -Y- DIRECTION
+C       -07- -13-  -19-  -25-  -G- MATRIX FOR -Z- DIRECTION
+C   -------------------------------------------------------
+C      (0,0)    (W,W)    (0,W)    (W,-W)
+C
+C      -26-     -50-     -74-     -110-   -U- MATRIX FOR -XX- DIRECTION
+C      -27-     -51-     -75-     -111-   -U- MATRIX FOR -XY- DIRECTION
+C      -28-     -52-     -76-     -112-   -U- MATRIX FOR -XZ- DIRECTION
+C                        -77-     -113-   -U- MATRIX DOE -YX- DIRECTION
+C      -29-     -53-     -78-     -114-   -U- MATRIX FOR -YY- DIRECTION
+C      -30-     -54-     -79-     -115-   -U- MATRIX FOR -YZ- DIRECTION
+C                        -80-     -116-   -U- MATRIX FOR -ZX- DIRECTION
+C                        -81-     -117-   -U- MATRIX FOR -ZY- DIRECTION
+C      -31-     -55-     -82-     -118-   -U- MATRIX FOR -ZZ- DIRECTION
+C   ------------------------------------------------------------------
+C
+C      -32-     -56-     -83-     -119-   -G- MATRIX FOR -XX- DIRECTION
+C      -33-     -57-     -84-     -120-   -G- MATRIX FOR -XY- DIRECTION
+C      -34-     -58-     -85-     -121-   -G- MATRIX FOR -XZ- DIRECTION
+C                        -86-     -122-   -G- MATRIX FOR -YX- DIRECTION
+C      -35-     -59-     -87-     -123-   -G- MATRIX FOR -YY- DIRECTION
+C      -36-     -60-     -88-     -124-   -G- MATRIX FOR -YZ- DIRECTION
+C                        -89-     -125-   -G- MATRIX FOR -ZX- DIRECTION
+C                        -90-     -126-   -G- MATRIX FOR -ZY- DIRECTION
+C      -37-     -61-     -91-     -127-   -G- MATRIX FOR -ZZ- DIRECTION
+C   ------------------------------------------------------------------
+C
+C      -38-     -62-     -92-     -128-   -E- MATRIX FOR -XX- DIRECTION
+C      -39-     -63-     -93-     -129-   -E- MATRIX FOR -XY- DIRECTION
+C      -40-     -64-     -94-     -130-   -E- MATRIX FOR -XZ- DIRECTION
+C                        -95-     -131-   -E- MATRIX FOR -YX- DIRECTION
+C      -41-     -65-     -96-     -132-   -E- MATRIX FOR -YY- DIRECTION
+C      -42-     -66-     -97-     -133-   -E- MATRIX FOR -YZ- DIRECTION
+C                        -98-     -134-   -E- MATRIX FOR -ZX- DIRECTION
+C                        -99-     -135-   -E- MATRIX FOR -ZY- DIRECTION
+C      -43-     -67-     -100-    -136-   -E- MATRIX FOR -ZZ- DIRECTION
+C   ------------------------------------------------------------------
+C
+C      -44-     -68-     -101-    -137-   -UM- MATRIX FOR -XX- DIRECTION
+C      -45-     -69-     -102-    -138-   -UM- MATRIX FOR -XY- DIRECTION
+C      -46-     -70-     -103-    -139-   -UM- MATRIX FOR -XZ- DIRECTION
+C                        -104-    -140-   -UM- MATRIX FOR -YX- DIRECTION
+C      -47-     -71-     -105-    -141-   -UM- MATRIX FOR -YY- DIRECTION
+C      -48-     -72-     -106-    -142-   -UM- MATRIX FOR -YZ- DIRECTION
+C                        -107-    -143-   -UM- MATRIX FOR -ZX- DIRECTION
+C                        -108-    -144-   -UM- MATRIX FOR -ZY- DIRECTION
+C      -49-     -73-     -109-    -145-   -UM- MATRIX FOR -ZZ- DIRECTION
+C   ------------------------------------------------------------------
+C
+      JGARC=115
+      JUARC=112
+      JUREC=100
+      JGREC=103
+      JG2REC=154
+      JU2REC=148
+      JU2MRC=166
+      JEPREC=160
+C
+C LOOP BEGINS FOR THE CALCULATION OF GAMMA(ABCD)
+C
+      GAV = 0.0D+00
+      DO 240 IE=1,15
+C
+         IA=IDA(IE)
+         IB=IDB(IE)
+         IC=IDC(IE)
+         ID=IDD(IE)
+         ICD=IP(IC,ID)
+         IBD=IPAIR(IB,ID)
+         IBC=IPAIR(IB,IC)
+C
+C
+C  READ IN THE FIRST ORDER U3 OMEGA AND G3 OMEGA IN THE DIRECTION A
+C
+C MAKE GD3 OMEGA MATRIX FROM G3 MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JGARC+IA,0)
+         CALL TRSPOU(GD3,X,NORB,2,ONE)
+C
+C MAKE UD3 OMEGA MATRIX FROM U3 OMEGA MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JUARC+IA,0)
+         CALL TRSPOU(UD3,X,NORB,2,-ONE)
+C
+         YY=0.0D+00
+         DO 20 IPASS = 1,3
+            IF (IPASS.EQ.1) THEN
+               J2=IB
+               J34=ICD
+            ELSE IF (IPASS.EQ.2) THEN
+               J2=IC+6
+               J3U=IBD+24
+               J3G=IBD+27
+               J3E=IBD+30
+               J3UM=IBD+33
+            ELSE IF (IPASS.EQ.3) THEN
+               J2=ID+6
+               J3U=IBC+24
+               J3G=IBC+27
+               J3E=IBC+30
+               J3UM=IBC+33
+            END IF
+C
+C  READ IN G1,U1,GS,US,UMS,EPS
+C
+C  CALL UB
+            CALL DAREAD(IDAF,IODA,U1,MSQ,JUREC+J2,0)
+C  CALL GB
+            CALL DAREAD(IDAF,IODA,G1,MSQ,JGREC+J2,0)
+            IF (IPASS .EQ. 1) THEN
+C  CALL GCD
+               CALL DAREAD(IDAF,IODA,GS,MSQ,JG2REC+J34,0)
+C  CALL UCD
+               CALL DAREAD(IDAF,IODA,US,MSQ,JU2REC+J34,0)
+C  CALL USMD
+C              CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+               IF(INIG.EQ.2) THEN
+                 CALL DAREAD(IDAF,IODA,EPS,MSQ,JU2MRC+J34,0)
+                 DO II=1,NORB
+                 DO JJ=1,NORB
+                   USMD(JJ,II)=EPS(II,JJ)
+                 ENDDO
+                 ENDDO
+               ELSE
+                 CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+               END IF
+C  CALL EPCD
+               CALL DAREAD(IDAF,IODA,EPS,MSQ,JEPREC+J34,0)
+C
+            ELSE
+C
+C  CALL GCD
+               CALL DAREAD(IDAF,IODA,GS,MSQ,JG2REC+J3G,0)
+C  CALL UCD
+               CALL DAREAD(IDAF,IODA,US,MSQ,JU2REC+J3U,0)
+C  CALL USMD
+C              CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J3UM,0)
+               IF(INIG.EQ.2) THEN
+                 CALL DAREAD(IDAF,IODA,EPS,MSQ,JU2MRC+J3UM,0)
+                 DO II=1,NORB
+                 DO JJ=1,NORB
+                   USMD(JJ,II)=EPS(II,JJ)
+                 ENDDO
+                 ENDDO
+               ELSE
+                 CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J3UM,0)
+               END IF
+C  CALL EPCD
+               CALL DAREAD(IDAF,IODA,EPS,MSQ,JEPREC+J3E,0)
+C
+            END IF
+C
+C FIRST KIND
+C
+            YY = YY+TRSUB(UD3,G1,US,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(USMD,G1,UD3,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(UD3,G1,US,NORB,NCLOSE,NORB)
+            YY = YY+TRSUB(USMD,G1,UD3,NORB,NCLOSE,NORB)
+C
+C SECOND KIND
+C
+            YY = YY+TRSUB(UD3,GS,U1,NCLOSE,NORB,NORB)
+            YY = YY+TRSUB(U1,GS,UD3,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(UD3,EPS,U1,NORB,NCLOSE,NORB)
+            YY = YY-TRSUB(U1,EPS,UD3,NORB,NCLOSE,NORB)
+C
+C THIRD KIND
+C
+            YY = YY+TRSUB(U1,GD3,US,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(USMD,GD3,U1,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(U1,GD3,US,NORB,NCLOSE,NORB)
+            YY = YY+TRSUB(USMD,GD3,U1,NORB,NCLOSE,NORB)
+C
+   20    CONTINUE
+         GAMMA(IE) = YY
+C CALCULATE THE AVERAGE GAMMA VALUE
+        IF (IE .LE. 3) THEN
+           GAV = GAV + 3*YY
+        ELSE IF (IE .GT. 9) THEN
+           GAV = GAV + YY
+        ELSE
+           GAV = GAV + 2*YY
+        END IF
+C
+C WRITE GAMMA(ABCD)
+C
+         IF (MASWRK)
+     X   WRITE(IW,3000) ALAB(IA),ALAB(IB),ALAB(IC),ALAB(ID),GAMMA(IE)
+3000     FORMAT ('   GAMMA ',A1,A1,A1,A1,' = ',F16.4)
+C
+ 240  CONTINUE
+      GAVE = GAV/15.0D+00
+      IF(MASWRK) THEN
+         WRITE(IW,4000) GAVE
+         WRITE(IW,9020)
+      END IF
+      CALL TIMIT(1)
+      RETURN
+ 4000 FORMAT (/,'   AVERAGE GAMMA VALUE = ',F16.4,' A.U.'/)
+ 9020 FORMAT(1X,'....DONE WITH DC-EFISHG 2ND HYPERPOLARIZABILITY....')
+      END
+C*MODULE TDHF    *DECK NGIDRI
+      SUBROUTINE NGIDRI(NORB,X,GD3,UD3,G1,U1,GS,USMD,EPS,US)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      CHARACTER*1 ALAB
+C.....................................................................
+C  CALCULATE GAMMA(IDRI) AND GAMMA(OKE) IN A NONITERATIVE FASHION
+C.....................................................................
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      COMMON /IOFILE/ IR,IW,IPU,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION X(NORB,NORB),GD3(NORB,NORB),UD3(NORB,NORB),
+     X          G1(NORB,NORB),U1(NORB,NORB),GS(NORB,NORB),
+     X          USMD(NORB,NORB),EPS(NORB,NORB),
+     X          GAMMA(15),US(NORB,NORB)
+      DIMENSION ALAB(3),IDA(15),IDB(15),IDC(15),IDD(15),
+     X          IP(3,3),IPAIR(3,3)
+      DATA ALAB /'X','Y','Z'/
+      DATA IDA /1,2,3,1,1,2,2,3,3,1,1,2,2,3,3/
+      DATA IDB /1,2,3,1,1,2,2,3,3,2,3,1,3,1,2/
+      DATA IDC /1,2,3,2,3,1,3,1,2,2,3,1,3,1,2/
+      DATA IDD /1,2,3,2,3,1,3,1,2,1,1,2,2,3,3/
+      DATA IP /1,2,3,2,4,5,3,5,6/
+      DATA IPAIR /1,4,7,2,5,8,3,6,9/
+C
+      ONE=1.0D+00
+      MSQ = NORB*NORB
+      IF(MASWRK)WRITE (IW,2470) OMEGA
+ 2470 FORMAT (/,' ',70('*'),/,
+     X        ' GAMMA (IDRI): G(-W;W,W,-W)',
+     X        ' FOR W =',F10.5,' A.U.'/,' ',70('*'),/)
+C
+C (INTENSITY DEPENDENT REFRACTIVE INDEX OR DEGENERATED FOUR
+C WAVE MIXING)
+C
+      JUREC=106
+      JGREC=109
+      GAV = 0.0D+00
+      DO 240 IE=1,15
+         IA=IDA(IE)
+         IB=IDB(IE)
+         IC=IDC(IE)
+         ID=IDD(IE)
+         ICD=IPAIR(IC,ID)
+         IBD=IPAIR(IB,ID)
+         IBC=IP(IB,IC)
+C
+C  READ IN THE FIRST ORDER U3 OMEGA AND G3 OMEGA IN THE DIRECTION A
+C  MAKE GD3 OMEGA MATRIX FROM G3 MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JGREC+IA,0)
+         CALL TRSPOU(GD3,X,NORB,2,ONE)
+C
+C MAKE UD3 OMEGA MATRIX FROM U3 OMEGA MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JUREC+IA,0)
+         CALL TRSPOU(UD3,X,NORB,2,-ONE)
+C
+         YY=0.0D+00
+         DO 20 IPASS = 1,3
+            IF (IPASS.EQ.1) THEN
+               J2 = IB
+               J34=ICD
+               JG2REC=217
+               JU2REC=208
+               JU2MRC=235
+               JEPREC=226
+            ELSE IF (IPASS.EQ.2) THEN
+               J2=IC
+               J34=IBD
+               JG2REC=217
+               JU2REC=208
+               JU2MRC=235
+               JEPREC=226
+            ELSE IF (IPASS.EQ.3) THEN
+               J2=ID
+               J34=IBC
+               JG2REC= 154
+               JU2REC= 148
+               JU2MRC= 166
+               JEPREC= 160
+            END IF
+C  GET UB
+            IF (IPASS.EQ.3) THEN
+               CALL DAREAD(IDAF,IODA,X,MSQ,JUREC+J2,0)
+               CALL TRSPOU (U1,X,NORB,2,-ONE)
+            ELSE
+               CALL DAREAD(IDAF,IODA,U1,MSQ,JUREC+J2,0)
+            END IF
+C  GET GB
+            IF (IPASS.EQ.3) THEN
+               CALL DAREAD(IDAF,IODA,X,MSQ,JGREC+J2,0)
+               CALL TRSPOU (G1,X,NORB,2,ONE)
+            ELSE
+               CALL DAREAD(IDAF,IODA,G1,MSQ,JGREC+J2,0)
+            END IF
+C  GET GCD
+            CALL DAREAD(IDAF,IODA,GS,MSQ,JG2REC+J34,0)
+C  GET UCD
+            CALL DAREAD(IDAF,IODA,US,MSQ,JU2REC+J34,0)
+C  GET USMD
+C           CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+            IF(INIG.EQ.2) THEN
+              CALL DAREAD(IDAF,IODA,EPS,MSQ,JU2MRC+J34,0)
+              DO II=1,NORB
+              DO JJ=1,NORB
+                USMD(JJ,II)=EPS(II,JJ)
+              ENDDO
+              ENDDO
+            ELSE
+              CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+            END IF
+C  GET EPCD
+            CALL DAREAD(IDAF,IODA,EPS,MSQ,JEPREC+J34,0)
+C
+C FIRST KIND
+C
+            YY = YY+TRSUB(UD3,G1,US,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(USMD,G1,UD3,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(UD3,G1,US,NORB,NCLOSE,NORB)
+            YY = YY+TRSUB(USMD,G1,UD3,NORB,NCLOSE,NORB)
+C
+C SECOND KIND
+C
+            YY = YY+TRSUB(UD3,GS,U1,NCLOSE,NORB,NORB)
+            YY = YY+TRSUB(U1,GS,UD3,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(UD3,EPS,U1,NORB,NCLOSE,NORB)
+            YY = YY-TRSUB(U1,EPS,UD3,NORB,NCLOSE,NORB)
+C
+C THIRD KIND
+C
+            YY = YY+TRSUB(U1,GD3,US,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(USMD,GD3,U1,NCLOSE,NORB,NORB)
+            YY = YY-TRSUB(U1,GD3,US,NORB,NCLOSE,NORB)
+            YY = YY+TRSUB(USMD,GD3,U1,NORB,NCLOSE,NORB)
+C
+   20    CONTINUE
+         GAMMA(IE) = YY
+C
+C CALCULATE THE AVERAGE GAMMA VALUE
+C
+         IF (IE .LE. 3) THEN
+             GAV = GAV + 3.0D+00*YY
+         ELSE IF (IE .GT. 9) THEN
+             GAV = GAV + YY
+         ELSE
+             GAV = GAV + 2.0D+00*YY
+         END IF
+C
+C WRITE GAMMA(ABCD)
+C
+         IF (MASWRK)
+     X   WRITE(IW,3000) ALAB(IA),ALAB(IB),ALAB(IC),ALAB(ID),GAMMA(IE)
+3000     FORMAT ('    GAMMA ',A1,A1,A1,A1,' = ',F16.4)
+C
+ 240  CONTINUE
+      GAVE = GAV/15.0D+00
+      IF(MASWRK) THEN
+         WRITE (IW,4000) GAVE
+         WRITE(IW,*) '....DONE WITH IDRI 2ND HYPERPOLARIZABILITY....'
+      END IF
+      CALL TIMIT(1)
+      RETURN
+4000  FORMAT (/,'    AVERAGE GAMMA VALUE = ',F16.4,' A.U.',/)
+      END
+C*MODULE TDHF    *DECK NGOKE
+      SUBROUTINE NGOKE(NORB,X,GD3,UD3,G1,U1,GS,USMD,EPS,US)
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      CHARACTER*1 ALAB
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      COMMON /IOFILE/ IR,IW,IPU,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION X(NORB,NORB),GD3(NORB,NORB),UD3(NORB,NORB),
+     X          G1(NORB,NORB),U1(NORB,NORB),GS(NORB,NORB),
+     X          USMD(NORB,NORB),EPS(NORB,NORB),
+     X          GAMMA(15),US(NORB,NORB)
+      DIMENSION ALAB(3),IDA(15),IDB(15),IDC(15),IDD(15),
+     X          IP(3,3),IPAIR(3,3)
+      DATA ALAB /'X','Y','Z'/
+C
+      DATA IDA /1,2,3,1,1,2,2,3,3,1,1,2,2,3,3/
+      DATA IDB /1,2,3,1,1,2,2,3,3,2,3,1,3,1,2/
+      DATA IDC /1,2,3,2,3,1,3,1,2,2,3,1,3,1,2/
+      DATA IDD /1,2,3,2,3,1,3,1,2,1,1,2,2,3,3/
+C
+      DATA IP /1,2,3,2,4,5,3,5,6/
+      DATA IPAIR /1,4,7,2,5,8,3,6,9/
+      ONE=1.0D+00
+      MSQ = NORB*NORB
+C
+C  CALCULATE GAMMA(IDRI) AND GAMMA(OKE) IN A NONITERATIVE FASHION
+C
+      IF(MASWRK)WRITE (IW,2480) OMEGA
+ 2480 FORMAT (/,' ',70('*'),/,
+     X        ' GAMMA (OKE): G(0;W,-W,0) FOR W = ',F10.5,' A.U.'/,
+     X        ' ',70('*'),/)
+C
+C GET DATA FROM ALPHA  AND ITERATIVE BETA CALCULATIONS
+C DATA INCLUDING YX, ZY, ZX DIRECTIONS
+C (OPTICAL KERR EFFECT)
+C
+      JGARC=109
+      JUARC=106
+      JUREC=100
+      JGREC=103
+C
+C LOOP BEGINS FOR THE CALCULATION OF GAMMA(ABCD)
+C
+      GAV = 0.0D+00
+      DO 240 IE=1,15
+         IA=IDA(IE)
+         IB=IDB(IE)
+         IC=IDC(IE)
+         ID=IDD(IE)
+         ICD=IPAIR(IC,ID)
+         IBD=IPAIR(IB,ID)
+         IBC=IP(IB,IC)
+C
+C  READ IN THE FIRST ORDER U3 OMEGA AND G3 OMEGA IN THE DIRECTION A
+C
+C MAKE GD3 OMEGA MATRIX FROM G3 MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JGARC+IA,0)
+         CALL TRSPOU(GD3,X,NORB,2,ONE)
+C
+C MAKE UD3 OMEGA MATRIX FROM U3 OMEGA MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JUARC+IA,0)
+         CALL TRSPOU(UD3,X,NORB,2,-ONE)
+C
+         YY=0.0D+00
+         IMOVE=1
+20       CONTINUE
+C
+C OKE
+            GO TO (80,81,82), IMOVE
+ 80         J2= IB
+            J34=ICD
+            JG2REC=181
+            JU2REC=172
+            JU2MRC=199
+            JEPREC=190
+            GO TO 85
+ 81         J2=IC
+            J34=IBD
+            JG2REC=181
+            JU2REC=172
+            JU2MRC=199
+            JEPREC=190
+            GO TO 85
+ 82         J2=ID
+            J34=IBC
+            JG2REC=130
+            JU2REC=124
+            JU2MRC=142
+            JEPREC=136
+ 85         CONTINUE
+C  READ IN G1,U1,GS,US,UMS,EPS
+C
+C  CALL UB
+         IF (IMOVE.EQ.3) THEN
+            CALL DAREAD(IDAF,IODA,U1,MSQ,JUARC+J2,0)
+         ELSE
+            CALL DAREAD(IDAF,IODA,U1,MSQ,JUREC+J2,0)
+         END IF
+C  CALL GB
+         IF (IMOVE.EQ.3) THEN
+            CALL DAREAD(IDAF,IODA,G1,MSQ,JGARC+J2,0)
+         ELSE
+            CALL DAREAD(IDAF,IODA,G1,MSQ,JGREC+J2,0)
+         END IF
+C  CALL GCD
+         CALL DAREAD(IDAF,IODA,GS,MSQ,JG2REC+J34,0)
+C  CALL UCD
+         CALL DAREAD(IDAF,IODA,US,MSQ,JU2REC+J34,0)
+C  CALL USMD
+C        CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+               IF(INIG.EQ.2) THEN
+                 CALL DAREAD(IDAF,IODA,EPS,MSQ,JU2MRC+J34,0)
+                 DO II=1,NORB
+                 DO JJ=1,NORB
+                   USMD(JJ,II)=EPS(II,JJ)
+                 ENDDO
+                 ENDDO
+               ELSE
+                 CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+               END IF
+C  CALL EPCD
+         CALL DAREAD(IDAF,IODA,EPS,MSQ,JEPREC+J34,0)
+C
+C FIRST KIND
+C
+         YY = YY+TRSUB(UD3,G1,US,NCLOSE,NORB,NORB)
+         YY = YY-TRSUB(USMD,G1,UD3,NCLOSE,NORB,NORB)
+         YY = YY-TRSUB(UD3,G1,US,NORB,NCLOSE,NORB)
+         YY = YY+TRSUB(USMD,G1,UD3,NORB,NCLOSE,NORB)
+C
+C SECOND KIND
+C
+               YY = YY+TRSUB(UD3,GS,U1,NCLOSE,NORB,NORB)
+               YY = YY+TRSUB(U1,GS,UD3,NCLOSE,NORB,NORB)
+               YY = YY-TRSUB(UD3,EPS,U1,NORB,NCLOSE,NORB)
+               YY = YY-TRSUB(U1,EPS,UD3,NORB,NCLOSE,NORB)
+C
+C THIRD KIND
+C
+               YY = YY+TRSUB(U1,GD3,US,NCLOSE,NORB,NORB)
+               YY = YY-TRSUB(USMD,GD3,U1,NCLOSE,NORB,NORB)
+               YY = YY-TRSUB(U1,GD3,US,NORB,NCLOSE,NORB)
+               YY = YY+TRSUB(USMD,GD3,U1,NORB,NCLOSE,NORB)
+C
+               IMOVE=IMOVE+1
+               IF (IMOVE .LE. 3) GO TO 20
+C
+               GAMMA(IE) = YY
+C
+C CALCULATE THE AVERAGE GAMMA VALUE
+C
+                IF (IE .LE. 3) THEN
+                GAV = GAV + 3.0D+00*YY
+                ELSE IF (IE .GT. 9) THEN
+                GAV = GAV + YY
+                ELSE
+                GAV = GAV + 2.0D+00*YY
+                END IF
+C
+C WRITE GAMMA(ABCD)
+C
+      IF (MASWRK)
+     X   WRITE(IW,3000) ALAB(IA),ALAB(IB),ALAB(IC),ALAB(ID),GAMMA(IE)
+3000  FORMAT ('   GAMMA ',A1,A1,A1,A1,' = ',F16.4)
+C
+ 240         CONTINUE
+                GAVE = GAV/15.0D+00
+      IF(MASWRK) THEN
+         WRITE(IW,4000) GAVE
+         WRITE(IW,*) '....DONE WITH OKE 2ND HYPERPOLARIZABILITY....'
+      END IF
+      CALL TIMIT(1)
+      RETURN
+4000  FORMAT (/,'    AVERAGE GAMMA VALUE  = ',F16.4,' A.U.',/)
+      END
+C*MODULE TDHF    *DECK NGSTAT
+      SUBROUTINE NGSTAT (NORBS,X,GD3,UD3,G1,U1,GS,USMD,EPS,US)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C.....................................................................
+C  CALCULATE GAMMA(THG) IN A NONITERATIVE FASHION
+C.....................................................................
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      CHARACTER*1 ALAB
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION X(NORBS,NORBS),GD3(NORBS,NORBS),UD3(NORBS,NORBS),
+     X          G1(NORBS,NORBS),U1(NORBS,NORBS),GS(NORBS,NORBS),
+     X          USMD(NORBS,NORBS),EPS(NORBS,NORBS),
+     X          GAMMA(9),US(NORBS,NORBS)
+      DIMENSION ALAB(3),IDA(6),IDB(6),IDC(6),IDD(6),
+     X          IPAIR(3,3)
+      DATA ALAB /'X','Y','Z'/
+      DATA IDA /1,2,3,1,1,2/
+      DATA IDB /1,2,3,1,1,2/
+      DATA IDC /1,2,3,2,3,3/
+      DATA IDD /1,2,3,2,3,3/
+      DATA IPAIR /1,2,3,2,4,5,3,5,6/
+C
+      ONE=1.0D+00
+      MSQ = NORBS*NORBS
+      IF (MASWRK) WRITE (IW,2450)
+ 2450 FORMAT (/,' ',70('*'),/,
+     X   ' GAMMA (STATIC): G(0;0,0,0)',/,' ',70('*')/)
+C
+C GET DATA FROM ALPHA  AND ITERATIVE BETA CALCULATIONS
+C
+      JUREC=100
+      JGREC=103
+      JG2REC=130
+      JU2REC=124
+      JU2MRC=142
+      JEPREC=136
+C
+C LOOP BEGINS FOR THE CALCULATION OF GAMMA(ABCD)
+C
+      GAV = 0.0D+00
+      DO 240 IE=1,6
+C
+         IA=IDA(IE)
+         IB=IDB(IE)
+         IC=IDC(IE)
+         ID=IDD(IE)
+         ICD=IPAIR(IC,ID)
+         IBD=IPAIR(IB,ID)
+         IBC=IPAIR(IB,IC)
+C
+C  READ IN THE FIRST ORDER U3 OMEGA AND G3 OMEGA IN THE DIRECTION A
+C
+C MAKE GA(0) MATRIX FROM G3 MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JGREC+IA,0)
+         CALL TRSPOU(GD3,X,NORBS,2,ONE)
+C
+C MAKE UA(0) MATRIX FROM U3 OMEGA MATRIX
+C
+         CALL DAREAD(IDAF,IODA,X,MSQ,JUREC+IA,0)
+         CALL TRSPOU(UD3,X,NORBS,2,-ONE)
+C
+         YY=0.0D+00
+         DO 20 IPASS = 1,3
+            IF (IPASS.EQ.1) THEN
+               J2=IB
+               J34=ICD
+            ELSE IF (IPASS.EQ.2) THEN
+               J2=IC
+               J34=IBD
+            ELSE IF (IPASS.EQ.3) THEN
+               J2=ID
+               J34=IBC
+            END IF
+C
+C  READ IN G1,U1,GS,US,UMS,EPS
+C
+C  GET  UB
+            CALL DAREAD(IDAF,IODA,U1,MSQ,JUREC+J2,0)
+C  GET  GB
+            CALL DAREAD(IDAF,IODA,G1,MSQ,JGREC+J2,0)
+C  GET  GCD
+            CALL DAREAD(IDAF,IODA,GS,MSQ,JG2REC+J34,0)
+C  GET  UCD
+            CALL DAREAD(IDAF,IODA,US,MSQ,JU2REC+J34,0)
+C  GET  USMD
+C           CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+            IF(INIG.EQ.2) THEN
+              CALL DAREAD(IDAF,IODA,EPS,MSQ,JU2MRC+J34,0)
+              DO II=1,NORBS
+              DO JJ=1,NORBS
+                USMD(JJ,II)=EPS(II,JJ)
+              ENDDO
+              ENDDO
+            ELSE
+              CALL DAREAD(IDAF,IODA,USMD,MSQ,JU2MRC+J34,0)
+            END IF
+C  GET  EPCD
+            CALL DAREAD(IDAF,IODA,EPS,MSQ,JEPREC+J34,0)
+C
+C FIRST KIND
+C
+            YY = YY+TRSUB(UD3,G1,US,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(USMD,G1,UD3,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(UD3,G1,US,NORBS,NCLOSE,NORBS)
+            YY = YY+TRSUB(USMD,G1,UD3,NORBS,NCLOSE,NORBS)
+C
+C SECOND KIND
+C
+            YY = YY+TRSUB(UD3,GS,U1,NCLOSE,NORBS,NORBS)
+            YY = YY+TRSUB(U1,GS,UD3,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(UD3,EPS,U1,NORBS,NCLOSE,NORBS)
+            YY = YY-TRSUB(U1,EPS,UD3,NORBS,NCLOSE,NORBS)
+C
+C THIRD KIND
+C
+            YY = YY+TRSUB(U1,GD3,US,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(USMD,GD3,U1,NCLOSE,NORBS,NORBS)
+            YY = YY-TRSUB(U1,GD3,US,NORBS,NCLOSE,NORBS)
+            YY = YY+TRSUB(USMD,GD3,U1,NORBS,NCLOSE,NORBS)
+C
+   20    CONTINUE
+         GAMMA(IE) = YY
+C
+C CALCULATE THE AVERAGE GAMMA VALUE
+C
+         IF (IE.LE.3) THEN
+             GAV = GAV + YY
+         ELSE
+             GAV = GAV + 2*YY
+         END IF
+C
+C WRITE GAMMA(ABCD)
+C
+         IF (MASWRK)
+     X   WRITE(IW,3000) ALAB(IA),ALAB(IB),ALAB(IC),ALAB(ID),GAMMA(IE)
+3000     FORMAT ('   GAMMA ',A1,A1,A1,A1,' = ',F16.4)
+C
+ 240  CONTINUE
+      GAVE = GAV/5.0D+00
+      IF (MASWRK) THEN
+         WRITE(IW,4000) GAVE
+         WRITE(IW,*) '....DONE WITH STATIC 2ND HYPERPOLARIZABILITY....'
+      END IF
+      CALL TIMIT(1)
+      RETURN
+4000  FORMAT (/,'   AVERAGE GAMMA VALUE = ',F16.4,' A.U.',/)
+      END
+C*MODULE TDHF    *DECK NONBET
+      SUBROUTINE NONBET (NORB,U1X,U1Y,U1Z,U2X,U2Y,U2Z,
+     X                   G1X,G1Y,G1Z,G2X,G2Y,G2Z)
+C
+C THIS ROUTINE CALCULATES SECOND HARMONIC GENERATION IN A
+C NONITERATIVE WAY.
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION U1X(NORB,NORB),U1Y(NORB,NORB),U1Z(NORB,NORB)
+      DIMENSION U2X(NORB,NORB),U2Y(NORB,NORB),U2Z(NORB,NORB)
+      DIMENSION G1X(NORB,NORB),G1Y(NORB,NORB),G1Z(NORB,NORB)
+      DIMENSION G2X(NORB,NORB),G2Y(NORB,NORB),G2Z(NORB,NORB)
+C
+C GET DATA FROM ALPHA CALCULATIONS
+C
+      NSQR = NORB*NORB
+      BAVX = 0.0D+00
+      BAVY = 0.0D+00
+      BAVZ = 0.0D+00
+      CALL DAREAD(IDAF,IODA,U1X,NSQR,107,0)
+      CALL DAREAD(IDAF,IODA,U1Y,NSQR,108,0)
+      CALL DAREAD(IDAF,IODA,U1Z,NSQR,109,0)
+      CALL DAREAD(IDAF,IODA,G1X,NSQR,110,0)
+      CALL DAREAD(IDAF,IODA,G1Y,NSQR,111,0)
+      CALL DAREAD(IDAF,IODA,G1Z,NSQR,112,0)
+      CALL DAREAD(IDAF,IODA,U2X,NSQR,113,0)
+      CALL DAREAD(IDAF,IODA,U2Y,NSQR,114,0)
+      CALL DAREAD(IDAF,IODA,U2Z,NSQR,115,0)
+      CALL DAREAD(IDAF,IODA,G2X,NSQR,116,0)
+      CALL DAREAD(IDAF,IODA,G2Y,NSQR,117,0)
+      CALL DAREAD(IDAF,IODA,G2Z,NSQR,118,0)
+C XXX
+      CALL BETCOM (U1X,G1X,U2X,G2X,NCLOSE,NORB,BXXX)
+      BAVX = BAVX +3.0D+00 * BXXX
+C YXX
+      CALL BETCOM (U1X,G1X,U2Y,G2Y,NCLOSE,NORB,BYXX)
+      BAVY = BAVY + BYXX
+C ZXX
+      CALL BETCOM (U1X,G1X,U2Z,G2Z,NCLOSE,NORB,BZXX)
+      BAVZ = BAVZ + BZXX
+C XXY
+      CALL BETALL (U2X,G2X,U1X,G1X,U1Y,G1Y,NCLOSE,NORB,BXXY)
+      BAVY = BAVY + BXXY
+C YXY
+      CALL BETALL (U2Y,G2Y,U1X,G1X,U1Y,G1Y,NCLOSE,NORB,BYXY)
+      BAVX = BAVX + BYXY
+C ZXY
+      CALL BETALL (U2Z,G2Z,U1X,G1X,U1Y,G1Y,NCLOSE,NORB,BZXY)
+C XXZ
+      CALL BETALL (U2X,G2X,U1X,G1X,U1Z,G1Z,NCLOSE,NORB,BXXZ)
+      BAVZ = BAVZ + BXXZ
+C YXZ
+      CALL BETALL (U2Y,G2Y,U1X,G1X,U1Z,G1Z,NCLOSE,NORB,BYXZ)
+C ZXZ
+      CALL BETALL (U2Z,G2Z,U1X,G1X,U1Z,G1Z,NCLOSE,NORB,BZXZ)
+      BAVX = BAVX + BZXZ
+C XYX
+      CALL BETALL (U2X,G2X,U1Y,G1Y,U1X,G1X,NCLOSE,NORB,BXYX)
+      BAVY = BAVY + BXYX
+C YYX
+      CALL BETALL (U2Y,G2Y,U1Y,G1Y,U1X,G1X,NCLOSE,NORB,BYYX)
+      BAVX = BAVX + BYYX
+C ZYX
+      CALL BETALL (U2Z,G2Z,U1Y,G1Y,U1X,G1X,NCLOSE,NORB,BZYX)
+C XYY
+      CALL BETCOM (U1Y,G1Y,U2X,G2X,NCLOSE,NORB,BXYY)
+      BAVX = BAVX + BXYY
+C YYY
+      CALL BETCOM (U1Y,G1Y,U2Y,G2Y,NCLOSE,NORB,BYYY)
+      BAVY = BAVY + 3.0D+00*BYYY
+C ZYY
+      CALL BETCOM (U1Y,G1Y,U2Z,G2Z,NCLOSE,NORB,BZYY)
+      BAVZ = BAVZ + BZYY
+C XYZ
+      CALL BETALL (U2X,G2X,U1Y,G1Y,U1Z,G1Z,NCLOSE,NORB,BXYZ)
+C YYZ
+      CALL BETALL (U2Y,G2Y,U1Y,G1Y,U1Z,G1Z,NCLOSE,NORB,BYYZ)
+      BAVZ = BAVZ + BYYZ
+C ZYZ
+      CALL BETALL (U2Z,G2Z,U1Y,G1Y,U1Z,G1Z,NCLOSE,NORB,BZYZ)
+      BAVY = BAVY + BZYZ
+C XZX
+      CALL BETALL (U2X,G2X,U1Z,G1Z,U1X,G1X,NCLOSE,NORB,BXZX)
+      BAVZ = BAVZ + BXZX
+C YZX
+      CALL BETALL (U2Y,G2Y,U1Z,G1Z,U1X,G1X,NCLOSE,NORB,BYZX)
+C ZZX
+      CALL BETALL (U2Z,G2Z,U1Z,G1Z,U1X,G1X,NCLOSE,NORB,BZZX)
+      BAVX = BAVX + BZZX
+C XZY
+      CALL BETALL (U2X,G2X,U1Z,G1Z,U1Y,G1Y,NCLOSE,NORB,BXZY)
+C YZY
+      CALL BETALL (U2Y,G2Y,U1Z,G1Z,U1Y,G1Y,NCLOSE,NORB,BYZY)
+      BAVZ = BAVZ + BYZY
+C ZZY
+      CALL BETALL (U2Z,G2Z,U1Z,G1Z,U1Y,G1Y,NCLOSE,NORB,BZZY)
+      BAVY = BAVY + BZZY
+C XZZ
+      CALL BETCOM (U1Z,G1Z,U2X,G2X,NCLOSE,NORB,BXZZ)
+      BAVX = BAVX + BXZZ
+C YZZ
+      CALL BETCOM (U1Z,G1Z,U2Y,G2Y,NCLOSE,NORB,BYZZ)
+      BAVY = BAVY + BYZZ
+C ZZZ
+      CALL BETCOM (U1Z,G1Z,U2Z,G2Z,NCLOSE,NORB,BZZZ)
+      BAVZ = BAVZ + 3.0D+00 * BZZZ
+C
+      BAVX = BAVX/5.0D+00
+      BAVY = BAVY/5.0D+00
+      BAVZ = BAVZ/5.0D+00
+C
+      BVEC = (BAVX*BAVX+BAVY*BAVY+BAVZ*BAVZ)**0.5D+00
+      IF(MASWRK) THEN
+         WRITE (IW,986)
+  986    FORMAT (//1X,70('+')/
+     X             ' BETA (SECOND HARMONIC GENERATION)'/
+     X              ' ',70('+'))
+         WRITE (IW,987) BXXX,BYXX,BZXX,BXXY,BYXY,BZXY,
+     X                  BXXZ,BYXZ,BZXZ,BXYX,BYYX,BZYX,
+     X                  BXYY,BYYY,BZYY,BXYZ,BYYZ,BZYZ,
+     X                  BXZX,BYZX,BZZX,BXZY,BYZY,BZZY,
+     X                         BXZZ,BYZZ,BZZZ
+  987 FORMAT(//,'  BXXX  ',F15.4,'   BYXX ',F15.4,'   BZXX ',F15.4,
+     X        /,'  BXXY  ',F15.4,'   BYXY ',F15.4,'   BZXY ',F15.4,
+     X        /,'  BXXZ  ',F15.4,'   BYXZ ',F15.4,'   BZXZ ',F15.4,
+     X        /,'  BXYX  ',F15.4,'   BYYX ',F15.4,'   BZYX ',F15.4,
+     X        /,'  BXYY  ',F15.4,'   BYYY ',F15.4,'   BZYY ',F15.4,
+     X        /,'  BXYZ  ',F15.4,'   BYYZ ',F15.4,'   BZYZ ',F15.4,
+     X        /,'  BXZX  ',F15.4,'   BYZX ',F15.4,'   BZZX ',F15.4,
+     X        /,'  BXZY  ',F15.4,'   BYZY ',F15.4,'   BZZY ',F15.4,
+     X        /,'  BXZZ  ',F15.4,'   BYZZ ',F15.4,'   BZZZ ',F15.4)
+C
+      WRITE (IW,1000) BAVX
+1000  FORMAT (/,' SHG BETAX VALUE = ',F15.4)
+      WRITE (IW,1001) BAVY
+1001  FORMAT (' SHG BETAY VALUE = ',F15.4)
+      WRITE (IW,1002) BAVZ
+1002  FORMAT (' SHG BETAZ VALUE = ',F15.4)
+C
+      WRITE (IW,1003) BVEC,OMEGA
+1003  FORMAT (/,' AVERAGE BETA (SHG) VALUE = ',F15.4,' AT',F10.5,
+     X         ' A.U.',//)
+      END IF
+      RETURN
+      END
+C*MODULE TDHF    *DECK NONEOPE
+      SUBROUTINE NONEOPE (NORB,U0X,U1Y,U1Z,U1X,U0Y,U0Z,
+     X                    G0X,G1Y,G1Z,G1X,G0Y,G0Z)
+C
+C THIS ROUTINE CALCULATES ELECTROOPTIC POCKEL'S EFFECT
+C IN A NONITERATIVE WAY.
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION U0X(NORB,NORB),U1Y(NORB,NORB),U1Z(NORB,NORB)
+      DIMENSION U1X(NORB,NORB),U0Y(NORB,NORB),U0Z(NORB,NORB)
+      DIMENSION G0X(NORB,NORB),G1Y(NORB,NORB),G1Z(NORB,NORB)
+      DIMENSION G1X(NORB,NORB),G0Y(NORB,NORB),G0Z(NORB,NORB)
+C
+      NSQR = NORB*NORB
+C
+C READ DATA FROM ALPHA CALCULATION
+C
+      BAVX = 0.0D+00
+      BAVY = 0.0D+00
+      BAVZ = 0.0D+00
+C
+      CALL DAREAD(IDAF,IODA,U0X,NSQR,101,0)
+      CALL DAREAD(IDAF,IODA,U0Y,NSQR,102,0)
+      CALL DAREAD(IDAF,IODA,U0Z,NSQR,103,0)
+      CALL DAREAD(IDAF,IODA,G0X,NSQR,104,0)
+      CALL DAREAD(IDAF,IODA,G0Y,NSQR,105,0)
+      CALL DAREAD(IDAF,IODA,G0Z,NSQR,106,0)
+      CALL DAREAD(IDAF,IODA,U1X,NSQR,107,0)
+      CALL DAREAD(IDAF,IODA,U1Y,NSQR,108,0)
+      CALL DAREAD(IDAF,IODA,U1Z,NSQR,109,0)
+      CALL DAREAD(IDAF,IODA,G1X,NSQR,110,0)
+      CALL DAREAD(IDAF,IODA,G1Y,NSQR,111,0)
+      CALL DAREAD(IDAF,IODA,G1Z,NSQR,112,0)
+C XXX
+      CALL BETALL (U1X,G1X,U0X,G0X,U1X,G1X,NCLOSE,NORB,BXXX)
+      BAVX = BAVX + 3.0D+00 * BXXX
+C YXX
+      CALL BETALL (U1Y,G1Y,U0X,G0X,U1X,G1X,NCLOSE,NORB,BYXX)
+      BAVY = BAVY + BYXX
+C ZXX
+      CALL BETALL (U1Z,G1Z,U0X,G0X,U1X,G1X,NCLOSE,NORB,BZXX)
+      BAVZ = BAVZ + BZXX
+C XXY
+      CALL BETALL (U1X,G1X,U0X,G0X,U1Y,G1Y,NCLOSE,NORB,BXXY)
+      BAVY = BAVY + BXXY
+C YXY
+      CALL BETALL (U1Y,G1Y,U0X,G0X,U1Y,G1Y,NCLOSE,NORB,BYXY)
+      BAVX = BAVX + BYXY
+C ZXY
+      CALL BETALL (U1Z,G1Z,U0X,G0X,U1Y,G1Y,NCLOSE,NORB,BZXY)
+C XXZ
+      CALL BETALL (U1X,G1X,U0X,G0X,U1Z,G1Z,NCLOSE,NORB,BXXZ)
+      BAVZ = BAVZ + BXXZ
+C YXZ
+      CALL BETALL (U1Y,G1Y,U0X,G0X,U1Z,G1Z,NCLOSE,NORB,BYXZ)
+C ZXZ
+      CALL BETALL (U1Z,G1Z,U0X,G0X,U1Z,G1Z,NCLOSE,NORB,BZXZ)
+      BAVX = BAVX + BZXZ
+C XYX
+      CALL BETALL (U1X,G1X,U0Y,G0Y,U1X,G1X,NCLOSE,NORB,BXYX)
+      BAVY = BAVY + BXYX
+C YYX
+      CALL BETALL (U1Y,G1Y,U0Y,G0Y,U1X,G1X,NCLOSE,NORB,BYYX)
+      BAVX = BAVX + BYYX
+C ZYX
+      CALL BETALL (U1Z,G1Z,U0Y,G0Y,U1X,G1X,NCLOSE,NORB,BZYX)
+C XYY
+      CALL BETALL (U1X,G1X,U0Y,G0Y,U1Y,G1Y,NCLOSE,NORB,BXYY)
+      BAVX = BAVX + BXYY
+C YYY
+      CALL BETALL (U1Y,G1Y,U0Y,G0Y,U1Y,G1Y,NCLOSE,NORB,BYYY)
+      BAVY = BAVY + 3.0D+00 * BYYY
+C ZYY
+      CALL BETALL (U1Z,G1Z,U0Y,G0Y,U1Y,G1Y,NCLOSE,NORB,BZYY)
+      BAVZ = BAVZ + BZYY
+C XYZ
+      CALL BETALL (U1X,G1X,U0Y,G0Y,U1Z,G1Z,NCLOSE,NORB,BXYZ)
+C YYZ
+      CALL BETALL (U1Y,G1Y,U0Y,G0Y,U1Z,G1Z,NCLOSE,NORB,BYYZ)
+      BAVZ = BAVZ + BYYZ
+C ZYZ
+      CALL BETALL (U1Z,G1Z,U0Y,G0Y,U1Z,G1Z,NCLOSE,NORB,BZYZ)
+      BAVY = BAVY + BZYZ
+C XZX
+      CALL BETALL (U1X,G1X,U0Z,G0Z,U1X,G1X,NCLOSE,NORB,BXZX)
+      BAVZ = BAVZ + BXZX
+C YZX
+      CALL BETALL (U1Y,G1Y,U0Z,G0Z,U1X,G1X,NCLOSE,NORB,BYZX)
+C ZZX
+      CALL BETALL (U1Z,G1Z,U0Z,G0Z,U1X,G1X,NCLOSE,NORB,BZZX)
+      BAVX = BAVX + BZZX
+C XZY
+      CALL BETALL (U1X,G1X,U0Z,G0Z,U1Y,G1Y,NCLOSE,NORB,BXZY)
+C YZY
+      CALL BETALL (U1Y,G1Y,U0Z,G0Z,U1Y,G1Y,NCLOSE,NORB,BYZY)
+      BAVZ = BAVZ + BYZY
+C ZZY
+      CALL BETALL (U1Z,G1Z,U0Z,G0Z,U1Y,G1Y,NCLOSE,NORB,BZZY)
+      BAVY = BAVY + BZZY
+C XZZ
+      CALL BETALL (U1X,G1X,U0Z,G0Z,U1Z,G1Z,NCLOSE,NORB,BXZZ)
+      BAVX = BAVX + BXZZ
+C YZZ
+      CALL BETALL (U1Y,G1Y,U0Z,G0Z,U1Z,G1Z,NCLOSE,NORB,BYZZ)
+      BAVY = BAVY + BYZZ
+C ZZZ
+      CALL BETALL (U1Z,G1Z,U0Z,G0Z,U1Z,G1Z,NCLOSE,NORB,BZZZ)
+      BAVZ = BAVZ + 3.0D+00 * BZZZ
+C
+      BAVX = BAVX/5.0D+00
+      BAVY = BAVY/5.0D+00
+      BAVZ = BAVZ/5.0D+00
+C
+      BVEC = (BAVX*BAVX+BAVY*BAVY+BAVZ*BAVZ)**0.5D+00
+      IF(MASWRK) THEN
+      WRITE (IW,986)
+  986 FORMAT (/,' ',70('+'),/,'  BETA (ELECTOPTIC POCKELS EFFECT)',
+     X        /,' ',70('+'))
+      WRITE (IW,987) BXXX,BYXX,BZXX,BXXY,BYXY,BZXY,
+     X              BXXZ,BYXZ,BZXZ,BXYX,BYYX,BZYX,
+     X              BXYY,BYYY,BZYY,BXYZ,BYYZ,BZYZ,
+     X              BXZX,BYZX,BZZX,BXZY,BYZY,BZZY,
+     X              BXZZ,BYZZ,BZZZ
+  987 FORMAT(//,'  BXXX  ',F15.4,'   BYXX ',F15.4,'   BZXX ',F15.4,
+     X        /,'  BXXY  ',F15.4,'   BYXY ',F15.4,'   BZXY ',F15.4,
+     X        /,'  BXXZ  ',F15.4,'   BYXZ ',F15.4,'   BZXZ ',F15.4,
+     X        /,'  BXYX  ',F15.4,'   BYYX ',F15.4,'   BZYX ',F15.4,
+     X        /,'  BXYY  ',F15.4,'   BYYY ',F15.4,'   BZYY ',F15.4,
+     X        /,'  BXYZ  ',F15.4,'   BYYZ ',F15.4,'   BZYZ ',F15.4,
+     X        /,'  BXZX  ',F15.4,'   BYZX ',F15.4,'   BZZX ',F15.4,
+     X        /,'  BXZY  ',F15.4,'   BYZY ',F15.4,'   BZZY ',F15.4,
+     X        /,'  BXZZ  ',F15.4,'   BYZZ ',F15.4,'   BZZZ ',F15.4)
+C
+      WRITE (IW,1000) BAVX
+1000  FORMAT(/,' AVERAGE BETAX VALUE = ',F15.4)
+      WRITE (IW,1001) BAVY
+1001  FORMAT(' AVERAGE BETAY VALUE = ',F15.4)
+      WRITE (IW,1002) BAVZ
+1002  FORMAT(' AVERAGE BETAZ VALUE = ',F15.4)
+C
+      WRITE (IW,1003) BVEC,OMEGA
+1003  FORMAT(//,' AVERAGE BETA(EOPE) VALUE =',F15.4,' AT',F10.5,
+     X          ' A.U.',//)
+      END IF
+      RETURN
+      END
+C*MODULE TDHF    *DECK NONOR
+      SUBROUTINE NONOR (NORB,U0X,U1Y,U1Z,U1X,U0Y,U0Z,G0X,G1Y,G1Z,
+     X                  G1X,G0Y,G0Z)
+C
+C THIS ROUTINE CALCULATES OPTICAL RECTIFICATION IN A
+C NONITERATIVE WAY
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C.....................................................................
+C  CALCULATE BETA IN A NONITERATIVE FASHION
+C.....................................................................
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION U0X(NORB,NORB),U1Y(NORB,NORB),U1Z(NORB,NORB)
+      DIMENSION U1X(NORB,NORB),U0Y(NORB,NORB),U0Z(NORB,NORB)
+      DIMENSION G0X(NORB,NORB),G1Y(NORB,NORB),G1Z(NORB,NORB)
+      DIMENSION G1X(NORB,NORB),G0Y(NORB,NORB),G0Z(NORB,NORB)
+      NSQR = NORB*NORB
+C
+C READ DATA FROM ALPHA CALCULATION
+C
+      BAVX = 0.0D+00
+      BAVY = 0.0D+00
+      BAVZ = 0.0D+00
+C
+      CALL DAREAD(IDAF,IODA,U0X,NSQR,101,0)
+      CALL DAREAD(IDAF,IODA,U0Y,NSQR,102,0)
+      CALL DAREAD(IDAF,IODA,U0Z,NSQR,103,0)
+      CALL DAREAD(IDAF,IODA,G0X,NSQR,104,0)
+      CALL DAREAD(IDAF,IODA,G0Y,NSQR,105,0)
+      CALL DAREAD(IDAF,IODA,G0Z,NSQR,106,0)
+      CALL DAREAD(IDAF,IODA,U1X,NSQR,107,0)
+      CALL DAREAD(IDAF,IODA,U1Y,NSQR,108,0)
+      CALL DAREAD(IDAF,IODA,U1Z,NSQR,109,0)
+      CALL DAREAD(IDAF,IODA,G1X,NSQR,110,0)
+      CALL DAREAD(IDAF,IODA,G1Y,NSQR,111,0)
+      CALL DAREAD(IDAF,IODA,G1Z,NSQR,112,0)
+C
+C NONITERATIVE BETA CALCULATION
+C
+C XXX
+      CALL BETAL1 (U0X,G0X,U1X,G1X,U1X,G1X,NCLOSE,NORB,BXXX)
+      BAVX = BAVX + 3.0D+00* BXXX
+C YXX
+      CALL BETAL1 (U0Y,G0Y,U1X,G1X,U1X,G1X,NCLOSE,NORB,BYXX)
+      BAVY = BAVY + BYXX
+C ZXX
+      CALL BETAL1 (U0Z,G0Z,U1X,G1X,U1X,G1X,NCLOSE,NORB,BZXX)
+      BAVZ = BAVZ + BZXX
+C XXY
+      CALL BETAL1 (U0X,G0X,U1X,G1X,U1Y,G1Y,NCLOSE,NORB,BXXY)
+      BAVY = BAVY + BXXY
+C YXY
+      CALL BETAL1 (U0Y,G0Y,U1X,G1X,U1Y,G1Y,NCLOSE,NORB,BYXY)
+      BAVX = BAVX + BYXY
+C ZXY
+      CALL BETAL1 (U0Z,G0Z,U1X,G1X,U1Y,G1Y,NCLOSE,NORB,BZXY)
+C XXZ
+      CALL BETAL1 (U0X,G0X,U1X,G1X,U1Z,G1Z,NCLOSE,NORB,BXXZ)
+      BAVZ = BAVZ + BXXZ
+C YXZ
+      CALL BETAL1 (U0Y,G0Y,U1X,G1X,U1Z,G1Z,NCLOSE,NORB,BYXZ)
+C ZXZ
+      CALL BETAL1 (U0Z,G0Z,U1X,G1X,U1Z,G1Z,NCLOSE,NORB,BZXZ)
+      BAVX = BAVX + BZXZ
+C XYX
+      CALL BETAL1 (U0X,G0X,U1Y,G1Y,U1X,G1X,NCLOSE,NORB,BXYX)
+      BAVY = BAVY + BXYX
+C YYX
+      CALL BETAL1 (U0Y,G0Y,U1Y,G1Y,U1X,G1X,NCLOSE,NORB,BYYX)
+      BAVX = BAVX + BYYX
+C ZYX
+      CALL BETAL1 (U0Z,G0Z,U1Y,G1Y,U1X,G1X,NCLOSE,NORB,BZYX)
+C XYY
+      CALL BETAL1 (U0X,G0X,U1Y,G1Y,U1Y,G1Y,NCLOSE,NORB,BXYY)
+      BAVX = BAVX + BXYY
+C YYY
+      CALL BETAL1 (U0Y,G0Y,U1Y,G1Y,U1Y,G1Y,NCLOSE,NORB,BYYY)
+      BAVY = BAVY + 3.0D+00 * BYYY
+C ZYY
+      CALL BETAL1 (U0Z,G0Z,U1Y,G1Y,U1Y,G1Y,NCLOSE,NORB,BZYY)
+      BAVZ = BAVZ + BZYY
+C XYZ
+      CALL BETAL1 (U0X,G0X,U1Y,G1Y,U1Z,G1Z,NCLOSE,NORB,BXYZ)
+C YYZ
+      CALL BETAL1 (U0Y,G0Y,U1Y,G1Y,U1Z,G1Z,NCLOSE,NORB,BYYZ)
+      BAVZ = BAVZ + BYYZ
+C ZYZ
+      CALL BETAL1 (U0Z,G0Z,U1Y,G1Y,U1Z,G1Z,NCLOSE,NORB,BZYZ)
+      BAVY = BAVY + BZYZ
+C XZX
+      CALL BETAL1 (U0X,G0X,U1Z,G1Z,U1X,G1X,NCLOSE,NORB,BXZX)
+      BAVZ = BAVZ + BXZX
+C YZX
+      CALL BETAL1 (U0Y,G0Y,U1Z,G1Z,U1X,G1X,NCLOSE,NORB,BYZX)
+C ZZX
+      CALL BETAL1 (U0Z,G0Z,U1Z,G1Z,U1X,G1X,NCLOSE,NORB,BZZX)
+      BAVX = BAVX + BZZX
+C XZY
+      CALL BETAL1 (U0X,G0X,U1Z,G1Z,U1Y,G1Y,NCLOSE,NORB,BXZY)
+C YZY
+      CALL BETAL1 (U0Y,G0Y,U1Z,G1Z,U1Y,G1Y,NCLOSE,NORB,BYZY)
+      BAVZ = BAVZ + BYZY
+C ZZY
+      CALL BETAL1 (U0Z,G0Z,U1Z,G1Z,U1Y,G1Y,NCLOSE,NORB,BZZY)
+      BAVY = BAVY + BZZY
+C XZZ
+      CALL BETAL1 (U0X,G0X,U1Z,G1Z,U1Z,G1Z,NCLOSE,NORB,BXZZ)
+      BAVX = BAVX + BXZZ
+C YZZ
+      CALL BETAL1 (U0Y,G0Y,U1Z,G1Z,U1Z,G1Z,NCLOSE,NORB,BYZZ)
+      BAVY = BAVY + BYZZ
+C ZZZ
+      CALL BETAL1 (U0Z,G0Z,U1Z,G1Z,U1Z,G1Z,NCLOSE,NORB,BZZZ)
+      BAVZ = BAVZ + 3.0D+00 * BZZZ
+C
+      BAVX = BAVX/5.0D+00
+      BAVY = BAVY/5.0D+00
+      BAVZ = BAVZ/5.0D+00
+C
+      BVEC = (BAVX*BAVX+BAVY*BAVY+BAVZ*BAVZ)**0.5D+00
+      IF(MASWRK) THEN
+      WRITE (IW,986)
+  986 FORMAT  (//,' ',70('+'),/,' BETA (OPTICAL RECTIFICATION)',
+     X          /,' ',70('+'))
+      WRITE (IW,987) BXXX,BYXX,BZXX,BXXY,BYXY,BZXY,
+     X              BXXZ,BYXZ,BZXZ,BXYX,BYYX,BZYX,
+     X              BXYY,BYYY,BZYY,BXYZ,BYYZ,BZYZ,
+     X              BXZX,BYZX,BZZX,BXZY,BYZY,BZZY,
+     X              BXZZ,BYZZ,BZZZ
+  987 FORMAT(//,'  BXXX  ',F15.4,'   BYXX ',F15.4,'   BZXX ',F15.4,
+     X        /,'  BXXY  ',F15.4,'   BYXY ',F15.4,'   BZXY ',F15.4,
+     X        /,'  BXXZ  ',F15.4,'   BYXZ ',F15.4,'   BZXZ ',F15.4,
+     X        /,'  BXYX  ',F15.4,'   BYYX ',F15.4,'   BZYX ',F15.4,
+     X        /,'  BXYY  ',F15.4,'   BYYY ',F15.4,'   BZYY ',F15.4,
+     X        /,'  BXYZ  ',F15.4,'   BYYZ ',F15.4,'   BZYZ ',F15.4,
+     X        /,'  BXZX  ',F15.4,'   BYZX ',F15.4,'   BZZX ',F15.4,
+     X        /,'  BXZY  ',F15.4,'   BYZY ',F15.4,'   BZZY ',F15.4,
+     X        /,'  BXZZ  ',F15.4,'   BYZZ ',F15.4,'   BZZZ ',F15.4)
+C
+      WRITE (IW,1000) BAVX
+1000  FORMAT(/,' AVERAGE BETAX VALUE = ',F15.4)
+      WRITE (IW,1001) BAVY
+1001  FORMAT(' AVERAGE BETAY VALUE = ',F15.4)
+      WRITE (IW,1002) BAVZ
+1002  FORMAT(' AVERAGE BETAZ VALUE = ',F15.4)
+C
+      WRITE (IW,1003) BVEC,OMEGA
+1003  FORMAT(/,' AVERAGE BETA(OR) VALUE = ',F15.4,' AT ',F10.5,
+     X         ' A.U.',//)
+      END IF
+C
+      RETURN
+      END
+C*MODULE TDHF    *DECK TF
+      SUBROUTINE TF (UA,GA,UB,GB,T,NORBS)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C  THIS ROUTINE CREATES THE NEW T MATRIX
+C
+      DIMENSION UA(NORBS,NORBS),UB(NORBS,NORBS),
+     X          T(NORBS,NORBS),GA(NORBS,NORBS),
+     X          GB(NORBS,NORBS)
+C
+C  ZERO MATRIX INITIALLY
+C
+       CALL VCLR (T,1,NORBS*NORBS)
+C
+C CALCULATE T (IJ)(W,W)= SUM(GA(IK)(W)*UB(KJ)(W)+
+C GB(IK)(W)*UA(KJ)(W)-UA(IK)(W)GB(KJ)(W)-UB(IK)(W)GA(KJ)(W)
+C
+      DO 200 I = 1,NORBS
+         DO 190 J = 1,NORBS
+            SUM1=0.0D+00
+            SUM2=0.0D+00
+            DO 180 K = 1,NORBS
+               SUM1 = SUM1+GA(I,K)*UB(K,J)+GB(I,K)*UA(K,J)
+     X                    -UA(I,K)*GB(K,J)-UB(I,K)*GA(K,J)
+               SUM2 = SUM2+GA(J,K)*UB(K,I)+GB(J,K)*UA(K,I)
+     X                    -UA(J,K)*GB(K,I)-UB(J,K)*GA(K,I)
+  180       CONTINUE
+            T(I,J) = SUM1
+            T(J,I) = SUM2
+  190    CONTINUE
+  200 CONTINUE
+C
+      RETURN
+      END
+C*MODULE TDHF    *DECK TRANSFF
+      SUBROUTINE TRANSFF (F,G,C,TEMP,NORB)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C  THIS ROUTINE FORMS THE G MATRIX BY TRANSFORMING F WITH C
+C
+      DIMENSION C(NORB,NORB),F(NORB,NORB),G(NORB,NORB),
+     X          TEMP(NORB,NORB)
+C
+       DO 200 I = 1,NORB
+          DO 190 J = 1,NORB
+             TERM = 0.0D+00
+             DO 100 K = 1,NORB
+                TERM = TERM + F(I,K)*C(K,J)
+  100        CONTINUE
+             TEMP(I,J) = TERM
+  190     CONTINUE
+  200  CONTINUE
+C
+       DO 330 I = 1,NORB
+          DO 320 J = 1,NORB
+             TERM = 0.0D+00
+             DO 310 K = 1,NORB
+                TERM = TERM + C(K,I)*TEMP(K,J)
+  310        CONTINUE
+             G(I,J) = TERM
+  320     CONTINUE
+  330  CONTINUE
+C
+       RETURN
+       END
+C*MODULE TDHF    *DECK TRSPOU
+      SUBROUTINE TRSPOU(A,B,NORBS,ITW,SIGN)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION A(NORBS,NORBS),B(NORBS,NORBS)
+C
+C         THIS ROUTINE CONVERTS THE MATRICES INTO ITS ADJOINT
+C
+      GO TO (100,125,125,100) ITW
+ 100  CONTINUE
+      DO 110 J=1,NORBS
+        DO 120 I=1,NORBS
+           A(I,J)=B(I,J)
+ 120    CONTINUE
+ 110  CONTINUE
+      GO TO 160
+ 125  CONTINUE
+      DO 140 J=1,NORBS
+        DO 150 I=1,NORBS
+           A(I,J)=SIGN*B(J,I)
+ 150    CONTINUE
+ 140  CONTINUE
+ 160  CONTINUE
+      RETURN
+      END
+C*MODULE TDHF    *DECK TRSUB
+      DOUBLE PRECISION FUNCTION TRSUB (UL,X,UR,L1,LM,NDIM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION UL(NDIM,NDIM),X(NDIM,NDIM),UR(NDIM,NDIM)
+C
+C THIS PROGRAM CALCULATES TRACES OF MATRICES
+C
+      SUM = 0.0D+00
+      DO 500 I = 1,L1
+         DO 400 K = 1,LM
+            SUML = 0.0D+00
+            DO 300 L = 1,LM
+               SUML = SUML + X(K,L)*UR(L,I)
+  300       CONTINUE
+            SUM = SUM + SUML*UL(I,K)
+  400    CONTINUE
+  500 CONTINUE
+      TRSUB = 2.0D+00*SUM
+      RETURN
+      END
+C*MODULE TDHF    *DECK TRUDGU
+      DOUBLE PRECISION FUNCTION TRUDGU (UL,X,UR,L1,LM,NDIM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION UL(NDIM,NDIM),X(NDIM,NDIM),UR(NDIM,NDIM)
+C
+      SUM = 0.0D+00
+      DO 500 I = 1,L1
+         DO 400 K = 1,LM
+            SUML = 0.0D+00
+            DO 300 L = 1,LM
+               SUML = SUML + X(K,L)*UR(L,I)
+  300       CONTINUE
+            SUM = SUM + SUML*UL(K,I)
+  400    CONTINUE
+  500 CONTINUE
+      TRUDGU = 2.0D+00*SUM
+      RETURN
+      END
+C*MODULE TDHF    *DECK TRUGUD
+      DOUBLE PRECISION FUNCTION TRUGUD (UL,X,UR,L1,LM,NDIM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION UL(NDIM,NDIM),X(NDIM,NDIM),UR(NDIM,NDIM)
+C
+      SUM = 0.0D+00
+      DO 500 I = 1,L1
+         DO 400 K = 1,LM
+            SUML = 0.0D+00
+            DO 300 L = 1,LM
+               SUML = SUML + X(K,L)*UR(I,L)
+  300       CONTINUE
+            SUM = SUM + SUML*UL(I,K)
+  400    CONTINUE
+  500 CONTINUE
+      TRUGUD = 2.0D+00*SUM
+      RETURN
+      END
+C*MODULE TDHF    *DECK TRUGDU
+      DOUBLE PRECISION FUNCTION TRUGDU (UL,X,UR,L1,LM,NDIM)
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      DIMENSION UL(NDIM,NDIM),X(NDIM,NDIM),UR(NDIM,NDIM)
+C
+      SUM = 0.0D+00
+      DO 500 I = 1,L1
+         DO 400 K = 1,LM
+            SUML = 0.0D+00
+            DO 300 L = 1,LM
+               SUML = SUML + X(L,K)*UR(L,I)
+  300       CONTINUE
+            SUM = SUM + SUML*UL(I,K)
+  400    CONTINUE
+  500 CONTINUE
+      TRUGDU = 2.0D+00*SUM
+      RETURN
+      END
+C*MODULE TDHF    *DECK NBSTAT
+      SUBROUTINE NBSTAT (NORB,U0X,U0Y,U0Z,G0X,G0Y,G0Z)
+C
+C THIS ROUTINE CALCULATES STATIC BETA
+C IN A NONITERATIVE WAY.
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      LOGICAL GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROCS,IBTYP,IPTIME,GOPARR,DSKWRK,MASWRK
+      COMMON /TDHFP / ATOL,BTOL,OMEGA,FREQ(10),
+     X                MAXITA,MAXITU,NCLOSE,NFREQ,
+     X                GTHG,GEFISH,GIDRI,GOKE,BSHG,BEOPE,BOR,
+     X                INIB,INIG
+      DIMENSION U0X(NORB,NORB),U0Y(NORB,NORB),U0Z(NORB,NORB)
+      DIMENSION G0X(NORB,NORB),G0Y(NORB,NORB),G0Z(NORB,NORB)
+C
+      NSQR = NORB*NORB
+C
+C READ DATA FROM ALPHA CALCULATION
+C
+      BAVX = 0.0D+00
+      BAVY = 0.0D+00
+      BAVZ = 0.0D+00
+C
+      CALL DAREAD(IDAF,IODA,U0X,NSQR,101,0)
+      CALL DAREAD(IDAF,IODA,U0Y,NSQR,102,0)
+      CALL DAREAD(IDAF,IODA,U0Z,NSQR,103,0)
+      CALL DAREAD(IDAF,IODA,G0X,NSQR,104,0)
+      CALL DAREAD(IDAF,IODA,G0Y,NSQR,105,0)
+      CALL DAREAD(IDAF,IODA,G0Z,NSQR,106,0)
+C XXX
+      CALL BETALL (U0X,G0X,U0X,G0X,U0X,G0X,NCLOSE,NORB,BXXX)
+      BAVX = BAVX + 3.0D+00 * BXXX
+C YXX
+      CALL BETALL (U0Y,G0Y,U0X,G0X,U0X,G0X,NCLOSE,NORB,BYXX)
+      BAVY = BAVY + BYXX
+C ZXX
+      CALL BETALL (U0Z,G0Z,U0X,G0X,U0X,G0X,NCLOSE,NORB,BZXX)
+      BAVZ = BAVZ + BZXX
+C XXY
+      CALL BETALL (U0X,G0X,U0X,G0X,U0Y,G0Y,NCLOSE,NORB,BXXY)
+      BAVY = BAVY + BXXY
+C YXY
+      CALL BETALL (U0Y,G0Y,U0X,G0X,U0Y,G0Y,NCLOSE,NORB,BYXY)
+      BAVX = BAVX + BYXY
+C ZXY
+      CALL BETALL (U0Z,G0Z,U0X,G0X,U0Y,G0Y,NCLOSE,NORB,BZXY)
+C XXZ
+      CALL BETALL (U0X,G0X,U0X,G0X,U0Z,G0Z,NCLOSE,NORB,BXXZ)
+      BAVZ = BAVZ + BXXZ
+C YXZ
+      CALL BETALL (U0Y,G0Y,U0X,G0X,U0Z,G0Z,NCLOSE,NORB,BYXZ)
+C ZXZ
+      CALL BETALL (U0Z,G0Z,U0X,G0X,U0Z,G0Z,NCLOSE,NORB,BZXZ)
+      BAVX = BAVX + BZXZ
+C XYX
+      CALL BETALL (U0X,G0X,U0Y,G0Y,U0X,G0X,NCLOSE,NORB,BXYX)
+      BAVY = BAVY + BXYX
+C YYX
+      CALL BETALL (U0Y,G0Y,U0Y,G0Y,U0X,G0X,NCLOSE,NORB,BYYX)
+      BAVX = BAVX + BYYX
+C ZYX
+      CALL BETALL (U0Z,G0Z,U0Y,G0Y,U0X,G0X,NCLOSE,NORB,BZYX)
+C XYY
+      CALL BETALL (U0X,G0X,U0Y,G0Y,U0Y,G0Y,NCLOSE,NORB,BXYY)
+      BAVX = BAVX + BXYY
+C YYY
+      CALL BETALL (U0Y,G0Y,U0Y,G0Y,U0Y,G0Y,NCLOSE,NORB,BYYY)
+      BAVY = BAVY + 3.0D+00 * BYYY
+C ZYY
+      CALL BETALL (U0Z,G0Z,U0Y,G0Y,U0Y,G0Y,NCLOSE,NORB,BZYY)
+      BAVZ = BAVZ + BZYY
+C XYZ
+      CALL BETALL (U0X,G0X,U0Y,G0Y,U0Z,G0Z,NCLOSE,NORB,BXYZ)
+C YYZ
+      CALL BETALL (U0Y,G0Y,U0Y,G0Y,U0Z,G0Z,NCLOSE,NORB,BYYZ)
+      BAVZ = BAVZ + BYYZ
+C ZYZ
+      CALL BETALL (U0Z,G0Z,U0Y,G0Y,U0Z,G0Z,NCLOSE,NORB,BZYZ)
+      BAVY = BAVY + BZYZ
+C XZX
+      CALL BETALL (U0X,G0X,U0Z,G0Z,U0X,G0X,NCLOSE,NORB,BXZX)
+      BAVZ = BAVZ + BXZX
+C YZX
+      CALL BETALL (U0Y,G0Y,U0Z,G0Z,U0X,G0X,NCLOSE,NORB,BYZX)
+C ZZX
+      CALL BETALL (U0Z,G0Z,U0Z,G0Z,U0X,G0X,NCLOSE,NORB,BZZX)
+      BAVX = BAVX + BZZX
+C XZY
+      CALL BETALL (U0X,G0X,U0Z,G0Z,U0Y,G0Y,NCLOSE,NORB,BXZY)
+C YZY
+      CALL BETALL (U0Y,G0Y,U0Z,G0Z,U0Y,G0Y,NCLOSE,NORB,BYZY)
+      BAVZ = BAVZ + BYZY
+C ZZY
+      CALL BETALL (U0Z,G0Z,U0Z,G0Z,U0Y,G0Y,NCLOSE,NORB,BZZY)
+      BAVY = BAVY + BZZY
+C XZZ
+      CALL BETALL (U0X,G0X,U0Z,G0Z,U0Z,G0Z,NCLOSE,NORB,BXZZ)
+      BAVX = BAVX + BXZZ
+C YZZ
+      CALL BETALL (U0Y,G0Y,U0Z,G0Z,U0Z,G0Z,NCLOSE,NORB,BYZZ)
+      BAVY = BAVY + BYZZ
+C ZZZ
+      CALL BETALL (U0Z,G0Z,U0Z,G0Z,U0Z,G0Z,NCLOSE,NORB,BZZZ)
+      BAVZ = BAVZ + 3.0D+00 * BZZZ
+C
+      BAVX = BAVX/5.0D+00
+      BAVY = BAVY/5.0D+00
+      BAVZ = BAVZ/5.0D+00
+C
+      BVEC = (BAVX*BAVX+BAVY*BAVY+BAVZ*BAVZ)**0.5D+00
+      IF(MASWRK) THEN
+      WRITE (IW,986)
+  986 FORMAT (/,' ',70('+'),/,'  BETA (STATIC)',
+     X        /,' ',70('+'))
+      WRITE (IW,987) BXXX,BYXX,BZXX,BXXY,BYXY,BZXY,
+     X              BXXZ,BYXZ,BZXZ,BXYX,BYYX,BZYX,
+     X              BXYY,BYYY,BZYY,BXYZ,BYYZ,BZYZ,
+     X              BXZX,BYZX,BZZX,BXZY,BYZY,BZZY,
+     X              BXZZ,BYZZ,BZZZ
+  987 FORMAT(//,'  BXXX  ',F15.4,'   BYXX ',F15.4,'   BZXX ',F15.4,
+     X        /,'  BXXY  ',F15.4,'   BYXY ',F15.4,'   BZXY ',F15.4,
+     X        /,'  BXXZ  ',F15.4,'   BYXZ ',F15.4,'   BZXZ ',F15.4,
+     X        /,'  BXYX  ',F15.4,'   BYYX ',F15.4,'   BZYX ',F15.4,
+     X        /,'  BXYY  ',F15.4,'   BYYY ',F15.4,'   BZYY ',F15.4,
+     X        /,'  BXYZ  ',F15.4,'   BYYZ ',F15.4,'   BZYZ ',F15.4,
+     X        /,'  BXZX  ',F15.4,'   BYZX ',F15.4,'   BZZX ',F15.4,
+     X        /,'  BXZY  ',F15.4,'   BYZY ',F15.4,'   BZZY ',F15.4,
+     X        /,'  BXZZ  ',F15.4,'   BYZZ ',F15.4,'   BZZZ ',F15.4)
+C
+      WRITE (IW,1000) BAVX
+ 1000  FORMAT(/,' AVERAGE BETAX VALUE = ',F15.4)
+      WRITE (IW,1001) BAVY
+ 1001  FORMAT(' AVERAGE BETAY VALUE = ',F15.4)
+      WRITE (IW,1002) BAVZ
+ 1002  FORMAT(' AVERAGE BETAZ VALUE = ',F15.4)
+C
+      WRITE (IW,1003) BVEC,OMEGA
+ 1003  FORMAT(//,' AVERAGE BETA(STATIC) VALUE =',F15.4,' AT',F10.5,
+     X          ' A.U.',//)
+      END IF
+      RETURN
+      END

@@ -1,0 +1,3105 @@
+1..48
+
+Trying ./testmsgs/re-fwd.ref [./testmsgs/re-fwd.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/re-fwd.ref [./testmsgs/re-fwd.msg]
+** debug:    process_header
+** debug:    type = message, subtype = rfc822
+** debug:    attempting to process a nested message
+** debug:    process_message
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          taking shortcut
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         binary
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-1.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-1.txt
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Msg; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Msg; attr=Encoding:
+  want: "binary"
+  got:  "binary"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Msg; attr=From:
+  want: "user2"
+  got:  "user2"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Msg; attr=Subject:
+  want: "Re: Fwd: hello world"
+  got:  "Re: Fwd: hello world"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Msg; attr=To:
+  want: "user0"
+  got:  "user0"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Msg; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1; attr=Encoding:
+  want: "binary"
+  got:  "binary"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1; attr=From:
+  want: "user1"
+  got:  "user1"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1; attr=Subject:
+  want: "Fwd: hello world"
+  got:  "Fwd: hello world"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1; attr=To:
+  want: "user2"
+  got:  "user2"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1_1; attr=Encoding:
+  want: "binary"
+  got:  "binary"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1_1; attr=From:
+  want: "user0"
+  got:  "user0"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1_1; attr=Subject:
+  want: "hello world"
+  got:  "hello world"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1_1; attr=To:
+  want: "user1"
+  got:  "user1"
+
+SUB-TEST: msg=./testmsgs/re-fwd.msg; part=Part_1_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+1: ./testmsgs/re-fwd.ref
+1:   Message: "./testmsgs/re-fwd.msg"
+1:   Parser: "anonymous"
+1: ok 1
+
+2: Did purge work?
+2:   Purgeable: "testout/Ref_t/msg-16469-1.txt"
+2:   Original: "msg-16469-1.txt"
+2: ok 2
+
+Trying ./testmsgs/multi-nested3.ref [./testmsgs/multi-nested3.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-nested3.ref [./testmsgs/multi-nested3.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-2.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-2.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-3.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-3.txt
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = multipart, subtype = parallel
+** debug:       process_multipart...
+** debug:       parsing part 1...
+** debug:          process_header
+** debug:          type = image, subtype = gif
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         base64
+** debug:          effective type?   image/gif
+** debug:          is this evil? '3d-vise.gif'
+** debug:          it's ok
+** debug:          planning to use '3d-vise.gif'
+** debug:          outputting body to disk file: testout/Ref_t/3d-vise.gif
+** debug:       parsing part 2...
+** debug:          process_header
+** debug:          type = image, subtype = gif
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         base64
+** debug:          effective type?   image/gif
+** debug:          is this evil? '3d-eye.gif'
+** debug:          it's ok
+** debug:          planning to use '3d-eye.gif'
+** debug:          outputting body to disk file: testout/Ref_t/3d-eye.gif
+** debug:       process_epilogue
+** debug:    parsing part 4...
+** debug:       process_header
+** debug:       type = text, subtype = richtext
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/richtext
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-4.rtx'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-4.rtx
+** debug:    parsing part 5...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         quoted-printable
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-5.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-5.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Msg; attr=Boundary:
+  want: "unique-boundary-1"
+  got:  "unique-boundary-1"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Msg; attr=From:
+  want: "Lord John Whorfin <whorfin@yoyodyne.com>"
+  got:  "Lord John Whorfin <whorfin@yoyodyne.com>"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Msg; attr=Subject:
+  want: "A complex nested multipart example"
+  got:  "A complex nested multipart example"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Msg; attr=To:
+  want: "<john-yaya@yoyodyne.com>"
+  got:  "<john-yaya@yoyodyne.com>"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_2; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3; attr=Boundary:
+  want: "unique-boundary-2"
+  got:  "unique-boundary-2"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3; attr=Subject:
+  want: "Part 3 of the outer message is multipart!"
+  got:  "Part 3 of the outer message is multipart!"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3; attr=Type:
+  want: "multipart/parallel"
+  got:  "multipart/parallel"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_1; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_1; attr=Filename:
+  want: "3d-vise.gif"
+  got:  "3d-vise.gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_1; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_1; attr=Subject:
+  want: "Part 1 of the inner message is a GIF, \223d-vise.gif\22"
+  got:  "Part 1 of the inner message is a GIF, \223d-vise.gif\22"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_1; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_2; attr=Filename:
+  want: "3d-eye.gif"
+  got:  "3d-eye.gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_2; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_2; attr=Subject:
+  want: "Part 2 of the inner message is another GIF, \223d-eye.gif\22"
+  got:  "Part 2 of the inner message is another GIF, \223d-eye.gif\22"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_3_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_4; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_4; attr=Type:
+  want: "text/richtext"
+  got:  "text/richtext"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5; attr=Filename:
+  want: "nice.name"
+  got:  "nice.name"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5_1; attr=Charset:
+  want: "ISO-8859-1"
+  got:  "ISO-8859-1"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5_1; attr=Encoding:
+  want: "quoted-printable"
+  got:  "quoted-printable"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5_1; attr=From:
+  want: "(mailbox in US-ASCII)"
+  got:  "(mailbox in US-ASCII)"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5_1; attr=Subject:
+  want: "Part 5 of the outer message is itself an RFC822 message!"
+  got:  "Part 5 of the outer message is itself an RFC822 message!"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5_1; attr=To:
+  want: "(address in US-ASCII)"
+  got:  "(address in US-ASCII)"
+
+SUB-TEST: msg=./testmsgs/multi-nested3.msg; part=Part_5_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+3: ./testmsgs/multi-nested3.ref
+3:   Message: "./testmsgs/multi-nested3.msg"
+3:   Parser: "anonymous"
+3: ok 3
+
+4: Did purge work?
+4:   Purgeable: "testout/Ref_t/msg-16469-2.txt"
+4:   Purgeable: "testout/Ref_t/msg-16469-3.txt"
+4:   Purgeable: "testout/Ref_t/3d-vise.gif"
+4:   Purgeable: "testout/Ref_t/3d-eye.gif"
+4:   Purgeable: "testout/Ref_t/msg-16469-4.rtx"
+4:   Purgeable: "testout/Ref_t/msg-16469-5.txt"
+4:   Original: "3d-eye.gif"
+4:   Original: "3d-vise.gif"
+4:   Original: "msg-16469-2.txt"
+4:   Original: "msg-16469-3.txt"
+4:   Original: "msg-16469-4.rtx"
+4:   Original: "msg-16469-5.txt"
+4: ok 4
+
+Trying ./testmsgs/multi-igor.ref [./testmsgs/multi-igor.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-igor.ref [./testmsgs/multi-igor.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-6.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-6.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   text/plain
+** debug:       is this evil? 'Makefile'
+** debug:       it's ok
+** debug:       planning to use 'Makefile'
+** debug:       outputting body to disk file: testout/Ref_t/Makefile
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   text/plain
+** debug:       is this evil? 'multi-nested.msg'
+** debug:       it's ok
+** debug:       planning to use 'multi-nested.msg'
+** debug:       outputting body to disk file: testout/Ref_t/multi-nested.msg
+** debug:    parsing part 4...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   text/plain
+** debug:       is this evil? 'Parser.n.out'
+** debug:       it's ok
+** debug:       planning to use 'Parser.n.out'
+** debug:       outputting body to disk file: testout/Ref_t/Parser.n.out
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Msg; attr=Boundary:
+  want: "-490585488-806670346-834061839=:2195"
+  got:  "-490585488-806670346-834061839=:2195"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Msg; attr=From:
+  want: "Starovoitov Igor <igor@fripp.aic.synapse.ru>"
+  got:  "Starovoitov Igor <igor@fripp.aic.synapse.ru>"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Msg; attr=Subject:
+  want: "Need help"
+  got:  "Need help"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Msg; attr=To:
+  want: "eryq@rhine.gsfc.nasa.gov"
+  got:  "eryq@rhine.gsfc.nasa.gov"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_1; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_2; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_2; attr=Filename:
+  want: "Makefile"
+  got:  "Makefile"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_3; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_3; attr=Filename:
+  want: "multi-nested.msg"
+  got:  "multi-nested.msg"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_3; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_4; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_4; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_4; attr=Filename:
+  want: "Parser.n.out"
+  got:  "Parser.n.out"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor.msg; part=Part_4; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+5: ./testmsgs/multi-igor.ref
+5:   Message: "./testmsgs/multi-igor.msg"
+5:   Parser: "anonymous"
+5: ok 5
+
+6: Did purge work?
+6:   Purgeable: "testout/Ref_t/msg-16469-6.txt"
+6:   Purgeable: "testout/Ref_t/Makefile"
+6:   Purgeable: "testout/Ref_t/multi-nested.msg"
+6:   Purgeable: "testout/Ref_t/Parser.n.out"
+6:   Original: "Makefile"
+6:   Original: "Parser.n.out"
+6:   Original: "msg-16469-6.txt"
+6:   Original: "multi-nested.msg"
+6: ok 6
+
+Trying ./testmsgs/multi-nested.ref [./testmsgs/multi-nested.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-nested.ref [./testmsgs/multi-nested.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-7.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-7.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-8.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-8.txt
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = multipart, subtype = parallel
+** debug:       process_multipart...
+** debug:       parsing part 1...
+** debug:          process_header
+** debug:          type = image, subtype = gif
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         base64
+** debug:          effective type?   image/gif
+** debug:          is this evil? '3d-vise.gif'
+** debug:          it's ok
+** debug:          planning to use '3d-vise.gif'
+** debug:          outputting body to disk file: testout/Ref_t/3d-vise.gif
+** debug:       parsing part 2...
+** debug:          process_header
+** debug:          type = image, subtype = gif
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         base64
+** debug:          effective type?   image/gif
+** debug:          is this evil? '3d-eye.gif'
+** debug:          it's ok
+** debug:          planning to use '3d-eye.gif'
+** debug:          outputting body to disk file: testout/Ref_t/3d-eye.gif
+** debug:       process_epilogue
+** debug:    parsing part 4...
+** debug:       process_header
+** debug:       type = text, subtype = richtext
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/richtext
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-9.rtx'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-9.rtx
+** debug:    parsing part 5...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         quoted-printable
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-10.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-10.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Msg; attr=Boundary:
+  want: "unique-boundary-1"
+  got:  "unique-boundary-1"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Msg; attr=From:
+  want: "Lord John Whorfin <whorfin@yoyodyne.com>"
+  got:  "Lord John Whorfin <whorfin@yoyodyne.com>"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Msg; attr=Subject:
+  want: "A complex nested multipart example"
+  got:  "A complex nested multipart example"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Msg; attr=To:
+  want: "<john-yaya@yoyodyne.com>"
+  got:  "<john-yaya@yoyodyne.com>"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_2; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3; attr=Boundary:
+  want: "unique-boundary-2"
+  got:  "unique-boundary-2"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3; attr=Subject:
+  want: "Part 3 of the outer message is multipart!"
+  got:  "Part 3 of the outer message is multipart!"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3; attr=Type:
+  want: "multipart/parallel"
+  got:  "multipart/parallel"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_1; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_1; attr=Filename:
+  want: "3d-vise.gif"
+  got:  "3d-vise.gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_1; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_1; attr=Subject:
+  want: "Part 1 of the inner message is a GIF, \223d-vise.gif\22"
+  got:  "Part 1 of the inner message is a GIF, \223d-vise.gif\22"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_1; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_2; attr=Filename:
+  want: "3d-eye.gif"
+  got:  "3d-eye.gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_2; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_2; attr=Subject:
+  want: "Part 2 of the inner message is another GIF, \223d-eye.gif\22"
+  got:  "Part 2 of the inner message is another GIF, \223d-eye.gif\22"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_3_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_4; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_4; attr=Type:
+  want: "text/richtext"
+  got:  "text/richtext"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5; attr=Filename:
+  want: "/evil/filename"
+  got:  "/evil/filename"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5_1; attr=Charset:
+  want: "ISO-8859-1"
+  got:  "ISO-8859-1"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5_1; attr=Encoding:
+  want: "quoted-printable"
+  got:  "quoted-printable"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5_1; attr=From:
+  want: "(mailbox in US-ASCII)"
+  got:  "(mailbox in US-ASCII)"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5_1; attr=Subject:
+  want: "Part 5 of the outer message is itself an RFC822 message!"
+  got:  "Part 5 of the outer message is itself an RFC822 message!"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5_1; attr=To:
+  want: "(address in US-ASCII)"
+  got:  "(address in US-ASCII)"
+
+SUB-TEST: msg=./testmsgs/multi-nested.msg; part=Part_5_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+7: ./testmsgs/multi-nested.ref
+7:   Message: "./testmsgs/multi-nested.msg"
+7:   Parser: "anonymous"
+7: ok 7
+
+8: Did purge work?
+8:   Purgeable: "testout/Ref_t/msg-16469-7.txt"
+8:   Purgeable: "testout/Ref_t/msg-16469-8.txt"
+8:   Purgeable: "testout/Ref_t/3d-vise.gif"
+8:   Purgeable: "testout/Ref_t/3d-eye.gif"
+8:   Purgeable: "testout/Ref_t/msg-16469-9.rtx"
+8:   Purgeable: "testout/Ref_t/msg-16469-10.txt"
+8:   Original: "3d-eye.gif"
+8:   Original: "3d-vise.gif"
+8:   Original: "msg-16469-10.txt"
+8:   Original: "msg-16469-7.txt"
+8:   Original: "msg-16469-8.txt"
+8:   Original: "msg-16469-9.rtx"
+8: ok 8
+
+Trying ./testmsgs/multi-digest.ref [./testmsgs/multi-digest.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-digest.ref [./testmsgs/multi-digest.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = digest
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         7bit
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-11.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-11.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = 
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         7bit
+** debug:          effective type?   text
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-12.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-12.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Msg; attr=Boundary:
+  want: "simple boundary"
+  got:  "simple boundary"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Msg; attr=From:
+  want: "Nathaniel Borenstein <nsb@bellcore.com>"
+  got:  "Nathaniel Borenstein <nsb@bellcore.com>"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Msg; attr=Subject:
+  want: "Sample digest message"
+  got:  "Sample digest message"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Msg; attr=To:
+  want: "Ned Freed <ned@innosoft.com>"
+  got:  "Ned Freed <ned@innosoft.com>"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Msg; attr=Type:
+  want: "multipart/digest"
+  got:  "multipart/digest"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_1; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_1_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_1_1; attr=From:
+  want: "noone@nowhere.org"
+  got:  "noone@nowhere.org"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_1_1; attr=Subject:
+  want: "embedded message 1"
+  got:  "embedded message 1"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_1_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_2; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_2; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_2_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_2_1; attr=From:
+  want: "noone@nowhere.org"
+  got:  "noone@nowhere.org"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_2_1; attr=Subject:
+  want: "embedded message 2"
+  got:  "embedded message 2"
+
+SUB-TEST: msg=./testmsgs/multi-digest.msg; part=Part_2_1; attr=Type:
+  want: "text"
+  got:  "text"
+
+9: ./testmsgs/multi-digest.ref
+9:   Message: "./testmsgs/multi-digest.msg"
+9:   Parser: "anonymous"
+9: ok 9
+
+10: Did purge work?
+10:   Purgeable: "testout/Ref_t/msg-16469-11.txt"
+10:   Purgeable: "testout/Ref_t/msg-16469-12.txt"
+10:   Original: "msg-16469-11.txt"
+10:   Original: "msg-16469-12.txt"
+10: ok 10
+
+Trying ./testmsgs/bluedot-postcard.ref [./testmsgs/bluedot-postcard.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/bluedot-postcard.ref [./testmsgs/bluedot-postcard.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = alternative
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         binary
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-13.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-13.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = multipart, subtype = related
+** debug:       process_multipart...
+** debug:       parsing part 1...
+** debug:          process_header
+** debug:          type = text, subtype = html
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         binary
+** debug:          effective type?   text/html
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-14.html'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-14.html
+** debug:       parsing part 2...
+** debug:          process_header
+** debug:          type = image, subtype = jpeg
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         base64
+** debug:          effective type?   image/jpeg
+** debug:          is this evil? 'bluedot.jpg'
+** debug:          it's ok
+** debug:          planning to use 'bluedot.jpg'
+** debug:          outputting body to disk file: testout/Ref_t/bluedot.jpg
+** debug:       process_epilogue
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Msg; attr=Boundary:
+  want: "----------=_961872013-1436-0"
+  got:  "----------=_961872013-1436-0"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Msg; attr=Encoding:
+  want: "binary"
+  got:  "binary"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Msg; attr=Subject:
+  want: "A postcard for you"
+  got:  "A postcard for you"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Msg; attr=To:
+  want: "noone"
+  got:  "noone"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Msg; attr=Type:
+  want: "multipart/alternative"
+  got:  "multipart/alternative"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_1; attr=Encoding:
+  want: "binary"
+  got:  "binary"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2; attr=Boundary:
+  want: "----------=_961872013-1436-1"
+  got:  "----------=_961872013-1436-1"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2; attr=Encoding:
+  want: "binary"
+  got:  "binary"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2; attr=Type:
+  want: "multipart/related"
+  got:  "multipart/related"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_1; attr=Encoding:
+  want: "binary"
+  got:  "binary"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_1; attr=Type:
+  want: "text/html"
+  got:  "text/html"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_2; attr=Filename:
+  want: "bluedot.jpg"
+  got:  "bluedot.jpg"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_2; attr=Size:
+  want: "4272"
+  got:  "4272"
+
+SUB-TEST: msg=./testmsgs/bluedot-postcard.msg; part=Part_2_2; attr=Type:
+  want: "image/jpeg"
+  got:  "image/jpeg"
+
+11: ./testmsgs/bluedot-postcard.ref
+11:   Message: "./testmsgs/bluedot-postcard.msg"
+11:   Parser: "anonymous"
+11: ok 11
+
+12: Did purge work?
+12:   Purgeable: "testout/Ref_t/msg-16469-13.txt"
+12:   Purgeable: "testout/Ref_t/msg-16469-14.html"
+12:   Purgeable: "testout/Ref_t/bluedot.jpg"
+12:   Original: "bluedot.jpg"
+12:   Original: "msg-16469-13.txt"
+12:   Original: "msg-16469-14.html"
+12: ok 12
+
+Trying ./testmsgs/german.ref [./testmsgs/german.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/german.ref [./testmsgs/german.msg]
+** debug:    process_header
+** debug:    type = text, subtype = plain
+** debug:    process_singlepart...
+** debug:    taking shortcut
+** debug:    extract uuencode? <<undef>>
+** debug:    encoding?         quoted-printable
+** debug:    effective type?   text/plain
+** debug:    no filename recommended: synthesizing our own
+** debug:    planning to use 'msg-16469-15.txt'
+** debug:    outputting body to disk file: testout/Ref_t/msg-16469-15.txt
+SUB-TEST: msg=./testmsgs/german.msg; part=Msg; attr=Charset:
+  want: "iso-8859-1"
+  got:  "iso-8859-1"
+
+SUB-TEST: msg=./testmsgs/german.msg; part=Msg; attr=Encoding:
+  want: "quoted-printable"
+  got:  "quoted-printable"
+
+SUB-TEST: msg=./testmsgs/german.msg; part=Msg; attr=From:
+  want: "deuschle@mnh.telekom.de (Guenter Deuschle)"
+  got:  "deuschle@mnh.telekom.de (Guenter Deuschle)"
+
+SUB-TEST: msg=./testmsgs/german.msg; part=Msg; attr=Subject:
+  want: "Re: 34Mbit/s Netz"
+  got:  "Re: 34Mbit/s Netz"
+
+SUB-TEST: msg=./testmsgs/german.msg; part=Msg; attr=To:
+  want: "Juergen Specht <specht@kulturbox.de>"
+  got:  "Juergen Specht <specht@kulturbox.de>"
+
+SUB-TEST: msg=./testmsgs/german.msg; part=Msg; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+13: ./testmsgs/german.ref
+13:   Message: "./testmsgs/german.msg"
+13:   Parser: "anonymous"
+13: ok 13
+
+14: Did purge work?
+14:   Purgeable: "testout/Ref_t/msg-16469-15.txt"
+14:   Original: "msg-16469-15.txt"
+14: ok 14
+
+Trying ./testmsgs/multi-2evil.ref [./testmsgs/multi-2evil.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-2evil.ref [./testmsgs/multi-2evil.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-16.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-16.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? '/evil/because:of\path\3d-compress.gif'
+** debug:       is this evil? '3d-compress.gif'
+** debug:       it's ok
+** debug:       looks like I can use the last path element
+** debug:       is this evil? '3d-compress.gif'
+** debug:       it's ok
+** warning:       Provided filename '/evil/because:of\path\3d-compress.gif' is regarded as evil, but I was able to exorcise it and get something usable.
+** debug:       planning to use '3d-compress.gif'
+** debug:       outputting body to disk file: testout/Ref_t/3d-compress.gif
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? '3d-eye-is-an-evil-filename because of excessive length and verbosity.  Unfortunately what can we do given an idiotic situation such as this?'
+** debug:       is this evil? '3d-eye-is-an-evil-filename because of excessive length and verbosity.  Unfortunately what can we do given an idiotic situation such as this?'
+** debug:       is this evil? '3d-eye-is-an-e.dat'
+** debug:       it's ok
+** debug:       looks like I can use the truncated last path element
+** debug:       is this evil? '3d-eye-is-an-e.dat'
+** debug:       it's ok
+** warning:       Provided filename '3d-eye-is-an-evil-filename because of excessive length and verbosity.  Unfortunately what can we do given an idiotic situation such as this?' is regarded as evil, but I was able to exorcise it and get something usable.
+** debug:       planning to use '3d-eye-is-an-e.dat'
+** debug:       outputting body to disk file: testout/Ref_t/3d-eye-is-an-e.dat
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Msg; attr=Boundary:
+  want: "------------299A70B339B65A93542D2AE"
+  got:  "------------299A70B339B65A93542D2AE"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Msg; attr=From:
+  want: "Eryq <eryq@rhine.gsfc.nasa.gov>"
+  got:  "Eryq <eryq@rhine.gsfc.nasa.gov>"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Msg; attr=Subject:
+  want: "Two images for you..."
+  got:  "Two images for you..."
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Msg; attr=To:
+  want: "john-bigboote@eryq.pr.mcs.net"
+  got:  "john-bigboote@eryq.pr.mcs.net"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_1; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_2; attr=BodyFilename:
+  want: "3d-compress.gif"
+  got:  "3d-compress.gif"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_2; attr=Filename:
+  want: "/evil/because:of\5Cpath\5C3d-compress.gif"
+  got:  "/evil/because:of\5Cpath\5C3d-compress.gif"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_2; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_3; attr=BodyFilename:
+  want: "3d-eye-is-an-e.dat"
+  got:  "3d-eye-is-an-e.dat"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_3; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/multi-2evil.msg; part=Part_3; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+15: ./testmsgs/multi-2evil.ref
+15:   Message: "./testmsgs/multi-2evil.msg"
+15:   Parser: "anonymous"
+15: ok 15
+
+16: Did purge work?
+16:   Purgeable: "testout/Ref_t/msg-16469-16.txt"
+16:   Purgeable: "testout/Ref_t/3d-compress.gif"
+16:   Purgeable: "testout/Ref_t/3d-eye-is-an-e.dat"
+16:   Original: "3d-compress.gif"
+16:   Original: "3d-eye-is-an-e.dat"
+16:   Original: "msg-16469-16.txt"
+16: ok 16
+
+Trying ./testmsgs/multi-clen.ref [./testmsgs/multi-clen.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-clen.ref [./testmsgs/multi-clen.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-17.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-17.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = x-numbers
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/x-numbers
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-18.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-18.txt
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = text, subtype = x-alphabet
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/x-alphabet
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-19.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-19.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Msg; attr=Boundary:
+  want: "simple boundary"
+  got:  "simple boundary"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Msg; attr=From:
+  want: "Nathaniel Borenstein <nsb@bellcore.com>"
+  got:  "Nathaniel Borenstein <nsb@bellcore.com>"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Msg; attr=Subject:
+  want: "Sample message"
+  got:  "Sample message"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Msg; attr=To:
+  want: "Ned Freed <ned@innosoft.com>"
+  got:  "Ned Freed <ned@innosoft.com>"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_2; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_2; attr=Type:
+  want: "text/x-numbers"
+  got:  "text/x-numbers"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_3; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_3; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-clen.msg; part=Part_3; attr=Type:
+  want: "text/x-alphabet"
+  got:  "text/x-alphabet"
+
+17: ./testmsgs/multi-clen.ref
+17:   Message: "./testmsgs/multi-clen.msg"
+17:   Parser: "anonymous"
+17: ok 17
+
+18: Did purge work?
+18:   Purgeable: "testout/Ref_t/msg-16469-17.txt"
+18:   Purgeable: "testout/Ref_t/msg-16469-18.txt"
+18:   Purgeable: "testout/Ref_t/msg-16469-19.txt"
+18:   Original: "msg-16469-17.txt"
+18:   Original: "msg-16469-18.txt"
+18:   Original: "msg-16469-19.txt"
+18: ok 18
+
+Trying ./testmsgs/multi-simple.ref [./testmsgs/multi-simple.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-simple.ref [./testmsgs/multi-simple.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-20.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-20.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-21.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-21.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Msg; attr=Boundary:
+  want: "simple boundary"
+  got:  "simple boundary"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Msg; attr=From:
+  want: "Nathaniel Borenstein <nsb@bellcore.com>"
+  got:  "Nathaniel Borenstein <nsb@bellcore.com>"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Msg; attr=Subject:
+  want: "Sample message"
+  got:  "Sample message"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Msg; attr=To:
+  want: "Ned Freed <ned@innosoft.com>"
+  got:  "Ned Freed <ned@innosoft.com>"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Part_2; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-simple.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+19: ./testmsgs/multi-simple.ref
+19:   Message: "./testmsgs/multi-simple.msg"
+19:   Parser: "anonymous"
+19: ok 19
+
+20: Did purge work?
+20:   Purgeable: "testout/Ref_t/msg-16469-20.txt"
+20:   Purgeable: "testout/Ref_t/msg-16469-21.txt"
+20:   Original: "msg-16469-20.txt"
+20:   Original: "msg-16469-21.txt"
+20: ok 20
+
+Trying ./testmsgs/multi-weirdspace.ref [./testmsgs/multi-weirdspace.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-weirdspace.ref [./testmsgs/multi-weirdspace.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-22.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-22.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? '3d-compress.gif'
+** debug:       it's ok
+** debug:       planning to use '3d-compress.gif'
+** debug:       outputting body to disk file: testout/Ref_t/3d-compress.gif
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? '3d-eye.gif'
+** debug:       it's ok
+** debug:       planning to use '3d-eye.gif'
+** debug:       outputting body to disk file: testout/Ref_t/3d-eye.gif
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Msg; attr=Boundary:
+  want: "------------299A70B339B65A93542D2AE"
+  got:  "------------299A70B339B65A93542D2AE"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Msg; attr=From:
+  want: "Eryq <eryq@rhine.gsfc.nasa.gov>"
+  got:  "Eryq <eryq@rhine.gsfc.nasa.gov>"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Msg; attr=Subject:
+  want: "Two images for you..."
+  got:  "Two images for you..."
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Msg; attr=To:
+  want: "john-bigboote@eryq.pr.mcs.net"
+  got:  "john-bigboote@eryq.pr.mcs.net"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_1; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_2; attr=Filename:
+  want: "3d-compress.gif"
+  got:  "3d-compress.gif"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_2; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_3; attr=Filename:
+  want: "3d-eye.gif"
+  got:  "3d-eye.gif"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_3; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/multi-weirdspace.msg; part=Part_3; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+21: ./testmsgs/multi-weirdspace.ref
+21:   Message: "./testmsgs/multi-weirdspace.msg"
+21:   Parser: "anonymous"
+21: ok 21
+
+22: Did purge work?
+22:   Purgeable: "testout/Ref_t/msg-16469-22.txt"
+22:   Purgeable: "testout/Ref_t/3d-compress.gif"
+22:   Purgeable: "testout/Ref_t/3d-eye.gif"
+22:   Original: "3d-compress.gif"
+22:   Original: "3d-eye.gif"
+22:   Original: "msg-16469-22.txt"
+22: ok 22
+
+Trying ./testmsgs/uu-junk-extracted.ref [./testmsgs/uu-junk.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/uu-junk-extracted.ref [./testmsgs/uu-junk.msg]
+** debug:    process_header
+** warning:    skipping bogus mailbox 'From ' line
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? 1
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       sniffing around for UUENCODE
+** debug:       no one made the cut
+** warning:       while hunting for uuencode: 
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-23.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-23.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? 1
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       sniffing around for UUENCODE
+** warning:       Found a uu attachment
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-24.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-24.txt
+** debug:       is this evil? 'up.gif'
+** debug:       it's ok
+** debug:       planning to use 'up.gif'
+** debug:       outputting body to disk file: testout/Ref_t/up.gif
+** debug:       is this evil? 'zeegee.gif'
+** debug:       it's ok
+** debug:       planning to use 'zeegee.gif'
+** debug:       outputting body to disk file: testout/Ref_t/zeegee.gif
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Boundary:
+  want: "---------------------------7d033e3733c"
+  got:  "---------------------------7d033e3733c"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=From:
+  want: "\22ADJE Webmail Tech Support\22 <support@webmail.uwohali.com>"
+  got:  "\22ADJE Webmail Tech Support\22 <support@webmail.uwohali.com>"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Subject:
+  want: "mime::parser"
+  got:  "mime::parser"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=To:
+  want: "eryq@zeegee.com"
+  got:  "eryq@zeegee.com"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_2; attr=Filename:
+  want: "up.gif"
+  got:  "up.gif"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_2; attr=Size:
+  want: "110"
+  got:  "110"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_3; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_3; attr=Filename:
+  want: "zeegee.gif"
+  got:  "zeegee.gif"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_3; attr=Size:
+  want: "4834"
+  got:  "4834"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2_3; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+23: ./testmsgs/uu-junk-extracted.ref
+23:   Message: "./testmsgs/uu-junk.msg"
+23:   Parser: "anonymous"
+23: ok 23
+
+24: Did purge work?
+24:   Purgeable: "testout/Ref_t/msg-16469-23.txt"
+24:   Purgeable: "testout/Ref_t/msg-16469-24.txt"
+24:   Purgeable: "testout/Ref_t/up.gif"
+24:   Purgeable: "testout/Ref_t/zeegee.gif"
+24:   Original: "msg-16469-23.txt"
+24:   Original: "msg-16469-24.txt"
+24:   Original: "up.gif"
+24:   Original: "zeegee.gif"
+24: ok 24
+
+Trying ./testmsgs/multi-nested2.ref [./testmsgs/multi-nested2.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-nested2.ref [./testmsgs/multi-nested2.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-25.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-25.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-26.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-26.txt
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = multipart, subtype = parallel
+** debug:       process_multipart...
+** debug:       parsing part 1...
+** debug:          process_header
+** debug:          type = image, subtype = gif
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         base64
+** debug:          effective type?   image/gif
+** debug:          is this evil? '3d-vise.gif'
+** debug:          it's ok
+** debug:          planning to use '3d-vise.gif'
+** debug:          outputting body to disk file: testout/Ref_t/3d-vise.gif
+** debug:       parsing part 2...
+** debug:          process_header
+** debug:          type = image, subtype = gif
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         base64
+** debug:          effective type?   image/gif
+** debug:          is this evil? '3d-eye.gif'
+** debug:          it's ok
+** debug:          planning to use '3d-eye.gif'
+** debug:          outputting body to disk file: testout/Ref_t/3d-eye.gif
+** debug:       process_epilogue
+** debug:    parsing part 4...
+** debug:       process_header
+** debug:       type = text, subtype = richtext
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/richtext
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-27.rtx'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-27.rtx
+** debug:    parsing part 5...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         quoted-printable
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-28.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-28.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Msg; attr=Boundary:
+  want: "unique-boundary-1"
+  got:  "unique-boundary-1"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Msg; attr=From:
+  want: "Lord John Whorfin <whorfin@yoyodyne.com>"
+  got:  "Lord John Whorfin <whorfin@yoyodyne.com>"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Msg; attr=Subject:
+  want: "A complex nested multipart example"
+  got:  "A complex nested multipart example"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Msg; attr=To:
+  want: "<john-yaya@yoyodyne.com>"
+  got:  "<john-yaya@yoyodyne.com>"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_2; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3; attr=Boundary:
+  want: "unique-boundary-2"
+  got:  "unique-boundary-2"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3; attr=Subject:
+  want: "Part 3 of the outer message is multipart!"
+  got:  "Part 3 of the outer message is multipart!"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3; attr=Type:
+  want: "multipart/parallel"
+  got:  "multipart/parallel"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_1; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_1; attr=Filename:
+  want: "3d-vise.gif"
+  got:  "3d-vise.gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_1; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_1; attr=Subject:
+  want: "Part 1 of the inner message is a GIF, \223d-vise.gif\22"
+  got:  "Part 1 of the inner message is a GIF, \223d-vise.gif\22"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_1; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_2; attr=Filename:
+  want: "3d-eye.gif"
+  got:  "3d-eye.gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_2; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_2; attr=Subject:
+  want: "Part 2 of the inner message is another GIF, \223d-eye.gif\22"
+  got:  "Part 2 of the inner message is another GIF, \223d-eye.gif\22"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_3_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_4; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_4; attr=Type:
+  want: "text/richtext"
+  got:  "text/richtext"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5; attr=Filename:
+  want: "/evil/filename"
+  got:  "/evil/filename"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5_1; attr=Charset:
+  want: "ISO-8859-1"
+  got:  "ISO-8859-1"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5_1; attr=Encoding:
+  want: "quoted-printable"
+  got:  "quoted-printable"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5_1; attr=From:
+  want: "(mailbox in US-ASCII)"
+  got:  "(mailbox in US-ASCII)"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5_1; attr=Subject:
+  want: "Part 5 of the outer message is itself an RFC822 message!"
+  got:  "Part 5 of the outer message is itself an RFC822 message!"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5_1; attr=To:
+  want: "(address in US-ASCII)"
+  got:  "(address in US-ASCII)"
+
+SUB-TEST: msg=./testmsgs/multi-nested2.msg; part=Part_5_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+25: ./testmsgs/multi-nested2.ref
+25:   Message: "./testmsgs/multi-nested2.msg"
+25:   Parser: "anonymous"
+25: ok 25
+
+26: Did purge work?
+26:   Purgeable: "testout/Ref_t/msg-16469-25.txt"
+26:   Purgeable: "testout/Ref_t/msg-16469-26.txt"
+26:   Purgeable: "testout/Ref_t/3d-vise.gif"
+26:   Purgeable: "testout/Ref_t/3d-eye.gif"
+26:   Purgeable: "testout/Ref_t/msg-16469-27.rtx"
+26:   Purgeable: "testout/Ref_t/msg-16469-28.txt"
+26:   Original: "3d-eye.gif"
+26:   Original: "3d-vise.gif"
+26:   Original: "msg-16469-25.txt"
+26:   Original: "msg-16469-26.txt"
+26:   Original: "msg-16469-27.rtx"
+26:   Original: "msg-16469-28.txt"
+26: ok 26
+
+Trying ./testmsgs/ak-0696-nest.ref [./testmsgs/ak-0696.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/ak-0696-nest.ref [./testmsgs/ak-0696.msg]
+** debug:    process_header
+** warning:    skipping bogus mailbox 'From ' line
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-29.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-29.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         quoted-printable
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-30.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-30.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Boundary:
+  want: "------------70522FC73543"
+  got:  "------------70522FC73543"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=From:
+  want: "Juergen Specht <specht@kulturbox.de>"
+  got:  "Juergen Specht <specht@kulturbox.de>"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Subject:
+  want: "[Fwd: Re: 34Mbit/s Netz]"
+  got:  "[Fwd: Re: 34Mbit/s Netz]"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=To:
+  want: "andreas.koenig@mind.de, kun@pop.combox.de, 101762.2307@compuserve.com"
+  got:  "andreas.koenig@mind.de, kun@pop.combox.de, 101762.2307@compuserve.com"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2_1; attr=Charset:
+  want: "iso-8859-1"
+  got:  "iso-8859-1"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2_1; attr=Encoding:
+  want: "quoted-printable"
+  got:  "quoted-printable"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2_1; attr=From:
+  want: "deuschle@mnh.telekom.de (Guenter Deuschle)"
+  got:  "deuschle@mnh.telekom.de (Guenter Deuschle)"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2_1; attr=Subject:
+  want: "Re: 34Mbit/s Netz"
+  got:  "Re: 34Mbit/s Netz"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2_1; attr=To:
+  want: "Juergen Specht <specht@kulturbox.de>"
+  got:  "Juergen Specht <specht@kulturbox.de>"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+27: ./testmsgs/ak-0696-nest.ref
+27:   Message: "./testmsgs/ak-0696.msg"
+27:   Parser: "anonymous"
+27: ok 27
+
+28: Did purge work?
+28:   Purgeable: "testout/Ref_t/msg-16469-29.txt"
+28:   Purgeable: "testout/Ref_t/msg-16469-30.txt"
+28:   Original: "msg-16469-29.txt"
+28:   Original: "msg-16469-30.txt"
+28: ok 28
+
+Trying ./testmsgs/multi-igor2.ref [./testmsgs/multi-igor2.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-igor2.ref [./testmsgs/multi-igor2.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-31.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-31.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   text/plain
+** debug:       is this evil? 'Makefile'
+** debug:       it's ok
+** debug:       planning to use 'Makefile'
+** debug:       outputting body to disk file: testout/Ref_t/Makefile
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   text/plain
+** debug:       is this evil? 'multi-nested.msg'
+** debug:       it's ok
+** debug:       planning to use 'multi-nested.msg'
+** debug:       outputting body to disk file: testout/Ref_t/multi-nested.msg
+** debug:    parsing part 4...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   text/plain
+** debug:       is this evil? 'Parser.n.out'
+** debug:       it's ok
+** debug:       planning to use 'Parser.n.out'
+** debug:       outputting body to disk file: testout/Ref_t/Parser.n.out
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Msg; attr=Boundary:
+  want: "-490585488-806670346-834061839=:2195"
+  got:  "-490585488-806670346-834061839=:2195"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Msg; attr=From:
+  want: "Starovoitov Igor <igor@fripp.aic.synapse.ru>"
+  got:  "Starovoitov Igor <igor@fripp.aic.synapse.ru>"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Msg; attr=Subject:
+  want: "Need help"
+  got:  "Need help"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Msg; attr=To:
+  want: "eryq@rhine.gsfc.nasa.gov"
+  got:  "eryq@rhine.gsfc.nasa.gov"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_1; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_2; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_2; attr=Filename:
+  want: "Makefile"
+  got:  "Makefile"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_3; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_3; attr=Filename:
+  want: "multi-nested.msg"
+  got:  "multi-nested.msg"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_3; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_4; attr=Charset:
+  want: "US-ASCII"
+  got:  "US-ASCII"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_4; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_4; attr=Filename:
+  want: "Parser.n.out"
+  got:  "Parser.n.out"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-igor2.msg; part=Part_4; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+29: ./testmsgs/multi-igor2.ref
+29:   Message: "./testmsgs/multi-igor2.msg"
+29:   Parser: "anonymous"
+29: ok 29
+
+30: Did purge work?
+30:   Purgeable: "testout/Ref_t/msg-16469-31.txt"
+30:   Purgeable: "testout/Ref_t/Makefile"
+30:   Purgeable: "testout/Ref_t/multi-nested.msg"
+30:   Purgeable: "testout/Ref_t/Parser.n.out"
+30:   Original: "Makefile"
+30:   Original: "Parser.n.out"
+30:   Original: "msg-16469-31.txt"
+30:   Original: "multi-nested.msg"
+30: ok 30
+
+Trying ./testmsgs/ak-0696-replace.ref [./testmsgs/ak-0696.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/ak-0696-replace.ref [./testmsgs/ak-0696.msg]
+** debug:    process_header
+** warning:    skipping bogus mailbox 'From ' line
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-32.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-32.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         quoted-printable
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-33.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-33.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Boundary:
+  want: "------------70522FC73543"
+  got:  "------------70522FC73543"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=From:
+  want: "Juergen Specht <specht@kulturbox.de>"
+  got:  "Juergen Specht <specht@kulturbox.de>"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Subject:
+  want: "[Fwd: Re: 34Mbit/s Netz]"
+  got:  "[Fwd: Re: 34Mbit/s Netz]"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=To:
+  want: "andreas.koenig@mind.de, kun@pop.combox.de, 101762.2307@compuserve.com"
+  got:  "andreas.koenig@mind.de, kun@pop.combox.de, 101762.2307@compuserve.com"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Charset:
+  want: "iso-8859-1"
+  got:  "iso-8859-1"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Encoding:
+  want: "quoted-printable"
+  got:  "quoted-printable"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=From:
+  want: "deuschle@mnh.telekom.de (Guenter Deuschle)"
+  got:  "deuschle@mnh.telekom.de (Guenter Deuschle)"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Subject:
+  want: "Re: 34Mbit/s Netz"
+  got:  "Re: 34Mbit/s Netz"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=To:
+  want: "Juergen Specht <specht@kulturbox.de>"
+  got:  "Juergen Specht <specht@kulturbox.de>"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+31: ./testmsgs/ak-0696-replace.ref
+31:   Message: "./testmsgs/ak-0696.msg"
+31:   Parser: "anonymous"
+31: ok 31
+
+32: Did purge work?
+32:   Purgeable: "testout/Ref_t/msg-16469-32.txt"
+32:   Purgeable: "testout/Ref_t/msg-16469-33.txt"
+32:   Original: "msg-16469-32.txt"
+32:   Original: "msg-16469-33.txt"
+32: ok 32
+
+Trying ./testmsgs/multi-2gifs.ref [./testmsgs/multi-2gifs.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/multi-2gifs.ref [./testmsgs/multi-2gifs.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-34.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-34.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? '3d-compress.gif'
+** debug:       it's ok
+** debug:       planning to use '3d-compress.gif'
+** debug:       outputting body to disk file: testout/Ref_t/3d-compress.gif
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? '3d-eye.gif'
+** debug:       it's ok
+** debug:       planning to use '3d-eye.gif'
+** debug:       outputting body to disk file: testout/Ref_t/3d-eye.gif
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=Boundary:
+  want: "------------299A70B339B65A93542D2AE"
+  got:  "------------299A70B339B65A93542D2AE"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=Epilogue:
+  want: "That was a multi-part message in MIME format.\n"
+  got:  "That was a multi-part message in MIME format.\n"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=From:
+  want: "Eryq <eryq@rhine.gsfc.nasa.gov>"
+  got:  "Eryq <eryq@rhine.gsfc.nasa.gov>"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=Preamble:
+  want: "This is a multi-part message in MIME format.\n"
+  got:  "This is a multi-part message in MIME format.\n"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=Subject:
+  want: "Two images for you..."
+  got:  "Two images for you..."
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=To:
+  want: "john-bigboote@eryq.pr.mcs.net"
+  got:  "john-bigboote@eryq.pr.mcs.net"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_1; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_2; attr=BodyFilename:
+  want: "3d-compress.gif"
+  got:  "3d-compress.gif"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_2; attr=Filename:
+  want: "3d-compress.gif"
+  got:  "3d-compress.gif"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_2; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_3; attr=BodyFilename:
+  want: "3d-eye.gif"
+  got:  "3d-eye.gif"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_3; attr=Filename:
+  want: "3d-eye.gif"
+  got:  "3d-eye.gif"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_3; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/multi-2gifs.msg; part=Part_3; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+33: ./testmsgs/multi-2gifs.ref
+33:   Message: "./testmsgs/multi-2gifs.msg"
+33:   Parser: "anonymous"
+33: ok 33
+
+34: Did purge work?
+34:   Purgeable: "testout/Ref_t/msg-16469-34.txt"
+34:   Purgeable: "testout/Ref_t/3d-compress.gif"
+34:   Purgeable: "testout/Ref_t/3d-eye.gif"
+34:   Original: "3d-compress.gif"
+34:   Original: "3d-eye.gif"
+34:   Original: "msg-16469-34.txt"
+34: ok 34
+
+Trying ./testmsgs/hdr-fakeout.ref [./testmsgs/hdr-fakeout.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/hdr-fakeout.ref [./testmsgs/hdr-fakeout.msg]
+** debug:    process_header
+** error:    couldn't parse head; error near:
+** The header is not properly terminated; the "blank line" 
+** actually has a space in it.
+
+35: ./testmsgs/hdr-fakeout.ref
+35:   Problem: "   couldn't parse head; error near:\nThe header is not properly terminated; the \22blank line\22 \nactually has a space in it.\n"
+35: ok 35
+
+36: Did purge work?
+36: ok 36
+
+Trying ./testmsgs/uu-junk.ref [./testmsgs/uu-junk.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/uu-junk.ref [./testmsgs/uu-junk.msg]
+** debug:    process_header
+** warning:    skipping bogus mailbox 'From ' line
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-35.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-35.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-36.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-36.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Boundary:
+  want: "---------------------------7d033e3733c"
+  got:  "---------------------------7d033e3733c"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=From:
+  want: "\22ADJE Webmail Tech Support\22 <support@webmail.uwohali.com>"
+  got:  "\22ADJE Webmail Tech Support\22 <support@webmail.uwohali.com>"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Subject:
+  want: "mime::parser"
+  got:  "mime::parser"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=To:
+  want: "eryq@zeegee.com"
+  got:  "eryq@zeegee.com"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/uu-junk.msg; part=Part_2; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+37: ./testmsgs/uu-junk.ref
+37:   Message: "./testmsgs/uu-junk.msg"
+37:   Parser: "anonymous"
+37: ok 37
+
+38: Did purge work?
+38:   Purgeable: "testout/Ref_t/msg-16469-35.txt"
+38:   Purgeable: "testout/Ref_t/msg-16469-36.txt"
+38:   Original: "msg-16469-35.txt"
+38:   Original: "msg-16469-36.txt"
+38: ok 38
+
+Trying ./testmsgs/dup-names.ref [./testmsgs/dup-names.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/dup-names.ref [./testmsgs/dup-names.msg]
+** debug:    process_header
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? 'one.gif'
+** debug:       it's ok
+** debug:       planning to use 'one.gif'
+** debug:       outputting body to disk file: testout/Ref_t/one.gif
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? 'one.gif'
+** debug:       it's ok
+** debug:       planning to use 'one.gif'
+** debug:       testout/Ref_t/one.gif already taken
+** warning:       collision with one.gif in ./testout/Ref_t: using testout/Ref_t/one-1.gif
+** debug:       outputting body to disk file: testout/Ref_t/one-1.gif
+** debug:    parsing part 3...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? 'two.nice.gif'
+** debug:       it's ok
+** debug:       planning to use 'two.nice.gif'
+** debug:       outputting body to disk file: testout/Ref_t/two.nice.gif
+** debug:    parsing part 4...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? 'two.nice.gif'
+** debug:       it's ok
+** debug:       planning to use 'two.nice.gif'
+** debug:       testout/Ref_t/two.nice.gif already taken
+** warning:       collision with two.nice.gif in ./testout/Ref_t: using testout/Ref_t/two-1.nice.gif
+** debug:       outputting body to disk file: testout/Ref_t/two-1.nice.gif
+** debug:    parsing part 5...
+** debug:       process_header
+** debug:       type = image, subtype = gif
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         base64
+** debug:       effective type?   image/gif
+** debug:       is this evil? 'two.nice.gif'
+** debug:       it's ok
+** debug:       planning to use 'two.nice.gif'
+** debug:       testout/Ref_t/two.nice.gif already taken
+** debug:       testout/Ref_t/two-1.nice.gif already taken
+** warning:       collision with two.nice.gif in ./testout/Ref_t: using testout/Ref_t/two-2.nice.gif
+** debug:       outputting body to disk file: testout/Ref_t/two-2.nice.gif
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_1; attr=BodyFilename:
+  want: "one.gif"
+  got:  "one.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_1; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_1; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_1; attr=Filename:
+  want: "one.gif"
+  got:  "one.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_1; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_1; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_2; attr=BodyFilename:
+  want: "one-1.gif"
+  got:  "one-1.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_2; attr=Filename:
+  want: "one.gif"
+  got:  "one.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_2; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_3; attr=BodyFilename:
+  want: "two.nice.gif"
+  got:  "two.nice.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_3; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_3; attr=Filename:
+  want: "two.nice.gif"
+  got:  "two.nice.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_3; attr=Size:
+  want: "419"
+  got:  "419"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_3; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_4; attr=BodyFilename:
+  want: "two-1.nice.gif"
+  got:  "two-1.nice.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_4; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_4; attr=Filename:
+  want: "two.nice.gif"
+  got:  "two.nice.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_4; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_4; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_5; attr=BodyFilename:
+  want: "two-2.nice.gif"
+  got:  "two-2.nice.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_5; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_5; attr=Filename:
+  want: "two.nice.gif"
+  got:  "two.nice.gif"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_5; attr=Size:
+  want: "357"
+  got:  "357"
+
+SUB-TEST: msg=./testmsgs/dup-names.msg; part=Part_5; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+39: ./testmsgs/dup-names.ref
+39:   Message: "./testmsgs/dup-names.msg"
+39:   Parser: "anonymous"
+39: ok 39
+
+40: Did purge work?
+40:   Purgeable: "testout/Ref_t/one.gif"
+40:   Purgeable: "testout/Ref_t/one-1.gif"
+40:   Purgeable: "testout/Ref_t/two.nice.gif"
+40:   Purgeable: "testout/Ref_t/two-1.nice.gif"
+40:   Purgeable: "testout/Ref_t/two-2.nice.gif"
+40:   Original: "one-1.gif"
+40:   Original: "one.gif"
+40:   Original: "two-1.nice.gif"
+40:   Original: "two-2.nice.gif"
+40:   Original: "two.nice.gif"
+40: ok 40
+
+Trying ./testmsgs/uu-zeegee.ref [./testmsgs/uu-zeegee.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/uu-zeegee.ref [./testmsgs/uu-zeegee.msg]
+** debug:    process_header
+** debug:    type = text, subtype = plain
+** debug:    process_singlepart...
+** debug:    using temp file
+** debug:    extract uuencode? 1
+** debug:    encoding?         7bit
+** debug:    effective type?   text/plain
+** debug:    sniffing around for UUENCODE
+** warning:    Found a uu attachment
+** debug:    no filename recommended: synthesizing our own
+** debug:    planning to use 'msg-16469-37.txt'
+** debug:    outputting body to disk file: testout/Ref_t/msg-16469-37.txt
+** debug:    is this evil? 'up.gif'
+** debug:    it's ok
+** debug:    planning to use 'up.gif'
+** debug:    outputting body to disk file: testout/Ref_t/up.gif
+** debug:    is this evil? 'zeegee.gif'
+** debug:    it's ok
+** debug:    planning to use 'zeegee.gif'
+** debug:    outputting body to disk file: testout/Ref_t/zeegee.gif
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Msg; attr=From:
+  want: "me"
+  got:  "me"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Msg; attr=Subject:
+  want: "uudecoding"
+  got:  "uudecoding"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Msg; attr=To:
+  want: "you"
+  got:  "you"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_2; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_2; attr=Filename:
+  want: "up.gif"
+  got:  "up.gif"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_2; attr=Size:
+  want: "110"
+  got:  "110"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_2; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_3; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_3; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_3; attr=Filename:
+  want: "zeegee.gif"
+  got:  "zeegee.gif"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_3; attr=Size:
+  want: "4834"
+  got:  "4834"
+
+SUB-TEST: msg=./testmsgs/uu-zeegee.msg; part=Part_3; attr=Type:
+  want: "image/gif"
+  got:  "image/gif"
+
+41: ./testmsgs/uu-zeegee.ref
+41:   Message: "./testmsgs/uu-zeegee.msg"
+41:   Parser: "anonymous"
+41: ok 41
+
+42: Did purge work?
+42:   Purgeable: "testout/Ref_t/msg-16469-37.txt"
+42:   Purgeable: "testout/Ref_t/up.gif"
+42:   Purgeable: "testout/Ref_t/zeegee.gif"
+42:   Original: "msg-16469-37.txt"
+42:   Original: "up.gif"
+42:   Original: "zeegee.gif"
+42: ok 42
+
+Trying ./testmsgs/ak-0696-none.ref [./testmsgs/ak-0696.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/ak-0696-none.ref [./testmsgs/ak-0696.msg]
+** debug:    process_header
+** warning:    skipping bogus mailbox 'From ' line
+** debug:    type = multipart, subtype = mixed
+** debug:    process_multipart...
+** debug:    parsing part 1...
+** debug:       process_header
+** debug:       type = text, subtype = plain
+** debug:       process_singlepart...
+** debug:       using temp file
+** debug:       extract uuencode? <<undef>>
+** debug:       encoding?         7bit
+** debug:       effective type?   text/plain
+** debug:       no filename recommended: synthesizing our own
+** debug:       planning to use 'msg-16469-38.txt'
+** debug:       outputting body to disk file: testout/Ref_t/msg-16469-38.txt
+** debug:    parsing part 2...
+** debug:       process_header
+** debug:       type = message, subtype = rfc822
+** debug:       attempting to process a nested message
+** debug:       process_message
+** debug:          process_header
+** debug:          type = text, subtype = plain
+** debug:          process_singlepart...
+** debug:          using temp file
+** debug:          extract uuencode? <<undef>>
+** debug:          encoding?         quoted-printable
+** debug:          effective type?   text/plain
+** debug:          no filename recommended: synthesizing our own
+** debug:          planning to use 'msg-16469-39.txt'
+** debug:          outputting body to disk file: testout/Ref_t/msg-16469-39.txt
+** debug:    process_epilogue
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Boundary:
+  want: "------------70522FC73543"
+  got:  "------------70522FC73543"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=From:
+  want: "Juergen Specht <specht@kulturbox.de>"
+  got:  "Juergen Specht <specht@kulturbox.de>"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Subject:
+  want: "[Fwd: Re: 34Mbit/s Netz]"
+  got:  "[Fwd: Re: 34Mbit/s Netz]"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=To:
+  want: "andreas.koenig@mind.de, kun@pop.combox.de, 101762.2307@compuserve.com"
+  got:  "andreas.koenig@mind.de, kun@pop.combox.de, 101762.2307@compuserve.com"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Msg; attr=Type:
+  want: "multipart/mixed"
+  got:  "multipart/mixed"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Charset:
+  want: "us-ascii"
+  got:  "us-ascii"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_1; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/ak-0696.msg; part=Part_2; attr=Type:
+  want: "message/rfc822"
+  got:  "message/rfc822"
+
+43: ./testmsgs/ak-0696-none.ref
+43:   Message: "./testmsgs/ak-0696.msg"
+43:   Parser: "anonymous"
+43: ok 43
+
+44: Did purge work?
+44:   Purgeable: "testout/Ref_t/msg-16469-38.txt"
+44:   Purgeable: "testout/Ref_t/msg-16469-39.txt"
+44:   Original: "msg-16469-38.txt"
+44:   Original: "msg-16469-39.txt"
+44: ok 44
+
+Trying ./testmsgs/bluedot-simple.ref [./testmsgs/bluedot-simple.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/bluedot-simple.ref [./testmsgs/bluedot-simple.msg]
+** debug:    process_header
+** debug:    type = image, subtype = jpeg
+** debug:    process_singlepart...
+** debug:    taking shortcut
+** debug:    extract uuencode? <<undef>>
+** debug:    encoding?         base64
+** debug:    effective type?   image/jpeg
+** debug:    is this evil? 'bluedot.jpg'
+** debug:    it's ok
+** debug:    planning to use 'bluedot.jpg'
+** debug:    outputting body to disk file: testout/Ref_t/bluedot.jpg
+SUB-TEST: msg=./testmsgs/bluedot-simple.msg; part=Msg; attr=Disposition:
+  want: "inline"
+  got:  "inline"
+
+SUB-TEST: msg=./testmsgs/bluedot-simple.msg; part=Msg; attr=Encoding:
+  want: "base64"
+  got:  "base64"
+
+SUB-TEST: msg=./testmsgs/bluedot-simple.msg; part=Msg; attr=Filename:
+  want: "bluedot.jpg"
+  got:  "bluedot.jpg"
+
+SUB-TEST: msg=./testmsgs/bluedot-simple.msg; part=Msg; attr=Size:
+  want: "4272"
+  got:  "4272"
+
+SUB-TEST: msg=./testmsgs/bluedot-simple.msg; part=Msg; attr=Type:
+  want: "image/jpeg"
+  got:  "image/jpeg"
+
+45: ./testmsgs/bluedot-simple.ref
+45:   Message: "./testmsgs/bluedot-simple.msg"
+45:   Parser: "anonymous"
+45: ok 45
+
+46: Did purge work?
+46:   Purgeable: "testout/Ref_t/bluedot.jpg"
+46:   Original: "bluedot.jpg"
+46: ok 46
+
+Trying ./testmsgs/simple.ref [./testmsgs/simple.msg]
+Default charset: ISO-8859-1** PARSE LOG FOR ./testmsgs/simple.ref [./testmsgs/simple.msg]
+** debug:    process_header
+** debug:    type = text, subtype = plain
+** debug:    process_singlepart...
+** debug:    taking shortcut
+** debug:    extract uuencode? <<undef>>
+** debug:    encoding?         7bit
+** debug:    effective type?   text/plain
+** debug:    no filename recommended: synthesizing our own
+** debug:    planning to use 'msg-16469-40.txt'
+** debug:    outputting body to disk file: testout/Ref_t/msg-16469-40.txt
+SUB-TEST: msg=./testmsgs/simple.msg; part=Msg; attr=Encoding:
+  want: "7bit"
+  got:  "7bit"
+
+SUB-TEST: msg=./testmsgs/simple.msg; part=Msg; attr=From:
+  want: "eryq@rhine.gsfc.nasa.gov"
+  got:  "eryq@rhine.gsfc.nasa.gov"
+
+Skipping Size evaluation in text message due to variations in local newline conventions
+
+SUB-TEST: msg=./testmsgs/simple.msg; part=Msg; attr=Subject:
+  want: "Request for Leave"
+  got:  "Request for Leave"
+
+SUB-TEST: msg=./testmsgs/simple.msg; part=Msg; attr=To:
+  want: "sitaram@selsvr.stx.com"
+  got:  "sitaram@selsvr.stx.com"
+
+SUB-TEST: msg=./testmsgs/simple.msg; part=Msg; attr=Type:
+  want: "text/plain"
+  got:  "text/plain"
+
+47: ./testmsgs/simple.ref
+47:   Message: "./testmsgs/simple.msg"
+47:   Parser: "anonymous"
+47: ok 47
+
+48: Did purge work?
+48:   Purgeable: "testout/Ref_t/msg-16469-40.txt"
+48:   Original: "msg-16469-40.txt"
+48: ok 48
+

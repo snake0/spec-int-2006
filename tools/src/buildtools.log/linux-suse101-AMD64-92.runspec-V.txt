@@ -1,0 +1,31 @@
+runspec v4283 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+Using 'unknown' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 92
+ Benchmarks version: 92
+      Tools version: 92
+    runspec version: 4283 ($Id: runspec 4283 2006-05-24 22:34:29Z cloyce $)
+
+Tools information:
+ Tools package installed: unknown
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 1000  | 100   |  184088 | 27-Jul-2006 23:05:18 | specmake
+0755 | 1000  | 100   | 1172295 | 27-Jul-2006 23:05:18 | specperl
+0755 | 1000  | 100   |   23616 | 27-Jul-2006 23:05:19 | specinvoke
+0755 | 1000  | 100   |   26296 | 27-Jul-2006 23:05:19 | specinvoke_pm
+0775 | 1000  | 100   |  120656 | 27-Jul-2006 23:05:18 | specbzip2
+0755 | 1000  | 100   |   24416 | 27-Jul-2006 23:05:19 | specmd5sum
+0755 | 1000  | 100   |    7595 | 27-Jul-2006 23:05:19 | specdiff
+0755 | 1000  | 100   |   85728 | 27-Jul-2006 23:05:19 | specpp
+0755 | 1000  | 100   |   88813 | 27-Jul-2006 23:05:19 | runspec
+0755 | 1000  | 100   |    1143 | 26-May-2006 16:51:31 | runspec.bat
+
+Version info for specinvoke (/s2k6/mpaton/kit92/bin/specinvoke): Version: 4205
+Version info for specmake (/s2k6/mpaton/kit92/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/s2k6/mpaton/kit92/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/s2k6/mpaton/kit92/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/s2k6/mpaton/kit92/bin/specperl): This is specperl, v5.8.7 built for x86_64-linux
+                           For more detail on specperl, say 'specperl -V'

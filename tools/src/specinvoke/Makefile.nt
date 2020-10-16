@@ -1,0 +1,44 @@
+#
+# Makefile for specinvoke
+# Copyright (C) 1996-2003 Standard Performance Evaluation Corporation
+#
+# $Id: Makefile.nt 2259 2005-01-15 16:35:48Z cloyce $
+
+all: specinvoke.exe specinvoke_pm.exe
+
+CFLAGS=/Zi
+LDFLAGS=/Zi
+
+# If anyone ever writes a performance monitor module for Windows, put the
+# name of its directory here:
+PM_DIR=pm_stub
+
+config.h: config.h.win32
+	copy config.h.win32 config.h
+specinvoke.obj: config.h specinvoke.h specinvoke.c
+win32.obj: config.h specinvoke.h win32.c
+getopt.obj: config.h getopt.c
+specinvoke.exe: specinvoke.obj win32.obj getopt.obj
+	$(CC) $(LDFLAGS) -Fe$@ specinvoke.obj getopt.obj win32.obj
+
+specinvoke_pm.exe: specinvoke_pm.obj win32_pm.obj getopt.obj $(PM_DIR)\pmfuncs.obj
+	$(CC) $(LDFLAGS) -Fe$@ specinvoke_pm.obj getopt.obj win32_pm.obj $(PM_DIR)\pmfuncs.obj
+
+specinvoke_pm.obj: config.h specinvoke.h specinvoke.c $(PM_DIR)\specinvoke_pm.h
+	$(CC) $(CFLAGS) -c -Fo$@ -I$(PM_DIR) -DPERFMON specinvoke.c
+
+win32_pm.obj: config.h specinvoke.h win32.c $(PM_DIR)\specinvoke_pm.h
+	$(CC) $(CFLAGS) -c -Fo$@ -I$(PM_DIR) -DPERFMON win32.c
+
+$(PM_DIR)\pmfuncs.obj: $(PM_DIR)\specinvoke_pm.h
+	cd $(PM_DIR)
+	$(MAKE) /f Makefile.nt
+	cd ..
+
+cleanobjs:
+	del *.obj $(PM_DIR)\*.obj
+
+clean:
+	del *.obj specinvoke.exe config.h
+
+distclean: clean

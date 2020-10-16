@@ -1,0 +1,232 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+                            Credits for SPEC CPU2006
+
+   Creating a suite of source code benchmarks to provide a consistent,
+   comparative measure of CPU-intensive performance is not simple. The
+   challenges are numerous, for example:
+
+     * locating meaningful programs;
+     * ensuring that they port to numerous environments;
+     * defining rules to govern how the programs are compiled, run and
+       reported;
+     * developing a toolset to help enforce these rules while still making
+       things easy to use; and
+     * defining a process by which decisions can be made amongst the group
+       working on the project.
+
+   And in the end, you hope you have something that is fair, relevant, and
+   understandable, that will address technology for a period of years.
+
+   Such is the case with SPEC CPU2006, which is a worthy update and
+   replacement for CPU2000. The new benchmark suite:
+
+     * Increases the number of applications and application areas included in
+       the suite.
+     * Uses application source code that is significantly more complex.
+     * Uses more memory at run time.
+     * Improves the tools for running and using the suite.
+     * Clarifies and updates the run rules.
+     * Improves the documentation.
+
+   All of this is due to the efforts of a large team of people from around
+   the world, that SPEC would like to thank (with apologies and thanks to
+   those who may not be listed).
+
+  Program Authors and Contributors
+
+   SPEC CPU benchmarks are based on real-world applications (rather than
+   using loop kernels or artificial stress tests). We therefore thank the
+   authors of those real-world applications.
+
+   Thank you to the many participants of the "SPEC CPU Benchmark Search
+   Program" and, in particular, the authors that contributed programs that
+   were made part of the suite:
+
+       CINT2006 programs
+   429.mcf        Andreas Lo:bel                     
+   445.gobmk      Arend Bayer                        
+   456.hmmer      Sean R. Eddy                       
+   458.sjeng      Gian-Carlo Pascutto                
+   462.libquantum Hendrik Weimer                     
+   464.h264ref    Tom Pycke                          
+   473.astar      Lev Dymchenko                      
+       CFP2006 programs
+   433.milc       Steven Gottlieb                    
+   434.zeusmp     Michael L. Norman                  
+   435.gromacs    Erik Lindahl                       
+   436.cactusADM  Malcolm Tobias                     
+   437.leslie3d   Christopher Stone and Suresh Menon 
+   444.namd       James Christopher Phillips         
+   447.dealII     Wolfgang Bangerth                  
+   450.soplex     Thorsten Koch                      
+   453.povray     Thorsten Fro:hlich                 
+   454.calculix   Guido Dhondt                       
+   459.GemsFDTD   Ulf Andersson                      
+   465.tonto      Daniel Grimwood                    
+   470.lbm        Thomas Pohl                        
+
+   A special thank-you goes to Mark Kremenetsky, who contributed 410.bwaves.
+   Dr. Kremenetsky would be in the list just above were it not for the fact
+   that he is an employee of a SPEC member company (SGI), and therefore not
+   eligible for the Search Program.
+
+   Thank you to the original authors of, and contributors to, open-source
+   programs that were adapted by SPEC for inclusion in the suite. These
+   programs include:
+
+                 based on Perl by Larry Wall and a cast of thousands, along   
+                 with many plug-in modules, including SpamAssassin by Theo    
+   400.perlbench Van Dinter and many others, MIME::Base64, Digest::MD5 and    
+                 HTML::Parser by Gisle Aas, MHonArc by Ed Hood, IO::stringy   
+                 by Eryq, TimeDate by Graham Barr, and MailTools by Mark      
+                 Overmeer.                                                    
+   401.bzip2     based on bzip2 by Julian Seward                              
+   403.gcc       based on the GNU C Compiler by Richard Stallman and a large  
+                 cast of helpers.                                             
+   416.gamess    based on GAMESS from the Gordon Resarch Group at Iowa State  
+                 University                                                   
+   447.dealII    uses the Boost C++ libraries, with contributors numbering in 
+                 the thousands                                                
+   454.calculix  uses the SPOOLES package by Cleve Ashcraft                   
+   471.omnetpp   based on OMNeT++ by Andras Varga                             
+                 based on the Weather Research and Forecasting (WRF) Model,   
+   481.wrf       which has 5 development teams and a cooperative effort       
+                 spanning multiple agencies, labs, and universities.          
+                 Also, 481.wrf uses NetCDF, which has many contributors.      
+   482.sphinx3   based on CMU Sphinx 3. The Carnegie Mellon Speech projects   
+                 have had many contributors.                                  
+   483.xalancbmk based on Xalan-C++ and Xerces-C++ with contributions from    
+                 the Apache development commmunity, IBM, and others.          
+
+   For more information regarding the SPEC benchmarks, including information
+   about other contributors, see the documentation in the individual
+   benchmarks directories.
+
+  SPEC
+
+   We would also like to thank:
+
+     * SPEC management, who provided us with resources, and kept the SPEC CPU
+       Subcommittee on their toes:
+
+          * Walter Bays - President, SPEC
+          * Kaivalya Dixit - Long-time President, and Guiding Light of SPEC
+          * Larry Gray - Treasurer, SPEC
+          * Paula Smith, Michael Paton - Chairs, SPEC Open Systems Steering
+            Committee
+     * The SPEC office, who were the ones who really provided us with the
+       resources:
+
+          * Dianne Rice - Administration
+          * Kathy Powers - Administration, including event coordination for
+            "benchathons": SPEC's face-to-face gatherings to port the
+            benchmarks.
+          * Cathy Sandifer, Jason Glick - Webmasters
+
+  Benchmark Project Leaders and Developers
+
+   Most importantly, thank you to the people who sweated through technical
+   details and porting issues, debated their view points vigorously, and were
+   willing to drive issues to conclusion. Without these people this benchmark
+   suite would truly not exist.
+
+   A benchmark "Project Leader" serves as the focal point for porting a
+   program to all the tested platforms, improves the stability of the code,
+   removes code that SPEC does not want to test (such as platform-specific
+   extensions), writes documentation, consults with both the author and the
+   users, and generally tries to give each benchmark its best chance at
+   making it through SPEC's testing process. Thank you to these project
+   leaders:
+
+     * Yusuf Abdulghani, Kaivalya Dixit, Tom Elken, Diego Esteves, Alan
+       MacKay, Raj Panda, Michael Paton, and Myke Smith, each of whom served
+       as the SPEC "Project Leader" for one of the benchmark candidates that
+       was evaluated by SPEC.
+     * Jim Koehler and Michael Wong, who served as project leader for 2
+       benchmark candidates.
+     * Bob Larson, Manas Mandal, and Joydeep Ray, who project led 3
+       candidates.
+     * Reinhold Weicker, who led 4 benchmark candidates.
+     * Cloyce Spradling, who served as project leader 4 benchmark candidates.
+       As the Release Manager, and tirelessly productive Toolsmaster, Cloyce
+       also assisted every other project leader.
+     * Anirudha ("Rahul") Rahatekar, project leader for 8 benchmark
+       candidates.
+     * John Henning, project leader for 12 benchmark candidates.
+     * Kumaran Kalyanasundaram, project leader for 15 benchmark candidates.
+
+   In addition to the above, many other people from the member companies
+   assisted with benchmark development, including but not limited to Louis
+   Barton, Chris Cambly, Mat Colgrove, Darryl Gove, Linda Hsi, Andreas
+   Jaeger, Jim McInnes, Wendy Korn, Jeff Reilly, Hideki Saito, Alexey
+   Starovoytov, Wilfried Stehling, Brian Whitney, and Joel Williamson.
+
+  Analysis, Tools, Testing, and Documentation
+
+   Analysis of the candidate benchmarks was a substantial task. Contributors
+   to profiling and other forms of analysis included: Yusuf Abdulghani, Tom
+   Elken, Darryl Gove, John Henning, Lizy John, Ajay Joshi, Jim Koehler, Bob
+   Larson, Alan MacKay, Aashish Phansalkar, Rahul Rahatekar, Joydeep Ray,
+   Cloyce Spradling, Wilfried Stehling, and Reinhold Weicker
+
+   Cloyce Spradling is the primary author of the SPEC CPU2006 toolset.
+
+   Thank you to all who submitted bug reports and RFEs for the tools, notably
+   including Carl Ponder (5 bugs/RFEs), Joydeep Ray (5), Yusuf Abdulghani
+   (6), Alan MacKay (7), Rahul Rahatekar (9), Manas Mandal (21), and John
+   Henning (86). Cloyce himself submitted the largest number (198).
+
+   Benchmark testing was coordinated by Yusuf Abdulghani.
+
+   There were numerous bug reports and RFEs suggested for the benchmarks
+   themselves, but there's not an easy way to give credit for vigor by the
+   testers, since much of that effort happened in difficult-to-summarize
+   email and in person at benchathons. You who attended benchathons, and
+   stayed up late working on bugs, know who you are.
+
+   Thank you to Julie Reilly for installation testing on Windows.
+
+   John Henning is the primary author of the documentation. Cloyce Spradling
+   wrote first drafts for most of the new features in CPU2006. Many others
+   contributed updates and did reviews, including Yusuf Abdulghani, Kevin
+   Ball, Miriam Blatt, Mat Colgrove, Mark Debbage, Rick Jones, Bob Larson,
+   Rahul Rahatekar, Jeff Reilly, Cathy Sandifer, David Schmidt, Myke Smith,
+   Wilfried Stehling.
+
+  Behind the scenes
+
+   Finally, we thank all of the people behind the scenes in the compiler
+   groups, architecture groups and performance groups who supported their
+   work for SPEC at their respective companies.
+
+  The Bottom Line
+
+   Thank you!
+
+   Cloyce D. Spradling, Release Manager, SPEC CPU2006
+   John L. Henning, Vice-Chair/Secretary, SPEC CPU Subcommittee
+   Jeffrey W. Reilly, Chair, SPEC CPU Subcommittee
+
+     ----------------------------------------------------------------------
+
+   Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+   All Rights Reserved

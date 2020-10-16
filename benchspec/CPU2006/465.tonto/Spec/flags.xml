@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags1.dtd">
+
+<!-- This file defines flags that appear in the sources for 465.tonto.
+
+  Copyright (C) 2005-2006 Standard Performance Evaluation Corporation
+
+  $Revision: 3869 $
+  $Date: 2006-02-24 10:01:32 -0500 (Fri, 24 Feb 2006) $
+-->
+<flagsdescription>
+
+<!-- Normal flags file should suggest a name for themselves -->
+<filename>465.tonto.flags</filename>
+
+<title>465.tonto Flags</title>
+
+<header>
+<![CDATA[
+<p>These are flags that appear in the benchmark sources, categorized as to
+whether they are portability candidates, mandatory, or forbidden.
+</p>
+]]>
+</header>
+
+<flag name="specpp_boundary" class="mandatory" regexp="-w\b" compilers="specpp">
+<example>
+-w
+</example>
+This flag enables word-boundaries in the specpp source preprocessor.
+</flag>
+
+<flag name="specpp_modules" class="mandatory" regexp="-m (?:literal|tonto)\.pm\b" compilers="specpp">
+<example>
+-m literal.pm,
+-m tonto.pm
+</example>
+These flags select preprocessor modules for the specpp source preprocessor.
+</flag>
+
+<flag name="DBROKEN_PURE" class="portability">
+This flag disables several keywords having to do with "pure" 
+routines.  It is implied by LANGUAGE_FORTRAN_90, which would 
+presumably be the more common way for it to get set, rather 
+than appearing by itself on a command line.   
+</flag>
+
+<flag name="DBROKEN_TYPE_INITIALIZATION" class="portability">
+This flag disables some setting of initial values.  It is 
+implied by LANGUAGE_FORTRAN_90, which would presumably be the 
+more common way for it to get set, rather than appearing by 
+itself on a command line.  
+</flag>
+
+<flag name="DESSL" class="forbidden">
+This flag would cause tonto to use ESSL instead of LAPACK; the 
+SPEC benchmark uses LAPACK.
+</flag>
+
+<flag name="DF90_UNIX_IO" class="forbidden">
+It appears that this flag would cause a reference to a part of 
+tonto that is not included in the SPEC benchmark, so it is 
+therefore forbidden.
+</flag>
+
+<flag name="DFLUSH" class="forbidden">
+This flag might be useful in debugging, but is forbidden in a 
+SPEC run.
+</flag>
+
+<flag name="DLANGUAGE_FORTRAN_90" class="portability">
+Some Fortran compilers have some limitations; setting LANGUAGE_FORTRAN_90
+will set BROKEN_PURE and BROKEN_TYPE_INITIALIZATION
+</flag>
+
+<flag name="DLITERAL_REVERSE" class="forbidden">
+LITERAL_REVERSE would affect the operation of the preprocessor 
+itself; its effect is untested but quite likely its use would 
+be an annoying faux pas.
+</flag>
+
+<flag name="DMPI" class="forbidden">
+The MPI support in of tonto is not used in SPEC CPU (though it 
+might potentially be of interest in some other SPEC benchmarks).
+</flag>
+
+<flag name="DNOGENERIC" class="portability">
+NOGENERIC appears to cater for a Fortran compiler that has 
+difficulties with Fortran generic function references.  
+Although it is conceivable that a contemporary compiler might 
+need this flag, its use should be questioned.
+</flag>
+
+<flag name="DSERVICE_ROUTINES" class="forbidden">
+It appears that this flag would cause a reference to a part of 
+tonto that is not included in the SPEC benchmark, so it is 
+therefore forbidden.
+</flag>
+
+<flag name="DSPEC_CPU" class="mandatory">
+The SPEC version of the program omits some output, and also has 
+a different convergence constant in scf.  The flag SPEC_CPU is 
+mandatory when running the benchmark version.
+</flag>
+
+<flag name="USPEC_CPU" class="forbidden">
+The SPEC version of the program omits some output, and also has 
+a different convergence constant in scf.  The flag SPEC_CPU is 
+mandatory when running the benchmark version.
+</flag>
+
+<flag name="DUSE_CALL_STACK_MANAGEMENT" class="forbidden">
+Would be used only in debugging; forbidden in a SPEC run.
+</flag>
+
+<flag name="DUSE_ERROR_MANAGEMENT" class="mandatory">
+This flag is set automatically by Spec/object.pm.
+</flag>
+
+<flag name="DUSE_PRE_AND_POST_CONDITIONS" class="mandatory">
+This flag is set automatically by Spec/object.pm.
+</flag>
+
+<flag name="DUSE_PROFILING" class="forbidden">
+This flag is part of tonto's own profiling mechanisms.  It 
+could be used outside the tools harness if one were studying 
+the code, but its use iwithin an actual SPEC benchmark run is 
+forbidden.
+</flag>
+
+</flagsdescription>
+

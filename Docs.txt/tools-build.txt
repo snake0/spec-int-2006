@@ -1,0 +1,425 @@
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+The following text file was automatically generated
+from a document that you really should read in HTML
+format.  This text document is only a poor fallback
+if you cannot read HTML, but it is NOT RECOMMENDED.
+
+To read this document in the recommended way, point
+your favorite web browser at one of these 3 places:
+(1) The SPEC site http://www.spec.org/cpu2006/Docs/
+(2) The Docs directory from your CPU2006 DVD, e.g.:
+    /dvdrom/Docs/ for Unix or E:\Docs\ for Windows.
+(3) The Docs directory on the system where you have
+    installed your SPEC CPU2006 tree - for example:
+    /spec/Docs/ (Unix) or D:\myspec\Docs\ (Windows)
+---------------------------------------------------
+W A R N I N G      W A R N I N G      W A R N I N G
+---------------------------------------------------
+
+                      Building the SPEC CPU2006 Tool Suite
+
+   Last updated: 18 July 2006 jh/cs/ws
+   (To check for possible updates to this document, please see
+   http://www.spec.org/cpu2006/Docs/.)
+
+   Contents
+
+   1. Introduction
+
+   a. What are the tools?
+
+   b. Pre-compiled binaries
+
+   c. When to build the tools yourself
+
+   2. How to build the tools
+
+   a. Notes specific to Unix systems
+
+   b. Notes specific to Windows systems
+
+   3. How to verify that your build succeeded
+
+   4. Describing your newly-built tools
+
+   5. Packagetools
+
+   6. Troubleshooting: What to do if something goes wrong
+
+   a. Try it by hand
+
+   b. Known problems
+
+   c. Executing just part of buildtools
+
+   7.Support
+
+1. Introduction
+
+   SPEC supplies various tools that are used to ensure consistent operation
+   of benchmarks across a variety of platforms. In order to generate a valid
+   result file which can be submitted to SPEC, you must use the SPEC supplied
+   tools.
+
+  1.a. What are the tools?
+
+   The tools include (but are not limited to):
+
+    specdiff  examines results to see if the correct answer was obtained      
+   specinvoke invokes benchmarks for CPU2006                                  
+              GNU make (Calling it "specmake" avoids possible conflicts with  
+              versions of make that may already be on your system. SPEC       
+    specmake  requires that published results use the versions of the tools   
+              that it supplies, so that if SPEC applies patches or extensions 
+              from time to time, all users run with a consistent tool set.    
+              Similar considerations apply to other tools in this list.)      
+   specbzip2  Julian Seward's bzip2                                           
+   specmd5sum md5sum from GNU textutils, with enhancements                    
+    spectar   GNU tar                                                         
+    specperl  Perl                                                            
+   Various Perl modules such as Algorithm::Diff, Compress::Bzip2, GD,
+   HTML::Parser, PDF::API2, URI, XML::SAX, etc.
+
+   Many of these tools are based on the freely available programs of the same
+   name.
+
+   Note: In this document, "Unix" is used to describe Unix and all Unix-like
+   systems such as Linux.
+
+  1.b. Pre-compiled binaries
+
+   You will find pre-compiled binaries for the tools in the directories:
+
+   $SPEC/tools/bin/<archname>
+
+   The term $SPEC designates the top directory where you installed the
+   benchmark suite. (On a Windows system, it would be called %SPEC%.)
+
+   The precompiled binaries will be automatically installed when you run
+   install.sh (Unix) or install.bat (Windows).
+
+  1.c. When to build the tools yourself
+
+   Sometimes it may be necessary to rebuild the tools, for example if a
+   change in an operating system renders a precompiled binary inoperable, or
+   if you are the first person to add support for a new architecture.
+
+   NOTICE: If you are adding support for a new architecture, and intend to
+   submit results to SPEC, you must ask SPEC to review your tool build.
+   Please turn on your operating system's session recorder (e.g. in Unix,
+   typically the script command) prior to doing buildtools. In Windows, you
+   might have to do repetitious tedious repeated cut/paste clicking and
+   clicking (so make that command window as big as possible). Also, you will
+   be expected to provide the output from runspec -V and runspec --test on a
+   system OTHER than the build system, where you have installed your new
+   tools build.
+
+2. How to build the tools
+
+   If the directory $SPEC/tools/src (Unix) or %SPEC%\tools\src (Windows) does
+   not yet exist, use bzip2 and tar to expand tools/tools_src.tar.bz2.
+
+   bzip2 -dc tools_src.tar.bz2 | tar xf -
+
+   The scripts $SPEC/tools/src/buildtools (Unix) or
+   %SPEC%\tools\src\buildtools.bat (Windows) will build the tools. But you
+   may need to invoke the buildtools script with appropriate environment
+   variables set first - see the sections immediately following that provide
+   notes about specific platforms.
+
+   If everything goes right, you won't have to do very much at all, other
+   than watch build commands fly by.
+
+  2.a. Notes specific to Unix systems
+
+   When building the tools under Unix, the following warnings appear to be
+   harmless as of November 2005:
+
+     * Any message generated by a "make clean", especially the first time
+       that you build, since there's nothing to clean!
+     * Warnings about missing 'makeinfo', 'alocal', 'automake', 'autoconf'.
+
+   You may find the following flags useful on the listed systems:
+
+     * AIX:
+       CC=xlc CFLAGS='-O3' PERLFLAGS='-Doptimize=-O3' ./buildtools
+
+     * HPUX:
+       CC="/opt/ansic/bin/cc" CFLAGS="-Ae +O0 -g0" ./buildtools
+
+     * IRIX: Initialize compiler path and library locations. Use modules if
+       available:
+       source /software/modules/modules/init/csh
+       module load MIPSpro.7.4.4m
+
+   If the system for which you're attempting to build tools is similar to one
+   for which a tools build exists, you might also be able to gain some
+   insight by looking at the top of the build logs in
+   tools/src/buildtool.log.
+
+  2.b. Notes specific to Windows systems
+
+   The Windows version of buildtools is designed to use Visual Studio. They
+   run successfully with Visual Studio .NET and with Visual Studio .NET 2003.
+   The tools are not yet ported to be built with the 64-bit compiler for
+   Windows x64 Edition; use the 32-bit tools instead.
+
+   The builds use makefiles to be processed with nmake.exe (contained in
+   Visual Studio). The supplied NMakefile defines the compiler name to be cl,
+   and it uses compiler flags which are typical for Microsoft C/C++.
+
+   If it is necessary to unzip and untar the sources of the tools in Windows,
+   open a Command-Prompt window, cd to %SPEC% (i.e. the top directory of
+   SPEC). Then execute:
+
+   cd tools
+   bin\windows-i386\specbzip2.exe -d tools_src.tar.bz2
+   ooo\windows-i386\spectar.exe xvf tools_src.tar
+
+   Then go ahead and execute
+
+   %SPEC%\tools\src\buildtools.bat
+
+   You can ignore warnings about objects that are not found, especially at
+   the beginning of each tool build, when cleanup is attempted from previous
+   builds. Some tools may not know how to make 'clean', 'distclean', or
+   'realclean'; don't worry about it.
+
+   In Windows XP with Service Pack 2, there may be a Security Alert,
+   depending on the Firewall settings. "Windows Firewall has blocked this
+   program from accepting connections from the Internet or a network." You
+   may ignore this warning.
+
+   All compiler warnings seen as of August 2005 appear to be harmless.
+
+3. How to verify that your build succeeded
+
+   After a tool build, you should:
+
+   cd $SPEC (Unix) or %SPEC% (Windows)
+
+   shrc.bat (Windows)
+   . ./shrc (Unix, if you are in an sh-compatible shell. 
+                   If not, start one!) 
+
+   See if you can at least get as far as asking the major tools
+   to identify themselves:
+
+        runspec -V
+
+   Or you can ask individual tools about themselves:
+
+        specmake -v
+        specbzip2 -h
+        specperl -v
+        specdiff -h
+        runspec -h
+        specinvoke -h
+
+
+   Running runspec --test will run more comprehensive tests on specperl.
+
+4. Describing your newly-built tools
+
+   As a courtesy to others who might like to know which systems you intended
+   your new tools to work on, and to describe the environment in which they
+   were built, you may write a short description file. The contents of this
+   file will be displayed when install.sh is run. (Windows users only have
+   one choice, and thus no description is printed.) The file is
+   $SPEC/tools/bin/<archname>/description. If that directory does not exist,
+   you should create it. (If the directory does not exist, packagetools will
+   create it, but in order for the description to be packaged, it must be
+   present before packagetools is run.) See the "Packagetools" section below
+   for guidance about picking "<archname>".
+
+   The format is very simple; in order to avoid wrapping on an 80-column
+   screen, the first line must be no longer than 50 characters. In order to
+   line up properly, subsequent lines should begin with 30 spaces and be no
+   longer than 80 columns total.
+
+   For example, given $SPEC/tools/bin/turboblaster-m68k/description with the
+   following contents
+
+ For TurboBlaster v2.1+ systems running on M68010
+                              hardware.
+                              Built on TurboBlaster v2.0 with GCC 1.81.
+
+   A user using a TurboBlaster system when running install.sh would see in
+   the list of toolset choices, something that looks approximately like
+
+ turboblaster-m68k            For TurboBlaster v2.1+ systems running on M68010
+                              hardware.
+                              Built on TurboBlaster v2.0 with GCC 1.81.
+
+   There are plenty of examples on the install media in
+   tools/bin/*/description.
+
+5. Packagetools
+
+   If everything has succeeded, and you intend to submit results using your
+   new tools, you should submit the tools to SPEC. To do so:
+
+      cd $SPEC (Unix) or cd %SPEC% (Windows)
+      packagetools <archname>
+
+   Pick an architecture name that other users will recognize. Check on the
+   install media in tools/bin for some examples.
+
+   The packagetools script will create:
+
+     $SPEC/tools/bin/<archname>/specbzip2
+     $SPEC/tools/bin/<archname>/spectar
+     $SPEC/tools/bin/<archname>/specmd5sum
+     $SPEC/tools/bin/<archname>/cpu2006tools-<archname>.tar.bz2
+
+   Having created a large tarfile with everything in it, packagetools will
+   then proceed to create an even larger tarfile with specbzip2 and spectar
+   it in too. This even bigger file is known as:
+
+     $SPEC/<archname>-<version>.tar
+
+   and is to be submitted to SPEC.
+
+   You can optionally add components to your platform's toolset. For example,
+   if you would like $SPEC/config/default.cfg to be set in an appropriate
+   way, you can add the relative path to default.cfg as a parameter to
+   packagetools:
+
+ (on non-Windows systems)
+      cd $SPEC
+      packagetools <archname> config/default.cfg
+
+   More than one file may be specified in this way.
+
+   Operation on Windows is substantially similar; just provide the relative
+   paths with backslashes instead of forward slashes.
+
+   Please submit the resulting compressed tarfile to SPEC for review, along
+   with the recording of your tool build session. SPEC will review your
+   tools, and assuming that they pass review, will add the tools you have
+   built to its patch library, for possible distribution to future users of
+   your interesting new architecture.
+
+   NOTE 1: If your operating system is unable to execute the packagetools
+   script, please have a look at what the script does and enter the
+   corresponding commands by hand. Again, you will need to submit the results
+   to SPEC.
+
+   NOTE 2: Be sure to test your packaged tools on a different system,
+   preferably one with a different disk layout. If the destination system is
+   unable to invoke libperl.so, check that libperl.so exists in one of the
+   locations where shrc expects to find it.
+
+6. Troubleshooting: What to do if something goes wrong
+
+   If something goes wrong, unfortunately, you're probably just going to have
+   to take it apart and figure out what. Here are some hints on how to go
+   about doing that.
+
+  6.a. Try it by hand
+
+   If something goes wrong, you probably do NOT want to make some random
+   adjustment (like: reinstall a compiler, fix an environment variable, or
+   adjust your path) and start all over again. That's going to be painful and
+   take a lot of your time. Instead, you should temporarily abandon the
+   buildtools script at that point and just try to build the offending tool,
+   until you understand exactly why that particular tool is failing.
+
+   Consider turning on verbose diagnostics if your system has a way to do
+   that. Make a huge terminal window (e.g. 200 columns wide by 84 lines tall,
+   with 9999 lines recorded off the top), so you can see what is going on.
+
+   Read what buildtools (or buildtools.bat) does for you, then cd to
+   tools/src/<tool> and try the commands by hand. For example, you might do
+   something like this:
+
+     cd $SPEC/tools/src/<toolname>
+     ./configure
+     make (or build.sh or whatever you note buildtools would have done)
+
+   Now, try fixing that environment variable or reinstalling that compiler,
+   and rebuild the single tool. Does it look better?
+
+   If not, have a close look at the error messages and the Makefile. Does the
+   Makefile use a feature that is not present in your version of make? If so,
+   can you get it to work with gnu make?
+
+   Note that for GNU configure based tools (everything except PERL and its
+   modules) you may specify your compiler by setting the CC environment
+   variable. For compiler flags, set CFLAGS.
+
+   When building perl, note that:
+
+     * If you want to force the compiler use -Dcc=yourcompiler
+     * If you want to force a compiler option use -Doptimize=youroption. If
+       you have more than one option to use, do
+
+        -Doptimize=-option1 -Aoptimize=-option2 -Aoptimize=option3 ...
+
+   Many of the build logs in tools/src/buildtools.log have examples of
+   settings used for PERLFLAGS.
+
+   If you want to see more about what buildtools is doing for you, turn on
+   your shell's verbose mode. For example:
+
+    sh -x ./buildtools
+
+  6.b. Known problems
+
+   Try doing a web search to see if there are known problems with the tool on
+   your architecture.
+
+   If SPEC supplies Version X.Y of a tool and it just won't build on your
+   operating system, you might check whether there is a new Version X.Y+1
+   available. If so, download the new version to a scratch directory outside
+   of the SPEC tree and try building it there. If that version succeeds, try
+   to deduce why. Narrow it down to a one-line fix, won't you please? Then
+   tell SPEC that you'd like the same one-line fix applied to its variant of
+   the tool. Or, if you just can't narrow the fix down, ask SPEC whether it
+   will approve use of Version X.Y+1 instead of X.Y on your system.
+
+  6.c. Executing just part of buildtools
+
+   Once you believe that you understand how to fix the problem tool, and can
+   build it by hand, see whether the buildtools script can build it. You can
+   execute just a portion of buildtools by defining environment variables.
+   Please read the script itself to see what variables are allowed; the
+   following are just some examples:
+
+   SKIPALL      - turns off everything.  If you like, set this, then
+                    turn individual phases on by setting them.
+   DOTOOLSRM    - Remove previously installed tools
+   DOCLEAN      - Run 'make clean', 'make distclean', and
+                    'make realclean' in all source directories.
+   DOMAKE       - build make
+   DOBZIP2      - build bzip2
+   DOTAR        - build tar
+   DOMD5        - build specmd5sum
+   DOSPECINVOKE - build specinvoke
+   DOEXPAT      - build the expat XML parser, used by XML::SAX::ExpatXS
+   DOPERL       - build perl
+   DOPERL2      - build perl modules
+   DOCOPY       - copy the results to $SPEC/bin and fix shbangs
+
+   It doesn't matter what you set the environment variables to -- any
+   non-zero-length string will do. In all cases, "DO" can be replaced with
+   "SKIP" to reverse the sense of the setting.
+
+   If you are using Windows, be sure to note the WARNING in buildtools.bat
+   about how the variables work.
+
+   If you can now build the (formerly misbehaving) tool using just part of
+   buildtools, then you can try building the whole set (i.e. a build of all
+   tools from start to finish). It should work now, so be sure to turn on
+   your logging facility.
+
+7. Support
+
+   You'll find information about technical support in techsupport.html,
+   either in the same directory where you are found the document you are
+   reading now, or at www.spec.org/cpu2006.
+
+   Copyright (C) 1999-2006 Standard Performance Evaluation Corporation All
+   Rights Reserved

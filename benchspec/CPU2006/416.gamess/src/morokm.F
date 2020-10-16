@@ -1,0 +1,3192 @@
+C  9 DEC 03 - MWS - SYNCH COMMON BLOCK RUNOPT
+C  6 SEP 01 - MWS - ADD DUMMY ARGUMENTS TO NAMEIO CALL
+C 25 JUN 01 - MWS - ALTER COMMON BLOCK SCFOPT
+C 26 OCT 00 - MWS - STOP JOB IF SPHERICAL HARMONICS ARE ATTEMPTED
+C 28 JUL 00 - MWS - ADD NEW ARGS TO CALLS TO INIDEN
+C 21 DEC 99 - DGF - ADD NEW ARGS TO CALLS TO INIDEN
+C 13 MAR 99 - MWS - ADD NEW ARGS TO CALLS TO INIDEN
+C 12 NOV 98 - GDF - CHANGE BIT PACKING TO ISHIFT
+C 12 SEP 98 - CGP - MOROST: FIX COUNTING FOR 10 MONOMERS
+C  6 MAY 98 - MWS - CHANGE -UPCASE- TO -UPRCAS-
+C 28 SEP 97 - MWS - CONVERT PARALLEL CALLS FROM TCGMSG TO DDI
+C 13 JUN 96 - VAG - ADD VARIABLE FOR CI TYPE TO SCFOPT COMMON
+C  5 MAR 96 - MWS - CHANGE SHELL SYMMETRY PACKING COMMONS
+C  9 JAN 96 - MWS - MOMEM,ZRMEM: FIX EXETYP=CHECK RUNS
+C  5 JAN 96 - WC  - ADD OPTION FOR MORE THAN TWO MONOMERS, CTPLX OPTION,
+C                   BSSE OPTION, AND RVS OPTION.
+C  3 JAN 96 - MWS - MOROX: CALL NEW ONE ELECTRON INTEGRAL DRIVER
+C 26 JAN 95 - WC  - NEW MODULE FOR MOROKUMA ENERGY DECOMPOSITION
+C*MODULE MOROKM  *DECK CHGODB
+      SUBROUTINE CHGODB(V,WRK,L1,NN,NE,NMOL,NBAS,NEM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION NBAS(*),NEM(*),V(*),WRK(*)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+C
+      L3 = L1**2
+      NOTOT = NE/2*L1
+      IF (NN .EQ. NMOL) GO TO 300
+      NSHFT1 = 1
+      DO 100 IM = 1, NMOL-1
+         NO = NEM(IM)/2
+         IF (NN.EQ.IM) THEN
+            NOLEN1 = NSHFT1 - 1
+            NOLEN2 = NO*L1
+            NOLEN3 = NOTOT - NOLEN1 -NOLEN2
+            NOST2 = NOTOT - NOLEN2 + 1
+            NOST3 = NSHFT1
+            GO TO 200
+         END IF
+         NSHFT1 = NSHFT1 + NO*L1
+  100 CONTINUE
+C
+  200 CALL DCOPY(NOLEN2,V(NOST2),1,WRK(1),1)
+      CALL DCOPY(NOLEN3,V(NOST3),1,WRK(NOLEN2+1),1)
+      CALL DCOPY(NOTOT-NOLEN1,WRK(1),1,V(NOST3),1)
+C
+  300 IF (NN.EQ.1) GO TO 600
+      NSHFT1 = 0
+      DO 400 IM = 1, NMOL
+         NV = NBAS(IM) - NEM(IM)/2
+         IF (NN.EQ.IM) THEN
+            NVST2 = NOTOT + 1
+            NVLEN2 = NV*L1
+            NVST1 = NVST2 + NVLEN2
+            NVLEN1 = NSHFT1
+            GO TO 500
+         END IF
+         NSHFT1 = NSHFT1 + NV*L1
+  400 CONTINUE
+C
+  500 CALL DCOPY(NVLEN1,V(NVST1),1,WRK(1),1)
+      CALL DCOPY(NVLEN2,V(NVST2),1,WRK(NVLEN1+1),1)
+      CALL DCOPY(NVLEN1+NVLEN2,WRK(1),1,V(NVST2),1)
+C
+  600 CALL DAWRIT(IDAF,IODA,V,L3,314,0)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CHGODF
+      SUBROUTINE CHGODF(V,WRK,L1,NN,NE,NMOL,NBAS,NEM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION NBAS(*),NEM(*),V(*),WRK(*)
+C
+      NOTOT = NE/2*L1
+      IF (NN .EQ. NMOL) GO TO 300
+      NSHFT1 = 1
+      DO 100 IM = 1, NMOL-1
+         NO = NEM(IM)/2
+         IF (NN.EQ.IM) THEN
+            NOLEN1 = NSHFT1 - 1
+            NOLEN2 = NO*L1
+            NOLEN3 = NOTOT - NOLEN1 -NOLEN2
+            NOST2 = NSHFT1
+            NOST3 = NSHFT1 + NOLEN2
+            GO TO 200
+         END IF
+         NSHFT1 = NSHFT1 + NO*L1
+  100 CONTINUE
+C
+  200 CALL DCOPY(NOLEN3,V(NOST3),1,WRK(1),1)
+      CALL DCOPY(NOLEN2,V(NOST2),1,WRK(NOLEN3+1),1)
+      CALL DCOPY(NOTOT-NOLEN1,WRK(1),1,V(NOST2),1)
+C
+  300 IF (NN.EQ.1) GO TO 600
+      NSHFT1 = NOTOT + 1
+      DO 400 IM = 1, NMOL
+         NV = NBAS(IM) - NEM(IM)/2
+         IF (NN.EQ.IM) THEN
+            NVST1 = NOTOT + 1
+            NVST2 = NSHFT1
+            NVLEN1 = NVST2 - NVST1
+            NVLEN2 = NV*L1
+            GO TO 500
+         END IF
+         NSHFT1 = NSHFT1 + NV*L1
+  400 CONTINUE
+C
+  500 CALL DCOPY(NVLEN2,V(NVST2),1,WRK(1),1)
+      CALL DCOPY(NVLEN1,V(NVST1),1,WRK(NVLEN2+1),1)
+      CALL DCOPY(NVLEN1+NVLEN2,WRK(1),1,V(NVST1),1)
+C
+  600 CONTINUE
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTINT1
+      SUBROUTINE CTINT1
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXATM=500, MXMOL=10)
+C
+      COMMON /FMCOM / XX(1)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      L1 = NUM
+      L3 = L1 * L1
+      L2 = ( L3 + L1 ) / 2
+      L5 = 0
+      DO 50 IM = 1, NMOL
+         L5 = L5 + NBAS(IM)**2
+   50 CONTINUE
+      CALL VALFM(LOADFM)
+C
+      LH = LOADFM + 1
+      LF = LH     + L2
+      LW = LF     + L2
+      LS = LW     + L3
+C     LS = LW     + L5
+      LAST = LS   + L1
+      NEED = LAST - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      CALL DAREAD(IDAF,IODA,XX(LH),L2,11,0)
+      CALL CTMOTR(XX(LF),XX(LH),XX(LW),XX(LS),L1)
+      CALL DAWRIT(IDAF,IODA,XX(LH),L2,11,0)
+C
+      CALL RETFM(NEED)
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT1
+      SUBROUTINE CTMOT1(H,F,W,SCR,NUM,NE)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL DOALLO, DOALLV
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      NN = NMORO - 1000
+      L1 = NUM
+      L2 = L1*(L1+1)/2
+      L5 = 0
+      DO 50 IM = 1, NMOL
+         L5 = L5 + NBAS(IM)**2
+   50 CONTINUE
+C
+      CALL DAREAD(IDAF,IODA,W,L5,315,0)
+C
+C     INITIALIZE H
+C
+      CALL VCLR(H,1,L2)
+C
+C     TRANSFORM S TO ZEROTH ORDER MO BASIS
+C
+C     OX-OX AND VX-VX BLOCKS
+C
+      IWS = 1
+      DO 100 IM = 1, NMOL
+         IWS = IWS + NBAS(IM)*NEM(IM)/2
+  100 CONTINUE
+C
+      NSFTO = 0
+      NSFTV = NE/2
+      NOT = 1
+      NVT = NSFTV + 1
+      IWSO = 1
+      IWSV = IWS
+      DO 200 IM = 1, NMOL
+         NT = NBAS(IM)
+         NO = NEM(IM)/2
+         NV = NT - NO
+         NSFTS = NLOC(IM)
+         IFS = (NSFTS+1)*(NSFTS+2)/2
+         IHSO = NOT*(NOT+1)/2
+         IHSV = NVT*(NVT+1)/2
+         DOALLO = IM.EQ.NN
+         DOALLV = IM.NE.NN
+C
+         CALL TFTRI1(F(IFS),H(IHSO),W(IWSO),SCR,NO,NT,NSFTS,NSFTO,
+     *               DOALLO)
+         CALL TFTRI1(F(IFS),H(IHSV),W(IWSV),SCR,NV,NT,NSFTS,NSFTV,
+     *               DOALLV)
+         NSFTO = NSFTO + NO
+         NSFTV = NSFTV + NV
+         NOT = NOT + NO
+         NVT = NVT + NV
+         IWSO = IWSO + NO*NT
+         IWSV = IWSV + NV*NT
+  200 CONTINUE
+C
+C     VX-OY BLOCK
+C
+      MH = NE/2
+      IWS1 = IWS
+      DO 700 IV = 1, NMOL
+         NOT = 1
+         NVT = NE/2 + 1
+         IWS2 = 1
+         IWS3 = IWS
+         MT = NBAS(IV)
+         MV = MT - NEM(IV)/2
+         MF = NLOC(IV)
+         MSFTF = MF*(MF+1)/2
+         MSFTH = MH*(MH+1)/2
+         DO 600 IO = 1, NMOL
+            NT = NBAS(IO)
+            NO = NEM(IO)/2
+            NV = NT - NO
+            NF = NLOC(IO)
+            IHS = MSFTH + NOT
+            IF (IO.NE.NN) GO TO 450
+            IF (IV-IO) 400, 450, 300
+C
+  300       IFS = MSFTF + NF + 1
+            CALL TFSQU1(F(IFS),H(IHS),W(IWS1),W(IWS2),SCR,MT,NT,MV,NO,
+     *                  MF,MH)
+            GO TO 450
+C
+  400       IFS = NF*(NF+1)/2 + MF + 1
+            NSFT = MH - NO
+            CALL TFSQU2(F(IFS),H(IHS),W(IWS1),W(IWS2),SCR,MT,NT,MV,NO,
+     *                  NF,NSFT)
+C
+  450       IF (IV.LE.IO.OR.IV.EQ.NN.OR.IO.EQ.NN) GO TO 500
+            IFS = MSFTF + NF + 1
+            IHS = MSFTH + NVT
+            CALL TFSQU1(F(IFS),H(IHS),W(IWS1),W(IWS3),SCR,MT,NT,MV,NV,
+     *                  MF,MH)
+  500       NOT = NOT + NO
+            NVT = NVT + NV
+            IWS2 = IWS2 + NO*NT
+            IWS3 = IWS3 + NV*NT
+  600    CONTINUE
+         MH = MH + MV
+         IWS1 = IWS1 + MV*MT
+  700 CONTINUE
+C
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT2
+      SUBROUTINE CTMOT2(H,F,W,SCR,NUM,NE)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL DOALL
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      NN = NMORO - 1200
+      L1 = NUM
+      L2 = L1*(L1+1)/2
+      L5 = 0
+      DO 50 IM = 1, NMOL
+         L5 = L5 + NBAS(IM)**2
+   50 CONTINUE
+C
+      CALL DAREAD(IDAF,IODA,W,L5,315,0)
+C
+C     INITIALIZE H
+C
+      CALL VCLR(H,1,L2)
+C
+C     TRANSFORM S TO ZEROTH ORDER MO BASIS
+C
+C     OX-OX AND VX-OX BLOCKS
+C
+      IWS = 1
+      DO 100 IM = 1, NMOL
+         IWS = IWS + NBAS(IM)*NEM(IM)/2
+  100 CONTINUE
+C
+      NSFTO = 0
+      NSFTV = NE/2
+      NOT = 1
+      NVT = NSFTV + 1
+      NVTO = NE/2
+      IWSO = 1
+      IWSV = IWS
+      DO 200 IM = 1, NMOL
+         NT = NBAS(IM)
+         NO = NEM(IM)/2
+         NV = NT - NO
+         NSFTS = NLOC(IM)
+         IFS = (NSFTS+1)*(NSFTS+2)/2
+         IHSO = NOT*(NOT+1)/2
+         IHSV = NVT*(NVT+1)/2
+         IHSVO = NVTO*(NVTO+1)/2 + NOT
+         DOALL = IM.EQ.NN.OR.NN.EQ.0
+C
+         CALL TFTRI1(F(IFS),H(IHSO),W(IWSO),SCR,NO,NT,NSFTS,NSFTO,
+     *               DOALL)
+         CALL TFTRI1(F(IFS),H(IHSV),W(IWSV),SCR,NV,NT,NSFTS,NSFTV,
+     *               DOALL)
+         IF (DOALL) CALL TFTRI2(F(IFS),H(IHSVO),W(IWSV),W(IWSO),
+     *               SCR,NV,NO,NT,NSFTS,NSFTV)
+         NSFTO = NSFTO + NO
+         NSFTV = NSFTV + NV
+         NOT = NOT + NO
+         NVT = NVT + NV
+         NVTO = NVTO + NV
+         IWSO = IWSO + NO*NT
+         IWSV = IWSV + NV*NT
+  200 CONTINUE
+C
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT3
+      SUBROUTINE CTMOT3(H,F,W,SCR,NUM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      ZERO=0.D0
+      L1 = NUM
+      L2 = NUM*(NUM+1)/2
+      L3 =NUM**2
+      CALL DAREAD(IDAF,IODA,W,L3,316,0)
+      CALL TFTRI(H,F,W,SCR,L1,L1,L1)
+C
+      IJ=0
+      IM=1
+      IQ=1
+      II=NEM(1)/2
+      DO 111 I=1,L1
+      IF (I.GT.II) THEN
+      IM=IM+1
+      IF (IM.GT.NMOL) THEN
+      IM=1
+      IQ=2
+      END IF
+      IF (IQ.EQ.1) THEN
+      II=II+NEM(IM)/2
+      ELSE
+      II=II+NBAS(IM)-NEM(IM)/2
+      END IF
+      END IF
+      JM=1
+      JQ=1
+      JJ=NEM(1)/2
+      DO 112 J=1,I
+      IF (J.GT.JJ) THEN
+      JM=JM+1
+      IF (JM.GT.NMOL) THEN
+      JM=1
+      JQ=2
+      END IF
+      IF (JQ.EQ.1) THEN
+      JJ=JJ+NEM(JM)/2
+      ELSE
+      JJ=JJ+NBAS(JM)-NEM(JM)/2
+      END IF
+      END IF
+      IJ=IJ+1
+      IF (IQ.EQ.JQ) THEN
+      IF (IM.EQ.JM) GO TO 112
+      IF (IQ.EQ.2) THEN
+C     GO TO 112
+      IF (IM.NE.NMORO-2*NMOL.AND.JM.NE.NMORO-2*NMOL) GO TO 112
+      END IF
+      ELSE
+C     IF (NMORO.EQ.NMOL*2+JM) GO TO 112
+      IF (NMORO.EQ.NMOL*2+JM.AND.IM.NE.JM) GO TO 112
+      END IF
+      H(IJ)=ZERO
+  112 CONTINUE
+  111 CONTINUE
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT4
+      SUBROUTINE CTMOT4(H,F,W,SCR,NUM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      ZERO=0.D0
+      L1 = NUM
+      L2 = NUM*(NUM+1)/2
+      L3 =NUM**2
+      CALL DAREAD(IDAF,IODA,W,L3,316,0)
+      CALL TFTRI(H,F,W,SCR,L1,L1,L1)
+C
+      IJ=0
+      IM=1
+      IQ=1
+      II=NEM(1)/2
+      DO 111 I=1,L1
+      IF (I.GT.II) THEN
+      IM=IM+1
+      IF (IM.GT.NMOL) THEN
+      IM=1
+      IQ=2
+      END IF
+      IF (IQ.EQ.1) THEN
+      II=II+NEM(IM)/2
+      ELSE
+      II=II+NBAS(IM)-NEM(IM)/2
+      END IF
+      END IF
+      JM=1
+      JQ=1
+      JJ=NEM(1)/2
+      DO 112 J=1,I
+      IF (J.GT.JJ) THEN
+      JM=JM+1
+      IF (JM.GT.NMOL) THEN
+      JM=1
+      JQ=2
+      END IF
+      IF (JQ.EQ.1) THEN
+      JJ=JJ+NEM(JM)/2
+      ELSE
+      JJ=JJ+NBAS(JM)-NEM(JM)/2
+      END IF
+      END IF
+      IJ=IJ+1
+      IF (IQ.EQ.JQ) THEN
+      IF (IQ.EQ.1) GO TO 112
+      IF (I.EQ.J) GO TO 112
+      END IF
+      H(IJ)=ZERO
+  112 CONTINUE
+  111 CONTINUE
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT5
+      SUBROUTINE CTMOT5(H,F,W,SCR,NUM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      ZERO=0.D0
+      L1 = NUM
+      L2 = NUM*(NUM+1)/2
+      L3 =NUM**2
+      CALL DAREAD(IDAF,IODA,W,L3,316,0)
+      CALL TFTRI(H,F,W,SCR,L1,L1,L1)
+C
+      IJ=0
+      IM=1
+      IQ=1
+      II=NEM(1)/2
+      DO 111 I=1,L1
+      IF (I.GT.II) THEN
+      IM=IM+1
+      IF (IM.GT.NMOL) THEN
+      IM=1
+      IQ=2
+      END IF
+      IF (IQ.EQ.1) THEN
+      II=II+NEM(IM)/2
+      ELSE
+      II=II+NBAS(IM)-NEM(IM)/2
+      END IF
+      END IF
+      JM=1
+      JQ=1
+      JJ=NEM(1)/2
+      DO 112 J=1,I
+      IF (J.GT.JJ) THEN
+      JM=JM+1
+      IF (JM.GT.NMOL) THEN
+      JM=1
+      JQ=2
+      END IF
+      IF (JQ.EQ.1) THEN
+      JJ=JJ+NEM(JM)/2
+      ELSE
+      JJ=JJ+NBAS(JM)-NEM(JM)/2
+      END IF
+      END IF
+      IJ=IJ+1
+      IF (IQ.EQ.JQ.AND.IQ.EQ.1) THEN
+      GO TO 112
+      ELSE IF (IQ.EQ.JQ.AND.IQ.EQ.2) THEN
+      IF (J.EQ.I) GO TO 112
+      IF (IM.EQ.NMORO-1000-NMOL.AND.JM.EQ.IM) GO TO 112
+      ELSE
+      IF (NMORO.EQ.1000+NMOL+IM) GO TO 112
+      END IF
+      H(IJ)=ZERO
+  112 CONTINUE
+  111 CONTINUE
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT6
+      SUBROUTINE CTMOT6(H,F,W,SCR,NUM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      ZERO=0.D0
+      L1 = NUM
+      L2 = NUM*(NUM+1)/2
+      L3 =NUM**2
+      CALL DAREAD(IDAF,IODA,W,L3,316,0)
+      CALL TFTRI(H,F,W,SCR,L1,L1,L1)
+C
+      IJ=0
+      IM=1
+      IQ=1
+      II=NEM(1)/2
+      DO 111 I=1,L1
+      IF (I.GT.II) THEN
+      IM=IM+1
+      IF (IM.GT.NMOL) THEN
+      IM=1
+      IQ=2
+      END IF
+      IF (IQ.EQ.1) THEN
+      II=II+NEM(IM)/2
+      ELSE
+      II=II+NBAS(IM)-NEM(IM)/2
+      END IF
+      END IF
+      JM=1
+      JQ=1
+      JJ=NEM(1)/2
+      DO 112 J=1,I
+      IF (J.GT.JJ) THEN
+      JM=JM+1
+      IF (JM.GT.NMOL) THEN
+      JM=1
+      JQ=2
+      END IF
+      IF (JQ.EQ.1) THEN
+      JJ=JJ+NEM(JM)/2
+      ELSE
+      JJ=JJ+NBAS(JM)-NEM(JM)/2
+      END IF
+      END IF
+      IJ=IJ+1
+      IF (IQ.EQ.JQ) THEN
+      IF (IM.EQ.JM) GO TO 112
+      IF (IQ.EQ.2) THEN
+      GO TO 112
+C     IF (IM.NE.NMORO-4*NMOL.AND.JM.NE.NMORO-4*NMOL) GO TO 112
+      END IF
+      ELSE
+      IF (NMORO.EQ.NMOL*4+JM) GO TO 112
+C     IF (NMORO.EQ.NMOL*4+JM.AND.IM.NE.JM) GO TO 112
+      END IF
+      H(IJ)=ZERO
+  112 CONTINUE
+  111 CONTINUE
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT7
+      SUBROUTINE CTMOT7(H,F,W,SCR,NUM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      ZERO=0.D0
+      L1 = NUM
+      L2 = NUM*(NUM+1)/2
+      L3 =NUM**2
+      CALL DAREAD(IDAF,IODA,W,L3,314,0)
+      CALL TFTRI(H,F,W,SCR,L1,L1,L1)
+C
+      NN=NMORO-1200-NMOL
+      IJ=0
+      IM=1
+      IQ=1
+      II=NEM(1)/2
+      DO 111 I=1,L1
+      IF (I.GT.II) THEN
+      IM=IM+1
+      IF (IM.GT.NMOL) THEN
+      IM=1
+      IQ=2
+      END IF
+      IF (IQ.EQ.1) THEN
+      II=II+NEM(IM)/2
+      ELSE
+      II=II+NBAS(IM)-NEM(IM)/2
+      END IF
+      END IF
+      JM=1
+      JQ=1
+      JJ=NEM(1)/2
+      DO 112 J=1,I
+      IF (J.GT.JJ) THEN
+      JM=JM+1
+      IF (JM.GT.NMOL) THEN
+      JM=1
+      JQ=2
+      END IF
+      IF (JQ.EQ.1) THEN
+      JJ=JJ+NEM(JM)/2
+      ELSE
+      JJ=JJ+NBAS(JM)-NEM(JM)/2
+      END IF
+      END IF
+      IJ=IJ+1
+      IF (IQ.EQ.JQ.AND.IQ.EQ.1) THEN
+C     IF (IM.EQ.JM) GO TO 112
+C
+      IF (I.EQ.J) GO TO 112
+      IF (IM.EQ.JM.AND.IM.EQ.NN) GO TO 112
+C
+C     IF (IM.NE.NN.AND.JM.NE.NN) GO TO 112
+      ELSE IF (IQ.EQ.JQ.AND.IQ.EQ.2) THEN
+      IF (I.EQ.J) GO TO 112
+      IF (IM.EQ.JM.AND.IM.EQ.NN) GO TO 112
+      ELSE
+      IF (IM.EQ.JM.AND.IM.EQ.NN) GO TO 112
+      END IF
+      H(IJ)=ZERO
+  112 CONTINUE
+  111 CONTINUE
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOT8
+      SUBROUTINE CTMOT8(H,F,W,SCR,NUM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      ZERO=0.D0
+      L1 = NUM
+      L2 = NUM*(NUM+1)/2
+      L3 =NUM**2
+      CALL DAREAD(IDAF,IODA,W,L3,314,0)
+      CALL TFTRI(H,F,W,SCR,L1,L1,L1)
+C
+      NN=NMORO-1000-2*NMOL
+      IJ=0
+      IM=1
+      IQ=1
+      II=NEM(1)/2
+      DO 111 I=1,L1
+      IF (I.GT.II) THEN
+      IM=IM+1
+      IF (IM.GT.NMOL) THEN
+      IM=1
+      IQ=2
+      END IF
+      IF (IQ.EQ.1) THEN
+      II=II+NEM(IM)/2
+      ELSE
+      II=II+NBAS(IM)-NEM(IM)/2
+      END IF
+      END IF
+      JM=1
+      JQ=1
+      JJ=NEM(1)/2
+      DO 112 J=1,I
+      IF (J.GT.JJ) THEN
+      JM=JM+1
+      IF (JM.GT.NMOL) THEN
+      JM=1
+      JQ=2
+      END IF
+      IF (JQ.EQ.1) THEN
+      JJ=JJ+NEM(JM)/2
+      ELSE
+      JJ=JJ+NBAS(JM)-NEM(JM)/2
+      END IF
+      END IF
+      IJ=IJ+1
+      IF (IQ.EQ.JQ.AND.IQ.EQ.1) THEN
+C     IF (IM.EQ.JM) GO TO 112
+C
+      IF (I.EQ.J) GO TO 112
+      IF (IM.EQ.JM.AND.IM.EQ.NN) GO TO 112
+C
+C     IF (IM.NE.NN.AND.JM.NE.NN) GO TO 112
+      ELSE IF (IQ.EQ.JQ.AND.IQ.EQ.2) THEN
+      GO TO 112
+      ELSE
+      IF (JM.EQ.NN) GO TO 112
+      END IF
+      H(IJ)=ZERO
+  112 CONTINUE
+  111 CONTINUE
+      CALL DCOPY(L2,H,1,F,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK CTMOTR
+      SUBROUTINE CTMOTR(H,F,W,SCR,L1)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION H(*), F(*), W(*),SCR(*)
+C
+      PARAMETER (MXATM=500, MXMOL=10)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      IF (NMORO.GT.1000.AND.NMORO.LE.1000+NMOL)
+     *    CALL CTMOT1(H,F,W,SCR,L1,NE)
+      IF (NMORO.GT.1200.AND.NMORO.LE.1200+NMOL)
+     *    CALL CTMOT2(H,F,W,SCR,L1,NE)
+      IF (NMORO.GT.NMOL*2.AND.NMORO.LE.NMOL*3)
+     *    CALL CTMOT3(H,F,W,SCR,L1)
+      IF (NMORO.GT.NMOL*3.AND.NMORO.LE.NMOL*4)
+     *    CALL CTMOT4(H,F,W,SCR,L1)
+      IF (NMORO.GT.1000+NMOL.AND.NMORO.LE.1000+2*NMOL)
+     *    CALL CTMOT5(H,F,W,SCR,L1)
+      IF (NMORO.GT.NMOL*4.AND.NMORO.LE.NMOL*5)
+     *    CALL CTMOT6(H,F,W,SCR,L1)
+      IF (NMORO.GT.1200+NMOL.AND.NMORO.LE.1200+2*NMOL)
+     *    CALL CTMOT7(H,F,W,SCR,L1)
+      IF (NMORO.GT.1000+2*NMOL.AND.NMORO.LE.1000+3*NMOL)
+     *    CALL CTMOT8(H,F,W,SCR,L1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK DNMOAO
+      SUBROUTINE DNMOAO(D,W,V,VN,OCC,NA,L1,L2)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION D(L2),W(L2),V(L1,L1),VN(L1,L1),OCC(L1)
+C
+      CALL TRMOAO(W,V,VN,D,L1)
+      CALL DMTX(D,VN,OCC,NA,L1,L1)
+C     CALL DMTX(W,VN,OCC,NA,L1,L1)
+C     CALL DCOPY(L2,W,1,D,1)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK EDRHF
+      SUBROUTINE EDRHF(NUM,NA,NB,NE,E0)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      PARAMETER (MXMOL=10)
+C
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /SVINFO/ NAT0,ICH0,MUL0,NUM0,NE0,NA0,NB0,NDUM,EF
+C
+      IF (NMORO.NE.0) THEN
+         NUM=NUM0
+         NA=NA0
+         NB=NB0
+         NE=NE0
+      END IF
+      EF = E0
+      RETURN
+      END
+C*MODULE MOROKM  *DECK GESSMO
+      SUBROUTINE GESSMO
+C
+C     *************************
+C     SUBROUTINE FOR INITIAL MO
+C     *************************
+C     MONOMER AND MONOMER BSSE NOT CALL THIS ROUTINE (1<=NMORO<=2*NMOL)
+C     NMORO = 100 FOR E3 AND E4
+C     NMORO = 200 FOR E1 AND E2 (TOTAL)
+C     NMORO: 2*NMOL+1 -> 3*NMOL BSSE VIR
+C     NMORO: 3*NMOL+1 -> 4*NMOL BSSE OCC
+C     NMORO: 4*NMOL+1 -> 5*NMOL BSSE OCC (ORTHO FOR RVS)
+C     NMORO: 1001 -> 1000+NMOL E6(IM) (ALSO E5) (CT)
+C     NMORO: 1001+NMOL -> 1000+2*NMOL E7(IM) (CTPLX)
+C     NMORO: 1201 -> 1200+NMOL E2(IM) (PL)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL DOQAO,DOQMO,DOMOR,DOOTH,DOREO
+C
+      PARAMETER (MXATM=500, MXMOL=10)
+C
+      COMMON /FMCOM / XX(1)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA SAVDMO/8HMOSAVED /
+#else
+      CHARACTER*8 :: SAVDMO_STR
+      EQUIVALENCE (SAVDMO, SAVDMO_STR)
+      DATA SAVDMO_STR/"MOSAVED "/
+#endif
+      DATA ZERO,ONE/0.0D+00,1.0D+00/
+C
+      L0 = 0
+      L1 = NUM
+      L3 = L1 * L1
+      L2 = ( L3 + L1 ) / 2
+      L5 = 0
+      DO 50 IM = 1, NMOL
+         NDUM = NBAS(IM)**2
+         L5 = L5 + NDUM
+   50 CONTINUE
+C
+      CALL VALFM(LOADFM)
+C
+      LIWRK = LOADFM+1
+      LS     = LIWRK  + L1
+      LQ     = LS     + L2
+      LV     = LQ     + L3
+      LE     = LV     + L3
+      LSCR   = LE     + L1
+      LH     = LSCR   + 8*L1
+C     LWRK   = LH     + MAX0(L5, L2)
+      LWRK   = LH     + L3
+C     LAST   = LWRK   + L5
+      LAST   = LWRK   + L3
+      NEED = LAST - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      DOQAO = .FALSE.
+      DOQMO = .FALSE.
+      DOMOR = .FALSE.
+      DOOTH = .FALSE.
+      DOREO = .FALSE.
+      IF ((NMORO.GT.1000+2*NMOL.AND.NMORO.LE.1000+3*NMOL).OR.
+     *    (NMORO.GT.1200+NMOL.AND.NMORO.LE.1200+2*NMOL)) THEN
+         DOQAO = .TRUE.
+         DOREO = .TRUE.
+         DOOTH = .TRUE.
+         NN = NMORO-NMOL-1200
+         IF (NN.LT.0) NN = NMORO-1000-2*NMOL
+         GO TO 99
+      END IF
+C
+      IF (NMORO.GT.2*NMOL.AND.NMORO.LE.5*NMOL) THEN
+         DOQMO = .TRUE.
+         DOMOR = .TRUE.
+         GO TO 99
+      END IF
+C
+      IF (NMORO.LT.1000) THEN
+         DOQAO = .TRUE.
+         IF (NMORO.EQ.100) DOOTH = .TRUE.
+         GO TO 99
+      END IF
+C
+      IF (NMORO.GT.1000) THEN
+         DOQMO = .TRUE.
+      END IF
+C
+C     FIND THE Q MATRIX IN AO BASIS
+C     (FOR ORTHO BSSE, Q IN AO IS NEEDED FOR ORTHONORMAL)
+C
+   99 IF (.NOT.DOQAO) GO TO 100
+      CALL DAREAD(IDAF,IODA,XX(LS),L2,12,0)
+      CALL QMTSYM(XX(LS),XX(LV),XX(LQ),XX(LE),XX(LSCR),XX(LIWRK),
+     *            L0,L1,L2,L3,.FALSE.)
+      IF (NMORO.EQ.100.OR.NMORO.EQ.200)
+     *   CALL DAWRIT(IDAF,IODA,XX(LQ),L3,45,0)
+C
+C     GET INITIAL MO'S
+C
+  100 CALL MOINIT(XX(LV),XX(LH),XX(LWRK),NE,L1,L3)
+C
+C     REORDER TO PARTICULAR ORDER
+C
+      IF (DOREO) CALL CHGODF(XX(LV),XX(LH),L1,NN,NE,NMOL,NBAS,NEM)
+C
+C     OTHORGONIZATION
+C     NMORO = 200 DOES NOT REQUIRE ORTHOGONIZATION
+C     NMORO = 1000 VEC IS A UNIT MATRIX UNDER MO(0) BASIS
+C
+      IF (.NOT.DOOTH) GO TO 300
+      CALL DAREAD(IDAF,IODA,XX(LS),L2,12,0)
+      CALL ORTHO(XX(LQ),XX(LS),XX(LV),XX(LSCR),L0,L0,L1,L2,L1)
+      CALL TFSQB(XX(LV),XX(LQ),XX(LSCR),L0,L1,L1)
+C
+C     PUT BACK TO ORIGINAL ORDER
+C     IN THIS CASE S IN MO IS ALREADY DIAGNAL
+C
+  300 IF (DOREO) THEN
+         CALL CHGODB(XX(LV),XX(LH),L1,NN,NE,NMOL,NBAS,NEM)
+         IJ = LS - 1
+         DO 299 I = 1, L1
+         DO 299 J = 1, I
+            IJ = IJ + 1
+            IF (I.EQ.J) XX(IJ) = ONE
+            IF (I.NE.J) XX(IJ) = ZERO
+  299    CONTINUE
+         CALL DAWRIT(IDAF,IODA,XX(LS),L2,12,0)
+         CALL RUNITV(L1,L1,XX(LQ))
+         CALL DAWRIT(IDAF,IODA,XX(LQ),L3,45,0)
+      END IF
+C
+C     INITIAL MO UNDER AO'S IS SAVED IN FILE 15 IN ORDER
+C     TO GET INITIAL DENSITY UNDER AO'S BASIS.
+C
+      CALL DAWRIT(IDAF,IODA,XX(LV),L3,15,0)
+C
+C     FIND THE Q MATRIX IN MO BASIS
+C     FOR NMORO => 1000 OR NMOL*2 < NMORO <= NMOL*5
+C
+      IF (.NOT.DOQMO) GO TO 310
+      CALL DAREAD(IDAF,IODA,XX(LS),L2,12,0)
+      CALL CTMOTR(XX(LH),XX(LS),XX(LWRK),XX(LSCR),L1)
+      CALL DAWRIT(IDAF,IODA,XX(LS),L2,12,0)
+      CALL QMTSYM(XX(LS),XX(LV),XX(LQ),XX(LE),XX(LSCR),XX(LIWRK),
+     *            L0,L1,L2,L3,.FALSE.)
+      CALL DAWRIT(IDAF,IODA,XX(LQ),L3,45,0)
+C
+  310 CALL RETFM(NEED)
+C
+C     GENERATE INITIAL DENSITY MATRIX
+C
+      LDA = LOADFM+1
+      LV  = LDA + L2
+      LE  = LV  + L3
+      LOCC= LE  + L1
+      NEED = LAST - LDA
+      CALL GETFM(NEED)
+      IDUMMY=0
+      DUMMY=0.0D+00
+      IF (DOMOR) THEN
+         NN = NMORO - 2*NMOL
+  449    IF (NN.LE.NMOL) GO TO 450
+         NN = NN - NMOL
+         GO TO 449
+  450    NET = NEM(NN)/2
+         NST = 1
+         DO 500 I = 1, NN - 1
+            NST = NST + NEM(I)/2
+  500    CONTINUE
+      ELSE
+         NET = NA
+         NST = 1
+      END IF
+      CALL INIDEN(SAVDMO,XX(LV),XX(LDA),XX(LDA),XX(LE),
+     *            XX(LOCC),DUMMY,DUMMY,DUMMY,DUMMY,IDUMMY,0,
+     *            IDUMMY,IDUMMY,L1,L2,L3,.FALSE.,.FALSE.,.FALSE.,
+     *            .FALSE.,.FALSE.,NET,NST,L1,L2,L3)
+      CALL RETFM(NEED)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK INDDEN
+      SUBROUTINE INDDEN(NUM,NA,NST)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      COMMON /FMCOM / XX(1)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA SAVDMO/8HMOSAVED /
+#else
+      CHARACTER*8 :: SAVDMO_STR
+      EQUIVALENCE (SAVDMO, SAVDMO_STR)
+      DATA SAVDMO_STR/"MOSAVED "/
+#endif
+C
+      L1 = NUM
+      L3 = L1 * L1
+      L2 = ( L3 + L1 ) / 2
+      CALL VALFM(LOADFM)
+C
+      LDA = LOADFM+1
+      LV  = LDA + L2
+      LE  = LV  + L3
+      LOCC= LE  + L1
+      LAST = LOCC+ L1
+      NEED = LAST - LDA
+      CALL GETFM(NEED)
+      IDUMMY=0
+      DUMMY=0.0D+00
+      CALL RUNITV(L1,L1,XX(LV))
+      CALL DAWRIT(IDAF,IODA,XX(LV),L3,15,0)
+      CALL INIDEN(SAVDMO,XX(LV),XX(LDA),XX(LDA),XX(LE),
+     *            XX(LOCC),DUMMY,DUMMY,DUMMY,DUMMY,IDUMMY,0,
+     *            IDUMMY,IDUMMY,L1,L2,L3,.FALSE.,.FALSE.,.FALSE.,
+     *            .FALSE.,.FALSE.,NA,NST,L1,L2,L3)
+C
+      CALL RETFM(NEED)
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK MOIJKL
+      SUBROUTINE MOIJKL(XX,IX,YY,IY,NINTMX,NOPK)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXMOL=10)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PCKLAB/ LABSIZ
+C
+      DIMENSION XX(NINTMX),IX(*),YY(NINTMX),IY(*)
+C
+      DATA IJKO/24/
+C
+      NREC = 0
+      NINTO = 0
+      IF(MASWRK) WRITE(IW,3000) NMORO,IJKO
+C
+C     CHECK OPTION
+C
+      IF (NMORO.LT.1.OR.NMORO.GT.NMOL) THEN
+         IF (MASWRK) WRITE(IW,1000) NMORO
+         CALL ABRT
+      END IF
+C
+      NXX = 0
+      MN = 1
+C
+      IF (IS.EQ.IJKO) IS = 8
+      CALL SEQREW(IS)
+      CALL SEQREW(IJKO)
+      IF (NOPK .NE. 1) GO TO 300
+C
+C     ----- INTEGRALS ARE NOT IN SUPERMATRIX FORM (NOPK=.TRUE.) -----
+C
+  120 CONTINUE
+      CALL PREAD(IJKO,XX,IX,NXX,NINTMX)
+      IF (NXX .EQ. 0) GO TO 400
+      NINT = IABS(NXX)
+      IF (NINT .GT. NINTMX) CALL ABRT
+      DO 200 M = 1,NINT
+C
+                       NPACK = M
+                       IF (LABSIZ .EQ. 2) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX( 2*NPACK - 1 )
+                         IPACK = ISHFT( LABEL, -16 )
+                         JPACK = IAND(  LABEL, 65535 )
+                         LABEL = IX( 2*NPACK     )
+                         KPACK = ISHFT( LABEL, -16 )
+                         LPACK = IAND(  LABEL, 65535 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -48 )
+                         JPACK = IAND( ISHFT( LABEL, -32 ), 65535 )
+                         KPACK = IAND( ISHFT( LABEL, -16 ), 65535 )
+                         LPACK = IAND( LABEL, 65535 )
+#endif
+                       ELSE IF (LABSIZ .EQ. 1) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -24 )
+                         JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                         KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                         LPACK = IAND( LABEL, 255 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         IF ( MOD(NPACK,2) .EQ. 0 ) THEN
+                           LABEL = IX( NPACK/2 )
+                           IPACK = IAND( ISHFT( LABEL, -24 ), 255 )
+                           JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                           LPACK = IAND( LABEL, 255 )
+                         ELSE
+                           LABEL = IX( (NPACK/2)+1 )
+                           IPACK = ISHFT( LABEL, -56 )
+                           JPACK = IAND( ISHFT( LABEL, -48 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL, -40 ), 255 )
+                           LPACK = IAND( ISHFT( LABEL, -32 ), 255 )
+                         END IF
+#endif
+                       END IF
+                       I = IPACK
+                       J = JPACK
+                       K = KPACK
+                       L = LPACK
+C
+         IF (NMORO.EQ.1) THEN
+            IF (I.GT.NBAS(1)) GO TO 200
+            IF (LABSIZ.EQ.1) THEN
+              IY(MN)=IX(M)
+            ELSE
+              IY(2*MN-1) = IX(2*M-1)
+              IY(2*MN  ) = IX(2*M  )
+            END IF
+         ELSE
+            IF (L.LE.NLOC(NMORO)) GO TO 200
+            IF (J.LE.NLOC(NMORO)) GO TO 200
+            IF (NMORO.LT.NMOL) THEN
+               IF (I.GT.NLOC(NMORO+1)) GO TO 200
+               IF (K.GT.NLOC(NMORO+1)) GO TO 200
+            END IF
+            I = I-NLOC(NMORO)
+            J = J-NLOC(NMORO)
+            K = K-NLOC(NMORO)
+            L = L-NLOC(NMORO)
+C
+               NPACK = MN
+               IPACK = I
+               JPACK = J
+               KPACK = K
+               LPACK = L
+               IF (LABSIZ .EQ. 2) THEN
+#if !defined(SPEC_CPU_ILP64)
+                 IY( 2*NPACK-1 ) = ISHFT( IPACK, 16 ) + JPACK
+                 IY( 2*NPACK   ) = ISHFT( KPACK, 16 ) + LPACK
+#endif
+#if defined(SPEC_CPU_ILP64)
+                 LABEL = ISHFT( IPACK, 48 ) + ISHFT( JPACK, 32 ) +
+     *                   ISHFT( KPACK, 16 ) + LPACK
+                 IY(NPACK) = LABEL
+#endif
+               ELSE IF (LABSIZ .EQ. 1) THEN
+#if !defined(SPEC_CPU_ILP64)
+                 LABEL = ISHFT( IPACK, 24 ) + ISHFT( JPACK, 16 ) +
+     *                   ISHFT( KPACK,  8 ) + LPACK
+                 IY(NPACK) = LABEL
+#endif
+#if defined(SPEC_CPU_ILP64)
+                 IF ( MOD(NPACK,2) .EQ. 0 ) THEN
+                   LABEL = ISHFT( IPACK, 24 ) + ISHFT( JPACK, 16 ) +
+     *                     ISHFT( KPACK,  8 ) + LPACK
+                   IY( NPACK/2 ) = IY( NPACK/2 ) + LABEL
+                 ELSE
+                   LABEL = ISHFT( IPACK, 56 ) + ISHFT( JPACK, 48 ) +
+     *                     ISHFT( KPACK, 40 ) + ISHFT( LPACK, 32 )
+                   IY( (NPACK/2)+1 ) = LABEL
+                 END IF
+#endif
+               END IF
+C
+         END IF
+C
+         YY(MN)=XX(M)
+         MN=MN+1
+         IF (MN.GT.NINTMX) THEN
+            NREC=NREC+1
+            NINTO = NINTO+MN
+            CALL PWRIT(IS,YY,IY,NINTMX,NINTMX)
+            MN=1
+         END IF
+C
+  200 CONTINUE
+C
+      IF (NXX .GT. 0) GO TO 120
+C
+C     DONE CONSTRUCTING MATRIX, OFF DIAGONAL ELEMENTS NEED HALVING
+C
+      GO TO 400
+C
+C     ----- INTEGRALS ARE IN SUPERMATRIX FORM (NOPK=.FALSE.) -----
+C
+  300 CONTINUE
+      WRITE(IW,*)' CANNOT SORT INT2 WITH NOPK=.FALSE.'
+      CALL ABRT
+C
+C     ----- FINAL CLEANING UP -----
+C
+  400 CONTINUE
+      MN=MN-1
+      NINTO = NINTO+MN
+      NREC=NREC+1
+      MN=-MN
+      CALL PWRIT(IS,YY,IY,MN,NINTMX)
+      CALL SEQREW(IS)
+      IF (MASWRK) WRITE(IW,2000) NINTO,NREC,NINTMX,IS
+C
+      CALL SEQREW(IJKO)
+      RETURN
+C
+ 1000 FORMAT(1X,'OPTION IN MOIJKL IS NOT CORRECT, NMORO = ',I2)
+ 2000 FORMAT(1X,I10,' INTEGRALS IN',I7,' RECORDS OF',I6,
+     *       ' INTEGRALS WRITTEN ON UNIT',I3)
+ 3000 FORMAT(//1X,'SIFTING INTEGRALS FOR MONOMER',I4,' FROM FILE',I4)
+      END
+C*MODULE MOROKM  *DECK MOINIT
+      SUBROUTINE MOINIT(V,H,WRK,NE,L1,L3)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXMOL=10)
+C
+      DIMENSION V(*),H(*),WRK(*)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      SAVE IFIRST
+C
+      DATA IFIRST/1/
+C
+C     READ IN DICTNRY 313 TO FORM INITIAL GUESS
+C
+      IF (IFIRST.EQ.0) THEN
+         CALL DAREAD(IDAF,IODA,V,L3,316,0)
+         RETURN
+      END IF
+C
+      CALL VCLR(V,1,L3)
+C
+      L5 = 0
+      L6 = 1
+      DO 100 IMOL = 1, NMOL
+         L5 =  L5 + NBAS(IMOL)**2
+         L6 =  L6 + NBAS(IMOL)*NEM(IMOL)/2
+  100 CONTINUE
+C
+      CALL DAREAD(IDAF,IODA,H,L5,313,0)
+      NSFT1 = 1
+      NSFT2 = 1
+      NSFT3 = 1
+      NSFT4 = L6
+      L7 = 1
+      L8 = L1*NE/2 + 1
+      DO 300 IM = 1, NMOL
+         NT = NBAS(IM)
+         NO = NEM(IM)/2
+         NV = NT - NO
+         NSFT3 = NSFT3 + NT*NO
+         IF (IFIRST.EQ.1) THEN
+            CALL DCOPY(NT*NO,H(NSFT1),1,WRK(NSFT2),1)
+            CALL DCOPY(NT*NV,H(NSFT3),1,WRK(NSFT4),1)
+         END IF
+         NSFT5 = L7
+         DO 200 I = 1, NT
+            CALL DCOPY(NT,H(NSFT1),1,V(NSFT5),1)
+            NSFT1 = NSFT1 + NT
+            NSFT5 = NSFT5 + L1
+            IF (I.EQ.NO) NSFT5 = L8
+  200    CONTINUE
+         L7 = L7 + L1*NO + NT
+         L8 = L8 + L1*NV + NT
+         NSFT2 = NSFT2 + NT*NO
+         NSFT3 = NSFT1
+         NSFT4 = NSFT4 + NT*NV
+  300 CONTINUE
+C
+      IF (IFIRST.EQ.1) THEN
+         CALL DAWRIT(IDAF,IODA,WRK,L5,315,0)
+         CALL DAWRIT(IDAF,IODA,V,L3,316,0)
+      END IF
+C
+      IFIRST=0
+      RETURN
+      END
+C*MODULE MOROKM  *DECK MOMEM
+      SUBROUTINE MOMEM(NINTMX)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,TDSKWRK
+C
+      PARAMETER (MXATM=500, MXMOL=10)
+C
+      COMMON /FMCOM / XX(1)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+C     PARALLEL
+C
+      TDSKWRK = DSKWRK
+      DSKWRK  = .TRUE.
+C
+C     LOCATING MEMORY
+C
+      CALL VALFM(LOADFM)
+      I10  = LOADFM + 1
+      IF (NMORO.GT.0.AND.NMORO.LE.NMOL) THEN
+         I20  = I10    + NINTMX
+         I30  = I20    + NINTMX
+         I40  = I30    + NINTMX
+         I50  = I40    + NINTMX
+      ELSE IF (NMORO.GT.1000.OR.(NMORO.GT.3*NMOL.AND.NMORO.LE.5*NMOL))
+     *        THEN
+         L2   = NUM*(NUM+1)/2
+         I50  = I10 + L2
+      ELSE
+         RETURN
+      END IF
+      NEED = I50 - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      IF (NMORO.GT.1000.OR.(NMORO.GT.3*NMOL.AND.NMORO.LE.5*NMOL)) THEN
+         CALL DAREAD(IDAF,IODA,XX(I10),L2,311,0)
+         CALL DAWRIT(IDAF,IODA,XX(I10),L2,11,0)
+         CALL DAREAD(IDAF,IODA,XX(I10),L2,312,0)
+         CALL DAWRIT(IDAF,IODA,XX(I10),L2,12,0)
+      ELSE
+         IF(NMORO.GT.0  .AND.  NMORO.LE.NMOL  .AND.  EXETYP.NE.CHECK)
+     *       CALL MOIJKL(XX(I10),XX(I20),XX(I30),XX(I40),NINTMX,NOPK)
+      END IF
+      CALL RETFM(NEED)
+C
+C     SET BACK FOR DSKWRK
+C
+      DSKWRK  = TDSKWRK
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK MOROIN
+      SUBROUTINE MOROIN
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+      DOUBLE PRECISION MOROKUMA
+C
+      PARAMETER (NNAM=9)
+      PARAMETER (MXATM=500, MXMOL=10,KQMX=101)
+C
+      DIMENSION QNAM(NNAM),KQNAM(NNAM),IATM(MXMOL)
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      LOGICAL DOBSSE,CTPPL,CTPLX,MOROKM,RVS,RDENG
+C
+      COMMON /BASSPH/ QMTTOL,ISPHER
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IRDENG
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA MOROKUMA/8HMOROKM  /
+#else
+      CHARACTER*8 :: MOROKUMA_STR
+      EQUIVALENCE (MOROKUMA, MOROKUMA_STR)
+      DATA MOROKUMA_STR/"MOROKM  "/
+#endif
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA QNAM/8HIATM    ,8HICHM    ,8HEQUM    ,8HBSSE    ,8HCTPSPL  ,
+     *          8HCTPLX   ,8HMOROKM  ,8HRVS     ,8HRDENG   /
+#else
+      CHARACTER*8 :: QNAM_STR(NNAM)
+      EQUIVALENCE (QNAM, QNAM_STR)
+      DATA QNAM_STR/"IATM    ","ICHM    ","EQUM    ","BSSE    ",
+     *          "CTPSPL  ",
+     *          "CTPLX   ","MOROKM  ","RVS     ","RDENG   "/
+#endif
+      DATA KQNAM/KQMX,KQMX,KQMX,0,0,0,0,0,0/
+C
+      DO 100 IM = 1, MXMOL
+         IATM(IM) = 0
+         ICHM(IM) = 0
+         MONO(IM) = 0
+         IEQM(IM) = 0
+  100 CONTINUE
+      IBSSE = 0
+      ICTPPL = 1
+      ICTPLX = 0
+      IMOROX = 1
+      IRVS = 0
+      IRDENG = 0
+      DOBSSE = .FALSE.
+      CTPPL = .TRUE.
+      CTPLX = .FALSE.
+      MOROKM = .TRUE.
+      RVS = .FALSE.
+      RDENG=.FALSE.
+C
+C    ----- READ NAMELIST $MOROKM -----
+C
+      CALL NAMEIO(IR,JRET,MOROKUMA,NNAM,QNAM,KQNAM,
+     *            IATM,ICHM,IEQM,DOBSSE,CTPPL,CTPLX,MOROKM,
+     *            RVS,RDENG,
+     *            0,0,0,0,0,
+     *   0,0,0,0,0,   0,0,0,0,0,
+     *   0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0,  0,0,0,0,0,
+     *   0,0,0,0,0,   0,0,0,0,0,   0,0,0,0,0,  0,0,0,0,0)
+      IF(JRET.EQ.2) THEN
+         IF (MASWRK) WRITE(IW,9000)
+         CALL ABRT
+      END IF
+C
+      MONO(1) = 1
+      ICHT = ICHM(1)
+      IF (IATM(1).EQ.0) THEN
+         MONO(2) = NAT/2 + 1
+         ICHM(2) = ICH - ICHM(1)
+         GO TO 300
+      END IF
+C
+      DO 200 IM = 2, MXMOL
+         MONO(IM) = MONO(IM-1) + IATM(IM-1)
+         IF (MONO(IM).GT.NAT) THEN
+            MONO(IM)=0
+            GO TO 300
+         ELSE IF (IATM(IM).EQ.0.AND.ICHM(IM).EQ.0) THEN
+            ICHM(IM) = ICH - ICHT
+            GO TO 300
+         END IF
+         ICHT = ICHT + ICHM(IM)
+  200 CONTINUE
+C
+  300 DO 400 IM = 1, MXMOL
+         IF (IEQM(IM).EQ.IM) IEQM(IM) = 0
+         IF (IEQM(IM).GT.IM) THEN
+         IF (IEQM(IM).GT.MXMOL) IEQM(IM) = 0
+            IJ = IEQM(IM)
+            IEQM(IJ) = IM
+            IEQM(IM) = 0
+         END IF
+  400 CONTINUE
+C
+      IF (DOBSSE) IBSSE = 1
+      IF (.NOT.CTPPL) ICTPPL = 0
+      IF (.NOT.CTPPL) IBSSE  = 0
+      IF (CTPLX) ICTPLX = 1
+      IF (RDENG) IRDENG = 1
+      IF (.NOT.MOROKM) THEN
+         IMOROX = 0
+         IBSSE = 0
+         ICTPPL = 0
+         ICTPLX = 0
+      END IF
+      IF (RVS) IRVS = 1
+      IF (IRVS.EQ.0.AND.IMOROX.EQ.0) THEN
+          WRITE(IW,*)' NO CALCULATION IS REQUIRED'
+          WRITE(IW,*)' MOROKM = .F. AND RVS = .F.'
+          CALL ABRT
+      END IF
+C
+      IF(ISPHER.EQ.1) THEN
+         IF(MASWRK) WRITE(IW,9010)
+         CALL ABRT
+         STOP
+      END IF
+C
+      RETURN
+C
+ 9000 FORMAT(1X,'ERROR IN $MOROKM INPUT')
+ 9010 FORMAT(///1X,'*** JOB KILLED ***'/1X,'SORRY, RUNTYP=MOROKUMA',
+     *          ' AND ISPHER=1 ARE PRESENTLY INCOMPATIBLE')
+      END
+C*MODULE MOROKM  *DECK MOROST
+      SUBROUTINE MOROST
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXATM=500, MXSH=1000, MXGTOT=5000, MXMOL=10)
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),MIN(MXSH),MAX(MXSH),NSHELL
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /SVINFO/ NAT0,ICH0,MUL0,NUM0,NE0,NA0,NB0,NDUM,EF
+C
+C     DETERMINE HOW MANY MONOMERS
+C
+      NMOL = MXMOL
+      DO 100 IMOL = 1, MXMOL
+         IF (MONO(IMOL).NE.0) GO TO 100
+         NMOL = IMOL - 1
+         GO TO 101
+  100 CONTINUE
+C
+  101 IF (NMOL.LE.1) THEN
+         IF (MASWRK) WRITE(IW,1000)
+         CALL ABRT
+      END IF
+C
+C     DETERMINE HOW MANY BASIS FOR EACH MONOMER
+C
+      K0 = 1
+      IST = 1
+      NLOC(1) = 0
+      NSHLLS(1) = 1
+      DO 250 IMOL = 2, NMOL
+         DO 200 II = IST, NSHELL
+            I = KATOM(II)
+            IF (I.NE.MONO(IMOL)) GO TO 200
+            NBAS(IMOL-1) = KLOC(II)-K0
+            NLOC(IMOL) = KLOC(II)-1
+            K0 = KLOC(II)
+            NSHLLS(IMOL) = II
+            IST = II + 1
+            GO TO 250
+  200    CONTINUE
+  250 CONTINUE
+      NBAS(NMOL) = NUM - K0 + 1
+C
+C     DETERMINE HOW MANY ELECTRONS FOR EACH MONOMER
+C
+      NE0 = 0
+      DO 350 IMOL = 1, NMOL
+         NEM(IMOL) = -ICHM(IMOL)
+         IST = MONO(IMOL)
+         IF (IMOL.LT.NMOL) IEND = MONO(IMOL+1)-1
+         IF (IMOL.EQ.NMOL) IEND = NAT
+         DO 300 I = IST, IEND
+            NEM(IMOL) = NEM(IMOL) + INT(ZAN(I))
+  300    CONTINUE
+      NE0 = NE0 + NEM(IMOL)
+  350 CONTINUE
+C
+C     CHECK TOTAL ELECTRONS
+C
+      IF (NE0 .NE. NE) THEN
+         IF (MASWRK) WRITE(IW,2000)
+         CALL ABRT
+      END IF
+C
+C     MUST BE CLOSE SHELL
+C
+      DO 400 IMOL = 1, NMOL
+         IF (MOD(NEM(IMOL),2) .NE. 0) THEN
+            IF (MASWRK) WRITE(IW,2000)
+            CALL ABRT
+         END IF
+  400 CONTINUE
+C
+      NAT0 = NAT
+      ICH0 = ICH
+      MUL0 = MUL
+      NUM0 = NUM
+      NE0 = NE
+      NA0 = NA
+      NB0 = NB
+      RETURN
+C
+ 1000 FORMAT(/1X,'TOTAL NUMBER OF MONOMERS ARE LESS THAN TWO',/)
+ 2000 FORMAT(/1X,'TOTAL NUMBER OF ELECTRONS IN SUPER MOLECULE IS ',
+     *       'NOT EQUAL TO THE SUM OF THOSE IN MONOMERS',/,
+     *       /1X,'IF YOU HAVE USED SYMMETRY UNIQUE INPUT,',
+     *       1X,'USE C1 SYMMETRY INSTEAD')
+      END
+C*MODULE MOROKM  *DECK MOROX
+      SUBROUTINE MOROX
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXSH=1000, MXMOL=10,MXES=MXMOL*10+2, MXATM=500)
+C
+      DIMENSION EM(MXMOL*5),E2(MXMOL),E6(MXMOL),ECTB(MXMOL),EEXB(MXMOL),
+     *          E7(MXMOL),E8(MXMOL),E9(MXMOL),ECPXB(MXMOL),ESAVE(MXES)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,PACK2E,DIRSCF,FDIFF,SVGPAR,CALINT
+C
+      COMMON /CONV  / DENTOL,EN,ETOT,EHF,EHF0,DIFF,ITER,ICALP,ICBET
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /INTFIL/ NINTMX,NHEX,NTUPL,PACK2E,INTG76
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IRDENG
+      COMMON /OPTSCF/ DIRSCF,FDIFF
+      COMMON /ORDOPT/ NORDER,NDAR,LDAR,NBOXMX,NWORD,NOMEM,NSQUAR
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RESTAR/ TIMLIM,IREST,NREC,INTLOC,IST,JST,KST,LST
+      COMMON /SVINFO/ NAT0,ICH0,MUL0,NUM0,NE0,NA0,NB0,NDUM,EF
+      COMMON /SCFOPT/ CONVHF,MAXIT,MCONV,NPUNCH
+      COMMON /SYMTRY/ MAPSHL(MXSH,48),MAPCTR(MXATM,48),
+     *                T(432),INVT(48),NT
+      COMMON /TMVALS/ TI,TX,TIM
+      COMMON /WFNOPT/ SCFTYP,CITYP,DFTYPE,CCTYP,MPLEVL,MPCTYP
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA RHF/8HRHF     /
+#else
+      CHARACTER*8 :: RHF_STR
+      EQUIVALENCE (RHF, RHF_STR)
+      DATA RHF_STR/"RHF     "/
+#endif
+      DATA ZERO/0.00D+00/, TOKCAL/627.51D+00/
+      DATA SMALL/1.00D-07/
+C
+C********************************************************************
+C     THIS IS A MAIN DRIVE FOR MOROKUMA ANALYSIS. RESTART IS ONLY FOR
+C     SAVING 2- ELECTRON INTEGRALS
+C********************************************************************
+C
+C     COMMON /MOINFO/
+C     NMORO:  CONTROL MOROKUMA ANALYSIS
+C             =    0 : SUPER MOLECULE (FOR THE CASE OF 100 AND 200)
+C             <=NMOL : MONOMER
+C             =  100 : GET E3 AND E4
+C             = 10II : GET E5 AND E6 SPLIT
+C             =  200 : GET E1 AND E2
+C             = 12II : GET E1 AND E2 SPLIT
+C     NMOL  : TOTAL NUMBER OF MONOMER, DEFAULT IS TWO
+C     MONO  : STARTING ATOM FOR EACH MONOMER
+C     NSHLLS: STARTING SHELL OF EACH MONOMER
+C     NBAS  : TOTAL NUMBER OF BASIS SET FOR EACH MONOMER
+C     NEM   : TOTAL NUMBER OF ELECTRONS FOR EACH MONOMER
+C     ICHM  : MONOMER CHARGE
+C     NLOC: OFFSET OF BASIS SET FOR EACH MONOMER
+C
+C     DICTNRY FILE
+C     311: COPY OF 11 FOR SUPER AO BASIS (HCORE) [NUM*(NMU+1)/2]
+C     312: COPY OF 12 FOR SUPER AO BASIS (OVERLAP) [NUM*(NMU+1)/2]
+C     313: 0-TH ORDER MO COEFFICENTS (SUM OVER EACH MONOMER)
+C          [SUM NBAS(I)**2]
+C     314: ORTHONORMAL 0-TH ORDER MO COEFFICENTS (FROM 316) [NUM**2]
+C     315: 0-TH ORDER MO COEFFICENTS (ORDER AS OCC THEN VIR)
+C          [SUM NBAS(I)**2]
+C     316: 0-TH ORDER MO COEFFICENTS (ORDER AS OCC THEN VIR) [NUM**2]
+C
+      DO 10 I=1,NMOL
+         E2(I) = ZERO
+         E6(I) = ZERO
+         E7(I) = ZERO
+         E8(I) = ZERO
+         E9(I) = ZERO
+   10 CONTINUE
+C
+C     DIRECT SCF IS NOT IMPLEMENTED FOR MOROKUMA ANALYSIS
+C
+      IF (DIRSCF) THEN
+         IF (MASWRK) WRITE(IW,1000)
+         CALL ABRT
+      END IF
+C
+C     AT PRESENT, SPHERICAL HARMONICS ARE NOT PERMITTED
+C
+      IF(NQMT.LT.NUM) THEN
+         IF(MASWRK) WRITE(IW,1500) NUM,NQMT
+         CALL ABRT
+      END IF
+C
+C     SYMMETRY IS NOT USED IN MOROKUMA ANALYSIS
+C
+      IF (MASWRK) WRITE(IW,2000)
+      NT=1
+C
+C     NORDER NOT ACTIVE IN MOROKUMA ANALYSIS
+C
+      IF (NORDER.EQ.1) THEN
+        NORDER = 0
+        IF (MASWRK) WRITE(IW,3000)
+      END IF
+C
+C     ONLY SCFTYP=RHF IS PERMITTED NOW
+C
+      IF (SCFTYP.NE.RHF) THEN
+        IF (MASWRK) WRITE(IW,4000)
+        CALL ABRT
+      END IF
+C
+C     GET THE STARTING NUMBER OF MONOMER
+C
+      CALL MOROIN
+C
+C     ESAVE FOR READING IN ENERGIES
+C
+      CALL RDENG(ESAVE,IES)
+      IND=1
+C
+C     SETUP CHECKING
+C
+      NMORO=0
+      CALL MOROST
+C
+C     2E INTEGRALS FOR SUPPER MOLECULE
+C
+      SVGPAR = GOPARR
+      GOPARR = .TRUE.
+      IF(IREST.LE.1) CALL JANDK
+      GOPARR = SVGPAR
+      IF(TIM.GE.TIMLIM) GO TO 120
+C
+C     GO FOR MONOMER
+C
+      E0M = ZERO
+      DO 100 IM = 1, NMOL
+         IREST=0
+         NMORO = IM
+         IF (MASWRK) WRITE(IW,5000)NMORO
+C     ----- 1E- INTEGRALS -----
+         CALL ONEEI
+C     ----- PREPARE INITIAL ORBITALS -----
+         CALL GUESMO(GUESS)
+C     ----- 2E- INTEGRALS -----
+         CALL MOMEM(NINTMX)
+C     ----- RHF RUN -----
+         CALL MOSCF
+C     ----- RHF SAVE MOLECULE ORBITALS TO 313 -----
+         CALL SAVORB
+C     ----- TOTAL MONOMER ENERGY -----
+         EM(NMORO) = ETOT
+         E0M = E0M + ETOT
+C     CHECK IF IRDENG
+         IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            IF (ABS(ETOT-ESAVE(IND)).GT.SMALL) THEN
+               IF (MASWRK) WRITE(IW,8500)
+               CALL ABRT
+            END IF
+            IND=IND+1
+         END IF
+C     ----- CHECK TIME -----
+         IF(TIM.GE.TIMLIM) GO TO 120
+  100 CONTINUE
+C
+C     INT2 IS SAVED AT SEQFILE 24 SO IS SHOULD BE SET TO 24
+C
+      ISSV = IS
+      IS = 24
+C
+C     BSSE (J=1: FULL BSSE; J=2: VIR; J=3: OCC;
+C           J=4: VIR WITH OCC + ALL VIR)
+C
+      IF (IBSSE.EQ.0.AND.IRVS.EQ.0) GO TO 206
+C
+      E0S = ZERO
+      DO 205 IM = 1, NMOL
+         IF (IEQM(IM).NE.0) THEN
+            JM = IEQM(IM)
+            IF (IBSSE.EQ.0) GO TO 201
+            N1 = NMOL + IM
+            N2 = NMOL + JM
+            EM(N1) = EM(N2)
+            E0S = E0S +EM(N1)
+            N1 = N1 + NMOL
+            N2 = N2 + NMOL
+            EM(N1) = EM(N2)
+            N1 = N1 + NMOL
+            N2 = N2 + NMOL
+            EM(N1) = EM(N2)
+  201       IF (IRVS.EQ.0) GO TO 205
+            N1 = 4*NMOL + IM
+            N2 = 4*NMOL + JM
+            EM(N1) = EM(N2)
+            GO TO 205
+         END IF
+         IREST=0
+         NMORO = NMOL + IM
+         CALINT=.FALSE.
+         DO 204 J = 1, 4
+            IF (IBSSE.EQ.0.AND.J.LE.3) GO TO 203
+            IF (IRVS.EQ.0.AND.J.EQ.4) GO TO 204
+            IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+               EM(NMORO) = ESAVE(IND)
+               IF (J.EQ.1) E0S = E0S + ESAVE(IND)
+               IND=IND+1
+               GO TO 203
+            END IF
+            IF (.NOT.CALINT) THEN
+               NMOROS=NMORO
+               NMORO=NMOL+IM
+               CALL ONEEI
+               NMORO=NMOROS
+               CALINT=.TRUE.
+            END IF
+            IF (MASWRK.AND.J.EQ.1) WRITE(IW,5001) IM
+            IF (MASWRK.AND.J.EQ.2) WRITE(IW,5002) IM
+            IF (MASWRK.AND.J.EQ.3) WRITE(IW,5003) IM
+            IF (MASWRK.AND.J.EQ.4) WRITE(IW,5004) IM
+            IF (J.EQ.3.OR.(J.EQ.4.AND.IBSSE.EQ.1)) CALL MOMEM(NINTMX)
+            IF (J.EQ.1) CALL GUESMO(GUESS)
+            IF (J.NE.1) CALL GESSMO
+            IF (J.NE.1) CALL CTINT1
+            CALL MOSCF
+            EM(NMORO) = ETOT
+            IF (J.EQ.1) E0S = E0S +ETOT
+            IF(TIM.GE.TIMLIM) GO TO 120
+  203       NMORO = NMORO + NMOL
+  204    CONTINUE
+  205 CONTINUE
+C
+  206 CONTINUE
+C
+C     1E INTEGRALS FOR SUPPER MOLECULE
+C
+      NMORO=0
+      CALL ONEEI
+      IF(TIM.GE.TIMLIM) GO TO 120
+C
+C     CALCULATE E3 AND E4 IN MOROKUMA ANALYSIS
+C
+      IF (MASWRK) WRITE(IW,6000)
+      IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+         MAXITS=MAXIT
+         MAXIT=1
+      END IF
+      NMORO=100
+      CALL GESSMO
+      NMORO=0
+      CALL MOSCF
+      E3 = EF
+      E4 = ETOT
+      IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+         E4=ESAVE(IND)
+         IND=IND+1
+         MAXIT=MAXITS
+      END IF
+C
+C     CALCULATE E5 AND E6 (SPLIT) IN MOROKUMA ANALYSIS
+C
+      IF (ICTPPL.EQ.0) GO TO 303
+C
+      E5=ZERO
+      DO 300 IM = 1, NMOL
+         IF (IEQM(IM).NE.0) THEN
+            E6(IM) = E6(IEQM(IM))
+            GO TO 300
+         END IF
+         NMORO = 1000 + IM
+         IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            MAXITS=MAXIT
+            MAXIT=1
+            IF (E5.NE.ZERO) GO TO 301
+         END IF
+         IF (MASWRK) WRITE(IW,7001) IM
+         CALL MOMEM(NINTMX)
+         CALL GESSMO
+         CALL CTINT1
+         CALL MOSCF
+         E5 = EF
+         E6(IM) = ETOT
+  301    IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            E6(IM)=ESAVE(IND)
+            IND=IND+1
+            MAXIT=MAXITS
+         END IF
+  300 CONTINUE
+C
+  303 CONTINUE
+C
+C     CALCULATE E7 (SPLIT) IN MOROKUMA ANALYSIS
+C
+      IF (ICTPLX.EQ.0) GO TO 353
+C
+      DO 350 IM = 1, NMOL
+         IF (IEQM(IM).NE.0) THEN
+            E7(IM) = E7(IEQM(IM))
+            GO TO 350
+         END IF
+         IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            E7(IM)=ESAVE(IND)
+            IND=IND+1
+            GO TO 350
+         END IF
+         NMORO = 1000 + NMOL + IM
+         IF (MASWRK) WRITE(IW,7002) IM
+         CALL MOMEM(NINTMX)
+         CALL GESSMO
+         CALL CTINT1
+         CALL MOSCF
+         E7(IM) = ETOT
+  350 CONTINUE
+C
+  353 CONTINUE
+C
+      IF (IRVS.EQ.0) GO TO 399
+C
+C     RVS POL
+C
+      DO 360 IM = 1, NMOL
+         IF (IEQM(IM).NE.0) THEN
+            E8(IM) = E8(IEQM(IM))
+            GO TO 360
+         END IF
+         IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            E8(IM)=ESAVE(IND)
+            IND=IND+1
+            GO TO 360
+         END IF
+         NMORO = 1200 + IM + NMOL
+         IF (MASWRK) WRITE(IW,8002) IM
+         CALL MOMEM(NINTMX)
+         CALL GESSMO
+         CALL CTINT1
+         CALL MOSCF
+         E8(IM) = ETOT
+  360 CONTINUE
+C
+C     RVS CT
+C
+      DO 370 IM = 1, NMOL
+         IF (IEQM(IM).NE.0) THEN
+            E9(IM) = E9(IEQM(IM))
+            GO TO 370
+         END IF
+         IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            E9(IM)=ESAVE(IND)
+            IND=IND+1
+            GO TO 370
+         END IF
+         NMORO = 1000 + IM + 2*NMOL
+         IF (MASWRK) WRITE(IW,7003) IM
+         CALL MOMEM(NINTMX)
+         CALL GESSMO
+         CALL CTINT1
+         CALL MOSCF
+         E9(IM) = ETOT
+  370 CONTINUE
+C
+C     SET IS BACK TO 8
+C
+  399 IS = ISSV
+C
+C     NDO INT1 AND INT2
+C
+      NMORO=0
+      CALL ZRMEM(NINTMX)
+C
+C     CALCULATE E1 AND E2 IN MOROKUMA ANALYSIS
+C
+      E1=ZERO
+      IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+         IF (ICTPPL.NE.0) THEN
+            GO TO 401
+         ELSE
+            MAXIT=1
+         END IF
+      END IF
+      IF (MASWRK) WRITE(IW,8000)
+      NMORO=200
+      CALL GESSMO
+      NMORO=0
+      CALL MOSCF
+      E1 = EF
+      E2T = ETOT
+  401 IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+         E2T=ESAVE(IND)
+         IND=IND+1
+      END IF
+C
+C     CALCULATE E2 (SPLIT) IN MOROKUMA ANALYSIS
+C
+      IF (ICTPPL.EQ.0) GO TO 453
+C
+      DO 400 IM = 1, NMOL
+         IF (IEQM(IM).NE.0) THEN
+            E2(IM) = E2(IEQM(IM))
+            GO TO 400
+         END IF
+         IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            MAXITS=MAXIT
+            MAXIT=1
+            IF (E1.NE.ZERO) GO TO 402
+         END IF
+         NMORO = 1200 + IM
+         IF (MASWRK) WRITE(IW,8001) IM
+         CALL ZRMEM(NINTMX)
+         CALL GESSMO
+         CALL CTINT1
+         CALL MOSCF
+         E1=EF
+         E2(IM) = ETOT
+  402    IF (IRDENG.EQ.1.AND.IND.LE.IES) THEN
+            E2(IM)=ESAVE(IND)
+            IND=IND+1
+            MAXIT=MAXITS
+         END IF
+  400 CONTINUE
+C
+  453 CONTINUE
+C
+C     DONE WITH MOROKUMA ANALYSIS
+C     PRINTING
+C
+      EST = E1 - E0M
+      EPOL = E2T - E1
+      EEX = E3 - E1
+      EINT = E4 - E0M
+      ESTKC  = TOKCAL * EST
+      EPOLKC = TOKCAL * EPOL
+      EEXKC  = TOKCAL * EEX
+      EINTKC = TOKCAL * EINT
+C
+      IF (ICTPPL.EQ.1) THEN
+         EPOT = -E1*NMOL
+         ECT = -E5*NMOL
+         DO 500 IM = 1, NMOL
+            EPOT = EPOT + E2(IM)
+            ECT = ECT + E6(IM)
+  500    CONTINUE
+         EMIX = EINT - (EST + EPOL + EEX + ECT)
+         EPOM = EPOL - EPOT
+         ECTKC = TOKCAL * ECT
+         EMIXKC = TOKCAL * EMIX
+         EPOMKC = TOKCAL * EPOM
+      END IF
+C
+      IF (ICTPLX.EQ.1) THEN
+         ECPX = -E3*NMOL
+         DO 510 IM = 1, NMOL
+            ECPX = ECPX + E7(IM)
+  510    CONTINUE
+         ERES = EINT - (EST + EEX + ECPX)
+         ECPXKC = TOKCAL * ECPX
+         ERESKC = TOKCAL * ERES
+      END IF
+C
+      IF (IBSSE.EQ.1) THEN
+         E0MS = E0M - E0S
+         EINTB = E4 - E0S
+         EINTBKC = TOKCAL * EINTB
+C
+         NTWMOL = 2*NMOL
+         NTHMOL = 3*NMOL
+         EEXBT = ZERO
+         DO 520 I = 1, NMOL
+            EEXB(I) = EM(I) - EM(NTHMOL+I)
+            EEXBT = EEXBT + EEXB(I)
+  520    CONTINUE
+C
+         IF (ICTPPL.EQ.1) THEN
+            EMIXB = ZERO
+            ECTBT = ZERO
+            DO 550 I = 1, NMOL
+               ECTB(I) = EM(I) - EM(NTWMOL+I)
+               ECTBT = ECTBT + ECTB(I)
+               EMIXB = EMIXB + EM(I) - EM(NMOL+I) - ECTB(I) - EEXB(I)
+  550       CONTINUE
+         END IF
+C
+         IF (ICTPLX.EQ.1) THEN
+            ERESB = ZERO
+            ECPXBT = ZERO
+            NTWMOL = 2*NMOL
+            NTHMOL = 3*NMOL
+            DO 560 I = 1, NMOL
+               ECPXB(I) = EM(I) - EM(NTWMOL+I)
+               ECPXBT = ECPXBT + ECPXB(I)
+               ERESB = ERESB + EM(I) - EM(NMOL+I) - ECPXB(I) - EEXB(I)
+  560       CONTINUE
+         END IF
+      END IF
+C
+      IF (MASWRK) THEN
+         WRITE(IW,9000)
+         WRITE(IW,9010) EST,ESTKC
+         WRITE(IW,9020) EEX,EEXKC
+         WRITE(IW,9040) EPOL,EPOLKC
+         IF (ICTPPL.EQ.1) THEN
+            WRITE(IW,9030) ECT,ECTKC
+            WRITE(IW,9050) EMIX,EMIXKC
+         END IF
+         IF (ICTPLX.EQ.1) THEN
+            WRITE(IW,9032) ECPX,ECPXKC
+            WRITE(IW,9052) ERES,ERESKC
+         END IF
+         WRITE(IW,9060) EINT,EINTKC
+C
+         IF (ICTPPL.EQ.1) THEN
+            WRITE(IW,*)
+            WRITE(IW,*)'DECOMPOSITION OF CT'
+            DO 600 I = 1, NMOL
+               WRITE(IW,9031) I,E6(I)-E5,(E6(I)-E5)*TOKCAL
+  600       CONTINUE
+            WRITE(IW,*)
+            WRITE(IW,*)'DECOMPOSITION OF PL'
+            DO 700 I = 1, NMOL
+               WRITE(IW,9041) I,E2(I)-E1,(E2(I)-E1)*TOKCAL
+  700       CONTINUE
+            WRITE(IW,9051) EPOM,EPOMKC
+         END IF
+C
+         IF (ICTPLX.EQ.1) THEN
+            WRITE(IW,*)
+            WRITE(IW,*)'DECOMPOSITION OF CTPLX'
+            DO 710 I = 1, NMOL
+               WRITE(IW,9033) I,E7(I)-E3,(E7(I)-E3)*TOKCAL
+  710       CONTINUE
+         END IF
+C
+         IF (IBSSE.EQ.1) THEN
+            WRITE(IW,*)
+            WRITE(IW,*)'BASIS SET SUPERPOSITION ERROR'
+            WRITE(IW,9071) EINTB,EINTBKC
+            WRITE(IW,9070) E0MS,E0MS*TOKCAL
+            WRITE(IW,*)
+C
+            WRITE(IW,9074) EEX+EEXBT,(EEX+EEXBT)*TOKCAL
+            DO 720 I = 1, NMOL
+               WRITE(IW,9075) I,EEXB(I),EEXB(I)*TOKCAL
+  720       CONTINUE
+            WRITE(IW,*)
+C
+            IF (ICTPPL.EQ.1) THEN
+               WRITE(IW,9072) ECT+ECTBT,(ECT+ECTBT)*TOKCAL
+               DO 750 I = 1, NMOL
+                  WRITE(IW,9077) I,ECTB(I),ECTB(I)*TOKCAL
+  750          CONTINUE
+               DO 751 I = 1, NMOL
+                  WRITE(IW,9073) I,ECTB(I)+E6(I)-E5,
+     *               (ECTB(I)+E6(I)-E5)*TOKCAL
+  751          CONTINUE
+               WRITE(IW,*)
+               WRITE(IW,9076) EMIX+EMIXB,(EMIXB+EMIX)*TOKCAL
+               WRITE(IW,*)
+            END IF
+C
+            IF (ICTPLX.EQ.1) THEN
+               WRITE(IW,9081) ECPX+ECPXBT,(ECPX+ECPXBT)*TOKCAL
+               DO 760 I = 1, NMOL
+                  WRITE(IW,9082) I,ECPXB(I),ECPXB(I)*TOKCAL
+  760          CONTINUE
+               DO 761 I = 1, NMOL
+                  WRITE(IW,9083) I,ECPXB(I)+E7(I)-E3,
+     *               (ECPXB(I)+E7(I)-E3)*TOKCAL
+  761          CONTINUE
+               WRITE(IW,*)
+               WRITE(IW,9084) ERES+ERESB,(ERESB+ERES)*TOKCAL
+               WRITE(IW,*)
+            END IF
+         END IF
+      END IF
+C
+      IF (IRVS.EQ.1.AND.MASWRK) THEN
+         WRITE(IW,9001)
+         WRITE(IW,9120)EEX+EST,(EEX+EST)*TOKCAL
+         TENG = EEX+EST
+         DO 801 IM = 1, NMOL
+            WRITE(IW,9130)IM,E8(IM)-E3,(E8(IM)-E3)*TOKCAL
+            TENG =TENG+E8(IM)-E3
+  801    CONTINUE
+         DO 802 IM = 1, NMOL
+            ETMP = E9(IM)-E8(IM)-EM(IM+4*NMOL)+EM(IM)
+            WRITE(IW,9140)IM,ETMP,ETMP*TOKCAL
+            TENG =TENG+ETMP
+  802    CONTINUE
+         TBSSE=ZERO
+         DO 803 IM = 1, NMOL
+            ETMP = EM(IM+4*NMOL)-EM(IM)
+            WRITE(IW,9150)IM,ETMP,ETMP*TOKCAL
+            TBSSE=TBSSE+ETMP
+  803    CONTINUE
+         WRITE(IW,9160) TENG, TENG*TOKCAL
+         WRITE(IW,9170) E4-E0M-TBSSE,(E4-E0M-TBSSE)*TOKCAL
+         WRITE(IW,*)
+      END IF
+C
+  120 CONTINUE
+      IF (MASWRK) WRITE(IW,*) '... END OF MOROKUMA DECOMPOSITION ...'
+      CALL TIMIT(1)
+      RETURN
+C
+ 1000 FORMAT(1X,'DIRECT SCF IS NOT IMPLEMENTED FOR MOROKUMA ANALYSIS')
+ 1500 FORMAT(1X,'LINEAR DEPENDENCE FOUND OR SPHERICAL HARMONICS IN USE'/
+     *       1X,'MOROKUMA ANALYSIS IS NOT YET PROGRAMMED FOR THIS:'/
+     *       1X,'NUM=',I8,' NQMT=',I8)
+ 2000 FORMAT(1X,'MOROKUMA ANALYSIS DOES NOT APPLY SYMMETRY OPERATION')
+ 3000 FORMAT(1X,'MOROKUMA ANALYSIS DOES NOT SUPORT INTEGRAL SORTING',
+     *          ' THIS OPTION IS TURNED OFF AUTOMATICLY')
+ 4000 FORMAT(1X,'MOROKUMA ANALYSIS WORKS ONLY FOR SCFTYP = RHF')
+ 5000 FORMAT(/10X,22("-")/10X,'RUNNING FOR MONOMER',I3/
+     *        10X,22(1H-))
+ 5001 FORMAT(/10X,34("-")/10X,'RUNNING FOR MONOMER (WITH BSSE)',I3/
+     *        10X,34(1H-))
+ 5002 FORMAT(/10X,38("-")/10X,'RUNNING FOR MONOMER (WITH BSSE VIR)',I3/
+     *        10X,38(1H-))
+ 5003 FORMAT(/10X,38("-")/10X,'RUNNING FOR MONOMER (WITH BSSE OCC)',I3/
+     *        10X,38(1H-))
+ 5004 FORMAT(/10X,42("-")/10X,'RUNNING FOR MONOMER (BSSE WITH ALL VIR)',
+     *        I3,/10X,42(1H-))
+ 6000 FORMAT(/10X,21("-")/10X,'RUNNING FOR E3 AND E4'/
+     *        10X,21(1H-))
+ 7001 FORMAT(/10X,33("-")/10X,'RUNNING FOR E6 (SPLIT), IMOL =',I3/
+     *        10X,33(1H-))
+ 7002 FORMAT(/10X,33("-")/10X,'RUNNING FOR E7 (SPLIT), IMOL =',I3/
+     *        10X,33(1H-))
+ 7003 FORMAT(/10X,34("-")/10X,'RUNNING FOR E9 (RVS CT), IMOL =',I3/
+     *        10X,34(1H-))
+ 8000 FORMAT(/10X,21("-")/10X,'RUNNING FOR E1 AND E2'/
+     *        10X,21(1H-))
+ 8001 FORMAT(/10X,33("-")/10X,'RUNNING FOR E2 (SPLIT), IMOL =',I3/
+     *        10X,33(1H-))
+ 8002 FORMAT(/10X,35("-")/10X,'RUNNING FOR E8 (RVS POL), IMOL =',I3/
+     *        10X,35(1H-))
+ 8500 FORMAT(1X,'READ IN ENERGY IS NOT IDENTICAL TO THE RECALCULATED')
+ 9000 FORMAT(/10X,36("-")/10X,'RESULTS OF KITAURA-MOROKUMA ANALYSIS'/
+     *        10X,36(1H-)/
+     *       /41X,'HARTREE',4X,'KCAL/MOLE')
+ 9001 FORMAT(/10X,23("-")/10X,'RESULTS OF RVS ANALYSIS'/
+     *        10X,23(1H-)/
+     *       /41X,'HARTREE',4X,'KCAL/MOLE')
+ 9010 FORMAT(1X,'ELECTROSTATIC ENERGY             ES=',F12.6,5X,F6.2)
+ 9020 FORMAT(1X,'EXCHANGE REPULSION ENERGY        EX=',F12.6,5X,F6.2)
+ 9040 FORMAT(1X,'POLARIZATION ENERGY              PL=',F12.6,5X,F6.2)
+ 9030 FORMAT(1X,'CHARGE TRANSFER ENERGY           CT=',F12.6,5X,F6.2)
+ 9050 FORMAT(1X,'HIGH ORDER COUPLING ENERGY      MIX=',F12.6,5X,F6.2)
+ 9032 FORMAT(1X,'CT + PL + X,                  CTPLX=',F12.6,5X,F6.2)
+ 9052 FORMAT(1X,'HIGH ORDER COUPLING FOR CPLX,   RES=',F12.6,5X,F6.2)
+ 9060 FORMAT(1X,'TOTAL INTERACTION ENERGY,   DELTA-E=',F12.6,5X,F6.2)
+ 9031 FORMAT(1X,'CHARGE TRANSFER ENERGY, MON=',I3,'  CT=',F12.6,5X,F6.2)
+ 9041 FORMAT(1X,'EPL,                    MON=',I3,'  PL=',F12.6,5X,F6.2)
+ 9051 FORMAT(1X,'HIGH ORDER COUPLING FOR PL,    PMIX=',F12.6,5X,F6.2)
+ 9033 FORMAT(1X,'CT + PL + X,            MON=',I3,' CPX=',F12.6,5X,F6.2)
+ 9071 FORMAT(1X,'TOTAL INT WITH BSSE,  DELTA-E(BSSE)=',F12.6,5X,F6.2)
+ 9070 FORMAT(1X,'BSSE CORRECTION,            E(BSSE)=',F12.6,5X,F6.2)
+ 9074 FORMAT(1X,'EEX WITH BSSE              EX(BSSE)=',F12.6,5X,F6.2)
+ 9075 FORMAT(1X,'EEX WITH BSSE     MON=',I3,'    DEL EX=',F12.6,5X,F6.2)
+ 9072 FORMAT(1X,'ECT WITH BSSE              CT(BSSE)=',F12.6,5X,F6.2)
+ 9073 FORMAT(1X,'ECT WITH BSSE     MON=',I3,'  CT(BSSE)=',F12.6,5X,F6.2)
+ 9076 FORMAT(1X,'EMIX WITH BSSE           EMIX(BSSE)=',F12.6,5X,F6.2)
+ 9077 FORMAT(1X,'ECT WITH BSSE     MON=',I3,'    DEL CT=',F12.6,5X,F6.2)
+ 9081 FORMAT(1X,'ECTPLX WITH BSSE        CTPLX(BSSE)=',F12.6,5X,F6.2)
+ 9082 FORMAT(1X,'ECTPLX WITH BSSE  MON=',I3,' DEL CTPLX=',F12.6,5X,F6.2)
+ 9083 FORMAT(1X,'ECTPLX WITH BSSE  MON=',I3,' CTPLX(BS)=',F12.6,5X,F6.2)
+ 9084 FORMAT(1X,'ERES WITH BSSE           ERES(BSSE)=',F12.6,5X,F6.2)
+ 9120 FORMAT(1X,'CEX                               ',F12.6,5X,F6.2)
+ 9130 FORMAT(1X,'POL            MON=',I3,12X,F12.6,5X,F6.2)
+ 9140 FORMAT(1X,'CT             MON=',I3,12X,F12.6,5X,F6.2)
+ 9150 FORMAT(1X,'BSSE(VIR)      MON=',I3,12X,F12.6,5X,F6.2)
+ 9160 FORMAT(1X,'TOTAL                             ',F12.6,5X,F6.2)
+ 9170 FORMAT(1X,'FULL VARIATIONAL WITH BSSE(VIR)   ',F12.6,5X,F6.2)
+      END
+C*MODULE MOROKM  *DECK MOSCF
+      SUBROUTINE MOSCF
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /ACONV / RRSHFT,EXTTOL,DMPTOL,VSHTOL,IEXTIN
+      COMMON /CONV  / ACURCY,EN,ETOT,EHF,EHF0,DIFF,ITER,ICALP,ICBET
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+C
+      SAVE IFIRST
+      DATA IFIRST/1/
+C
+C     ----- SET CONVERGENCE CRITERIA -----
+C
+      IF (IFIRST.EQ.0) GO TO 100
+      IEXTIN = 4
+      EXTTOL = 1.0D-03
+      DMPTOL = 1.0D-04
+      VSHTOL = 0.4D+00
+      IFIRST = 0
+C
+      CALL TRMAT
+C
+C     ----- EXECUTE SCF PROCEDURE -----
+C
+  100 EN=ENUC(NAT,ZAN,C)
+      CALL RHFCL
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK RDENG
+      SUBROUTINE RDENG(ESAVE,I)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      CHARACTER*8 STVEC
+      CHARACTER*16 LET
+C
+      PARAMETER (MXMOL=10,MXES=MXMOL*10+2)
+      DIMENSION ESAVE(MXES)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IRDENG
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+      CALL VCLR(ESAVE,1,MXES)
+      I=0
+      IF (IRDENG.EQ.0) RETURN
+C
+      CALL SEQREW(IR)
+      STVEC=' $ENERG '
+      CALL FNDGRP(IR,STVEC,IEOF)
+      IF (IEOF.NE.0) THEN
+         IF (MASWRK) WRITE(IW,1000)
+         CALL ABRT
+      END IF
+C
+      I=1
+      IF (MASWRK) THEN
+  200    READ(IR,1010,ERR=300,END=300)LET,ESAVE(I)
+         CALL UPRCAS(LET,5)
+         IF (LET(1:5).EQ.' $END') GO TO 300
+         I=I+1
+         GO TO 200
+      END IF
+C
+  300 I=I-1
+C
+      IF (GOPARR) THEN
+         CALL DDI_BCAST(428,'F',ESAVE,I,MASTER)
+         CALL DDI_BCAST(429,'I',I    ,1,MASTER)
+      END IF
+      RETURN
+C
+ 1000 FORMAT(1X,'INPUT $ENERG PLEASE FOR RDENG OPTION IN $MOROKM')
+ 1010 FORMAT(A16,F20.10)
+      END
+C*MODULE MOROKM  *DECK SAVORB
+      SUBROUTINE SAVORB
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXATM=500,MXMOL=10)
+C
+      COMMON /FMCOM / XX(1)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+C     THIS ROUTINE IS FOR SAVING MONOMER'S ORBITAL
+C     LOCATE MEMORY
+C
+      LL3 = NUM*NUM
+      L3 = NBAS(NMORO)**2
+      L5 = 0
+      DO 100 IMOL = 1, NMOL
+         IF (NMORO.EQ.IMOL) ISHFT = L5
+         L5 =  L5 + NBAS(IMOL)**2
+  100 CONTINUE
+      CALL VALFM(LOADFM)
+      I10  = LOADFM + 1
+      I20  = I10    + LL3
+      I30  = I20    + L5
+      NEED = I30 - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      CALL DAREAD(IDAF,IODA,XX(I10),LL3,15,0)
+      IF (NMORO.EQ.1) THEN
+         CALL DAWRIT(IDAF,IODA,XX(I10),L5,313,0)
+      ELSE
+         CALL DAREAD(IDAF,IODA,XX(I20),L5,313,0)
+         CALL DCOPY(L3,XX(I10),1,XX(I20+ISHFT),1)
+         CALL DAWRIT(IDAF,IODA,XX(I20),L5,313,0)
+      END IF
+C
+      CALL RETFM(NEED)
+      RETURN
+      END
+C*MODULE MOROKM  *DECK STENUC
+      SUBROUTINE STENUC(N,ISTART,IEND)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      IF (NMORO.GT.0.AND.NMORO.LE.5*NMOL) THEN
+         NN=NMORO
+  100    IF (NN.LE.NMOL) GO TO 110
+         NN = NN - NMOL
+         GO TO 100
+  110    ISTART = MONO(NN) + 1
+         IF (NN.EQ.NMOL) THEN
+            IEND = N
+         ELSE
+            IEND = MONO(NN+1) - 1
+         END IF
+      ELSE
+         ISTART = 2
+         IEND   = N
+      END IF
+      RETURN
+      END
+C*MODULE MOROKM  *DECK STGUSS
+      SUBROUTINE STGUSS(NA1,L1,L2,L3,GUESS,NORDER)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+      CHARACTER*8 STVEC
+      CHARACTER*1 NUMVEC
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CORE/8HHCORE   /,RDMO/8HMOREAD  /
+#else
+      CHARACTER*8 :: CORE_STR
+      EQUIVALENCE (CORE, CORE_STR)
+      CHARACTER*8 :: RDMO_STR
+      EQUIVALENCE (RDMO, RDMO_STR)
+      DATA CORE_STR/"HCORE   "/,RDMO_STR/"MOREAD  "/
+#endif
+C
+      IF (NMORO.EQ.0) THEN
+         RETURN
+      ELSE IF (NMORO.GT.NMOL) THEN
+         NA1 = NEM(NMORO-NMOL)/2
+         NUMVEC=CHAR(48+NMORO-NMOL)
+      ELSE
+         NA1 = NEM(NMORO)/2
+         L1 = NBAS(NMORO)
+         L3 = L1**2
+         L2 = (L3+L1)/2
+         NUMVEC=CHAR(48+NMORO)
+      END IF
+C
+      GUESS= CORE
+      CALL SEQREW(IR)
+      STVEC(1:5)=' $VEC'
+      STVEC(6:6)=NUMVEC
+      STVEC(7:8)='  '
+      CALL FNDGRP(IR,STVEC,IEOF)
+      IF (IEOF.EQ.0) GUESS=RDMO
+C
+      IF (NORDER.EQ.1) THEN
+         NORDER=0
+         IF (MASWRK) WRITE(IW,1000)
+      END IF
+      RETURN
+C
+ 1000 FORMAT(1X,'WARNING, MOROKUMA ANALYSIS DOES NOT PERMIT ORBITAL ',
+     *       'SWITCHING FOR EACH INDIVIDAUL MOLECULE.',/,
+     *       ' NORDER IS TURNED OFF')
+C
+      END
+C*MODULE MOROKM  *DECK STINT1
+      SUBROUTINE STINT1(ISTART,IEND,JSTART,LOCIJ,NATST,NATED,ISAVE,
+     *                  L1,L2)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXATM=500, MXSH=1000, MXGTOT=5000, MXMOL=10)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      IF (NMORO.EQ.0) THEN
+         ISTART = 1
+         IEND   = NSHELL
+         JSTART = 1
+         LOCIJ  = 0
+         NATST  = 1
+         NATED  = NAT
+         ISAVE  = 1
+         L1 = NUM
+      ELSE IF (NMORO.GT.0.AND.NMORO.LE.NMOL) THEN
+         ISTART = NSHLLS(NMORO)
+         IF (NMORO.LT.NMOL) IEND = NSHLLS(NMORO+1)-1
+         IF (NMORO.EQ.NMOL) IEND = NSHELL
+         JSTART = ISTART
+         LOCIJ  = NLOC(NMORO)
+         NATST  = MONO(NMORO)
+         IF (NMORO.LT.NMOL) NATED  = MONO(NMORO+1)-1
+         IF (NMORO.EQ.NMOL) NATED  = NAT
+         ISAVE  = 0
+         L1 = NBAS(NMORO)
+      ELSE IF (NMORO.GT.NMOL) THEN
+         ISTART = 1
+         IEND   = NSHELL
+         JSTART = 1
+         LOCIJ  = 0
+         NN = NMORO - NMOL
+  100    IF (NN.LE.NMOL) GO TO 110
+         NN = NN - NMOL
+         GO TO 100
+  110    NATST  = MONO(NN)
+         IF (NN.LT.NMOL) NATED  = MONO(NN+1)-1
+         IF (NN.EQ.NMOL) NATED  = NAT
+         ISAVE  = 0
+         IF (NMORO.LE.2*NMOL) ISAVE=1
+         L1 = NUM
+      END IF
+      L2 = (L1*(L1+1))/2
+      RETURN
+      END
+C*MODULE MOROKM  *DECK STRDMO
+      SUBROUTINE STRDMO(NMOS,STVEC,VEC,NSTM,NUM1,L3)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      CHARACTER*8 STVEC
+      CHARACTER*1 NUMVEC
+      DIMENSION VEC(*)
+C
+      PARAMETER (MXMOL=10)
+C
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      IF (NMORO.EQ.0.OR.NMORO.GT.2*NMOL) THEN
+         RETURN
+      ELSE IF (NMORO.GT.NMOL) THEN
+         NN=NMORO-NMOL
+      ELSE
+         NN=NMORO
+      END IF
+C
+      NMOS = NEM(NN)/2
+      NUM1 = NBAS(NN)
+      NSTM=0
+      IF (NMORO.GT.NMOL+1) THEN
+         DO 100 I=1,NN-1
+            NSTM = NSTM + NBAS(I)
+  100    CONTINUE
+      END IF
+C
+      CALL VCLR(VEC,1,L3)
+C
+      NUMVEC=CHAR(48+NN)
+      STVEC(1:5)=' $VEC'
+      STVEC(6:6)=NUMVEC
+      STVEC(7:8)='  '
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK STRHF
+      SUBROUTINE STRHF(NUM,NA,NB,NE,NST,LL1,LL2,LL3,DOMBAS)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      PARAMETER (MXMOL=10)
+      LOGICAL DOMBAS
+C
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /SVINFO/ NAT0,ICH0,MUL0,NUM0,NE0,NA0,NB0,NDUM,EF
+C
+      DOMBAS=.FALSE.
+      NST = 1
+      IF (NMORO.EQ.0.OR.NMORO.GT.1000) THEN
+         NUM=NUM0
+         NA=NA0
+         NB=NB0
+         NE=NE0
+      ELSE IF (NMORO.GT.0.AND.NMORO.LE.5*NMOL) THEN
+         NUM=NUM0
+         IF (NMORO.LE.NMOL) NUM=NBAS(NMORO)
+         NN = NMORO
+  100    IF (NN.LE.NMOL) GO TO 110
+         NN = NN - NMOL
+         GO TO 100
+  110    NA=NEM(NN)/2
+         NB=NEM(NN)/2
+         NE=NEM(NN)
+      END IF
+      IF (NMORO.GT.1000) DOMBAS=.TRUE.
+      IF (NMORO.GT.2*NMOL.AND.NMORO.LE.5*NMOL) THEN
+         DOMBAS=.TRUE.
+         DO 200 I = 1, NN - 1
+            NST = NST + NEM(I)/2
+  200    CONTINUE
+      END IF
+      LL1 = NUM0
+      LL2 = (LL1*LL1+LL1)/2
+      LL3 = LL1*LL1
+      RETURN
+      END
+C*MODULE MOROKM  *DECK TFSQU1
+      SUBROUTINE TFSQU1(F,H,T1,T2,WRK,N1,N2,N3,N4,NSFT1,NSFT2)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION H(*),F(*),T1(N1,N3),T2(N2,N4),WRK(N1)
+C
+C     ----- TRANSFORM THE SQUARE MATRIX F USING VECTORS T -----
+C                      H = T1-DAGGER * F * T2
+C           F IS A LOWER TRIANGULAR MATRIX START AT NSFT1*(NSFT1+1)/2+1
+C           H IS A LOWER TRIANGULAR MATRIX START AT NSFT2*(NSFT2+1)/2+1
+C           H MUST BE SET TO ZERO BEFORE RUNNING THIS ROUNTINE.
+C
+      DO 300 II = 1,N4
+         LDX = 1
+         DO 100 L=1,N1
+            WRK(L) = DDOT(N2,T2(1,II),1,F(LDX),1)
+            LDX = LDX + NSFT1 + L
+  100    CONTINUE
+         JDX = II
+         DO 200 J=1,N3
+            H(JDX) = DDOT(N1,WRK,1,T1(1,J),1)
+            JDX = JDX + NSFT2 + J
+  200    CONTINUE
+  300 CONTINUE
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK TFSQU2
+      SUBROUTINE TFSQU2(F,H,T1,T2,WRK,N1,N2,N3,N4,NSFT1,NSFT2)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION H(*),F(*),T1(N1,N3),T2(N2,N4),WRK(N2)
+C
+C     ----- TRANSFORM THE SQUARE MATRIX F USING VECTORS T -----
+C                      H = T1-DAGGER * F-DAGGER * T2
+C           F IS A LOWER TRIANGULAR MATRIX,
+C                     START AT NSFT1*(NSFT1+1)/2+1
+C           H IS A LOWER TRIANGULAR MATRIX,
+C                     START AT (NSFT2+N4)*(NSFT2+N4+1)/2+NSHFT2+1
+C           H MUST BE SET TO ZERO BEFORE RUNNING THIS ROUNTINE.
+C
+      JDX = 1
+      DO 300 II = 1,N3
+         LDX = 1
+         DO 100 L=1,N2
+            WRK(L) = DDOT(N1,T1(1,II),1,F(LDX),1)
+            LDX = LDX + NSFT1 + L
+  100    CONTINUE
+         DO 200 J=1,N4
+            H(JDX) = DDOT(N2,WRK,1,T2(1,J),1)
+            JDX = JDX + 1
+  200    CONTINUE
+         JDX = JDX + NSFT2 + II
+  300 CONTINUE
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK TFTRI1
+      SUBROUTINE TFTRI1(F,H,T,WRK,M,N,NSFT1,NSFT2,DOALL)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL DOALL
+C
+      DIMENSION H(*),F(*),T(N,M),WRK(N)
+C
+      PARAMETER (ZERO=0.0D+00, SMALL=1.0D-11)
+C
+C     ----- TRANSFORM THE TRIANGULAR MATRIX F USING VECTORS T -----
+C                      H = T-DAGGER * F * T
+C     THE ORDER OF THE TRIANGULAR MATRICES H AND F ARE M AND N.
+C        F IS A LOWER TRIANGULAR MATRIX START AT (NSFT1+1)*(NSFT1+2)/2
+C        H IS A LOWER TRIANGULAR MATRIX START AT (NSFT2+1)*(NSFT2+2)/2
+C        H MUST BE SET TO ZERO BEFORE RUNNING THIS ROUNTINE.
+C        DOALL = .T. : ALL ELEMENT CALCULATED
+C        DOALL = .F. : ONLY DIAG ELEMENT CALCULATED
+C
+      IJ = 0
+      DO 300 JJ = 1,M
+C
+C             FIRST CALCULATE T-DAGGER TIMES -F-, A ROW AT A TIME
+C
+         IK = 0
+         DO 140 I = 1,N
+            IM1 = I-1
+            DUM = ZERO
+            TDUM = T(I,JJ)
+            IF (IM1.GT.0) THEN
+               DO 100 K = 1,IM1
+                  IK = IK+1
+                  WRK(K) = WRK(K)+F(IK)*TDUM
+                  DUM = DUM+F(IK)*T(K,JJ)
+  100          CONTINUE
+            END IF
+            IK = IK+1
+            WRK(I) = DUM+F(IK)*TDUM
+            IK = IK+NSFT1
+  140    CONTINUE
+C
+C             THEN TAKE THAT ROW TIMES EVERY COLUMN IN -T-
+C
+         IF (.NOT.DOALL) GO TO 250
+C
+         DO 200 I = 1,JJ
+            IJ = IJ+1
+            HIJ = DDOT(N,T(1,I),1,WRK,1)
+            IF(ABS(HIJ).LT.SMALL) HIJ=ZERO
+            H(IJ)=HIJ
+  200    CONTINUE
+         GO TO 290
+C
+  250    IJ = IJ + JJ
+         HIJ = DDOT(N,T(1,JJ),1,WRK,1)
+         IF(ABS(HIJ).LT.SMALL) HIJ=ZERO
+         H(IJ)=HIJ
+C
+  290    IJ = IJ + NSFT2
+  300 CONTINUE
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK TFTRI2
+      SUBROUTINE TFTRI2(F,H,T1,T2,WRK,M1,M2,N,NSFT1,NSFT2)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION H(*),F(*),T1(N,M1),T2(N,M2),WRK(N)
+C
+      PARAMETER (ZERO=0.0D+00, SMALL=1.0D-11)
+C
+C     ----- TRANSFORM THE TRIANGULAR MATRIX F USING VECTORS T -----
+C                      H = T1-DAGGER * F * T2
+C     THE ORDER OF THE TRIANGULAR MATRICES H AND F ARE M AND N.
+C           F IS A LOWER TRIANGULAR MATRIX,
+C                  START AT (NSFT1+1)*(NSFT1+2)/2
+C           H IS A LOWER TRIANGULAR MATRIX,
+C                  START AT (NSFT2+1)*(NSFT2+2)/2
+C           H MUST BE SET TO ZERO BEFORE RUNNING THIS ROUNTINE.
+C
+      DO 300 JJ = 1,M2
+         IK = 0
+         DO 140 I = 1,N
+            IM1 = I-1
+            DUM = ZERO
+            TDUM = T2(I,JJ)
+            IF (IM1.GT.0) THEN
+               DO 100 K = 1,IM1
+                  IK = IK+1
+                  WRK(K) = WRK(K)+F(IK)*TDUM
+                  DUM = DUM+F(IK)*T2(K,JJ)
+  100          CONTINUE
+            END IF
+            IK = IK+1
+            WRK(I) = DUM+F(IK)*TDUM
+            IK = IK+NSFT1
+  140    CONTINUE
+         IJ = JJ
+         DO 200 I = 1,M1
+            HIJ = DDOT(N,T1(1,I),1,WRK,1)
+            IF(ABS(HIJ).LT.SMALL) HIJ=ZERO
+            H(IJ)=HIJ
+            IJ = IJ + NSFT2 + I
+  200    CONTINUE
+  300 CONTINUE
+C
+      RETURN
+      END
+C*MODULE MOROKM  *DECK TRMOAO
+      SUBROUTINE TRMOAO(V,Q,QN,WRK,NUM)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXMOL=10)
+C
+      DIMENSION V(*),Q(NUM,NUM),QN(NUM,NUM),WRK(*)
+C
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+C
+      L1 = NUM
+      L3 = NUM*NUM
+      L5 = 0
+      DO 50 IM = 1, NMOL
+         L5 = L5 + NBAS(IM)**2
+   50 CONTINUE
+C
+      NFILE = 316
+      IF (NMORO.GT.1200+NMOL.AND.NMORO.LE.1200+2*NMOL) NFILE = 314
+      IF (NMORO.GT.1000+2*NMOL.AND.NMORO.LE.1000+3*NMOL) NFILE = 314
+      CALL DAREAD(IDAF,IODA,V,L3,NFILE,0)
+      CALL DCOPY(L3,Q,1,QN,1)
+      CALL TFSQB(QN,V,WRK,L1,L1,L1)
+      RETURN
+      END
+C*MODULE MOROKM  *DECK ZRINT1
+      SUBROUTINE ZRINT1(H,S)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,OUT
+C
+      DIMENSION H(*), S(*)
+C
+      PARAMETER (MXATM=500, MXMOL=10)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+C
+      PARAMETER (ZERO=0.0D+00)
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DEBUG/8HDEBUG   /,DBUGME/8HINT1    /
+#else
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      DATA DEBUG_STR/"DEBUG   "/,DBUGME_STR/"INT1    "/
+#endif
+C
+      IF ((NPRINT.NE.-5) .AND. MASWRK) WRITE (IW,9000)
+      IF ((NPRINT.NE.-5) .AND. MASWRK) WRITE (IW,9010)
+      OUT = NPRINT.EQ.3  .OR.  EXETYP.EQ.DEBUG  .OR.  EXETYP.EQ.DBUGME
+     *      .AND. MASWRK
+C
+      L1 = NUM
+      L2 = NUM*(NUM+1)/2
+      CALL DAREAD(IDAF,IODA,H,L2,311,0)
+      CALL DAREAD(IDAF,IODA,S,L2,312,0)
+C
+      IED = NLOC(2)
+      IJ = IED*(IED+1)/2
+      DO 300 IM = 2, NMOL
+         JED = IED
+         IST = IED+1
+         IED = IED+NBAS(IM)
+         DO 200 II = IST, IED
+            DO 100 JJ = 1, JED
+               IJ = IJ + 1
+               S(IJ) = ZERO
+               H(IJ) = ZERO
+  100       CONTINUE
+            IJ = IJ + II - JED
+  200    CONTINUE
+  300 CONTINUE
+C
+      CALL DAWRIT(IDAF,IODA,H,L2,11,0)
+      CALL DAWRIT(IDAF,IODA,S,L2,12,0)
+C
+      IF(OUT) THEN
+         WRITE(IW,*) 'OVERLAP MATRIX'
+         CALL PRTRIL(S,L1)
+         WRITE(IW,*) 'BARE NUCLEUS HAMILTONIAN INTEGRALS (H=T+V)'
+         CALL PRTRIL(H,L1)
+      END IF
+C
+C     ----- DONE WITH INTEGRALS -----
+C
+      IF(MASWRK) WRITE (IW,9090)
+      CALL TEXIT(1,1)
+      RETURN
+C
+ 9000 FORMAT(/10X,20("*")/10X,'1 ELECTRON INTEGRALS')
+ 9010 FORMAT(10X,'FOR SA(1)SB(2) = 0 '/10X,20("*"))
+ 9090 FORMAT(1X,'...... END OF ONE-ELECTRON INTEGRALS ......')
+      END
+C*MODULE MOROKM  *DECK ZRINT2
+      SUBROUTINE ZRINT2(XX,IX,YY,IY,NINTMX,NOPK)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXMOL=10)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK
+C
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /PCKLAB/ LABSIZ
+C
+      DIMENSION XX(NINTMX),IX(*),YY(NINTMX),IY(*)
+C
+      DATA IJKO/24/
+C
+      IF(MASWRK) WRITE(IW,3000) IJKO
+      NREC = 0
+      NXX = 0
+      MN = 1
+      NINTO = 0
+C
+      CALL SEQREW(IS)
+      CALL SEQREW(IJKO)
+      IF (NOPK .NE. 1) GO TO 300
+C
+C     ----- INTEGRALS ARE NOT IN SUPERMATRIX FORM (NOPK=.TRUE.) -----
+C
+  100 CONTINUE
+      CALL PREAD(IJKO,XX,IX,NXX,NINTMX)
+      IF (NXX .EQ. 0) GO TO 400
+      NINT = IABS(NXX)
+      IF (NINT .GT. NINTMX) CALL ABRT
+      DO 200 M = 1,NINT
+C
+                       NPACK = M
+                       IF (LABSIZ .EQ. 2) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX( 2*NPACK - 1 )
+                         IPACK = ISHFT( LABEL, -16 )
+                         JPACK = IAND(  LABEL, 65535 )
+                         LABEL = IX( 2*NPACK     )
+                         KPACK = ISHFT( LABEL, -16 )
+                         LPACK = IAND(  LABEL, 65535 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -48 )
+                         JPACK = IAND( ISHFT( LABEL, -32 ), 65535 )
+                         KPACK = IAND( ISHFT( LABEL, -16 ), 65535 )
+                         LPACK = IAND( LABEL, 65535 )
+#endif
+                       ELSE IF (LABSIZ .EQ. 1) THEN
+#if !defined(SPEC_CPU_ILP64)
+                         LABEL = IX(NPACK)
+                         IPACK = ISHFT( LABEL, -24 )
+                         JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                         KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                         LPACK = IAND( LABEL, 255 )
+#endif
+#if defined(SPEC_CPU_ILP64)
+                         IF ( MOD(NPACK,2) .EQ. 0 ) THEN
+                           LABEL = IX( NPACK/2 )
+                           IPACK = IAND( ISHFT( LABEL, -24 ), 255 )
+                           JPACK = IAND( ISHFT( LABEL, -16 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL,  -8 ), 255 )
+                           LPACK = IAND( LABEL, 255 )
+                         ELSE
+                           LABEL = IX( (NPACK/2)+1 )
+                           IPACK = ISHFT( LABEL, -56 )
+                           JPACK = IAND( ISHFT( LABEL, -48 ), 255 )
+                           KPACK = IAND( ISHFT( LABEL, -40 ), 255 )
+                           LPACK = IAND( ISHFT( LABEL, -32 ), 255 )
+                         END IF
+#endif
+                       END IF
+                       I = IPACK
+                       J = JPACK
+                       K = KPACK
+                       L = LPACK
+C
+         IF (I.LE.NLOC(2)) GO TO 170
+         DO 140 IM = 2, NMOL-1
+            IF (I.GT.NLOC(IM+1)) GO TO 140
+            IF (J.LE.NLOC(IM)) GO TO 200
+            JMD = IM
+            GO TO 150
+  140    CONTINUE
+         IF (J.LE.NLOC(NMOL)) GO TO 200
+         JMD = NMOL-1
+C
+  150    DO 160 JM = 1, JMD
+            IF (K.GT.NLOC(JM+1)) GO TO 160
+            IF (L.LE.NLOC(JM)) GO TO 200
+            GO TO 170
+  160    CONTINUE
+C
+         IF (L.LE.NLOC(NMOL)) GO TO 200
+C
+  170    CONTINUE
+C
+         YY(MN)=XX(M)
+         NPACK = MN
+         IPACK = I
+         JPACK = J
+         KPACK = K
+         LPACK = L
+         IF (LABSIZ .EQ. 2) THEN
+#if !defined(SPEC_CPU_ILP64)
+           IY( 2*NPACK-1 ) = ISHFT( IPACK, 16 ) + JPACK
+           IY( 2*NPACK   ) = ISHFT( KPACK, 16 ) + LPACK
+#endif
+#if defined(SPEC_CPU_ILP64)
+           LABEL = ISHFT( IPACK, 48 ) + ISHFT( JPACK, 32 ) +
+     *             ISHFT( KPACK, 16 ) + LPACK
+           IY(NPACK) = LABEL
+#endif
+         ELSE IF (LABSIZ .EQ. 1) THEN
+#if !defined(SPEC_CPU_ILP64)
+           LABEL = ISHFT( IPACK, 24 ) + ISHFT( JPACK, 16 ) +
+     *             ISHFT( KPACK,  8 ) + LPACK
+           IY(NPACK) = LABEL
+#endif
+#if defined(SPEC_CPU_ILP64)
+           IF ( MOD(NPACK,2) .EQ. 0 ) THEN
+             LABEL = ISHFT( IPACK, 24 ) + ISHFT( JPACK, 16 ) +
+     *               ISHFT( KPACK,  8 ) + LPACK
+             IY( NPACK/2 ) = IY( NPACK/2 ) + LABEL
+           ELSE
+             LABEL = ISHFT( IPACK, 56 ) + ISHFT( JPACK, 48 ) +
+     *               ISHFT( KPACK, 40 ) + ISHFT( LPACK, 32 )
+             IY( (NPACK/2)+1 ) = LABEL
+           END IF
+#endif
+         END IF
+C
+         MN=MN+1
+         IF (MN.GT.NINTMX) THEN
+            NREC=NREC+1
+            NINTO=NINTO+MN
+            CALL PWRIT(IS,YY,IY,NINTMX,NINTMX)
+            MN=1
+         END IF
+C
+  200 CONTINUE
+C
+      IF (NXX .GT. 0) GO TO 100
+C
+      GO TO 400
+C
+C     ----- INTEGRALS ARE IN SUPERMATRIX FORM (NOPK=.FALSE.) -----
+C
+  300 CONTINUE
+      WRITE(IW,*)' CAN NOT SORT INT2'
+      CALL ABRT
+C
+C     ----- FINAL CLEANING UP -----
+C
+  400 CONTINUE
+      MN=MN-1
+      NINTO=NINTO+MN
+      MN=-MN
+      CALL PWRIT(IS,YY,IY,MN,NINTMX)
+      NREC=NREC+1
+      CALL SEQREW(IS)
+      IF (MASWRK) WRITE(IW,2000) NINTO,NREC,NINTMX,IS
+C
+      CALL SEQREW(IJKO)
+      RETURN
+C
+ 2000 FORMAT(1X,I10,' INTEGRALS IN',I7,' RECORDS OF',I6,
+     *       ' INTEGRALS WRITTEN ON UNIT',I3)
+ 3000 FORMAT(//1X,'SIFTING INTEGRALS FROM FILE',I4)
+      END
+C*MODULE MOROKM  *DECK ZRMEM
+      SUBROUTINE ZRMEM(NINTMX)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      LOGICAL GOPARR,DSKWRK,MASWRK,TDSKWRK
+C
+      PARAMETER (MXATM=500, MXMOL=10)
+C
+      COMMON /FMCOM / XX(1)
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /MOINFO/ NMORO,NMOL,MONO(MXMOL),NSHLLS(MXMOL),NBAS(MXMOL),
+     *                NEM(MXMOL),ICHM(MXMOL),NLOC(MXMOL),IEQM(MXMOL),
+     *                IBSSE,ICTPPL,ICTPLX,IMOROX,IRVS,IDUM
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK/8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+      L2   = NUM*(NUM+1)/2
+C
+C     PARALLEL
+C
+      TDSKWRK = DSKWRK
+      DSKWRK  = .TRUE.
+C
+C     LOCATE MEMORY
+C
+      CALL VALFM(LOADFM)
+      I10  = LOADFM + 1
+      I20  = I10    + NINTMX
+      I30  = I20    + NINTMX
+      I40  = I30    + NINTMX
+      I50  = I40    + NINTMX
+C
+      I60  = I10 + L2
+      I70  = I60 + L2
+      I80  = MAX0(I70,I50)
+      NEED = I80 - LOADFM - 1
+      CALL GETFM(NEED)
+C
+      CALL ZRINT1(XX(I60),XX(I70))
+      IF(NMORO.EQ.0  .AND.  EXETYP.NE.CHECK)
+     *  CALL ZRINT2(XX(I10),XX(I20),XX(I30),XX(I40),NINTMX,NOPK)
+C
+      DSKWRK  = TDSKWRK
+C
+      CALL RETFM(NEED)
+      RETURN
+      END

@@ -1,0 +1,45 @@
+1..12
+
+** Create a parser
+** Read a nested multipart MIME message
+1: parse of nested multipart
+1: ok 1
+
+** Check the various output files
+2: vise gif
+2: ok 2
+
+3: 3d-eye gif
+3: ok 3
+
+4: message 1
+4: ok 4
+
+5: message 2
+5: ok 5
+
+6: message 3
+6: ok 6
+
+7: message 4
+7: ok 7
+
+** Same message, but CRLF-terminated and no output path hook
+8: parse of CRLF-terminated message
+8: ok 8
+
+** Read a simple in-core MIME message, three ways
+9: NO-REF
+9: ok 9
+
+10: SCALAR-REF
+10: ok 10
+
+11: ARRAY-REF
+11: ok 11
+
+** Simple message, in two parts
+12: 	parse of 2-part simple message (subj <Request for Leave
+12: >)
+12: ok 12
+

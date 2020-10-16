@@ -1,0 +1,37 @@
+Script started on Tue Jan  3 16:43:18 2006
+nanyang:/Volumes/storage/SpecCPU2005/cpu2006-kit85 peg$ runspec -V
+runspec v3496 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'unknown' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 86pre
+ Benchmarks version: 86pre
+      Tools version: 86pre
+    runspec version: 3496 ($Id: runspec 3496 2005-12-16 21:11:52Z cloyce $)
+
+Tools information:
+ Tools package installed: unknown
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 501   | 80    |  179868 | 04-Jan-2006 00:38:37 | specmake
+0755 | 501   | 80    | 1130080 | 04-Jan-2006 00:38:37 | specperl
+0755 | 501   | 80    |   26560 | 04-Jan-2006 00:38:39 | specinvoke
+0755 | 501   | 80    |   26588 | 04-Jan-2006 00:38:39 | specinvoke_pm
+0775 | 501   | 80    |   35240 | 04-Jan-2006 00:38:37 | specbzip2
+0755 | 501   | 80    |   34804 | 04-Jan-2006 00:38:39 | specmd5sum
+0755 | 501   | 80    |    7643 | 04-Jan-2006 00:38:39 | specdiff
+0755 | 501   | 80    |   85776 | 04-Jan-2006 00:38:40 | specpp
+0755 | 501   | 80    |   75095 | 04-Jan-2006 00:38:39 | runspec
+0755 | 501   | 80    |    1520 | 31-Aug-2005 15:31:57 | runspec.bat
+
+Version info for specinvoke (/Volumes/storage/SpecCPU2005/cpu2006-kit85/bin/specinvoke): Version: 3478
+Version info for specmake (/Volumes/storage/SpecCPU2005/cpu2006-kit85/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/Volumes/storage/SpecCPU2005/cpu2006-kit85/bin/specbzip2): bzip2 v1.0.2, 30-Dec-2001
+Version info for specpp (/Volumes/storage/SpecCPU2005/cpu2006-kit85/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/Volumes/storage/SpecCPU2005/cpu2006-kit85/bin/specperl): This is specperl, v5.8.7 built for darwin-2level
+                           For more detail on specperl, say 'specperl -V'
+nanyang:/Volumes/storage/SpecCPU2005/cpu2006-kit85 peg$ exit
+exit
+
+Script done on Tue Jan  3 16:43:35 2006

@@ -1,0 +1,96 @@
+Spec2006 on Ubuntu 64-bit
+
+1. Copy the folder spec2006. From now on this will be referred as root folder.
+
+2. Go to spec2006/tools/src/x 
+	x being the different tools folders and if there is a configure file in those folder change its permission to 744 i.e. add executable for owner.
+
+	3. Now try running ./install.sh in the root folder.
+	- It will most probably throw an error that the required architecture binaries not found.
+	
+4. Now go to the root/tools/src folder and run ./buildtools for the first time.
+
+5. Most probably it will throw an error for specmd5 tool
+	The error will look like this : Conflicting types for getline() and getdelim() in stdio.h and root/tools/src/specmd5/lib/getline.h
+		Workaround: Change the instance of getline and getdelim to elider_getline and elider_getdelim in getline.h and getline.c. **DO NOT** make any changes in the md5sum.c
+		
+6. Run the ./buildtools again, this time it should show an error while building root/tools/src/perl-5.8.7 regarding pow and other math library functions.
+		
+		a.) Add a line(shown below) in tools/src/perl-*/makedepend.SH:
+
+             -e '/^#.*<builtin>/d' \
+             -e '/^#.*<built-in>/d' \
+             -e '/^#.*<command line>/d' \
++            -e '/^#.*<command-line>/d' \ <-- ADD THIS LINE
+             -e '/^#.*"-"/d' \
+             -e '/: file path prefix .* never used$/d' \
+			 
+		b.) For dynamic linking (which is REQUIRED for running SPEC with their tools) to work you need to edit tools/src/buildtools script. 
+				./Configure -dOes -Ud_flock $PERLFLAGS -Ddosuid=undef -Dprefix=$INSTALLDIR 
+				-Dd_bincompat3=undef -A ldflags=-L${INSTALLDIR}/lib -A ccflags=-I${INSTALLDIR}/include 
+				-Ui_db -Ui_gdbm -Ui_ndbm -Ui_dbm -Uuse5005threads 
+				-Dcccdlflags="-fPIC -shared" -Dlddlflags="-shared -fPIC" -Duseshrplib=true ;  <-- ADD THIS LINE
+				testordie "error configuring perl"
+				
+		c.) Edit tools/src/perl-5.8.7/ext/IPC/SysV/SysV.xs. 
+				Comment this line #include asm/page.h
+		
+		d.) Run sudo ln -sf /bin/bash /bin/sh   -- This will remove error like Syntax error: Unterminated quoted string
+		
+		e.) Go to tools/src/perl-5.8.7 folder and edit Configure file to add additional lib path to look into to link maths library 
+				Add /usr/lib32 to the following places: (The no in starting of each line are the line no in the Configure file)
+				a.)	88 : Proper PATH setting
+					89 paths='/bin /usr/bin /usr/local/bin /usr/ucb /usr/local /usr/lbin /usr/lib32'
+				
+				b.)	1238 : Possible local library directories to search.
+					1239 loclibpth="/usr/local/lib /opt/local/lib /usr/gnu/lib /usr/lib32"
+										
+				c.) 1242 : general looking path for locating libraries
+					1243 glibpth="/lib /usr/lib  /usr/lib32 $xlibpth"
+		
+		==> This will remove all the errors related to perl build and will successfully build the perl. Rest of the tool build from now will use the perl that we have build in this step to build themselves.
+		
+		f.) Edit buildtools to add this line
+				BZIP2CFLAGS=-fPIC	<-- This will remove errors related to Compress-Bzip2 and -fpic
+				
+		Now run ./buildtools again and this time it should build all the tools properly.
+
+7. Once tools are build successfully. It will ask you to source the shrc file in the root.
+			To do this go to root folder and run this command
+				. ./shrc  which is dot space dot slash shrc
+				
+8. Config file -- Update the config file in /config folder with the correct gcc, g++ and gfortran binary paths on your machine -- TODO UPDATE THIS WITH MORE INFO--
+		if you will rename the config file as default.cfg then you dont have to specify it each time while running on command line
+		
+9. Set Up the path
+	Go to root direcory and do . ./shrc and check if the SHRC environment variable is set to the root directoty(SPCE root)
+	
+10. TO RUN SPEC:
+		a.) To run the entire specint suit
+				runspec --config newint.cfg --nobuild --reportable int
+				(Here --config flag can be omitted if you have renamed your config file as default.cfg)
+		b.) TO run some specific benchmark program from the specint suit
+				runspec --config mat_dec25j.cfg --noreportable 482.sphinx3
+				
+				Available benchmark in the specint suit
+					
+					400.perlbench	C	PERL Programming Language
+					401.bzip2	C	Compression
+					403.gcc	C	C Compiler
+					429.mcf	C	Combinatorial Optimization
+					445.gobmk	C	Artificial Intelligence: go
+					456.hmmer	C	Search Gene Sequence
+					458.sjeng	C	Artificial Intelligence: chess
+					462.libquantum	C	Physics: Quantum Computing
+					464.h264ref	C	Video Compression
+					471.omnetpp	C++	Discrete Event Simulation
+					473.astar	C++	Path-finding Algorithms
+					483.xalancbmk	C++	XML Processing
+				
+				
+		
+		
+
+
+runspec --config mat_dec25j.cfg --noreportable 482.sphinx3		
+		

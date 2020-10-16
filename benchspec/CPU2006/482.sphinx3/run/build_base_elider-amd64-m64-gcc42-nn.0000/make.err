@@ -1,0 +1,10 @@
+live.c: In function 'live_utt_summary':
+live.c:367:5: warning: format '%d' expects argument of type 'int', but argument 3 has type 'long int' [-Wformat]
+lm.c: In function 'lm_read_dump':
+lm.c:562:8: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+lm.c:570:8: warning: ignoring return value of 'fread', declared with attribute warn_unused_result [-Wunused-result]
+new_fe.c: In function 'fe_process_utt':
+new_fe.c:193:2: warning: format '%d' expects argument of type 'int', but argument 5 has type 'long unsigned int' [-Wformat]
+utt.c: In function 'utt_end':
+utt.c:273:7: warning: format '%d' expects argument of type 'int', but argument 3 has type 'long int' [-Wformat]
+utt.c:295:11: warning: ignoring return value of 'getcwd', declared with attribute warn_unused_result [-Wunused-result]

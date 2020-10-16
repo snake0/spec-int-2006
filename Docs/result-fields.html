@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html
+      PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta name="Author" content="$Id$" />
+<title>SPEC CPU2006 Result File Fields</title>
+
+<style type="text/css" id="internalScreen">
+<!--
+body { background: white; color: black; font-family: serif; }
+h1,h2,h3,h4,h5,h6 { font-family: sans-serif; background: white; color: rgb(65, 105, 225); }
+p.overview   {margin-left:2.0cm; font-size: 100%; margin-top:0.1cm; margin-bottom:0cm}
+p.contentsl1 {margin-left:0.5cm; font-size: 120%; margin-top:0.3cm; margin-bottom:0.1cm}
+p.contentsl2 {margin-left:1.0cm; font-size: 100%; margin-top:0.1cm; margin-bottom:0.1cm}
+p.contentsl3 {margin-left:2.0cm; font-size: 80%;  margin-top:0cm;   margin-bottom:0.1cm}
+p.example    {margin-left:+1.0cm; font-size: 90%;  margin-top:0.2cm; margin-bottom:0.2cm}
+.codeexample {margin-left:2.0cm; font-size: 100%; margin-top:0.2cm; margin-bottom:0.2cm; font-family:monospace} 
+span.codeexample {margin-left:0; font-size: 100%; font-family:monospace; white-space:nowrap} 
+p.tight       {margin-bottom:0cm;}
+.tt { font-family: monospace }
+.check {font-size: 110%; color:red; background: white; } 
+.bold {font-weight: bold} 
+li { margin-bottom: 0.1em; }
+li.example   {margin-left:+1.0cm; font-size: 90%;  margin-top:0.0cm; margin-bottom:0.0cm}
+.center { text-align: center; }
+a:link, a:visited { text-decoration: none; background: white; color: black; border-bottom: thin dashed black; }
+a:visited { background: white; color:black; border-bottom: thin dashed red; }
+
+/* Style for the non-image W3C marking at the bottom of the page, courtesy of
+ * Marek Prokop (http://www.sovavsiti.cz/css/w3c_buttons.html)
+ */
+.w3cbutton3 {
+  margin: 1em 1em 0 0;
+  width: 9em;
+  border: 1px solid #ccc;
+  font-family: helvetica,arial,sans-serif;
+  font-size: 70%;
+  font-weight: bold;
+  float: left;
+}
+.w3cbutton3 a {
+  display: block;
+  width: 100%;
+}
+.w3cbutton3 a:link,
+.w3cbutton3 a:visited,
+.w3cbutton3 a:hover {
+  background-color: #fc6;
+  color: #000;
+  text-decoration: none;
+  border-bottom: none;
+}
+.w3cbutton3 span.w3c {
+  padding: 0 0.4em;
+  background-color: #fff;
+  color: #0c479d;
+}
+
+-->
+</style>
+</head>
+
+<body>
+<!-- This should be a pretty complete list of links that are likely to come
+     out of any CPU2006 result.
+-->
+<div class="center">
+<h1>SPEC CPU2006 Result File Fields</h1>
+<h4>Last updated: 25 June 2006 jlh/cds</h4>
+
+<p><strong>ABSTRACT</strong><br />
+This document describes the various fields in a SPEC CPU2006 result disclosure.</p>
+</div>
+
+<hr />
+<p>(To check for possible updates to this document, please see
+<a href="http://www.spec.org/cpu2006/">http://www.spec.org/cpu2006/</a>)</p>
+
+<h3>Overview</h3>
+<p>Selecting one of the following will take you to the detailed table of
+contents for that section:</p>
+
+<p class="overview">1. <a href="#Dtoc_1">Benchmarks           </a></p>
+<p class="overview">2. <a href="#Dtoc_2">Major sections       </a></p>
+<p class="overview">3. <a href="#Dtoc_3">Hardware description </a></p>
+<p class="overview">4. <a href="#Dtoc_4">Software description </a></p>
+
+<h3>Detailed Contents</h3>
+  <p class="contentsl1"><a name="Dtoc_1" href="#benchmarks">1.</a> Benchmarks</p>
+  <p class="contentsl2"><a href="#sec_suite"    >1.1 </a>Benchmarks by suite</p>
+  <p class="contentsl3"><a href="#sec_CFP2006"  >1.1.1 </a>Benchmarks in the CFP2006 suite</p>
+  <p class="contentsl3"><a href="#sec_CINT2006" >1.1.2 </a>Benchmarks in the CINT2006 suite</p>
+
+  <p class="contentsl2"><a href="#sec_lang"                      >1.2 </a>Benchmarks by language</p>
+  <p class="contentsl3"><a href="#Cbenchmarks"                   >1.2.1 </a>C Benchmarks</p>
+  <p class="contentsl3"><a href="#CXXbenchmarks"                 >1.2.2 </a>C++ Benchmarks</p>
+  <p class="contentsl3"><a href="#Fortranbenchmarks"             >1.2.3 </a>Fortran Benchmarks</p>
+  <p class="contentsl3"><a href="#BenchmarksusingbothFortranandC">1.2.4 </a>Benchmarks using both Fortran and C</p>
+
+  <p class="contentsl1"><a name="Dtoc_2" href="#sections">2.</a> Major sections</p>
+  <p class="contentsl2"><a href="#sec_topbar"           >2.1    </a>Top bar</p>
+  <p class="contentsl3"><a href="#CFP2006Result"        >2.1.1  </a>CFP2006 Result</p>
+  <p class="contentsl3"><a href="#CINT2006Result"       >2.1.2  </a>CINT2006 Result</p>
+  <p class="contentsl3"><a href="#SPECfp2006"           >2.1.3  </a>SPECfp2006</p>
+  <p class="contentsl3"><a href="#SPECfpbase2006"       >2.1.4  </a>SPECfp_base2006</p>
+  <p class="contentsl3"><a href="#SPECfprate2006"       >2.1.5  </a>SPECfp_rate2006</p>
+  <p class="contentsl3"><a href="#SPECfpratebase2006"   >2.1.6  </a>SPECfp_rate_base2006</p>
+  <p class="contentsl3"><a href="#SPECint2006"          >2.1.7  </a>SPECint2006</p>
+  <p class="contentsl3"><a href="#SPECintbase2006"      >2.1.8  </a>SPECint_base2006</p>
+  <p class="contentsl3"><a href="#SPECintrate2006"      >2.1.9  </a>SPECint_rate2006</p>
+  <p class="contentsl3"><a href="#SPECintratebase2006"  >2.1.10 </a>SPECint_rate_base2006</p>
+  <p class="contentsl3"><a href="#CPU2006license"       >2.1.11 </a>CPU2006 license #</p>
+  <p class="contentsl3"><a href="#HardwareAvailability" >2.1.12 </a>Hardware Availability</p>
+  <p class="contentsl3"><a href="#SoftwareAvailability" >2.1.13 </a>Software Availability</p>
+  <p class="contentsl3"><a href="#Testdate"             >2.1.14 </a>Test date</p>
+  <p class="contentsl3"><a href="#Testsponsor"          >2.1.15 </a>Test sponsor</p>
+  <p class="contentsl3"><a href="#Testedby"             >2.1.16 </a>Tested by</p>
+
+  <p class="contentsl2"><a href="#ResultsTable" >2.2 </a>Result table</p>
+  <p class="contentsl3"><a href="#Benchmark"    >2.2.1 </a>Benchmark</p>
+  <p class="contentsl3"><a href="#Copies"       >2.2.2 </a>Copies</p>
+  <p class="contentsl3"><a href="#Seconds"      >2.2.3 </a>Seconds</p>
+  <p class="contentsl3"><a href="#Ratio"        >2.2.4 </a>Ratio</p>
+
+  <p class="contentsl2"                                   >2.3 Notes/Tuning Information</p>
+  <p class="contentsl3"><a href="#CompilerInvocationNotes">2.3.1 </a>Compiler Invocation Notes</p>
+  <p class="contentsl3"><a href="#PortabilityNotes"       >2.3.2 </a>Portability Notes</p>
+  <p class="contentsl3"><a href="#BaseTuningNotes"        >2.3.3 </a>Base Tuning Notes</p>
+  <p class="contentsl3"><a href="#PeakTuningNotes"        >2.3.4 </a>Peak Tuning Notes</p>
+  <p class="contentsl3"><a href="#OperatingSystemNotes"   >2.3.5 </a>Operating System Notes</p>
+  <p class="contentsl3"><a href="#PlatformNotes"          >2.3.6 </a>Platform Notes</p>
+  <p class="contentsl3"><a href="#ComponentNotes"         >2.3.7 </a>Component Notes</p>
+  <p class="contentsl3"><a href="#GeneralNotes"           >2.3.8 </a>General Notes</p>
+
+  <p class="contentsl2"><a href="#CompilationFlagsUsed">2.4 </a>Compilation Flags Used</p>
+  <p class="contentsl3"><a href="#CompilerInvocation"  >2.4.1</a>Compiler Invocation</p>
+  <p class="contentsl3"><a href="#PortabilityFlags"    >2.4.2</a>Portability Flags</p>
+  <p class="contentsl3"><a href="#OptimizationFlags"   >2.4.3</a>Optimization Flags</p>
+  <p class="contentsl3"><a href="#OtherFlags"          >2.4.4</a>Other Flags</p>
+  <p class="contentsl3"><a href="#UnknownFlags"        >2.4.5</a>Unknown Flags</p>
+  <p class="contentsl3"><a href="#ForbiddenFlags"      >2.4.6</a>Forbidden Flags</p>
+
+  <p class="contentsl2"><a href="#Errors"    >2.5 </a>Errors</p>
+
+  <p class="contentsl1"><a name="Dtoc_3" href="#Hardware">3.</a> Hardware description</p>
+  <p class="contentsl3"><a href="#CPUName"           >3.1  </a>CPU Name</p>
+  <p class="contentsl3"><a href="#CPUCharacteristics">3.2  </a>CPU Characteristics</p>
+  <p class="contentsl3"><a href="#CPUMHz"            >3.3  </a>CPU MHz</p>
+  <p class="contentsl3"><a href="#FPU"               >3.4  </a>FPU</p>
+  <p class="contentsl3"><a href="#CPUsenabled"       >3.5  </a>CPU(s) enabled</p>
+  <p class="contentsl3"><a href="#CPUsorderable"     >3.6  </a>CPU(s) orderable</p>
+  <p class="contentsl3"><a href="#PrimaryCache"      >3.7  </a>Primary Cache</p>
+  <p class="contentsl3"><a href="#SecondaryCache"    >3.8  </a>Secondary Cache</p>
+  <p class="contentsl3"><a href="#L3Cache"           >3.9 </a>L3 Cache</p>
+  <p class="contentsl3"><a href="#OtherCache"        >3.10 </a>Other Cache</p>
+  <p class="contentsl3"><a href="#Memory"            >3.11 </a>Memory</p>
+  <p class="contentsl3"><a href="#DiskSubsystem"     >3.12 </a>Disk Subsystem</p>
+  <p class="contentsl3"><a href="#OtherHardware"     >3.13 </a>Other Hardware</p>
+
+  <p class="contentsl1"><a name="Dtoc_4" href="#Software">4.</a> Software description</p>
+  <p class="contentsl3"><a href="#OperatingSystem"       >4.1 </a>Operating System</p>
+  <p class="contentsl3"><a href="#AutoParallel"          >4.2 </a>Auto Parallel</p>
+  <p class="contentsl3"><a href="#Compiler"              >4.3 </a>Compiler</p>
+  <p class="contentsl3"><a href="#FileSystem"            >4.4 </a>File System</p>
+  <p class="contentsl3"><a href="#SystemState"           >4.5 </a>System State</p>
+  <p class="contentsl3"><a href="#BasePointers"          >4.6 </a>Base Pointers</p>
+  <p class="contentsl3"><a href="#PeakPointers"          >4.7 </a>Peak Pointers</p>
+  <p class="contentsl3"><a href="#OtherSoftware"         >4.8 </a>Other Software</p>
+
+<hr />
+<h1><a name="benchmarks">1. SPEC CPU2006 Benchmarks</a></h1>
+
+<h2><a name="sec_suite">1.1 Benchmarks by suite</a></h2>
+
+<h3><a name="sec_CFP2006">1.1.1 Benchmarks in the CFP2006 suite</a></h3>
+<p>The CFP2006 suite is comprised of 17 floating-point compute intensive codes; 6 in Fortran, 3 in C, 4 in C++, and 4 which contain both Fortran and C.</p>
+
+<ol>
+  <li><a name="_410bwaves" href="http://www.spec.org/cpu2006/docs/410.bwaves.html">410.bwaves</a> (Fortran)</li>
+  <li><a name="_416gamess" href="http://www.spec.org/cpu2006/docs/416.gamess.html">416.gamess</a> (Fortran)</li>
+  <li><a name="_433milc" href="http://www.spec.org/cpu2006/docs/433.milc.html">433.milc</a> (C)</li>
+  <li><a name="_434zeusmp" href="http://www.spec.org/cpu2006/docs/434.zeusmp.html">434.zeusmp</a> (Fortran)</li>
+  <li><a name="_435gromacs" href="http://www.spec.org/cpu2006/docs/435.gromacs.html">435.gromacs</a> (Fortran and C)</li>
+  <li><a name="_436cactusADM" href="http://www.spec.org/cpu2006/docs/436.cactusADM.html">436.cactusADM</a> (Fortran and C)</li>
+  <li><a name="_437leslie3d" href="http://www.spec.org/cpu2006/docs/437.leslie3d.html">437.leslie3d</a> (Fortran)</li>
+  <li><a name="_444namd" href="http://www.spec.org/cpu2006/docs/444.namd.html">444.namd</a> (C++)</li>
+  <li><a name="_447dealII" href="http://www.spec.org/cpu2006/docs/447.dealII.html">447.dealII</a> (C++)</li>
+  <li><a name="_450soplex" href="http://www.spec.org/cpu2006/docs/450.soplex.html">450.soplex</a> (C++)</li>
+  <li><a name="_453povray" href="http://www.spec.org/cpu2006/docs/453.povray.html">453.povray</a> (C++)</li>
+  <li><a name="_454calculix" href="http://www.spec.org/cpu2006/docs/454.calculix.html">454.calculix</a> (Fortran and C)</li>
+  <li><a name="_459GemsFDTD" href="http://www.spec.org/cpu2006/docs/459.GemsFDTD.html">459.GemsFDTD</a> (Fortran)</li>
+  <li><a name="_465tonto" href="http://www.spec.org/cpu2006/docs/465.tonto.html">465.tonto</a> (Fortran)</li>
+  <li><a name="_470lbm" href="http://www.spec.org/cpu2006/docs/470.lbm.html">470.lbm</a> (C)</li>
+  <li><a name="_481wrf" href="http://www.spec.org/cpu2006/docs/481.wrf.html">481.wrf</a> (Fortran and C)</li>
+  <li><a name="_482sphinx3" href="http://www.spec.org/cpu2006/docs/482.sphinx3.html">482.sphinx3</a> (C)</li>
+</ol>
+
+<h3><a name="sec_CINT2006">1.1.2 Benchmarks in the CINT2006 suite</a></h3>
+<p>The CINT2006 suite is comprised of 12 integer-compute-intensive codes; 9 in C and 3 in C++.</p>
+
+<ol>
+  <li><a name="_400perlbench" href="http://www.spec.org/cpu2006/docs/400.perlbench.html">400.perlbench</a> (C)</li>
+  <li><a name="_401bzip2" href="http://www.spec.org/cpu2006/docs/401.bzip2.html">401.bzip2</a> (C)</li>
+  <li><a name="_403gcc" href="http://www.spec.org/cpu2006/docs/403.gcc.html">403.gcc</a> (C)</li>
+  <li><a name="_429mcf" href="http://www.spec.org/cpu2006/docs/429.mcf.html">429.mcf</a> (C)</li>
+  <li><a name="_445gobmk" href="http://www.spec.org/cpu2006/docs/445.gobmk.html">445.gobmk</a> (C)</li>
+  <li><a name="_456hmmer" href="http://www.spec.org/cpu2006/docs/456.hmmer.html">456.hmmer</a> (C)</li>
+  <li><a name="_458sjeng" href="http://www.spec.org/cpu2006/docs/458.sjeng.html">458.sjeng</a> (C)</li>
+  <li><a name="_462libquantum" href="http://www.spec.org/cpu2006/docs/462.libquantum.html">462.libquantum</a> (C)</li>
+  <li><a name="_464h264ref" href="http://www.spec.org/cpu2006/docs/464.h264ref.html">464.h264ref</a> (C)</li>
+  <li><a name="_471omnetpp" href="http://www.spec.org/cpu2006/docs/471.omnetpp.html">471.omnetpp</a> (C++)</li>
+  <li><a name="_473astar" href="http://www.spec.org/cpu2006/docs/473.astar.html">473.astar</a> (C++)</li>
+  <li><a name="_483xalancbmk" href="http://www.spec.org/cpu2006/docs/483.xalancbmk.html">483.xalancbmk</a> (C++)</li>
+</ol>
+
+<h2><a name="sec_lang">1.2 Benchmarks by language</a></h2>
+
+<h3><a name="Cbenchmarks">1.2.1 C Benchmarks</a></h3>
+<p>(Also, &quot;<a name="Cbenchmarksexceptasnotedbelow">C Benchmarks (except as noted below)</a>&quot;)</p>
+<p>Nine benchmarks in the CINT2006 suite are written in C:</p>
+<ul>
+  <li><a href="http://www.spec.org/cpu2006/docs/400.perlbench.html">400.perlbench</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/401.bzip2.html">401.bzip2</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/403.gcc.html">403.gcc</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/429.mcf.html">429.mcf</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/445.gobmk.html">445.gobmk</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/456.hmmer.html">456.hmmer</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/458.sjeng.html">458.sjeng</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/462.libquantum.html">462.libquantum</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/464.h264ref.html">464.h264ref</a></li>
+</ul>
+
+<p>Three benchmarks in the CFP2006 suite are written in C:</p>
+<ul>
+  <li><a href="http://www.spec.org/cpu2006/docs/433.milc.html">433.milc</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/470.lbm.html">470.lbm</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/482.sphinx3.html">482.sphinx3</a></li>
+</ul>
+
+<h3><a name="CXXbenchmarks">1.2.2 C++ Benchmarks</a></h3>
+<p>(Also, &quot;<a name="CXXbenchmarksexceptasnotedbelow">C++ Benchmarks (except as noted below)</a>&quot;)</p>
+<p>Three benchmarks in the CINT2006 suite are written in C++:</p>
+<ul>
+  <li><a href="http://www.spec.org/cpu2006/docs/471.omnetpp.html">471.omnetpp</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/473.astar.html">473.astar</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/483.xalancbmk.html">483.xalancbmk</a></li>
+</ul>
+
+<p>Four benchmarks in the CFP2006 suite are written in C++:</p>
+<ul>
+  <li><a href="http://www.spec.org/cpu2006/docs/444.namd.html">444.namd</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/447.dealII.html">447.dealII</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/450.soplex.html">450.soplex</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/453.povray.html">453.povray</a></li>
+</ul>
+
+<h3><a name="Fortranbenchmarks">1.2.3 Fortran Benchmarks</a></h3>
+<p>(Also, &quot;<a name="Fortranbenchmarksexceptasnotedbelow">Fortran Benchmarks (except as noted below)</a>&quot;)</p>
+<p>There are no benchmarks in the CINT2006 suite written in Fortran.</p>
+
+<p>Six benchmarks in the CFP2006 suite are written in Fortran:</p>
+<ul>
+  <li><a href="http://www.spec.org/cpu2006/docs/410.bwaves.html">410.bwaves</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/416.gamess.html">416.gamess</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/434.zeusmp.html">434.zeusmp</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/437.leslie3d.html">437.leslie3d</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/459.GemsFDTD.html">459.GemsFDTD</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/465.tonto.html">465.tonto</a></li>
+</ul>
+
+<h3><a name="BenchmarksusingbothFortranandC">1.2.4 Benchmarks using both Fortran and C</a></h3>
+<p>(Also, &quot;<a name="BenchmarksusingbothFortranandCexceptasnotedbelow">Benchmarks using both Fortran and C (except as noted below)</a>&quot;)</p>
+<p>There are no benchmarks in the CINT2006 suite written in a mixture of Fortran and C.</p>
+
+<p>Four benchmarks in the CFP2006 suite are written using both Fortran and C:</p>
+<ul>
+  <li><a href="http://www.spec.org/cpu2006/docs/435.gromacs.html">435.gromacs</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/436.cactusADM.html">436.cactusADM</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/454.calculix.html">454.calculix</a></li>
+  <li><a href="http://www.spec.org/cpu2006/docs/481.wrf.html">481.wrf</a></li>
+</ul>
+
+<hr />
+<h1><a name="sections">2. Major sections</a></h1>
+
+<h2><a name="sec_topbar">2.1 Top bar</a></h2>
+
+<p>More detailed information about metrics is in sections
+<a href="runrules.html#rule_4.3.1">4.3.1</a> and
+<a href="runrules.html#rule_4.3.2">4.3.2</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="CFP2006Result">2.1.1 CFP2006 Result</a></h3>
+<p>This result is from the CFP2006 suite.</p>
+
+<h3><a name="CINT2006Result">2.1.2 CINT2006 Result</a></h3>
+<p>This result is from the CINT2006 suite.</p>
+
+<h3><a name="SPECfp2006">2.1.3 SPECfp2006</a></h3>
+<p>The geometric mean of seventeen normalized ratios (one for each floating
+point benchmark) when compiled with aggressive optimization for each
+benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.1">section 4.3.1</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="SPECfpbase2006">2.1.4 SPECfp_base2006</a></h3>
+<p>The geometric mean of seventeen normalized ratios when compiled with
+conservative optimization for each benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.1">section 4.3.1</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="SPECfprate2006">2.1.5 SPECfp_rate2006</a></h3>
+<p>The geometric mean of seventeen normalized throughput ratios when compiled
+with aggressive optimization for each benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.2">section 4.3.2</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="SPECfpratebase2006">2.1.6 SPECfp_rate_base2006</a></h3>
+<p>The geometric mean of seventeen normalized throughput ratios when compiled
+with conservative optimization for each benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.2">section 4.3.2</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="SPECint2006">2.1.7 SPECint2006</a></h3>
+<p>The geometric mean of twelve normalized ratios (one for each integer
+benchmark) when compiled with aggressive optimization for each benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.1">section 4.3.1</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="SPECintbase2006">2.1.8 SPECint_base2006</a></h3>
+<p>The geometric mean of twelve normalized ratios when compiled with
+conservative optimization for each benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.1">section 4.3.1</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="SPECintrate2006">2.1.9 SPECint_rate2006</a></h3>
+<p>The geometric mean of twelve normalized throughput ratios when compiled
+with aggressive optimization for each benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.2">section 4.3.2</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="SPECintratebase2006">2.1.10 SPECint_rate_base2006</a></h3>
+<p>The geometric mean of twelve normalized throughput ratios when compiled
+with conservative optimization for each benchmark.</p>
+
+<p>More detailed information about this metric is in
+<a href="runrules.html#rule_4.3.2">section 4.3.2</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="CPU2006license">2.1.11 CPU2006 license #</a></h3>
+<p>The SPEC CPU license number of the organization or individual that ran the
+result.</p>
+
+<h3><a name="HardwareAvailability">2.1.12 Hardware Availability</a></h3>
+<p>(Also, &quot;<a name="HardwareAvail">Hardware Avail</a>&quot;)</p>
+<p>The date when <strong>all</strong> the hardware necessary to run the
+result is generally available.  For example, if the CPU is available in
+Aug-2005, but the memory is not available until Oct-2005, then the hardware
+availability date is Oct-2005 (unless some other component pushes it out
+farther).</p>
+
+<h3><a name="SoftwareAvailability">2.1.13 Software Availability</a></h3>
+<p>(Also, &quot;<a name="SoftwareAvail">Software Avail</a>&quot;)</p>
+<p>The date when <strong>all</strong> the software necessary to run the
+result is generally available.  For example, if the operating system is
+available in Aug-2005, but the compiler or other libraries are not available
+until Oct-2005, then the software availability date is Oct-2005 (unless some
+other component pushes it out farther).</p>
+
+<h3><a name="Testdate">2.1.14 Test date</a></h3>
+<p>The date when the test is run.  This value is supplied by the tester; the
+time reported by the system under test is recorded in the raw result file.</p>
+
+<h3><a name="Testsponsor">2.1.15 Test sponsor</a></h3>
+<p>The name of the organization or individual that sponsored the test.
+Generally, this is the name of the license holder.</p>
+
+<h3><a name="Testedby">2.1.16 Tested by</a></h3>
+<p>The name of the organization or individual that ran the test.  If there are
+installations in multiple geographic locations, sometimes that will also be
+listed in this field.  This field only appears if the test sponsor is different
+than the the organization that ran the benchmarks.</p>
+
+
+<h2><a name="ResultsTable">2.2 Result table</a></h2>
+<p>In addition to the graph, the results of the individual benchmark runs
+are also presented in table form.</p>
+
+<h3><a name="Benchmark">2.2.1 Benchmark</a></h3>
+<p>The name of the benchmark.</p>
+
+<h3><a name="Copies">2.2.2 Copies</a></h3>
+<p>For throughput (rate) runs, this column indicates the number of benchmark
+copies that were run simultaneously.</p>
+
+<h3><a name="Seconds">2.2.3 Seconds</a></h3>
+<p>For speed runs, this is the amount of time in seconds that the benchmark
+took to run.  For throughput (rate) runs, it is the amount of time between
+the start of the first copy and the end of the last copy.</p>
+
+<h3><a name="Ratio">2.2.4 Ratio</a></h3>
+<p>This is the ratio of benchmark <a href="#Runtime">run time</a> to the
+run time on the reference platform.</p>
+
+<h2><a name="NotesTuningInformation">2.3 Notes/Tuning Information</a></h2>
+<p>(Also, &quot;<a name="NotesTuningInformationContinued">Notes/Tuning Information (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about compiler flags used,
+system settings, and other items that do not have dedicated fields elsewhere
+in the result.</p>
+
+<p>Run rules relating to these items can be found in
+<a href="runrules.html#rule_4.2.4">section 4.2.4</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="CompilerInvocationNotes">2.3.1 </a>Compiler Invocation Notes</h3>
+<p>(Also, &quot;<a name="CompilerInvocationNotesContinued">Compiler Invocation Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about how the various compilers were invoked,
+whether any special paths had to be used, etc.
+</p>
+
+<h3><a name="PortabilityNotes"       >2.3.2 </a>Portability Notes</h3>
+<p>(Also, &quot;<a name="PortabilityNotesContinued">Portability Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about portability options and flags used to build the
+various benchmarks.</p>
+
+<h3><a name="BaseTuningNotes"        >2.3.3 </a>Base Tuning Notes</h3>
+<p>(Also, &quot;<a name="BaseTuningNotesContinued">Base Tuning Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about baseline optimization options and flags used to build the
+various benchmarks.</p>
+
+<h3><a name="PeakTuningNotes"        >2.3.4 </a>Peak Tuning Notes</h3>
+<p>(Also, &quot;<a name="PeakTuningNotesContinued">Peak Tuning Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about peak optimization options and flags used to build the
+various benchmarks.</p>
+
+<h3><a name="OperatingSystemNotes"   >2.3.5 </a>Operating System Notes</h3>
+<p>(Also, &quot;<a name="OperatingSystemNotesContinued">Operating System Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about changes to the default operating system state and
+other OS-specific tuning information.</p>
+
+<h3><a name="PlatformNotes"          >2.3.6 </a>Platform Notes</h3>
+<p>(Also, &quot;<a name="PlatformNotesContinued">Platform Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about changes to the default hardware state and
+other non-OS-specific tuning information.</p>
+
+<h3><a name="ComponentNotes"         >2.3.7 </a>Component Notes</h3>
+<p>(Also, &quot;<a name="ComponentNotesContinued">Component Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides information about various components needed to build a particular
+system.  This section is only used if the system under test is built from parts and not sold as a whole system.</p>
+
+<h3><a name="GeneralNotes"           >2.3.8 </a>General Notes</h3>
+<p>(Also, &quot;<a name="GeneralNotesContinued">General Notes (Continued)</a>&quot;)</p>
+<p>This section is where the tester provides notes about things not covered in the other notes sections.</p>
+
+<h2><a name="CompilationFlagsUsed">2.4 Compilation Flags Used</a></h2>
+<p>(Also, &quot;<a name="CompilationFlagsUsedContinued">Compilation Flags Used (Continued)</a>&quot;)</p>
+<p>This section is generated automatically by the benchmark tools.  It
+details compilation flags used and provides links (in the HTML and PDF result
+formats) to descriptions of those flags.</p>
+
+<h3><a name="CompilerInvocation"  >2.4.1 </a>Compiler Invocation</h3>
+<p>(Also, &quot;<a name="BaseCompilerInvocation">Base Compiler Invocation</a>&quot; and &quot;<a name="PeakCompilerInvocation">Peak Compiler Invocation</a>&quot;)</p>
+<p>This section lists the ways that the various compilers are invoked.</p>
+
+<h3><a name="PortabilityFlags"    >2.4.2 </a>Portability Flags</h3>
+<p>(Also, &quot;<a name="BasePortabilityFlags">Base Portability Flags</a>&quot; and &quot;<a name="PeakPortabilityFlags">Peak Portability Flags</a>&quot;)</p>
+<p>This section lists compilation flags that are used for portability.</p>
+
+<h3><a name="OptimizationFlags"   >2.4.3 </a>Optimization Flags</h3>
+<p>(Also, &quot;<a name="BaseOptimizationFlags">Base Optimization Flags</a>&quot; and &quot;<a name="PeakOptimizationFlags">Peak Optimization Flags</a>&quot;)</p>
+<p>This section lists compilation flags that are used for optimization.</p>
+
+<h3><a name="OtherFlags"          >2.4.4 </a>Other Flags</h3>
+<p>(Also, &quot;<a name="BaseOtherFlags">Base Other Flags</a>&quot; and &quot;<a name="PeakOtherFlags">Peak Other Flags</a>&quot;)</p>
+<p>This section lists compilation flags that are classified as neither
+portability nor optimization.</p>
+
+<h3><a name="UnknownFlags"        >2.4.5 </a>Unknown Flags</h3>
+<p>(Also, &quot;<a name="BaseUnknownFlags">Base Unknown Flags</a>&quot; and &quot;<a name="PeakUnknownFlags">Peak Unknown Flags</a>&quot;)</p>
+<p>This section of the reports lists compilation flags used that are not
+described in any flags description file.  Results with unknown flags are marked
+"invalid" and may not be published.  This marking may be removed by
+reformatting the result using a flags file that describes all of the unknown
+flags.</p>
+
+<h3><a name="ForbiddenFlags"      >2.4.6 </a>Forbidden Flags</h3>
+<p>(Also, &quot;<a name="BaseForbiddenFlags">Base Forbidden Flags</a>&quot; and &quot;<a name="PeakForbiddenFlags">Peak Forbidden Flags</a>&quot;)</p>
+<p>This section of the reports lists compilation flags used that are
+designated as "forbidden".  Results using forbidden flags are marked
+"invalid" and may not be published.</p>
+
+
+<h2><a name="Errors">2.5 Errors</a></h2>
+<p>This section is automatically inserted by the benchmark tools when there
+are errors present that prevent the result from being a valid reportable
+result.</p>
+
+<hr />
+<h1><a name="Hardware">3. Hardware description</a></h1>
+
+<p>Run rules relating to these items can be found in
+<a href="runrules.html#rule_4.2.2">section 4.2.2</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="CPUName">3.1 CPU Name</a></h3>
+<p>A manufacturer-determined processor formal name.</p>
+
+<h3><a name="CPUCharacteristics">3.2 CPU Characteristics</a></h3>
+<p>Technical characteristics to help identify the processor.</p>
+
+<h3><a name="CPUMHz">3.3 CPU MHz</a></h3>
+<p>The clock frequency of the CPU, expressed in megahertz.</p>
+
+<h3><a name="FPU">3.4 FPU</a></h3>
+<p>The type of floating-point unit used in the system.</p>
+
+<h3><a name="CPUsenabled">3.5 CPU(s) enabled</a></h3>
+<p>The number of CPUs that were enabled and active during the benchmark run.  More information about 
+CPU counting is in the <a href="runrules.html#cpucount">run rules</a>.</p>
+
+<h3><a name="CPUsorderable">3.6 CPU(s) orderable</a></h3>
+<p>The number of CPUs that can be ordered in a system of the type
+being tested.</p>
+
+<h3><a name="PrimaryCache">3.7 Primary Cache</a></h3>
+<p>Description (size and organization) of the CPU's primary cache.  This cache is also referred to as
+"L1 cache".</p>
+
+<h3><a name="SecondaryCache">3.8 Secondary Cache</a></h3>
+<p>Description (size and organization) of the CPU's secondary cache.  This cache is also referred to as
+"L2 cache".</p>
+
+<h3><a name="L3Cache">3.9 L3 Cache</a></h3>
+<p>Description (size and organization) of the CPU's tertiary, or "Level 3" cache.</p>
+
+<h3><a name="OtherCache">3.10 Other Cache</a></h3>
+<p>Description (size and organization) of any other levels of cache memory.</p>
+
+<h3><a name="Memory">3.11 Memory</a></h3>
+<p>Description of the system main memory configuration.  End-user options that
+affect performance, such as arrangement of memory modules, interleaving,
+latency, etc, are documented here.</p>
+
+<h3><a name="DiskSubsystem">3.12 Disk Subsystem</a></h3>
+<p>A description of the disk subsystem (size, type, and RAID level if any) of
+the storage used to hold the benchmark tree during the run.</p>
+
+<h3><a name="OtherHardware">3.13 Other Hardware</a></h3>
+<p>Any additional equipment added to improve performance. </p> 
+
+
+<hr />
+<h1><a name="Software">4. Software description</a></h1>
+
+<p>Run rules relating to these items can be found in
+<a href="runrules.html#rule_4.2.3">section 4.2.3</a> of the CPU2006
+<a href="runrules.html">Run and Reporting Rules</a>.</p>
+
+<h3><a name="OperatingSystem">4.1 Operating System</a></h3>
+<p>The operating system name and version.  If there are patches applied that
+affect performance, they must be disclosed in the
+<a href="#NotesTuningInformation">notes</a>.</p>
+
+<h3><a name="AutoParallel">4.2 Auto Parallel</a></h3>
+<p>Were multiple threads/cores/chips employed by a parallelizing compiler? Note that a speed
+run that uses a parallelizing compiler causes a single instance of a benchmark
+to run using multiple CPUs; this is different from a rate run, which typically
+distributes N instances over N CPUs.</p>
+
+<h3><a name="Compiler">4.3 Compiler</a></h3>
+<p>The names and versions of all compilers, preprocessors, and performance
+libraries used to generate the result.</p>
+
+<h3><a name="FileSystem">4.4 File System</a></h3>
+<p>The type of the filesystem used to contain the run directories.</p>
+
+<h3><a name="SystemState">4.5 System State</a></h3>
+<p>The state (sometimes called "run level") of the system while the benchmarks
+were being run.  Generally, this is "single user", "multi-user", "default",
+etc.</p>
+
+<h3><a name="BasePointers">4.6 Base Pointers</a></h3>
+<p>Indicates whether all the benchmarks in base used 32-bit pointers, 64-bit pointers,
+or a mixture.  For example, if the C and C++ benchmarks used 32-bit pointers, and the 
+Fortran benchmarks used 64-bit pointers, then "32/64-bit" would be reported here.
+</p>
+
+<h3><a name="PeakPointers">4.7 Peak Pointers</a></h3>
+<p>Indicates whether all the benchmarks in peak used 32-bit pointers, 64-bit pointers,
+or a mixture.
+</p>
+
+<h3><a name="OtherSoftware">4.8 Other Software</a></h3>
+<p>Any performance-relevant non-compiler software used, including third-party libraries, accelerators, etc.</p>
+
+
+<hr />
+<p>Copyright &copy; 2006 Standard Performance Evaluation Corporation<br />
+All Rights Reserved</p>
+
+<div class="w3cbutton3">
+  <a href="http://validator.w3.org/check?uri=referer">
+    <span class="w3c">W3C</span>
+    <span class="spec">XHTML 1.0</span>
+  </a>
+</div>
+<div class="w3cbutton3">
+  <a href="http://jigsaw.w3.org/css-validator/check/referer">
+    <span class="w3c">W3C</span>
+    <span class="spec">CSS</span>
+  </a>
+</div>
+
+</body>
+</html>

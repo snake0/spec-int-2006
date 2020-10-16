@@ -1,0 +1,294 @@
+# This is a sample config file. It was tested with:
+#
+#      Compiler name/version:       [gcc, 4.2 snapshot 20060325]
+#      Compiler name/version:       [gcc, 4.2 snapshot 20060617]
+#      Operating system version:    [SLES9 SP3 for AMD64]
+#      Operating system version:    [SUSE 10.1 for AMD64]
+#      Hardware:                    [Opteron]
+#
+# If your platform uses different versions, different
+# hardware or operates in a different mode (for
+# example, 32- vs. 64-bit mode), there is the possibiliy
+# that this configuration file may not work as-is.
+#
+# Note that issues with compilation should be directed
+# to the compiler vendor. Information about SPEC techncial
+# support can be found in the techsupport document in the
+# Docs directory of your benchmark installation.
+#
+# Also note that this is a sample configuration. It
+# is expected to work for the environment in which
+# it was tested; it is not guaranteed that this is
+# the config file that will provide the best performance.
+#
+# Note that you might find a more recent config file for
+# your platform with the posted results at
+# www.spec.org/cpu2006
+####################################################################
+# linux64-amd64-gcc42.cfg
+# FSF's gcc 4.2 config file for
+# AMD64 64-bit (64 bit binaries on 64 bit host)
+# Config file for CPU2006	int and fp Base only
+#####################################################################
+
+ignore_errors = yes
+tune          = base
+ext           = elider-amd64-m64-gcc42-nn
+output_format = asc, pdf, Screen
+reportable    = 1
+teeout        = yes
+teerunout     = yes
+hw_avail = Dec-9999
+license_num = 9999
+test_sponsor = Turbo Computers
+prepared_by = 
+tester      =
+test_date = Dec-9999
+
+default=default=default=default:
+#####################################################################
+#
+# Compiler selection
+#
+#####################################################################
+#CC           = /usr/local/sles9/gcc42-0325/bin/gcc
+CC           = /usr/bin/gcc
+#CXX          = /usr/local/sles9/gcc42-0325/bin/g++
+CXX          = /usr/bin/g++
+#FC           = /usr/local/sles9/gcc42-0325/bin/gfortran
+FC           = /usr/bin/gfortran
+
+## HW config
+hw_model     = Tyan Thunder KKQS Pro (S4882)
+hw_cpu_name  = AMD Opteron 256
+hw_cpu_char  =
+hw_cpu_mhz   = 3000
+hw_fpu       = Integrated
+hw_nchips	= 1
+hw_ncores	= 1
+hw_ncoresperchip= 1
+hw_nthreadspercore = 1
+hw_ncpuorder = 1 chip
+hw_pcache    = 64 KB I + 64 KB D on chip per chip
+hw_scache    = 1 MB I+D on chip per chip
+hw_tcache    = None
+hw_ocache    = None
+hw_memory	= 2 GB (2 x 1GB DDR333 CL2.5)
+hw_disk		= SATA
+hw_vendor	= Tyan
+
+## SW config
+sw_os        = SUSE SLES9 (for AMD64)
+sw_file      = ext3
+sw_state     = runlevel 3
+sw_compiler  = gcc , g++ & gfortran 4.2.0325 (for AMD64)
+sw_avail = Dec-9999
+sw_other = None
+sw_auto_parallel = No
+sw_base_ptrsize = 64-bit
+sw_peak_ptrsize = Not Applicable
+
+
+#####################################################################
+# Optimization
+#####################################################################
+## Base is low opt
+default=base=default=default:
+COPTIMIZE     = -O2
+CXXOPTIMIZE  = -O2 
+FOPTIMIZE    = -O2
+
+notes0100= C base flags: $[COPTIMIZE]
+notes0110= C++ base flags: $[CXXOPTIMIZE]
+notes0120= Fortran base flags: $[FOPTIMIZE]
+
+#####################################################################
+# 32/64 bit Portability Flags - all
+#####################################################################
+
+default=base=default=default:
+notes25= PORTABILITY=-DSPEC_CPU_LP64 is applied to all benchmarks in base.
+PORTABILITY = -DSPEC_CPU_LP64
+
+
+#####################################################################
+# Portability Flags - INT
+#####################################################################
+
+400.perlbench=default=default=default:
+notes35    = 400.perlbench: -DSPEC_CPU_LINUX_X64
+CPORTABILITY= -DSPEC_CPU_LINUX_X64
+
+462.libquantum=default=default=default:
+notes60= 462.libquantum: -DSPEC_CPU_LINUX
+CPORTABILITY= -DSPEC_CPU_LINUX
+
+483.xalancbmk=default=default=default:
+CXXPORTABILITY= -DSPEC_CPU_LINUX
+
+
+#####################################################################
+# Portability Flags - FP
+#####################################################################
+481.wrf=default=default=default:
+wrf_data_header_size = 8
+CPORTABILITY = -DSPEC_CPU_CASE_FLAG -DSPEC_CPU_LINUX
+#####################################################################
+
+__MD5__
+400.perlbench=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:03:29 2014
+optmd5=6981d46583c4b21c60970376841b7736
+baggage=
+compile_options=\
+@eNq1UV1rgzAUffdXhLy7sDL2UNqCiVnrpiZYhW4vojZsDm1G0vX372rtF2MPLSyEcHPvuR/nXCYi\
+OUZkVxhildnVlbLkQ7fwFuuiNEVDVFOvlSHvFSnuSVlvwKqQC1cj/bWt9cbeaeT6S8lZzmQGZuxz\
+ms3BkDwJcyYSjhByxQjtzwmbh/Lx4eIfxNkqX4FzOBOrv02lZg4bI8am+NpBcZ8o6LOQ6RRfTI0d\
+IA5Nn0JvvoTYbwY9gvKYLfIj6EgJO6KrLNMgCt44hMSox0uRpB4NwiB9PS/aUx1a/oU4kMcOmC83\
+bGVQ+QqBJ7r8VNXWzrrcpj3IflKp0y/0bxH+H+WBmSIvXYCLdktpWrwfU2Tdks82/ANGDNQP
+exemd5=f59666c58eed1800f66098b34e26c0d5
+
+401.bzip2=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:03:35 2014
+optmd5=4f47d3e687336861833a1c812c761b51
+baggage=
+compile_options=\
+@eNqdkFFrwjAUhd/7Ky5574IiexAVbFolWzRhtg/6ImkM2uHMSJy/39s6qWPsYT2EcCE53HM+Jhdq\
+CPSiPQ3WXypjAz24D7z1TpdeH6k9Vjvr6d5Q3aNldcLJQIzHgfs8V+4UnhzE6UplbMtUgeMyzZJi\
+DqhY9uGm9sNWqOcB3DUK7ssbO4nYEBgbk/8mIY1RJi9S5WPyIxaJsBkunInpfIVvvyOSSNZmlfMF\
+32T4RfYbk5Jv+TThgufrR1+TnESCL187IPum8QeIkSvfrTmHCbRqq9QlRdqFTpeCzTJZ1DwfYF4B\
+15KiDQ==
+exemd5=4b27cbdfb21ded98b88b5081dc32dcad
+
+403.gcc=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:05:01 2014
+optmd5=ac6e92f3586284e5935181255dc71f48
+baggage=
+compile_options=\
+@eNqdkFFrgzAQx9/9FEfeNayMPZS2oNG12aIJqz60LxJt2BzajKTr51+0k3aMPcwjhOPyz939f4Sn\
+Yg74LA22ypybWln8pjt3y4OsjGyxapuDMvi1xvIOV83RZTX47mjQH6dGH22gwY+3IiElEYVLsziJ\
+ijX4NAAAn8/gEldNycTDPYyxsPrT1GrlkTkQskT/XQYNH3n0xEW+RD82Q54z5wY+snC9dW+/txwU\
+UZKRTTmKaIA83ncUOU3pPnElPht0gr/kYUQZzXe3zQY7yGM0e56A8hvRH3QWunpX9cmuel3bjeWr\
+xd48i6dQm+LRDUvDfFMyGvWo2g5d5vOiR3/D/QtrA62d
+exemd5=6a9e12cce4dc7c98de309e3c4cb54b51
+
+429.mcf=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:05:06 2014
+optmd5=a6f1f001e19ff277c348d36baeffb229
+baggage=
+compile_options=\
+@eNqdUctOwzAQvOcrLN+LRYU4VG2l2AmtwYmtxlEFFytJLQhKapSUfj+blD4A9UBWlrVaz3p2ZpmM\
+1ASRfdaQ1jb7srAteXM13Nkmy5usIrYqN7YhrwXJbklebiEr0AiOQ+5jV7pte+PQKEhUyAxTKaRx\
+ENJ0gSBb+7E2iQ6YUSupJZTkGB3i3GGEur9Dx5i27rMp7NxjE8TYDP93NNw3SvoolZ7hH3NiD6QC\
+4YPwFwm8/Z25R9AwZkvDTqhfIrAnOwKlecRfQgDIcd+m5Er7lAuuny//7tVhT/D4aYDP345dMWvq\
+8ndb7Np5h6vqY/msuPNCBENMHKIRyCJfL43gtDOuqvGBX6bdJi7W8AVagrbu
+exemd5=04cb632f17007960f9ee37777b14b9f1
+
+445.gobmk=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:05:36 2014
+optmd5=d4e40a7076cb38def25848fc1da53f4d
+baggage=
+compile_options=\
+@eNqdUV1vgyAUffdXEN4tWbPsoWmbKFplQyGrLtleiCLZXFQWbfv7B3b9WJY9VAI3B7jcwzkXs4Qv\
+ADoUPRpUf6ilGtCHbk0sqqLsiwappq5Uj94lKu5QWXcGSeCaqYH+2tW6G2YauMGWh1hgnhuYBqGf\
+RwbE3ksoMEs3JBIxcMnMrmNAdSebfaXs5owBcNkcHMeloqD84R6cxnLQ+16qtYMXAOMVvPXrcHzI\
+/EfGsxX8pQM6xgpDuKFetDV3fzWNGX6Y4lick24UCR1m+XlGEvIWmgJsPlbl7DnzfEJJ9npNPYqH\
+DiXp04Q2/Rj6j5dLXX4quRvWNq9pT8cXQ6xVNJji8RSNhizxslhQ4ltjmxYe+VluG3XVpW/7N8gb
+exemd5=ebdd2f0a871734ef56daedded05cc936
+
+456.hmmer=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:05:51 2014
+optmd5=7ebc44681b6081bc40913e2a00973898
+baggage=
+compile_options=\
+@eNqdkFFLwzAUhd/7K0Lea3CID2MbtGmd0XQJLn3YXkqaBa20iyRzv9/bzrGJ+GAvIVySe7jnfFQU\
+corIUXsSrD82xgby5jq49U7XXrfEts3OevJqiL4ldbOHzqAYjkPu49C4fbhxKM7WMqcVlSW0qyxP\
+yyWCisUEneoyUHF5f4fONQvu0xu7iOgUUTrH/3WCB6FIn4RUc/zDFo4gGSx84MlyDX+/LeJI9GKp\
+WMG2OYyIySCS4kUlKeNMba51g3MccbZ6HoHsm8YfIGaufrfmEBb9XNudny9p+pw8GwNoTEZYViTq\
+seIs7dG1HT7tF2VP+QrxFxNkp/Q=
+exemd5=17c4ecd2effee8eba09ad46941758ed0
+
+458.sjeng=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:05:59 2014
+optmd5=16d58fa6437401be3410e882afc43a73
+baggage=
+compile_options=\
+@eNqdkFFrwjAUhd/7Ky5574IiexAVbFolWzRhtg/6ImkM2uHMSJy/39s6qWPsYT2EcCE53HM+Jhdq\
+CPSiPQ3WXypjAz24D7z1TpdeH6k9Vjvr6d5Q3aNldcLJQIzHgfs8V+4UnhzE6UplbMtUgeMyzZJi\
+DqhY9uGm9sNWqOcB3DUK7ssbO4nYEBgbk/8mIY1RJi9S5WPyIxaJsBkunInpfIVvvyOSSNZmlfMF\
+32T4RfYbk5Jv+TThgufrR1+TnESCL187IPum8QeIkSvfrTmHCbRqq9QlRdqFTpeCzTJZ1DwfYF4B\
+15KiDQ==
+exemd5=ce35bb16a11a2217afc19c769f73c11a
+
+462.libquantum=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:06:05 2014
+optmd5=7b4ba94ecb89a9686a583b8145556370
+baggage=
+compile_options=\
+@eNq1UdFKwzAUfe9XhLzX4BAfxjZo0zqj7RJcCurLSLOglXaRZO77vekq2xBBB15Cci85Jzn3XMpL\
+MUZkpxzxxu0abTx5tR3saq1qp1pi2mZtHHnRRF2SutlAplEMyyL7vm3sxl9YFGdLkdMVFRWkiyxP\
+qzmCiPkI7eMAWBXi+uqkZovqcYChibcfTptZRMeI0in+qzLcE3l6x4Wc4hOZOIJO4cObIpkv4e67\
+ZBzxQBaSlew5Bwgf9STBH2SSsoLJp2Ne38nw6k+I0BuO4Lg/w+XBwF96N7H1m9FbPwu8tvty9GBA\
+sKbIzvH0n2wBPWUib6FMw0DaDu8l8irM7mhwn67LxNI=
+exemd5=e6396484669081cac515e6d5ccd296a0
+
+464.h264ref=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:06:27 2014
+optmd5=a2037e0eef980460666051941c34258c
+baggage=
+compile_options=\
+@eNqdkFFLwzAUhd/7K0Lea3CID2MbtGmd0XQJLn3YXkqaBa20iyRzv9/bzrGJ+GAvIVySe7jnfFQU\
+corIUXsSrD82xgby5jq49U7XXrfEts3OevJqiL4ldbOHzqAYjkPu49C4fbhxKM7WMqcVlSW0qyxP\
+yyWCisUEneoyUHF5f4fONQvu0xu7iOgUUTrH/3WCB6FIn4RUc/zDFo4gGSx84MlyDX+/LeJI9GKp\
+WMG2OYyIySCS4kUlKeNMba51g3MccbZ6HoHsm8YfIGaufrfmEBb9XNudny9p+pw8GwNoTEZYViTq\
+seIs7dG1HT7tF2VP+QrxFxNkp/Q=
+exemd5=107578d35bb72b0f2fe1ddbdb1d5211f
+
+471.omnetpp=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:07:09 2014
+optmd5=fd6c73197294c435b44f3cc33ef4ab59
+baggage=
+compile_options=\
+@eNqdUdFKwzAUfe9XXPI6uqCID2MbrGmd0a4JroXpS2nTMCNdI0nX7zfrnJsoiL2Q3ITck3PPuYSt\
++ARwVxhspemUkBa/6p3bi6ooTVFjWatKGrwVuLjCpWrwdjQCX4CvQb+3Sjd2rMEP1zwiOeGZOyZh\
+FGRL8OnYLb1rZJurRtT7Srp7rUqLZdMpAwA+u4ZD+kLnMb+9gWNMrd4bIecemQDZbGbov12iTyQL\
+HhhPZ+hb08hzuh3jXbxYrt3bTwF9RRAl5D4/Ff2hCHnsSMhTuqIvkUM4gf0/nD2li4DGNH2+JOv1\
+Ii+myeOAKZwM/N0/mOryTYrWzuEcZwMO5sThEFcHiuz5WHYYxMUUPgB2G71R
+exemd5=34a05112cb1fff0618b26ebdb46b9866
+
+473.astar=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:07:16 2014
+optmd5=ca8c891b08d0b3c5e7c13cc2dce3aa0e
+baggage=
+compile_options=\
+@eNqdUU1vwiAYvvdXvOFqOrJl2cGoSUuZY6uFzDZRLw1F4ro4WcD5+0frFtu4y/oegMDz5PmA8IUY\
+Az5Ji522p1pph9/Mh1/lVlZW7rHe11tt8U5heYur+oB3oxGECkID5vNYm4O7MRAmS0FJSUThj1lC\
+42LeuStTlucpLWmWsCgDgJDfQbN1EOLhHs4zcebLKj0LyBjIajVF/3WHfpg8fuYin6KeWRT4vF7x\
+MY3mS/92bbxFxDQjT+UVqJ8EBfwsJHK2YBvqkT5Yyxf8NY9i5uHrPt/nREHKspcBrf8W93dvMDHV\
+u1ZHN4PLXII3paTJkDYHhmz1eNF8QKf9bwNetSc=
+exemd5=32593fc13ef8519ffea46802650095d5
+
+999.specrand=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Thu Jan 23 21:09:36 2014
+optmd5=c2d1cce05ee8dd21be79113a1489c95b
+baggage=
+compile_options=\
+@eNqdkFFrwjAUhd/7Ky5574IiexAVbFolWzRhtg/6ImkM2uHMSJy/39s6qWPsYT2EcCE53HM+Jhdq\
+CPSiPQ3WXypjAz24D7z1TpdeH6k9Vjvr6d5Q3aNldcLJQIzHgfs8V+4UnhzE6UplbMtUgeMyzZJi\
+DqhY9uGm9sNWqOcB3DUK7ssbO4nYEBgbk/8mIY1RJi9S5WPyIxaJsBkunInpfIVvvyOSSNZmlfMF\
+32T4RfYbk5Jv+TThgufrR1+TnESCL187IPum8QeIkSvfrTmHCbRqq9QlRdqFTpeCzTJZ1DwfYF4B\
+15KiDQ==
+exemd5=cb42ba337c207c187d3ff30c85c05c60
+
+482.sphinx3=base=elider-amd64-m64-gcc42-nn=default:
+# Last updated Wed Mar  5 15:58:06 2014
+optmd5=876e8e306b9632c4eb9ce587eb6b5537
+baggage=
+compile_options=\
+@eNqdUdFqgzAUffcrQt5tWBl7KG1Bo9Vs0YRVB9tLUBu2jNgMbfv9izppS9lDvYRwufeenJxzMUv4\
+AqBT0aBWNidVyRZ9mdrexa4om0IjqdVONuizQsUDKtXeZhVw7THA/ByU2bczA9xgy0MsMM9tmgah\
+n0fAJbPreuy9hQKzdEMiEQ9tolV5PCgNbLhsDoY4owTlT49gjGVrjk0l1w5eAIxX8N5vwx7I/GfG\
+sxW80gAda4Ml3FAv2trerZ5+wg9THItx6B6B0GEdN89IQj5CC2bz/kXOXjPPJ5Rk75e0vXDoUJK+\
+TFjPn5n/+Lg05besDu26m9P1WD6b0dlEgyn+TtFoyRIviwUlfmeqruHAz/JuSRcb+gUD78Vj
+exemd5=8239dcb2e52ef67b6e8d6f4f65dd10b3
+

@@ -1,0 +1,31 @@
+runspec v3496 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'irix6.5-mips' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 86pre
+ Benchmarks version: 86pre
+      Tools version: 86pre
+    runspec version: 3496 ($Id: runspec 3496 2005-12-16 21:11:52Z cloyce $)
+
+Tools information:
+ Tools package installed: irix6.5-mips
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 3647  | 20    |  241536 | 04-Jan-2006 14:57:13 | specmake
+0755 | 3647  | 20    | 1872604 | 04-Jan-2006 14:57:13 | specperl
+0755 | 3647  | 20    |   24708 | 04-Jan-2006 14:57:16 | specinvoke
+0755 | 3647  | 20    |   42620 | 04-Jan-2006 14:57:16 | specinvoke_pm
+0755 | 3647  | 20    |  108296 | 04-Jan-2006 14:57:13 | specbzip2
+0755 | 3647  | 20    |   41308 | 04-Jan-2006 14:57:16 | specmd5sum
+0755 | 3647  | 20    |    7603 | 04-Jan-2006 15:09:25 | specdiff
+0755 | 3647  | 20    |   85736 | 04-Jan-2006 15:09:26 | specpp
+0755 | 3647  | 20    |   75055 | 04-Jan-2006 15:09:25 | runspec
+0755 | 3647  | 20    |    1520 | 31-Aug-2005 15:31:57 | runspec.bat
+
+Version info for specinvoke (/scratch/kumaran/kit85/bin/specinvoke): Version: 3478
+Version info for specmake (/scratch/kumaran/kit85/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/scratch/kumaran/kit85/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/scratch/kumaran/kit85/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/scratch/kumaran/kit85/bin/specperl): This is specperl, v5.8.7 built for IP35-irix
+                           For more detail on specperl, say 'specperl -V'

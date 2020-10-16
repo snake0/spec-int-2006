@@ -1,0 +1,55 @@
+#!/var/services/homes/spparmar/spec2006/bin/specperl
+#!/var/services/homes/spparmar/spec2006/bin/specperl -d
+#!/usr/bin/perl
+#
+#  extract_flags - a tool for extracting encoded flag descriptions from raw
+#                  result files
+#  Copyright (C) 2005-2006 Standard Performance Evaluation Corporation
+#   All Rights Reserved
+#
+#  Author: Cloyce D. Spradling
+#
+# $Id: extract_flags 3624 2006-01-17 07:54:38Z cloyce $
+
+use strict;
+require 'vars.pl';
+require 'util.pl';
+
+use vars qw(@config $processed $lastidx);
+
+$processed = 0;
+@config = ();
+$lastidx = -1;
+
+# We'll use Perl's magic <> so that files can be piped in through stdin
+# or given on the command line.
+# There's no way to know what the flags file should be called, so they'll
+# just be output on stdout separated by a line of comment characters (if
+# necessary).
+# This will process any number of files.
+
+while (<>) {
+    tr/\015\012//d;
+    next unless /^(?:spec\.${main::lcsuite}\.)?rawflags(\d*)(?: =|:) (.*)$/o;
+    my ($tmpidx, $data) = ($1+0, $2);
+    if ($tmpidx < $lastidx) {
+	# This must be a new config file!
+	$processed++;
+	# First, kick the old one out
+	output_config($processed, join('', @config)) if @config;
+	# Reset state
+	@config = ();
+    }
+    $lastidx = $tmpidx;
+    $config[$lastidx] = $data;
+}
+output_config($processed, join('', @config)) if @config;
+
+sub output_config {
+    my ($processed, $encconfig) = @_;
+
+    if ($processed > 1) {	# Output a separator if necessary
+	print "#\n# --- CUT HERE --- CUT HERE --- CUT HERE --- CUT HERE --- CUT HERE ---\n#\n";
+    }
+    print scalar(decode_decompress($encconfig));
+}

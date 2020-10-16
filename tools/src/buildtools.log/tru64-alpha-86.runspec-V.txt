@@ -1,0 +1,32 @@
+runspec v3516 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'tru64-alpha' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 86pre
+ Benchmarks version: 86pre
+      Tools version: 86pre
+    runspec version: 3516 ($Id: runspec 3516 2005-12-21 00:15:15Z cloyce $)
+
+Tools information:
+ Tools package installed: tru64-alpha
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 15    | 15    |  237568 | 11-Jan-2006 00:38:46 | specmake
+0755 | 15    | 15    |   32768 | 11-Jan-2006 00:38:46 | specperl
+0755 | 15    | 15    |   32768 | 11-Jan-2006 00:39:50 | specinvoke
+0755 | 15    | 15    |   32768 | 11-Jan-2006 00:39:50 | specinvoke_pm
+0755 | 15    | 15    |  106496 | 11-Jan-2006 00:38:46 | specbzip2
+0755 | 15    | 15    |   40960 | 11-Jan-2006 00:39:50 | specmd5sum
+0755 | 15    | 15    |    7623 | 11-Jan-2006 15:55:02 | specdiff
+0755 | 15    | 15    |   85756 | 11-Jan-2006 15:55:11 | specpp
+0755 | 15    | 15    |   76145 | 11-Jan-2006 15:55:02 | runspec
+0775 | 15    | 15    |    1520 | 31-Aug-2005 15:31:57 | runspec.bat
+0644 | 15    | 15    | 1703936 | 11-Jan-2006 00:38:45 | libperl.so
+
+Version info for specinvoke (/usr/users/john/cpu2006/kit86pre/bin/specinvoke): Version: 3478
+Version info for specmake (/usr/users/john/cpu2006/kit86pre/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/usr/users/john/cpu2006/kit86pre/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/usr/users/john/cpu2006/kit86pre/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/usr/users/john/cpu2006/kit86pre/bin/specperl): This is specperl, v5.8.7 built for alpha-dec_osf
+                           For more detail on specperl, say 'specperl -V'

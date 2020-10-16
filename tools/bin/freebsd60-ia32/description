@@ -1,0 +1,9 @@
+For FreeBSD 6.x systems.
+                              Built on FreeBSD 6.0-RELEASE with GCC 3.4.4.
+
+                              This toolset is provided by SPEC as a courtesy;
+                              the SPEC CPU2006 benchmark suite has not been
+                              fully ported to this OS/architecture and is
+                              therefore not supported.
+                              Patches and other fixes are welcomed; please
+                              send them to cpu2006support@spec.org.

@@ -1,0 +1,4 @@
+build_base_elider-amd64-m64-gcc42-nn.0000 dir=/var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/build_base_elider-amd64-m64-gcc42-nn.0000 ext=elider-amd64-m64-gcc42-nn lock=0 tune=base type=build username=root
+run_base_ref_elider-amd64-m64-gcc42-nn.0000 dir=/var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0000 ext=elider-amd64-m64-gcc42-nn lock=1 mach=default size=ref tune=base type=run username=root
+run_base_ref_elider-amd64-m64-gcc42-nn.0001 dir=/var/services/homes/spparmar/spec2006/benchspec/CPU2006/482.sphinx3/run/run_base_ref_elider-amd64-m64-gcc42-nn.0001 ext=elider-amd64-m64-gcc42-nn lock=0 mach=default size=ref tune=base type=run username=root
+__END__

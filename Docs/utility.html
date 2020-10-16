@@ -1,0 +1,1117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Utility Programs CPU2006</title>
+<!-- You'll want a nice wide screen when editing this .......................................................................... -->
+
+<link rel="STYLESHEET" href="css/cpu2006docs.css" type="text/css" />
+<style type="text/css">
+body { background: white; color: black; }
+
+p.contentsl1 { font-size:100%; }
+h2 { padding-top:.2cm; border-top: solid 1px #c0c0c0; }
+</style>
+</head>
+
+<body>
+<h1>SPEC CPU2006 Utility Programs </h1>
+<p class="snugtop" style="font-size:80%">Last updated: 11-Jun-2006 jh/ya
+<br />To check for possible updates to this document, please see <a
+href="http://www.spec.org/cpu2006/Docs/">http://www.spec.org/cpu2006/Docs/</a>  </p>
+
+
+  <p class="contents">Contents</p>
+  <p class="contentsl1"><a href="#intro"         >Introduction</a></p>
+  <p class="contentsl1"><a href="#configpp">       configpp             </a></p>
+  <p class="contentsl1"><a href="#extract_config"> extract_config       </a></p>
+  <p class="contentsl1"><a href="#extract_raw">    extract_raw          </a></p>
+  <p class="contentsl1"><a href="#extract_flags">  extract_flags        </a></p>
+  <p class="contentsl1"><a href="#flag_dump">      flag_dump            </a></p>
+  <p class="contentsl1"><a href="#go">             go (Unix only)       </a></p>
+  <p class="contentsl1"><a href="#ogo">            ogo (Unix only)      </a></p>
+  <p class="contentsl1"><a href="#printkids">      printkids.pl         </a></p>
+  <p class="contentsl1"><a href="#relocate">       relocate (Unix only)</a></p>
+  <p class="contentsl1"><a href="#rawformat">      rawformat           </a></p>
+  <p class="contentsl2"><a href="#mkt">             Editing result description fields</a></p>
+  <p class="contentsl2"><a href="#cont">            About continuation fields</a></p>
+  <p class="contentsl2"><a href="#gen">             Generating a rate result from a speed result</a></p>
+  <p class="contentsl1"><a href="#specdiff">       specdiff             </a></p>
+  <p class="contentsl1"><a href="#specinvoke">     specinvoke           </a></p>
+  <p class="contentsl1"><a href="#specmake">       specmake             </a></p>
+  <p class="contentsl1last"><a href="#toolsver">       toolsver             </a></p>
+
+<h2 id="intro">Introduction</h2>
+
+<p>This document describes various useful utilities that ship with
+SPEC CPU2006.  It is assumed that you have already read
+<a href="runspec.html">runspec.html</a> and <a href="config.html">config.html</a>. </p>
+
+<p class="commentarystart">Note: links to SPEC CPU2006 documents on this web page assume that you are reading the page from a
+directory that also contains the other SPEC CPU2006 documents.  If by some chance you are reading this web page from a
+location where the links do not work, try accessing the referenced documents at one of the following locations:</p>
+<ul class="commentaryul">
+  <li class="commentaryli"><a href="http://www.spec.org/cpu2006/Docs/">www.spec.org/cpu2006/Docs/</a></li>
+  <li class="commentaryli">The <span class="ttnobr">$SPEC/Docs/</span> (Unix) or <span class="ttnobr">%SPEC%\Docs\</span>
+      (Windows) directory on a system where SPEC CPU2006 has been installed.</li>
+  <li class="commentaryli">The <span class="tt">Docs/</span> directory on your SPEC CPU2006 distribution media.</li>
+</ul>
+<p class="commentaryend"></p>
+
+<h4>On Windows Systems</h4>
+
+<p class="l1">Most of the examples in this document have been written in Unix syntax.    That means you'll need to use your
+imagination just a bit as you read this document:  </p>
+<table style="margin:.4em 8%">
+<tr><td><b>If&nbsp;you&nbsp;see:&nbsp;&nbsp;&nbsp;&nbsp;</b></td>    
+                                   <td><b>Just pretend you saw:</b></td></tr>
+<tr><th>cat</th>                   <th>type</th></tr>
+<tr><th>cp</th>                    <th>copy</th></tr>
+<tr><th>diff</th>                  <th>fc</th></tr>
+<tr><th>grep</th>                  <th>findstr</th></tr>
+<tr><th>ls</th>                    <th>dir</th></tr>
+<tr><th>/</th>                     <th>\</th></tr>
+<tr><th>$SPEC</th>                 <th>%spec%</th></tr>
+</table>
+
+<p class="l1snugbot">Also, some of the scripts cannot be invoked directly, but instead must be invoked by putting </p>
+<p class="l1ex">specperl %spec%\bin\</p>
+<p class="l1snugtop">in front of the script name.  This is noted in the sections where it is needed.</p>
+
+
+<h2 id="configpp">configpp </h2>
+
+<p>"configpp" is a short way to say: </p>
+
+<pre>
+   $ <b>runspec --action configpp  </b>
+</pre>
+
+<p>That switch is mentioned in <a href="runspec.html#section3.3">runspec.html</a> but you'll find  much more about the config
+file preprocessor in <a href="config.html#sectionVII">config.html</a>.  The configuration file is specified using the
+<kbd>--config</kbd> switch, or <kbd>-c</kbd> for short, at the command line. For example, the following two command are
+equivalent: </p>
+
+<pre>
+   $ <b>runspec --action configpp  -c try_utilities.cfg</b>
+   $ <b>configpp -c try_utilities.cfg</b>
+</pre>
+
+<p>There are a couple of points worth mentioning here:</p>
+<ol>
+ <li>The preprocessed configuration file will be dumped to stdout.  But the normal progress output from <tt>runspec</tt> also
+ goes to stdout, so the config file output will be delimited by two lines of hyphens.</li>
+ <li>There's no need to specify benchmarks to run.</li>
+ <li>As always, if you don't explicitly specify a config file via '<kbd>-c &lt;filename&gt;</kbd>', then the file
+ <tt>default.cfg</tt> will be used.</li>
+</ol>
+
+<p>The <tt>configpp</tt> utility is a good way to check your configuration file for fatal errors, as the config file is
+completely parsed before it's output.</p>
+
+<p><span class="new">The configpp utility is new with SPEC CPU2006.</span></p>
+
+<h2 id="extract_config">extract_config</h2>
+
+<p>If you have a rawfile, you can extract the config file that was used with it.  To do so, use the <kbd>extract_config</kbd>
+utility.  </p>
+
+<p>For example, starting with a freshly-installed SPEC CPU2006 directory tree:</p>
+
+<pre>
+ % <b>runspec --config=try_utilities --size=test --iterations=1 \
+   --tuning=base --output_format=text,raw bzip2 > /dev/null</b>
+ % <b>cd result</b>
+ % <b>ls</b>
+ CINT2006.001.test.rsf CINT2006.001.test.txt CPU2006.001.log       CPU2006.lock
+</pre>
+
+<p>Note that we have just the single result.  Let's make a temporary directory and copy the rawfile there:</p>
+
+<pre>
+ % <b>mkdir tmp</b>
+ % <b>cd tmp</b>
+ % <b>cp ../CINT2006.001.test.rsf .</b>
+ % <b>ls</b>
+ CINT2006.001.test.rsf  </pre>
+
+<p>(On Windows, that <tt>ls</tt> command would be spelt <tt>dir</tt>.  You'll find some more Windows notes in the
+<a href="#intro">introduction</a>.)</p>
+
+<p>Now, attempt to extract the config file:</p>
+
+<pre>
+ % <b>extract_config CINT2006.001.test.rsf > tmp.cfg  </b></pre>
+
+<p>Does the extracted file match the original?</p>
+
+<pre>
+ % <b>diff -u ../../config/try_utilities.cfg tmp.cfg</b>
+ --- ../../config/try_utilities.cfg      2006-05-22 14:41:42.000000000 -0700
+ +++ tmp.cfg     2006-05-22 14:43:16.000000000 -0700
+ @@ -1,3 +1,6 @@
+ +# Invocation command line:
+ +# /Volumes/storage/WorkRelated/SPEC/CPU2006/Kits/cpu2006-kit91/bin/runspec 
+     --config=try_utilities --size=test --iterations=1 --tuning=base 
+     --output_format=asc,raw bzip2
+ +############################################################################
+  # This is a sample config file. It was tested with:
+  # 
+  #      Compiler name/version:       Apple GCC v4.0.1 build 5245
+ @@ -128,15 +131,8 @@
+  sw_state         = Default
+  sw_other         = None
+  
+ -__MD5__
+ -401.bzip2=base=try_utilities=default:
+ -# Last updated Mon May 22 14:41:42 2006
+ -optmd5=0666e60587f33e2aa13eb6ba0917aa60
+ -baggage=
+ -compile_options=\
+ -@eNqNj00LgkAQhu/7K4a9b5duoUKuJpa6C+qlS9QmYqAjaYf+faMF2cfBYQ8Dsy/P80oV6xWUxoCg\
+ -h4BtX2HTLRCEl2pfHqTOaU08380DoBFqCaI+35tjXRnRoGgrCpbwNVaHt6spHCZXIKXNicDHXblb\
+ -pTObf+A4IwkibaJ1kNLtF82ZGsI6C+Nw79OX/xqcRWGyexaa4Wrh6VKYvnMm5m+rwTfyXu4z8WNE\
+ -5UPBSbsHPPNh9Q==
+ -exemd5=d828496b92983e96408f680b55393225
+  
+ %  
+</pre>
+
+<p>Yes.  The only differences are:</p>
+
+<ul>
+  <li> The copy in the rawfile adds a comment to tell you how the config file was invoked.</li>
+  <li> The original copy (in <kbd>$SPEC/config</kbd>) has the MD5 information for <tt>401.bzip2</tt>.  (The config file is
+  tucked away into the rawfile without the MD5 section.)  </li>
+</ul>
+
+<h4>On Windows systems</h4>
+<p class="l1snugbot">Instead of saying <tt>diff</tt> just above, you would say <tt>fc</tt> (and, as already mentioned,
+<tt>dir</tt> is the Windows spelling for what Unix calls <tt>ls</tt>.  You can invoke extract_config as:</p>
+
+<pre >   <b>specperl %spec%\bin\extract_config rawfile  </b> </pre>
+
+
+
+<h2 id="extract_raw">extract_raw</h2>
+
+<p>If you have a pdf, html, or ps output file, you can extract the rawfile that was used to generate it.  To do so, use
+<kbd>extract_raw</kbd>.</p>
+
+<p>For example:</p>
+<pre>
+ % <b>runspec --config=try_utilities --size=test --iterations=1 \
+   --tuning=base --output_format=ps bzip2 > /dev/null</b>
+ % <b>cd $SPEC/result</b>
+ % <b>ls</b>
+ CINT2006.001.test.rsf CINT2006.001.test.ps CPU2006.001.log       CPU2006.lock
+ % <b>mkdir tmp</b>
+ % <b>cd tmp</b>
+ % <b>cp ../*ps .</b>
+ % <b>ls</b>
+ CINT2006.001.test.ps
+</pre>
+
+<p>Note that at this point we have just the postscript output in the current directory.  Now, attempt to extract the raw
+file:</p>
+
+<pre>
+ % <b>extract_raw *ps</b>
+ Wrote "CINT2006.001.test.rsf"
+ % <b>ls</b>
+ CINT2006.001.test.ps  CINT2006.001.test.rsf
+</pre>
+
+<p>Does the extracted file match the original?</p>
+
+<pre>
+ % <b>diff -u ../CPU2006.001.rsf ./CPU2006.001.rsf</b>
+ %  </pre>
+
+<p>Yes.</p>
+
+<h4>On Windows systems</h4>
+<p class="l1snugbot">You can invoke extract_raw as:</p>
+
+<pre>    <b>specperl %spec%\bin\extract_raw file-to-extract-from  </b> 
+</pre>
+
+<p class="l1">Note that the file you extract from can be pdf, ps, or html, just as on Unix systems, with one important
+exception: if you are using a browser that attempts to add value to the html when you save it, that browser may break the
+embedded rawfile.  For example, with Internet Explorer Version 5.00.3103.1000, if you are viewing a SPEC CPU2006 html file
+and you select <span class="ttnobr">File -&gt; Save As</span>, the default for "<span class="ttnobr">Save as type</span>" is
+shown as </p>
+
+<pre>
+     "Web Page, complete (*.htm,*.html)"  </pre>
+
+<p class="l1">Do not accept that default if you want to be able to retrieve the rawfile later on.  If you take the default,
+your saved file will be <span class="u">incomplete</span>.  To save the web page INCLUDING the embedded rawfile, you must
+change "Save as type" to</p>
+
+<pre>
+     "Web Page, HTML only (*.htm,*.html)"  </pre>
+
+
+<h2 id="extract_flags">extract_flags</h2>
+<p> If you have a rawfile, you can extract the XML flags
+description file that the result uses.  To do so, use
+<kbd>extract_flags</kbd>.  Usage is identical to
+<a href="#extract_raw">extract_raw</a>, but unlike
+<a href="#extract_raw">extract_raw</a>, <strong> may not</strong> produce
+an flags description file identical to the input.  This is because 
+EOLs (end-of-line) characters are normalized to Unix-style LF (line feed) only. </p>
+
+<p><strong>Note: </strong>If you have used a flags description file to format your result, the entire flags file is stored in
+the raw file (not just the part needed for result). </p>
+
+<p>For example, if the flags description file "flags-macosx-ia32-iccifortv91.xml" was used to format the
+<kbd>CFP2006.002.rsf</kbd> raw file, then you can extract the original flags file using the following command </p>
+
+<pre>
+    % <b>pwd</b>
+    /cpu2006/cpu2006-kit92/result
+    % <b>ls</b>
+    CFP2006.002.rsf images
+    % <b>extract_flags CFP2006.002.rsf > tmp.xml</b>
+    % <b>ls ../*xml</b>
+    ../flags-macosx-ia32-iccifortv91.xml
+    % <b>diff -u ../flags-macosx-ia32-iccifortv91.xml tmp.xml</b>
+    % 
+</pre>
+
+<p>We see absolutely no difference between the extraced flags description file "tmp.xml" and the original flags description
+file "flags-macosx-ia32-iccifortv91.xml"</p>
+
+<p><strong>Note: </strong>If a raw file has not been formatted with a flags description file, <kbd>extract_flags</kbd> does
+nothing. </p>
+
+<p><span class="new">The extract_flags utility is new with CPU2006.</span></p>
+
+<h2 id="flag_dump" >flag_dump</h2>
+
+<p>If you have an XML flag description file, such as one extracted using <a href="#extract_flags">extract_flags</a>, or one
+downloaded <a href="http://www.spec.org/cpu2006/flags/">from SPEC</a>, <tt>flag_dump</tt> will create a more human-readable
+HTML version from it.</p>
+
+<p> For example:</p>
+<pre>
+    % <b>cd $SPEC/Docs</b>
+    % <b>ls *xml</b>
+    flags-advanced.xml flags-simple.xml
+    % <b>cp flags-advanced.xml willi_flags.xml</b>
+    % <b>flag_dump willi_flags.xml</b>
+    Processing willi_flags.xml...wrote willi_flags.html
+    % <b>ls willi_flags.*</b>
+    willi_flags.html willi_flags.xml
+</pre>
+
+<p>Note that <kbd>flag_dump</kbd> utility assumes that you are formatting flags files written by users. These files are not
+allowed to contain mandatory flags. If you attempt to use the <kbd>flag_dump</kbd> utility to format any of the
+suite-provided flag files such as <kbd>flags_mandatory.xml</kbd> or the benchmark flag files that reside in
+<kbd>$SPEC/benchspec/CPU2006/*/Spec/</kbd> directory, the utility will exit with an error message such as the one below.</p>
+
+<pre>
+    % <b>cd $SPEC/benchspec</b>
+    % <b>flag_dump flags_mandatory.xml</b>
+    Processing flags_mandatory.xml...
+    ERROR: The flag file at
+           flags_mandatory.xml
+         contains one or more flags in the class "mandatory", which is not
+         allowed.
+    % 
+</pre>
+
+<p><span class="new">The flag_dump utility is new with CPU2006.</span></p>
+
+
+<h2 id="go">go (Unix only)</h2>
+
+<p>When you source the <kbd><strong>shrc</strong></kbd>, as described in <a href="runspec.html">runspec.html</a>, the
+'<kbd>go</kbd>' shell alias is created. <kbd>go</kbd> is a handy utility to navigate the directory structure of a SPEC source
+tree. Here are the various things it understands and the places they will take you: </p>
+
+<table style="margin:1em 8%">
+<tr><td><b>If you say</b></td>               <td><b>You'll end up in</b> </td></tr>
+<tr><th>go
+  <br />go&nbsp;top</th>                     <td><tt>$SPEC</tt></td></tr>
+<tr><th>go bin</th>                          <td><tt>$SPEC/bin</tt> (where the tools live)</td></tr>
+<tr><th>go config</th>                       <td><tt>$SPEC/config</tt></td></tr>
+<tr><th>go&nbsp;result
+  <br />go&nbsp;results</th>                 <td><tt>$SPEC/result</tt></td></tr>
+<tr><th>go&nbsp;doc
+   <br />go&nbsp;docs</th>                   <td><tt>$SPEC/Docs</tt></td></tr>
+<tr><th>go cpu</th>                          <td><tt>$SPEC/benchspec/CPU2006</tt></td></tr>
+<tr><th>go <i>benchmark</i></th>             <td> The top level directory for the named benchmark,  if it can be 
+                                                  found. (Examples follow)</td></tr>
+<tr><th>go 401</th>                          <td> <tt>$SPEC/benchspec/CPU2006/401.bzip2</tt></td></tr>
+<tr><th>go perlb</th>                        <td><p class="snug"><tt>$SPEC/benchspec/CPU2006/400.perlbench</tt>  Notice 
+                                                 that abbreviated names are accepted.  But if the abbreviation is 
+                                                 ambiguous, the command will pick the first match, so pay attention 
+                                                 to the reply:</p>
+<pre class="snugbot">$ <b>go g</b>
+/spec/cpu2006/kit91/benchspec/CPU2006/403.gcc
+$ <b>go go</b>
+/spec/cpu2006/kit91/benchspec/CPU2006/445.gobmk
+$ 
+</pre>                                       </td></tr>
+<tr><th>go nada</th>                         <td> no change: there's no benchmark named <tt>nada*</tt></td></tr>
+<tr><th>go&nbsp;<i>benchmark&nbsp;subdir</i></th>
+                                             <td><p class="snug">The named subdirectory of the directory tree for the
+                                                 referenced benchmark, for example "<span class="ttnobr">go perlb
+                                                 run</span>".  You can also name more than one level of subdirectory: "<span
+                                                 class="ttnobr">go 462 data train</span>".  <span class="new"> The
+                                                 go alias existed in CPU2000, but for CPU2006 the order is new when
+                                                 naming subdirectories, as is the ability to name more than one level of
+                                                 subdirectory.</span></p>
+                                                 </td></tr>
+<tr><th>go&nbsp;<i>subdir</i></th>
+                                             <td><p class="snugtop">If you are already in a benchmark subtree, then you can
+                                                 move to a different branch of the same benchmark, by naming the branch and
+                                                 not mentioning a benchmark.  For example:</p>
+<pre class="snugbot">
+$ <b>pwd</b>
+/rahul/benchspec/CPU2006/401.bzip2/run/build_base_a3.0000
+$ <b>go exe</b>
+/rahul/benchspec/CPU2006/401.bzip2/exe
+$ 
+</pre>
+</td></tr>
+
+</table>
+
+<p><strong>Note: </strong>If you leave the shell where you sourced <tt>shrc</tt>, the alias is no longer
+available! So if you want to use this alias, do not start a sub-shell.</p>
+
+<p><strong>Note: </strong>'<tt>go</tt>' does not know about your settings for <a
+href="config.html#output_root">output_root</a> or <a href="config.html#expid">expid</a>, and will not be able to take you to
+your run, exe, or result directories if you use those features.  See <a href="#ogo">ogo</a> for something that can help.</p>
+
+<h4>Users of shells compatible with <tt>csh</tt></h4> 
+
+<p class="l1"><span class="new">New with CPU2006,</span> if you use a <tt>csh</tt>-like shell, please note that after you say
+<span class="ttnobr">source cshrc</span>, there is a <tt>go</tt> alias that is set up for you, which implements the same
+features as described above.</p>
+
+<h4>Windows Users</h4>
+<p class="l1">Sorry, the <tt>go</tt> feature does not exist for Windows systems.</p>
+
+<h2 id="ogo">ogo (Unix only)</h2>
+
+<p>When you source <tt>shrc</tt>, as described in <a href="runspec.html#section2.4">runspec.html</a>, the '<tt>ogo</tt>'
+shell alias is created. Its function is similar to the <a href="#go">go</a> alias with one important difference: if you use
+the <a href="config.html#output_root">output_root</a> setting in your config file (also discussed in <a
+href="runspec.html#output_root">runspec.html</a>) you can use <tt>ogo</tt> as a shorthand for moving around both the original
+installed benchmark tree and your output tree. </p>
+
+<p>To do so, simply set the <tt>GO</tt> environment variable to the same value as your <tt>output_root</tt>.  Then,
+'<tt>ogo</tt>' will use the contents of that variable as the top level of the benchmark tree when looking for run directories
+and results.</p>
+
+<p>For example, you could say something like this:</p>
+<pre class="snugbot">
+$ <b>go config</b>
+/spec/config
+$ <b>grep output_root cds.cfg</b>
+output_root = /cds_stuff
+$ <b>GO=/cds_stuff</b>
+$ <b>ogo run perl</b>
+Using value in GO for output_root: /cds_stuff
+/cds_stuff/benchspec/CPU2006/400.perlbench/run
+$ 
+</pre>
+
+<p>In this example, the benchmarks are installed in "<tt>/spec</tt>", and <tt>output_root</tt> is set to
+"<tt>/cds_stuff</tt>" in the config file.  Any runs using that config file will write their results, executables, and run
+directories under "<tt>/cds_stuff</tt>".  Continuing with other examples:</p>
+
+<table style="margin:1em 8%">
+<tr><td><b>If you say</b></td>               <td><b>You'll end up in</b> </td></tr>
+<tr><th>ogo result</th>                      <td><tt>/cds_stuff/result</tt> 
+                                                 <br />Your own private result directory</td></tr>
+<tr><th>ogo&nbsp;400&nbsp;run</th>           <td><tt>/cds_stuff/benchspec/CPU2006/400.perlbench/run</tt> 
+                                                 <br />Your own private run directories</td></tr>
+<tr><th>ogo&nbsp;bzip&nbsp;exe</th>          <td><tt>/cds_stuff/benchspec/CPU2006/401.bzip2/exe</tt> 
+                                                 <br />Your own private executables</td></tr>
+<tr><th>ogo doc</th>                         <td><tt>/spec/Docs</tt> 
+                                                 <br />There's only one Docs directory, on the 
+                                                     original installed <tt>$SPEC</tt> tree</td></tr>
+<tr><th>ogo config</th>                      <td><tt>/spec/config</tt> 
+                                                 <br />The config directory is always on the original
+                                                     installed tree; set its protections as described in <a
+                                                     href="runspec.html#output_root">runspec.html</a></td></tr>
+<tr><th>ogo 400 src</th>                     <td><tt>/spec/benchspec/CPU2006/400.perlbench/src</tt> 
+                                                 <br />Run directories are under <tt>output_root</tt>, but the benchmark
+                                                      <tt>src</tt> directory is still in the original installed
+                                                      <tt>$SPEC</tt> tree.</td></tr>
+</table>
+
+
+
+<p><strong>Note: </strong>It's not necessary to export the "GO" variable.  Declaring this variable at the command-prompt is
+sufficient. </p>
+<pre>
+    $ <b>GO=/tmp/cds</b>
+    $ <b>echo $GO</b>
+    /tmp/cds
+</pre>
+
+<p><span class="new">The ogo alias is new with CPU2006.</span></p>
+
+<h4>Users of shells compatible with <tt>csh</tt></h4>
+<p class="l1"><tt>ogo</tt> has also been implemented for <tt>cshrc</tt>.  There is one <b>restriction</b>: to get the full
+feature set above, you must set <tt>OGO</tt> to the actual directory, not to a symbolic link.</p>
+
+<h4>Windows Users</h4>
+<p class="l1">Sorry, the <tt>ogo</tt> feature does not exist for Windows systems.</p>
+
+<h2 id="printkids">printkids.pl</h2>
+
+<p>Some benchmark executables are invoked multiple times.  If you'd like to know how much time was spent on each invocation,
+it may not be easy to tell.  You could examine "<kbd>speccmds.out</kbd>", but that file is not easy to interpret:</p>
+
+<pre>
+    $ <b>runspec --config=try_utilities --size=test --iterations=1 \
+         --tuning=base --output_format=ps  400</b>
+    $ <b>go work 400</b>
+    $ <b>cd run_base_test_try_utilities.0000/</b>
+    $
+    $ <b>cat speccmds.out | fold -s</b>
+    running commands in speccmds.cmd 1 times
+    runs started at 1148417981, 220153000, Tue May 23 13:59:41 2006
+    run 1 started at 1148417981, 222495000, Tue May 23 13:59:41 2006
+    child started: 0, 1148417981, 222535000, pid=2396, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    attrs.pl'
+    child finished: 0, 1148417981, 339666000, sec=0, nsec=117131000, pid=2396, rc=0
+    child started: 0, 1148417981, 339754000, pid=2397, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    gv.pl'
+    child finished: 0, 1148417981, 384163000, sec=0, nsec=44409000, pid=2397, rc=0
+    child started: 0, 1148417981, 384240000, pid=2398, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    makerand.pl'
+    child finished: 0, 1148417981, 710682000, sec=0, nsec=326442000, pid=2398, rc=0
+    child started: 0, 1148417981, 710786000, pid=2399, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    pack.pl'
+    child finished: 0, 1148417981, 973602000, sec=0, nsec=262816000, pid=2399, rc=0
+    child started: 0, 1148417981, 973684000, pid=2400, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    redef.pl'
+    child finished: 0, 1148417981, 997347000, sec=0, nsec=23663000, pid=2400, rc=0
+    child started: 0, 1148417981, 997429000, pid=2401, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    ref.pl'
+    child finished: 0, 1148417982, 24001000, sec=0, nsec=26572000, pid=2401, rc=0
+    child started: 0, 1148417982, 24081000, pid=2402, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    regmesg.pl'
+    child finished: 0, 1148417982, 55465000, sec=0, nsec=31384000, pid=2402, rc=0
+    child started: 0, 1148417982, 55621000, pid=2403, 
+    '../run_base_test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib 
+    test.pl'
+    child finished: 0, 1148417988, 281976000, sec=6, nsec=226355000, pid=2403, rc=0
+    run 1 finished at: 1148417988, 282030000, Tue May 23 13:59:48 2006
+    run 1 elapsed time: 7, 59535000, 7.059535000
+    runs finished at 1148417988, 282155000, Tue May 23 13:59:48 2006
+    runs elapsed time: 7, 62002000, 7.062002000
+    $
+</pre>
+
+<p>Fortunately, SPEC has provided a tool to interpret the above for you:</p>
+
+<pre>
+    $ <b>printkids.pl</b>
+      Seconds  Command
+         0.12 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib attr
+         0.04 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib gv.p
+         0.33 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib make
+         0.26 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib pack
+         0.02 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib rede
+         0.03 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib ref.
+         0.03 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib regm
+         6.23 test_try_utilities.0000/perlbench_base.try_utilities -I. -I./lib test
+    =========
+         7.06 Total by adding children      
+         7.06 Total according to speccmds.out
+    $  
+</pre>
+
+
+<h2 id="relocate">relocate (Unix only)</h2>
+<p>If you rearrange mount points or rename your SPEC root directory, you will probably find confusing problems like the one
+in the example that follows.  We used to have a working SPEC tree under <kbd>/cpu2006/cpu2006-kit91</kbd>, but we're going to
+change that:</p>
+<pre>
+    $ <b>cd /cpu2006</b>
+    $ <b>mv cpu2006-kit91 jamesbond</b>
+    $ <b>cd jamesbond</b>
+    $ <b>. ./shrc</b>
+    $ <b>runspec -h</b>
+    -bash: /cpu2006/jamesbond/bin/runspec: /cpu2006/cpu2006-kit91/bin/specperl: 
+      bad interpreter: No such file or directory
+</pre>
+
+<p>The problem is that the first line of runspec points to a path that no longer exists:</p>
+<pre>
+    $ <b>head -1 bin/runspec</b>
+    #!/cpu2006/cpu2006-kit91/bin/specperl
+    $  
+</pre>
+
+<p>Fortunately, SPEC has provided a tool to relocate the tools in the new tree:</p>
+<pre>
+    $ <b>cd /cpu2006/jamesbond</b>
+    $ <b>. ./shrc</b>
+    $ <b>relocate</b>
+    Top of SPEC benchmark tree is '/cpu2006/jamesbond'
+    $ <b>runspec -h | head -3</b>
+    runspec v4256 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+    Using 'macosx-ppc' tools
+    Reading MANIFEST... 2565 files
+</pre>
+
+<p><strong>Limitations:</strong> There are some limitations to this tool.  Most notably, it uses perl, so if the tree has
+been re-arranged in such a way that perl has an identity crisis and can't find itself, you'll be in trouble.  Make sure that
+you have sourced <tt>shrc</tt>, as in the next example; if it still fails, you may need to reinstall the CPU2006 kit.</p>
+
+<pre>
+    $ <b>cd /cpu2006</b>
+    $ <b>mv jamesbond dr_evil</b>
+    $ <b>cd dr_evil</b>
+    $ <b>bin/relocate</b>
+    Your $SPEC variable is not set correctly!
+    Top of SPEC benchmark tree is '/cpu2006/dr_evil'
+    Can't locate strict.pm in @INC (@INC contains: /cpu2006/jamesbond/bin 
+        /cpu2006/jamesbond/bin/lib .) at bin/relocate line 3.
+    BEGIN failed--compilation aborted at bin/relocate line 3.
+    $ <b>. ./shrc</b>
+    $ <b>bin/relocate</b>
+    Top of SPEC benchmark tree is '/cpu2006/dr_evil'
+    $ <b>runspec -h | head -2</b>
+    runspec v4256 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+    Using 'macosx-ppc' tools
+    Reading MANIFEST... 2565 files
+    $  
+</pre>
+
+
+<h2 id="rawformat">rawformat </h2>
+<p>"rawformat" is simply another name for: </p>
+<pre>
+   runspec --rawformat  
+</pre>
+
+<p>So please see <a href="runspec.html#rawformat">runspec.html</a> for basic information on using this command. But a few
+additional points are worth mentioning:</p>
+
+<ol>
+  <li id="mkt"><p><b>Editing result description fields</b></p>
+  
+  <p>What do you do when Marketing decides to change the name from "SuperHero 4" to "SuperHero IV" just before
+  you publish the results, or just before you're ready to submit them to SPEC?</p>
+
+   <p>SPEC does allow you to edit the rawfile to make corrections.  Just make sure that you only edit the fields located
+   before the "fence":</p>
+  <pre>
+  # =============== do not edit below this point ===================
+  </pre>
+
+   <p><strong>WARNING:</strong> Make a backup copy of the rawfile first!  </p>
+
+   <p>For example:</p>
+<pre>
+  $ <b>cd $SPEC/result</b>
+  $ <b>cp CINT2006.001.rsf new.rsf</b>
+        <i>edit new.rsf to make your changes</i> 
+  $ <b>diff CINT2006.001.rsf new.rsf</b>
+  9c9
+  &lt; spec.cpu2006.hw_model: SuperHero 4
+  ---
+  &gt; spec.cpu2006.hw_model: SuperHero IV
+  $ 
+  $ <b>rawformat -o ps new.rsf</b>
+  runspec v4256 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+  Using 'macosx-ppc' tools
+  Reading MANIFEST... 2565 files
+  Loading runspec modules...............
+  Locating benchmarks...found 31 benchmarks in 2 benchsets.
+  Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, 
+      PostScript, raw, Screen, Submission Check
+  Formatting new.rsf
+
+  Parsing flags for 400.perlbench base: done
+  Parsing flags for 401.bzip2 base: done
+  Parsing flags for 403.gcc base: done
+  Parsing flags for 429.mcf base: done
+  Parsing flags for 445.gobmk base: done
+  Parsing flags for 456.hmmer base: done
+  Parsing flags for 458.sjeng base: done
+  Parsing flags for 462.libquantum base: done
+  Parsing flags for 464.h264ref base: done
+  Parsing flags for 471.omnetpp base: done
+  Parsing flags for 473.astar base: done
+  Parsing flags for 483.xalancbmk base: done
+  Doing flag reduction: done
+          format: PostScript -> new.ps
+
+  There is no log file for this run.
+
+  runspec finished at Tue May 23 15:09:25 2006; 16 total seconds elapsed
+  $
+</pre></li>
+
+<li id="cont"><p> <b>About continuation fields in rawfiles</b></p>
+   
+   <p class="snugbot">Notice when editing fields that have more than one line that you need to construct the numbers with
+   correct syntax.  The syntax in the rawfile is a bit more picky than in config files (compare the following vs. the <a
+   href="config.html#continue">config.html section on "Field scoping and continuation"</a>.  You cannot say something like
+   this:</p>
+
+   <table style="margin: 1em 8%;">
+   <tr><td><strong>WRONG:</strong></td>
+       <td>
+<tt>spec.cpu2006.sw_compiler: Intel C Compiler 9.1 for Windows XP
+<br />spec.cpu2006.sw_compiler1: Visual Studio 2005 (for libraries) </tt>
+   </td></tr>
+   </table>
+
+<p class="snugtop">because the tools are not prepared at this point for a mixture of numbered and un-numbered fields.  If you
+need to have continued fields, say instead:</p>
+
+   <table style="margin: 1em 8%;">
+   <tr><td><strong>RIGHT:</strong></td>
+       <td>
+<tt>spec.cpu2006.sw_compiler0: Intel C Compiler 9.1 for Windows XP
+<br />spec.cpu2006.sw_compiler1: Visual Studio 2005 (for libraries) </tt>
+   </td></tr>
+   </table>
+
+</li>
+
+<li id="gen"><p><b>How do you generate a rate result from a speed result?</b></p>
+
+   <p>To generate a 1-copy rate result from a speed run, copy the original rawfile to another location, and use
+   <tt>rawformat</tt> to both generate the new rawfile and whatever other reports you want.  For example:</p>
+
+<pre>
+    $ <b>cd $SPEC/result</b>
+    $ <b>grep SPECint CINT2006.003.txt</b>
+     SPECint_base2006                     10.1 
+     SPECint2006                                                          10.1 
+    $ <b>cp CINT2006.003.rsf convertme</b>
+    $ <b>rawformat --output_format asc,raw,ps --rate convertme</b>
+    runspec v4256 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+    Using 'macosx-ppc' tools
+    Reading MANIFEST... 2565 files
+    Loading runspec modules...............
+    Locating benchmarks...found 31 benchmarks in 2 benchsets.
+    Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, 
+        PostScript, raw, Screen, Submission Check
+    Formatting convertme
+    The version of the CPU2006 suite used to produce this result is NOT a release
+    version.
+    Parsing flags for 400.perlbench base: done
+    Parsing flags for 400.perlbench peak: done
+    Parsing flags for 401.bzip2 base: done
+    Parsing flags for 401.bzip2 peak: done
+    Parsing flags for 403.gcc base: done
+    Parsing flags for 403.gcc peak: done
+    Parsing flags for 429.mcf base: done
+    Parsing flags for 429.mcf peak: done
+    Parsing flags for 445.gobmk base: done
+    Parsing flags for 445.gobmk peak: done
+    Parsing flags for 456.hmmer base: done
+    Parsing flags for 456.hmmer peak: done
+    Parsing flags for 458.sjeng base: done
+    Parsing flags for 458.sjeng peak: done
+    Parsing flags for 462.libquantum base: done
+    Parsing flags for 462.libquantum peak: done
+    Parsing flags for 464.h264ref base: done
+    Parsing flags for 464.h264ref peak: done
+    Parsing flags for 471.omnetpp base: done
+    Parsing flags for 471.omnetpp peak: done
+    Parsing flags for 473.astar base: done
+    Parsing flags for 473.astar peak: done
+    Parsing flags for 483.xalancbmk base: done
+    Parsing flags for 483.xalancbmk peak: done
+    Doing flag reduction: done
+            format: raw -&gt; convertme.rsf
+            format: ASCII -&gt; convertme.txt
+            format: PostScript -&gt; convertme.ps
+    
+    There is no log file for this run.
+
+    runspec finished at Tue May 23 15:17:13 2006; 16 total seconds elapsed
+    $ <b>grep SPECint convertme.txt</b>
+     SPECint_rate_base2006                10.1 
+     SPECint_rate2006                                                     10.1 
+    $ 
+</pre></li>
+</ol>
+    
+<h4>On Windows systems</h4>
+<p class="l1">You may find that <kbd>--output_format</kbd> will only accept one argument at a time.  So, first create the
+rawfile, by using <kbd>--output_format raw</kbd>, then use the new rawfile to create the other reports.</p>
+
+
+<h2 id="specdiff">specdiff</h2>
+
+<p>In order to decide whether your system got the correct answer for a benchmark, <tt>runspec</tt> writes a file called
+<tt>compare.cmd</tt> in the run directory, and then calls <tt>specinvoke</tt>, which calls <tt>specdiff</tt>.  (The
+<tt>specinvoke</tt> utility is described <a href="#specinvoke">below</a>.)</p>
+
+<p>Suppose that your results are flagged as incorrect, but you'd like to have more detail.  You could ask for more than 10
+lines of detail by changing the config file's default for <a href="config.html#difflines">difflines</a> from 10 to
+something else, and re-running the experiment.  But, you might save a lot of time and avoid the re-run of the experiment, by
+calling <tt>specdiff</tt> directly, with a different number of lines for its switch <kbd>-l</kbd>.</p>
+
+<p>For example, a file chock-full of wrong answers for <tt>444.namd</tt> has been created by hand.  First, let's see how
+<tt>specdiff</tt> would normally be run (line wraps added for readability):</p>
+
+<pre>
+    $ <b>go run namd</b>
+    $ <b>cd run_base_test_try_utilities.0000/</b>
+    $ <b>specinvoke -c 1 -f compare.cmd -n</b>
+    # Use another -n on the command line to see chdir commands
+    # Starting run for copy #0
+    specperl /cpu2006/dr_evil/bin/specdiff -m -l 10  --abstol 1e-05 \
+    /cpu2006/dr_evil/benchspec/CPU2006/444.namd/data/test/output/namd.out namd.out > namd.out.cmp
+</pre>
+
+<p>The above says that normally we test for correct answers by comparing the file <span
+class="ttnobr">$SPEC/benchspec/CPU2006/444.namd/data/test/output/namd.out</span> versus the file <span
+class="ttnobr">namd.out</span> in the current directory.  Normally, 10 lines of detail are printed.  Let's change that to 15
+lines, and compare versus our intentionally wrong file instead:</p>
+
+<pre>
+    $ <b>specdiff -m -l 15  --abstol 1e-05 \
+         /cpu2006/dr_evil/benchspec/CPU2006/444.namd/data/test/output/namd.out namd_wrong.out </b>
+    0003:  -355359.705797 0.000000 24229.348329
+           -355359.705797 0.000000 23229.338329
+                                              ^
+    0004:  229430.745102 5781.466932 -2454.694382
+           229330.735102 5781.366932 -2353.693382
+                       ^
+    0005:  5781.466932 226184.623759 -7867.535225
+           5781.366932 226183.623759 -7867.535225
+                     ^
+    0006:  -2454.694382 -7867.535225 252281.168869
+           -2353.693382 -7867.535225 252281.168869
+                      ^
+    0010:  0.000000 -0.000000 0.000000 24.034240
+           -0.000000 -0.000000 0.000000 23.033230
+                                                ^
+    0012:  0.000000 -0.000000 0.000000 24.034240
+           -0.000000 -0.000000 0.000000 23.033230
+                                                ^
+    0016:  -355359.705797 1175488.426964 24229.348329
+           -355359.705797 1175388.326963 23229.338329
+                                       ^
+    0017:  229430.745102 5781.466932 -2454.694382
+           229330.735102 5781.366932 -2353.693382
+                       ^
+    0018:  5781.466932 226184.623759 -7867.535225
+           5781.366932 226183.623759 -7867.535225
+                     ^
+    0019:  -2454.694382 -7867.535225 252281.168869
+           -2353.693382 -7867.535225 252281.168869
+                      ^
+    0020:  5180.324284 277.843622 -1135.837232
+           5180.323283 277.833622 -1135.837232
+                     ^
+    0021:  277.843622 2960.457709 -681.816292
+           277.833622 2960.357709 -681.816292
+                    ^
+    0022:  -1135.837232 -681.816292 4515.105462
+           -1135.837232 -681.816292 3515.105362
+                                              ^
+    0023:  0.000000 -0.000000 0.000000 24.034240
+           -0.000000 -0.000000 0.000000 23.033230
+                                                ^
+    0024:  -0.000000 -0.000000 0.000000 0.654402
+           0.000000 -0.000000 0.000000 0.653302
+                                              ^
+    0025:  0.000000 -0.000000 0.000000 24.079992
+           -0.000000 -0.000000 0.000000 23.079992
+                                                ^
+    specdiff run completed
+    $  
+</pre>
+
+<p>Here are the switches supported by specdiff:</p>
+
+<pre>
+ $ specdiff -h
+ Usage: /Users/cloyce/SPEC/cpu2006/bin/specdiff &lt;options&gt; file1 [file2]
+       -l,--lines         # of lines of differences to print (-1 for all)
+       -q,--quiet         don't print lines just set return code
+       -a,--abstol        absolute tolerance (for floating point compares)
+       -r,--reltol        relative tolerance (for floating point compares)
+       -o,--obiwan        allow off-by-one errors
+       -O,--OBIWAN        *don't* allow off-by-one errors
+       -s,--skiptol       # of differences to ignore
+          --skipabstol    # of abstol differences to ignore
+          --skipreltol    # of reltol differences to ignore
+          --skipobiwan    # of off-by-one differences to ignore
+       -t,--calctol       calculate required tolerances
+       -H,--histogram     show a histogram of differences
+       -f,--floatcompare  Do comparison for floating-point values even if no
+                          tolerances are specified.  (Normally this is
+                          automatic.)
+       -m,--mis           write file2.mis with miscompares
+       -c,--cw            collapse whitespace (probably doesn't do what you
+                          think it does)
+       -C,--CW            *don't* collapse whitespace
+       -b,--binary        Do byte-wise comparison for binary outputs
+       -i,--ignorecase    Ignore case for string comparisons
+       -d,--datadir       Compare against file(s) in data directory
+          --os            Set the operating system type (this is unnecessary)
+       -v,--verbose       Set the level of noisiness for the output
+       -h,--help          Print this message
+ $  </pre>
+
+
+<h2 id="specinvoke">specinvoke</h2>
+<p>In order to run a benchmark, <tt>runspec</tt> writes a series of commands in the run directory, in the file
+<tt>speccmds.cmd</tt>.  These commands are then interpreted by <tt>specinvoke</tt>.</p>
+
+<p>When something goes wrong, it is often useful to try the commands by hand.  Ask <tt>specinvoke</tt> what it did, by using
+the "<tt>-n</tt>" switch:</p>
+
+<pre>
+    $ <b>go work namd</b>
+    /cpu2006/dr_evil/benchspec/CPU2006/444.namd/run
+    $ <b>cd run_base_test_try_utilities.0000</b>
+    $ <b>ls</b>
+    compare.cmd             namd.input              namd_base.try_utilities
+    compare.err             namd.out.cmp            speccmds.cmd
+    compare.out             namd.out.mis            speccmds.err
+    compare.stdout          namd.out.orig           speccmds.out
+    namd.err                namd.stdout             speccmds.stdout
+    $ <b>specinvoke -n</b>
+    # Use another -n on the command line to see chdir commands
+    # Starting run for copy #0
+    ../run_base_test_try_utilities.0000/namd_base.try_utilities \
+        --input namd.input --iterations 1 \
+        --output namd.out &gt; namd.stdout 2&gt;&gt; namd.err
+    $  
+</pre>
+
+<p>In the above example, we see how namd is invoked (line wraps added for readability).  If you wanted to try out your own
+variations on the above command by hand, you could do so.</p>
+
+<p>Here are the switches supported by specinvoke:</p>
+
+<pre>
+  $ specinvoke -h
+  Usage: specinvoke [options] [instructionfile]
+           -i #            iterations
+           -c #            concurrent processes (overrides -u in command file)
+           -E              return non-zero exit code if child does
+           -s shell        shell to invoke
+           -f file         instruction file
+           -o file         output file
+           -e file         error file
+           -d dir          change to dir first
+           -n[n]           print a 'dry_run' of commands
+           -A              return 0 error code
+           -S msecs        sleep between spawning copies (in milliseconds)
+           -r              don't do I/O redirection ($command already has it)
+           -N              open null device when no input file is specified
+           -Z              use zero-length file when no input file is specified
+           -C              (default) close stdin when no input file is specified
+           -h              this message
+</pre>
+
+
+<h2 id="specmake">specmake</h2>
+<p>To build a benchmark, <tt>runspec</tt> uses <tt>specmake</tt>, which is simply gnu <tt>make</tt> under a unique name to
+avoid possible conflicts with other versions of make on your system.</p>
+
+<p>If a benchmark build fails, one of the most massively useful things you can do is to ask <tt>specmake</tt> what it did, by
+using the "<kbd>-n</kbd>" switch, which means "dry run".</p>
+
+<p>For example, let's create a config file that is unlikely to work:</p>
+
+<pre>
+    $ <b>go config</b>
+    $ <b>cat > tmp.cfg</b>
+    ext = silly
+    FC  = f66
+    $  
+</pre>
+
+<p> and try it out:</p>
+
+<pre>
+    $ <b>runspec --config=tmp --tuning=base --action=build leslie3d</b>
+    runspec v4256 - Copyright 1999-2006 Standard Performance Evaluation Corporation
+    Using 'macosx-ppc' tools
+    Reading MANIFEST... 2565 files
+    Loading runspec modules...............
+    Locating benchmarks...found 31 benchmarks in 13 benchsets.
+    Locating output formats: ASCII, config, CSV, flags, html, mail, PDF, 
+         PostScript, raw, Screen, Submission Check
+    Reading config file '/cpu2006/dr_evil/config/tmp.cfg'
+    Benchmarks selected: 437.leslie3d
+    Compiling Binaries
+      Building 437.leslie3d ref base silly default: (build_base_silly.0000)
+    Error with make 'specmake build': check file 
+    '/cpu2006/dr_evil/benchspec/CPU2006/437.leslie3d/run/build_base_silly.0000/make.err'
+      Error with make!
+    *** Error building 437.leslie3d
+    If you wish to ignore this error, please use '-I' or ignore errors.
+    
+    The log for this run is in /cpu2006/dr_evil/result/CPU2006.009.log
+    
+    runspec finished at Thu May 25 10:01:54 2006; 8 total seconds elapsed
+    $  
+</pre>
+
+<p>Sure enough, it failed.  Let's find the appropriate run directory where our silly build was attempted:</p>
+
+<pre>
+    $ <b>go work leslie3d</b>
+    /cpu2006/dr_evil/benchspec/CPU2006/437.leslie3d/run
+    $ <b>ls</b>
+    build_base_silly.0000 list
+    $ <b>cd build_base_silly.0000</b>
+</pre>
+
+<p>And ask specmake just exactly what it generated:</p>
+
+<pre>
+    $ <b>specmake -n</b>
+    f66 -c -o tml.o                    tml.f
+    f66             tml.o                     -o leslie3d
+</pre>
+
+<p>OK, let's enter the command by hand:</p>
+
+<pre>
+    $ <b>f66 -c -o tml.o                    tml.f</b>
+    -bash: f66: command not found
+    $  </pre>
+
+<p>A great convenience of the CPU2006 suite is the fact that you can now proceed to play with all the files in this run
+directory, to prototype different changes and try out ideas, without fear that you will break anything.  As long as you
+confine your edits to (in this example) <kbd>$SPEC/benchspec/CPU2006/437.leslie3d/run/build_base_silly.0000</kbd>, you are in
+a private sandbox and will not harm the original sources.</p>
+
+<p>Here are the switches supported by specmake:</p>
+<pre>
+    $ <b>specmake -h</b>
+    Usage: specmake [options] [target] ...
+    Options:
+      -b, -m                      Ignored for compatibility.
+      -B, --always-make           Unconditionally make all targets.
+      -C DIRECTORY, --directory=DIRECTORY
+                                  Change to DIRECTORY before doing anything.
+      -d                          Print lots of debugging information.
+      --debug[=FLAGS]             Print various types of debugging information.
+      -e, --environment-overrides
+                                  Environment variables override makefiles.
+      -f FILE, --file=FILE, --makefile=FILE
+                                  Read FILE as a makefile.
+      -h, --help                  Print this message and exit.
+      -i, --ignore-errors         Ignore errors from commands.
+      -I DIRECTORY, --include-dir=DIRECTORY
+                                  Search DIRECTORY for included makefiles.
+      -j [N], --jobs[=N]          Allow N jobs at once; infinite jobs with no arg.
+      -k, --keep-going            Keep going when some targets can't be made.
+      -l [N], --load-average[=N], --max-load[=N]
+                                  Don't start multiple jobs unless load is below N.
+      -n, --just-print, --dry-run, --recon
+                                  Don't actually run any commands; just print them.
+      -o FILE, --old-file=FILE, --assume-old=FILE
+                                  Consider FILE to be very old and don't remake it.
+      -p, --print-data-base       Print make's internal database.
+      -q, --question              Run no commands; exit status says if up to date.
+      -r, --no-builtin-rules      Disable the built-in implicit rules.
+      -R, --no-builtin-variables  Disable the built-in variable settings.
+      -s, --silent, --quiet       Don't echo commands.
+      -S, --no-keep-going, --stop
+                                  Turns off -k.
+      -t, --touch                 Touch targets instead of remaking them.
+      -v, --version               Print the version number of make and exit.
+      -w, --print-directory       Print the current directory.
+      --no-print-directory        Turn off -w, even if it was turned on implicitly.
+      -W FILE, --what-if=FILE, --new-file=FILE, --assume-new=FILE
+                                  Consider FILE to be infinitely new.
+      --warn-undefined-variables  Warn when an undefined variable is referenced.
+    
+    This program built for powerpc-apple-darwin6.8
+    Report bugs to &lt;bug-make@gnu.org&gt;
+</pre>
+
+<h2 id="toolsver">toolsver</h2>
+
+<p>If you have a rawfile, you can get information about the binary toolset and the versions of all of the system-independent
+tools files.  To do so, use the <kbd>toolsver</kbd> utility.  </p>
+
+<p>For example, starting with a freshly-installed SPEC CPU2006 directory tree:</p>
+
+<pre>
+    % <b>runspec --config=try_utilities --size=test --iterations=1 \
+      --tuning=base --output_format=ps > /dev/null</b>
+    % <b>cd $SPEC/result</b>
+    % <b>ls</b>
+    CINT2006.001.test.ps  CINT2006.001.test.rsf CPU2006.001.log       CPU2006.lock
+</pre>
+
+<p>Note that we have just the single result file.  Now, attempt to extract the version information:</p>
+
+<pre>
+    % <b>toolsver CINT2006.001.test.rsf</b>
+    CINT2006.001.test.rsf:
+     Binary toolset used was 'macosx-ppc'
+     Versions of Perl-based tools:
+        4256 runspec
+        4163 CPUFlagsParser.pm
+        4160 PSPDF.pm
+        4253 asc.pl
+        4256 benchmark.pm
+        4223 benchset.pm
+        4238 cfgfile.pl
+        3626 compare.pl
+        4243 config.pl
+        4247 csv.pl
+        4238 flags.pl
+        4238 flagutils.pl
+        3626 format.pm
+        4238 listfile.pm
+        4166 locate.pl
+        4160 log.pl
+        4214 mail.pl
+        3626 monitor.pl
+        4160 os.pl
+        4252 parse.pl
+        4160 pdf.pl
+        4253 ps.pl
+        4184 raw.pl
+        3626 screen.pl
+        4212 subcheck.pl
+        4251 util.pl
+        4196 vars.pl
+    
+    
+    
+</pre>
+
+<p><span class="new">The toolsver utility is new with CPU2006.</span></p>
+
+<h4>On Windows systems</h4>
+<p>You can invoke <kbd>toolsver</kbd> as:</p>
+
+<pre>
+    <b>specperl %spec%\bin\toolsver rawfile  </b>
+</pre>
+
+
+<hr />
+<p>Copyright (C) 1999-2006 Standard Performance Evaluation Corporation
+<br />All Rights Reserved</p>
+</body>
+</html>

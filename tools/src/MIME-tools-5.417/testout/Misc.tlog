@@ -1,0 +1,68 @@
+1..13
+
+1: bug 971008-MWN: are MIME attributes parsed ok?
+1:   A: "application/vnd.ms-powerpoint"
+1:   B: "application/vnd.ms-powerpoint"
+1: ok 1
+
+2: bug 970822-AL: Mail::Field register problem (paramstr)
+2:   A: "text/HTML"
+2:   B: "text/HTML"
+2: ok 2
+
+3: bug 970822-AL: Mail::Field register problem (type)
+3:   A: "text/html"
+3:   B: "text/html"
+3: ok 3
+
+4: bug 970725-DNA: QP use of RFC2049 guideline 8
+4:   A: "=46rom me=\n"
+4:   B: "=46rom me=\n"
+4: ok 4
+
+5: bug 970725-DNA: QP use of RFC2049 guideline 8
+5:   A: ".=\n"
+5:   B: ".=\n"
+5: ok 5
+
+6: bug 970725-DNA: QP use of RFC2049 guideline 8
+6:   A: "=2E\n"
+6:   B: "=2E\n"
+6: ok 6
+
+7: bug 970725-DNA: QP use of RFC2049 guideline 8
+7:   A: " From you=\n"
+7:   B: " From you=\n"
+7: ok 7
+
+8: bug 970725-DNA: QP use of RFC2049 guideline 8
+8:   A: "=46rom me=\n"
+8:   B: "=46rom me=\n"
+8: ok 8
+
+9: bug 970725-DNA: QP use of RFC2049 guideline 8
+9:   A: ".=\n"
+9:   B: ".=\n"
+9: ok 9
+
+10: bug 970725-DNA: QP use of RFC2049 guideline 8
+10:   A: " From you=\n"
+10:   B: " From you=\n"
+10: ok 10
+
+11: bug 970626-TS: header get_all() case problem fixed?
+11:   A: "4"
+11:   B: "4"
+11: ok 11
+
+12: bug 980430-JT: did we get 2 parts?
+12:   A: "2"
+12:   B: "2"
+12: ok 12
+
+13: bug: did we get 2 parts?
+13:   A: "2"
+13:   B: "2"
+13: ok 13
+
+END

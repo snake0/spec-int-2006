@@ -1,0 +1,77 @@
+                                 436.cactusADM
+                       SPEC CPU2006 Benchmark Description
+
+Benchmark Name
+
+   436.cactusADM
+
+     ----------------------------------------------------------------------
+
+Benchmark Author
+
+   Malcolm Tobias <mtobias [at] wustl.edu>
+   Washington University School of Medicine
+   Center for Computational Biology
+   700 S. Euclid Ave., Rm. 101
+   Campus Box 8036
+   St. Louis, MO 63110, USA
+
+     ----------------------------------------------------------------------
+
+Benchmark Program General Category
+
+   Physics / General Relativity
+
+     ----------------------------------------------------------------------
+
+Benchmark Description
+
+   CactusADM is a combination of Cactus, an open source problem solving
+   environment, and BenchADM, a computational kernel representative of many
+   applications in numerical relativity (ADM stands for ADM formalism
+   developed by Arnowitt, Deser and Misner). CactusADM solves the Einstein
+   evolution equations, which describe how spacetime curves as response to
+   its matter content, and are a set of ten coupled nonlinear partial
+   differential equations, in their standard ADM 3+1 formulation. A
+   staggered-leapfrog numerical method is used to carry out the update.
+
+     ----------------------------------------------------------------------
+
+Input Description
+
+   The program requires a parameter file BenchADM.par. This file defines the
+   grid size, as well as the number of iterations which the code will run.
+   The input file can be modified to print out timing information, but this
+   has not been implemented in CPU2006. The initial data represents flat
+   space. Geodesic slicing is used.
+
+     ----------------------------------------------------------------------
+
+Output Description
+
+   The iteration, time, and gxx and gyz components of the metric which are
+   coordinate-dependent descriptions of the space time are printed for
+   validation.
+
+     ----------------------------------------------------------------------
+
+Programming Language
+
+   Fortran 90, ANSI C
+
+     ----------------------------------------------------------------------
+
+Known portability issues
+
+   None
+
+     ----------------------------------------------------------------------
+
+References
+
+     * The Cactus Code web site:
+       http://www.cactuscode.org
+
+     ----------------------------------------------------------------------
+
+   Last updated: 26 June 2006

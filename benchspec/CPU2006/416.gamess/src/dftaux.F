@@ -1,0 +1,3207 @@
+C  9 DEC 03 - MWS - SYNCH COMMON BLOCK RUNOPT
+C 25 MAR 00 - KRG - NEW MODULE FOR DFT AUXILIARY BASIS INTEGRALS
+C
+C*MODULE DFTAUX  *DECK DFTAXDRV
+      SUBROUTINE DFTAXDRV(SOME)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      LOGICAL SOME
+C
+      PARAMETER (MXATM=500, MXSH=1000, MXGTOT=5000)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJK,IPK,IDAF,NAV,IODA(400)
+      COMMON /DFTPAR/ DFTTYP(20),EXENA,EXENB,EXENC,IDFT34,NAUXFUN,
+     *                                                    NAUXSHL
+      COMMON /FMCOM / X(1)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /RUNOPT/ RUNTYP,EXETYP,NEVALS,NGLEVL,NHLEVL
+C
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA CHECK  /8HCHECK   /
+#else
+      CHARACTER*8 :: CHECK_STR
+      EQUIVALENCE (CHECK, CHECK_STR)
+      DATA CHECK_STR/"CHECK   "/
+#endif
+C
+C     THIS IS THE MAIN DRIVER
+C
+C     ----- CALCULATE MEMORY -----
+C
+C     NAUXSHL=NUMBER OF AUXILIARY SHELLS
+C     NAUXFUN=NUMBER OF AUXILIARY FUNCTIONS
+C     IS=OVERLAP MATRIX (TRIAGONAL FORM)
+C     IDX,IDY,IDZ=DERIVATIVE MATRICES (TRIGONAL, ANTI-HERMITIAN)
+C     IV=VECTORS
+C     IATOM=TELLS WHICH ATOM A GIVEN SHELL IS ON
+C     ITYPE=TELLS WHAT TYPE THE SHELL IS (S,P,D,F,G,...)
+C     IEXP=THE GAUSSIAN EXPONENT FOR THE SHELL
+C     ICONT=CONTRACTION/NORMALIZATION FOR THE SHELL
+C     ILOCAUX=WHICH FUNCTION DOES THE SHELL START AT
+C
+      CALL VALFM (LOADFM)
+      CALL DFTAX1(0,DUM,DUM,DUM,DUM,NAUXSHL,NAUXFUN,DUM,DFTTYP(20))
+      LAUX1=NAUXFUN+NUM
+      LAUX2=LAUX1*(LAUX1+1)/2
+      LAUX3=LAUX1*LAUX1
+      L1=NUM
+      L2=NUM*(NUM+1)/2
+      L3=NUM*NUM
+      NAUX2 = (NAUXSHL*NAUXSHL+NAUXSHL)/2
+C
+C         ALLOCATE MEMORY
+C
+C     OVERLAP MATRIX
+      IS    = LOADFM + 1
+C     DERIVATIVE MATRIX
+      IDX   = IS     + LAUX3
+      IDY   = IDX    + LAUX2
+      IDZ   = IDY    + LAUX2
+C     LCAO COEFFICIENTS FOR AO+AUX
+      IV    = IDZ    + LAUX2
+C     WHICH ATOM IT THIS SHELL ON
+      IATOM = IV     + LAUX3
+C     WHICH TYPE OF SHELL (S,P,D,...)
+      ITYPE = IATOM  + NAUXSHL
+C     WHAT THE EXPONENT IS
+      IEXP  = ITYPE  + NAUXSHL
+C     WHAT THE SHELL NORMALIZATION/CONTRACTION IS
+      ICONT = IEXP   + NAUXSHL
+C     WHERE THE SHELL STARTS
+      ILOCAUX=ICONT  + NAUXSHL
+C     SYMMETRY MAPPING
+      IMAPAUX=ILOCAUX+NAUXSHL
+C     SCREENING INTEGRALS (IIJJ)
+      ISCREEN=IMAPAUX+NAUXSHL*48
+C
+      LAST=ISCREEN+MAX(NSHELL*NAUXSHL,NAUX2)
+C
+      NEED = LAST - LOADFM - 1
+      CALL GETFM(NEED)
+C
+C
+C     ----- BUILD AUXILLIARY BASIS SET -----
+C
+      CALL DFTAX1(1,X(IATOM),X(ITYPE),X(IEXP),X(ICONT),NAUXSHL,
+     *            NAUXFUN,X(ILOCAUX),DFTTYP(20))
+      IF(SOME) WRITE(IW,9000) NAUXFUN,NAUXSHL
+      CALL DFTAX3(X(IMAPAUX),X(IATOM))
+      CALL DAWRIT(IDAF,IODA,X(IATOM),NAUXSHL*53,349,0)
+      IF (EXETYP .EQ. CHECK) GO TO 1000
+C
+C     ----- READ IN S MATRIX AND D/DX MATRIX FROM DISK
+C           AND PUT IT INTO UPPER CORNER ----
+C
+      IF(SOME) CALL TSECND(TIM0)                                        
+      CALL VCLR(X(IS),1,LAUX2)
+      CALL VCLR(X(IDX),1,LAUX2)
+      CALL VCLR(X(IDY),1,LAUX2)
+      CALL VCLR(X(IDZ),1,LAUX2)
+      CALL DAREAD(IDAF,IODA,X(IS),L2,12,0)
+      CALL DIPVEL(EXETYP,X(IDX),X(IDY),X(IDZ),L1,L2)
+      CALL DAWRIT(IDAF,IODA,X(IDX),L2,84,0)
+      CALL DAWRIT(IDAF,IODA,X(IDY),L2,85,0)
+      CALL DAWRIT(IDAF,IODA,X(IDZ),L2,86,0)
+      IF(SOME) CALL TSECND(TIM)                                        
+      IF(SOME) TIM = TIM-TIM0                         
+      IF(SOME) WRITE(IW,9010) TIM 
+C
+C     ----- CALCULATE (AO,AUX) AND (AO D/DX AUX) -----
+C
+      IF(SOME) CALL TSECND(TIM0)
+      CALL DFTAX4A(EXETYP,X(IDX),X(IDY),X(IDZ),X(IS),LAUX1,LAUX2,
+     *            X(IATOM),X(ITYPE),X(IEXP),X(ICONT),X(ILOCAUX),
+     *            NAUXSHL)
+      IF(SOME) CALL TSECND(TIM)                                        
+      IF(SOME) TIM = TIM-TIM0                         
+      IF(SOME) WRITE(IW,9020) TIM 
+C
+C     ----- CALCULATE (AUX,AUX) AND (AUX D/DX AUX) -----
+C
+      IF(SOME) CALL TSECND(TIM0)
+      CALL DFTAX4B(EXETYP,X(IDX),X(IDY),X(IDZ),X(IS),LAUX1,LAUX2,
+     *            X(IATOM),X(ITYPE),X(IEXP),X(ICONT),X(ILOCAUX),
+     *            NAUXSHL)
+      CALL DAWRIT(IDAF,IODA,X(IS) ,LAUX2,350,0)
+      CALL DAWRIT(IDAF,IODA,X(IDX),LAUX2,344,0)
+      CALL DAWRIT(IDAF,IODA,X(IDY),LAUX2,345,0)
+      CALL DAWRIT(IDAF,IODA,X(IDZ),LAUX2,346,0)
+      IF(SOME) CALL TSECND(TIM)                                        
+      IF(SOME) TIM = TIM-TIM0                         
+      IF(SOME) WRITE(IW,9030) TIM 
+C
+C     FROM NOW ON IDX+IDY WILL BE USED AS LAUX3 WORK SPACE
+C
+C     ----- CALCULATE ORTHONORMAL BASIS SET -----
+C
+      IF(SOME) CALL TSECND(TIM0)
+      CALL DAREAD(IDAF,IODA,X(IDX),L3,45,0)
+      CALL DFTTRN3(X(IDX),X(IV),NUM,NAUXFUN)
+      CALL EXPND(X(IS),X(IDX),LAUX1,0)
+      CALL DFTAX6(X(IS),X(IV),X(IDX),NUM,NAUXFUN)
+      CALL DAWRIT(IDAF,IODA,X(IV+NUM*LAUX1),LAUX1*NAUXFUN,343,0)
+      IF(SOME) CALL TSECND(TIM)                                        
+      IF(SOME) TIM = TIM-TIM0                         
+      IF(SOME) WRITE(IW,9040) TIM 
+C
+C     ----- GENERATE (IIJJ) SCREENING INTEGRALS -----
+C
+      IF(SOME) CALL TSECND(TIM0)
+      CALL DFTAX9A(NAUXSHL,X(IATOM),X(ITYPE),X(IEXP),X(ICONT),
+     *             X(ISCREEN))
+      CALL DAWRIT(IDAF,IODA,X(ISCREEN),NSHELL*NAUXSHL,353,0)
+      IF(SOME) CALL TSECND(TIM)                                        
+      IF(SOME) TIM = TIM-TIM0                         
+      IF(SOME) WRITE(IW,9050) TIM 
+C
+      IF(SOME) CALL TSECND(TIM0)
+      CALL DFTAX9B(NAUXSHL,X(IATOM),X(ITYPE),X(IEXP),X(ICONT),
+     *             X(ISCREEN))
+      CALL DAWRIT(IDAF,IODA,X(ISCREEN),NAUX2,354,0)
+      IF(SOME) CALL TSECND(TIM)                                        
+      IF(SOME) TIM = TIM-TIM0                         
+      IF(SOME) WRITE(IW,9060) TIM 
+C
+C     ----- RETURN MEMORY -----
+C
+ 1000 CONTINUE
+      CALL RETFM(NEED)
+      RETURN
+C
+ 9000 FORMAT(1X,'GENERATED AUXILIARY BASIS WITH',I10,' AOS IN',
+     *       I10,' SHELLS.')
+ 9010 FORMAT(1X,'TIME TO EVALUATE GRADIENT CORRECTION INTEGRALS=',F12.1)
+ 9020 FORMAT(1X,'TIME TO EVALUATE AO/AUX INTEGRALS             =',F12.1)
+ 9030 FORMAT(1X,'TIME TO EVALUATE AUX/AUX INTEGRALS            =',F12.1)
+ 9040 FORMAT(1X,'TIME TO ORTHOGONALIZE THE AUXILIARY BASIS     =',F12.1)
+ 9050 FORMAT(1X,'TIME TO EVALUATE AO/AUX SCREENING INTEGRALS   =',F12.1)
+ 9060 FORMAT(1X,'TIME TO EVALUATE AUX/AUX SCREENING INTEGRALS  =',F12.1)
+      END
+C*MODULE DFTAUX  *DECK DFTAX1
+      SUBROUTINE DFTAX1(IDOIT,IATOMS,ITYPE,AUXEXP,CONT,NAUXSHL,NAUXFUN,
+     *                  LOCAUX,AUXSIZE)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      INTEGER HOWMANY
+C
+      DIMENSION IATOMS(*),ITYPE(*),AUXEXP(*),CONT(*),LOCAUX(*)
+      DIMENSION FDATA1(104,5),FDATA2(104,5),IDATA3(104,5),DFAC(5)
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+C
+      PARAMETER (PI32=5.56832799683170D+00)
+C
+      DATA DFAC/1.0D+00,0.5D+00,0.75D+00,1.875D+00,6.5625D+00/
+C
+C     ARRAYS ARE NOT USED FIRST TIME THROUGH AND ARE NAUXSHL IN
+C     LENGTH THE SECOND TIME THAT THE ROUTINE GETS CALLED.
+C     IDOIT=0 JUST CALCULATE NAUXSHL AND NAUXFUN
+C     IDOIT=1 GENERATE SHELL
+C     THIS ROUTINE GENERATES AN AUXILIARY BASIS SET (NORMALIZED)
+C
+      NAUXSHL=0
+      NAUXFUN=1
+      DO I=1,5
+        DO J=1,104
+          FDATA1(J,I)=0.0D+00
+          FDATA2(J,I)=0.0D+00
+          IDATA3(J,I)=0
+        END DO
+      END DO
+C
+C     THIS WILL FILL THE MATRIX THEINFO WITH DATA
+C
+      CALL DFTAX2(FDATA1,FDATA2,IDATA3,AUXSIZE)
+C
+C     LOOP OVER ATOMS
+C
+      DO 100 IATOM=1,NAT
+       MASS=INT(ZAN(IATOM))
+C
+C      LOOP OVER S,P,D,F,G,....
+C      EACH ANGULAR MOMENTUM IS TREATED EVEN TEMPERED
+C      FIRST GAUSSIAN=SCALER, SECOND=FIRST*ANUMBER,
+C      THIRD=SECOND*ANUMBER,.....
+C      HOWMANY TELLS WHEN TO STOP
+C
+       DO 200 ISHELL=1,5
+        SCALER =FDATA1(MASS,ISHELL)
+        ANUMBER=FDATA2(MASS,ISHELL)
+        HOWMANY=IDATA3(MASS,ISHELL)
+C
+C       LOOP OVER THE INDIVIDUAL SHELLS
+C
+        DO 300 IGAUSS=1,HOWMANY
+         NAUXSHL=NAUXSHL+1
+         IF(IDOIT .EQ. 1) THEN
+            IATOMS(NAUXSHL)=IATOM
+            ITYPE (NAUXSHL)=ISHELL
+C
+C           BASIS FUNCTIONS ARE EVEN TEMPERED
+C           SO, PLEASE FEEL FREE TO MAKE THEM ANGRY,
+C           THEY HAVE A VERY EVEN KEELED TEMPERMENT
+C
+            AUXEXP(NAUXSHL)=SCALER*(ANUMBER**(IGAUSS-1))
+            EE    = 1.0D+00/(AUXEXP(NAUXSHL)+AUXEXP(NAUXSHL))
+            FACTOR= EE*SQRT(EE)
+            FACTOR= DFAC(ISHELL)*FACTOR*(EE**(ISHELL-1))
+            FACTOR= 1.0D+00/SQRT(FACTOR*PI32)
+            CONT  (NAUXSHL)=FACTOR
+            LOCAUX(NAUXSHL)=NAUXFUN+NUM
+         END IF
+C
+C        S=1,P=2,D=3,F=4,G=5,...
+C
+         IF(ISHELL .EQ. 1) NAUXFUN=NAUXFUN+1
+         IF(ISHELL .EQ. 2) NAUXFUN=NAUXFUN+3
+         IF(ISHELL .EQ. 3) NAUXFUN=NAUXFUN+6
+         IF(ISHELL .EQ. 4) NAUXFUN=NAUXFUN+10
+         IF(ISHELL .EQ. 5) NAUXFUN=NAUXFUN+15
+ 300    CONTINUE
+ 200   CONTINUE
+ 100  CONTINUE
+      NAUXFUN=NAUXFUN-1
+      END
+C*MODULE DFTAUX  *DECK DFTAX2
+      SUBROUTINE DFTAX2(SCALER,ANUMBR,HOWMNY,AUXSIZE)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      INTEGER HOWMNY
+C
+      DIMENSION SCALER(104,5),ANUMBR(104,5),HOWMNY(104,5)
+C
+C     THESE MUST BE VLCR BEFORE CALLING
+C
+C     THESE WILL BE BASED PARTIALLY ON ATOMIC BASIS SETS
+C     AUG-CC-DZVP OF DUNNING HAVE BEEN EVEN TEMPERED TO SPAN
+C     THE SAME REGION FOR H-AR.
+C
+C     THE "ANUMBR" AND "HOWMNY" ARE THE SAME FOR A GIVEN ROW
+C
+C     A SECOND ORDER POLYNOMIAL DETERMINES "SCALER"
+C
+C     "HOWMANY" IS THE NUMBER OF FUNCTIONS USED
+C     "SCALER" IS THE GUASSIAN EXPONENT OF THE FIRST GAUSSIAN IN
+C              A GIVEN SHELL
+C     "ANUMBR" IS THE VALUE THAT EACH NEXT GAUSSIAN EXPONENT
+C              DIFFERS FROM THE PREVIOUS ONE.
+C     THE EQUATION LOOKS LIKE THIS:
+C     GAUSSIAN EXPONENT = SCALER * ANUMBR**(WHICH GUASSIAN - 1)
+C
+C
+      IF(AUXSIZE .LE. 0.1D+00) THEN
+C
+C     ----AUX0 BASIS, ALSO KNOWN AS NONE!----
+C
+      RETURN
+      ELSE IF (AUXSIZE .LE. 1.1D+00) THEN
+C
+C     ----AUX1 BASIS, BASED ON ATOMIC BASIS SETS----
+C
+C     H THROUGH HE
+C
+C       5S 2P
+C
+      DO I=1,2
+C       S
+        HOWMNY(I,1)=5
+        ANUMBR(I,1)=0.2135992178372D+00
+        SCALER(I,1)=-12.34D+00+I*25.35D+00
+C       P
+        HOWMNY(I,2)=2
+        ANUMBR(I,2)=0.1939542573563D+00
+        SCALER(I,2)=0.179D+00+I*0.548D+00
+      END DO
+C
+C     LI THROUGH NE
+C
+C     10S 5P 2D
+C
+      DO I=3,10
+C       S
+        HOWMNY(I,1)=10
+        ANUMBR(I,1)=0.2666693538008D+00
+        SCALER(I,1)=-1801.3D+00+I*575.17D+00+I*I*139.48D+00
+C       P
+        HOWMNY(I,2)=5
+        ANUMBR(I,2)=0.2507885875822D+00
+        SCALER(I,2)=-2.9524D+00+I*0.47448D+00+I*I*0.26511D+00
+C       D
+        HOWMNY(I,3)=2
+        ANUMBR(I,3)=0.278212222366D+00
+        SCALER(I,3)=0.75814D+00-I*0.30736D+00+I*I*0.045125D+00
+      END DO
+C
+C     NA THROUGH AR
+C
+C     13S 9P 2D
+C
+      DO I=11,18
+        HOWMNY(I,1)=13
+        ANUMBR(I,1)=0.2946928781115D+00
+        SCALER(I,1)=-68030D+00+I*5744D+00+I*I*340D+00
+C       P
+        HOWMNY(I,2)=9
+        ANUMBR(I,2)=0.3106353753392D+00
+        SCALER(I,2)=-1903D+00+I*262.57D+00-I*I*7.4143D+00
+C       D
+        HOWMNY(I,3)=2
+        ANUMBR(I,3)=0.30585700097D+00
+        SCALER(I,3)=0.086629D+00-I*0.064543D+00+I*I*0.0055714D+00
+      END DO
+C
+C     K THROUGH KR
+C
+      DO I=19,36
+      END DO
+C
+C     RB THROUGH XE
+C
+      DO I=37,54
+      END DO
+C
+C     CS THROUGH RN
+C
+      DO I=55,86
+      END DO
+C
+C     TO INFINITY AND BEYOND
+C
+      DO I=87,104
+      END DO
+      ELSE IF (AUXSIZE .LE. 2.1D+00) THEN
+C
+C     ----AUX2 BASIS, AN EXPANDED VERSION OF AUX1----
+C
+C
+C     H THROUGH HE
+C
+C     9S+ 3P+-
+C
+      DO I=1,2
+C       S   DOUBLED NUMBER BUT SPAN SAME SPACE
+        HOWMNY(I,1)=9+1+0
+        ANUMBR(I,1)=SQRT(0.2135992178372D+00)
+        SCALER(I,1)=-12.34D+00+I*25.35D+00
+C       P
+        HOWMNY(I,2)=3+1+1
+        ANUMBR(I,2)=SQRT(0.1939542573563D+00)
+        SCALER(I,2)=(0.179D+00+I*0.548D+00)/ANUMBR(I,2)
+      END DO
+C
+C     LI THROUGH NE
+C
+C     10S 5P--- 2D--
+C
+      DO I=3,10
+C       S    UNCHANGED
+        HOWMNY(I,1)=10
+        ANUMBR(I,1)=0.2666693538008D+00
+        SCALER(I,1)=-1801.3D+00+I*575.17D+00+I*I*139.48D+00
+C       P    3 EXTRA TIGHT FUNCTIONS
+        HOWMNY(I,2)=5+0+3
+        ANUMBR(I,2)=0.2507885875822D+00
+        SCALER(I,2)=(-2.9524D+00+I*0.47448D+00+I*I*0.26511D+00)/
+     *              ANUMBR(I,2)**3
+C       D    2 EXTRA TIGHT FUNCTIONS
+        HOWMNY(I,3)=2+0+2
+        ANUMBR(I,3)=0.278212222366D+00
+        SCALER(I,3)=(0.75814D+00-I*0.30736D+00+I*I*0.045125D+00)/
+     *              ANUMBR(I,3)**2
+      END DO
+C
+C     NA THROUGH AR
+C
+C    13S+ 9P--- 2D--
+C
+      DO I=11,18
+        HOWMNY(I,1)=13+1
+        ANUMBR(I,1)=0.2946928781115D+00
+        SCALER(I,1)=-68030D+00+I*5744D+00+I*I*340D+00
+C       P
+        HOWMNY(I,2)=9+0+3
+        ANUMBR(I,2)=0.3106353753392D+00
+        SCALER(I,2)=(-1903D+00+I*262.57D+00-I*I*7.4143D+00)/
+     *              ANUMBR(I,2)**3
+C       D
+        HOWMNY(I,3)=2+0+2
+        ANUMBR(I,3)=0.30585700097D+00
+        SCALER(I,3)=(0.086629D+00-I*0.064543D+00+I*I*0.0055714D+00)/
+     *              ANUMBR(I,3)**2
+      END DO
+      ELSE IF (AUXSIZE .LE. 3.1D+00) THEN
+C
+C     ----AUX3 BASIS, DEVELOPMENT USE ONLY----
+C
+C
+C     H THROUGH HE
+C
+      DO I=1,2
+C       S   DOUBLED NUMBER BUT SPAN SAME SPACE
+        HOWMNY(I,1)=10
+        ANUMBR(I,1)=SQRT(0.2135992178372D+00)
+        SCALER(I,1)=-12.34D+00+I*25.35D+00
+C       P
+        HOWMNY(I,2)=5
+        ANUMBR(I,2)=SQRT(0.1939542573563D+00)
+        SCALER(I,2)=(0.179D+00+I*0.548D+00)/SQRT(0.1939542573563D+00)
+      END DO
+C
+C     LI THROUGH NE
+C
+      DO I=3,10
+C       S    UNCHANGED
+        HOWMNY(I,1)=10
+        ANUMBR(I,1)=0.2666693538008D+00
+        SCALER(I,1)=-1801.3D+00+I*575.17D+00+I*I*139.48D+00
+C       P    3 EXTRA TIGHT FUNCTIONS
+        HOWMNY(I,2)=8
+        ANUMBR(I,2)=0.2507885875822D+00
+        SCALER(I,2)=(-2.9524D+00+I*0.47448D+00+I*I*0.26511D+00)/
+     *     (0.2507885875822D+00*0.2507885875822D+00*0.2507885875822D+00)
+C       D     2 EXTRA TIGHT FUNCTIONS
+        HOWMNY(I,3)=4
+        ANUMBR(I,3)=0.278212222366D+00
+        SCALER(I,3)=(0.75814D+00-I*0.30736D+00+I*I*0.045125D+00)/
+     *     (0.278212222366D+00*0.278212222366D+00)
+      END DO
+C
+C     NA THROUGH AR
+C
+      DO I=11,18
+        HOWMNY(I,1)=14
+        ANUMBR(I,1)=0.2946928781115D+00
+        SCALER(I,1)=-68030D+00+I*5744D+00+I*I*340D+00
+C       P
+        HOWMNY(I,2)=12
+        ANUMBR(I,2)=0.3106353753392D+00
+        SCALER(I,2)=(-1903D+00+I*262.57D+00-I*I*7.4143D+00)/
+     *    (0.3106353753392D+00*0.3106353753392D+00*0.3106353753392D+00)
+C       D
+        HOWMNY(I,3)=4
+        ANUMBR(I,3)=0.30585700097D+00
+        SCALER(I,3)=(0.086629D+00-I*0.064543D+00+I*I*0.0055714D+00)/
+     *        (0.30585700097D+00*0.30585700097D+00)
+      END DO
+      ELSE
+C
+C     ----OOOOPS, TIME TO BLOW THIS JOB AWAY----
+C
+      CALL ABRT
+      END IF
+      END
+C*MODULE DFTAUX  *DECK DFTAX4A
+      SUBROUTINE DFTAX4A(EXETYP,DDX,DDY,DDZ,S,L1,L2,IAUXATM,
+     *              IAUXTYP,AUXEXP,AUXCONT,LOCAUX,NAUXSHL)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      SAVE MINSPD,MAXSPD
+C
+      PARAMETER (MXATM=500, MXSH=1000, MXGTOT=5000)
+C
+      LOGICAL DBG,GOPARR,DSKWRK,MASWRK,IANDJ
+C
+      DIMENSION DDX(L2),DDY(L2),DDZ(L2),S(L2),
+     *          IAUXATM(NAUXSHL),IAUXTYP(NAUXSHL),AUXEXP(NAUXSHL),
+     *          AUXCONT(NAUXSHL),LOCAUX(NAUXSHL)
+      DIMENSION DAX(225),DAY(225),DAZ(225),DIJ(225),SSS(225),
+     *          IJX(225),IJY(225),IJZ(225),
+     *          IX(35),IY(35),IZ(35),JX(35),JY(35),JZ(35),
+     *          XIN(75),YIN(75),ZIN(75),MINSPD(5),MAXSPD(5)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /ROOT  / XX,U(9),W(9),NROOTS
+      COMMON /STV   / XINT,YINT,ZINT,T,X0,Y0,Z0,XI,YI,ZI,XJ,YJ,ZJ,NI,NJ
+      COMMON /SYMIND/ TOL,II,JJ,LIT,LJT,MINI,MINJ,MAXI,MAXJ,IANDJ
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, TWO=2.0D+00)
+      PARAMETER (SQRT3=1.73205080756888D+00, RLN10=2.30258D+00)
+      PARAMETER (SQRT5=2.23606797749979D+00, SQRT7=2.64575131106459D+00)
+C
+      DATA IX / 1, 6, 1, 1,11, 1, 1, 6, 6, 1,
+     *         16, 1, 1,11,11, 6, 1, 6, 1, 6,
+     *         21, 1, 1,16,16, 6, 1, 6, 1,11,
+     *         11, 1,11, 6, 6/
+      DATA IY / 1, 1, 6, 1, 1,11, 1, 6, 1, 6,
+     *          1,16, 1, 6, 1,11,11, 1, 6, 6,
+     *          1,21, 1, 6, 1,16,16, 1, 6,11,
+     *          1,11, 6,11, 6/
+      DATA IZ / 1, 1, 1, 6, 1, 1,11, 1, 6, 6,
+     *          1, 1,16, 1, 6, 1, 6,11,11, 6,
+     *          1, 1,21, 1, 6, 1, 6,16,16, 1,
+     *         11,11, 6, 6,11/
+      DATA JX / 0, 1, 0, 0, 2, 0, 0, 1, 1, 0,
+     *          3, 0, 0, 2, 2, 1, 0, 1, 0, 1,
+     *          4, 0, 0, 3, 3, 1, 0, 1, 0, 2,
+     *          2, 0, 2, 1, 1/
+      DATA JY / 0, 0, 1, 0, 0, 2, 0, 1, 0, 1,
+     *          0, 3, 0, 1, 0, 2, 2, 0, 1, 1,
+     *          0, 4, 0, 1, 0, 3, 3, 0, 1, 2,
+     *          0, 2, 1, 2, 1/
+      DATA JZ / 0, 0, 0, 1, 0, 0, 2, 0, 1, 1,
+     *          0, 0, 3, 0, 1, 0, 1, 2, 2, 1,
+     *          0, 0, 4, 0, 1, 0, 1, 3, 3, 0,
+     *          2, 2, 1, 1, 2/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DEBUG/8HDEBUG   /, DBUGME/8HDIPVEL  /
+#else
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      DATA DEBUG_STR/"DEBUG   "/, DBUGME_STR/"DIPVEL  "/
+#endif
+      DATA MINSPD /1,2,5 ,11,21/
+      DATA MAXSPD /1,4,10,20,35/
+C
+C     ----- CALCULATE DIPOLE VELOCITY AND OVERLAP INTEGRALS. -----
+C     ----- THIS IS FOR (AO AUX).  L1 AND L2 ARE AO+AUX
+C
+      DBG = EXETYP.EQ.DEBUG   .OR.  EXETYP.EQ.DBUGME
+     *      .AND. MASWRK
+      TOL = RLN10*ITOL
+      DUM1 = ZERO
+      DUM2 = ZERO
+C
+C     ----- I SHELL
+C
+      DO 720 II = 1,NSHELL
+      I = KATOM(II)
+      XI = C(1,I)
+      YI = C(2,I)
+      ZI = C(3,I)
+      I1 = KSTART(II)
+      I2 = I1+KNG(II)-1
+      LIT = KTYPE(II)
+      MINI = KMIN(II)
+      MAXI = KMAX(II)
+      LOCI = KLOC(II)-MINI
+C
+C     ----- J SHELL
+C
+      DO 700 JJ = 1,NAUXSHL
+      J = IAUXATM(JJ)
+      XJ = C(1,J)
+      YJ = C(2,J)
+      ZJ = C(3,J)
+      LJT = IAUXTYP(JJ)
+C     THESE ARE 1,1 FOR S, 2,4 FOR P, ETC.
+      MINJ = MINSPD(LJT)
+      MAXJ = MAXSPD(LJT)
+      LOCJ = LOCAUX(JJ)-MINJ
+      NROOTS = (LIT+LJT-2)/2+1
+      RR = (XI-XJ)*(XI-XJ)+(YI-YJ)*(YI-YJ)+(ZI-ZJ)*(ZI-ZJ)
+C     AO AND AUX CAN'T BE THE SAME
+      IANDJ = .FALSE.
+C
+C     ----- PREPARE INDICES FOR PAIRS OF (I,J) FUNCTIONS
+C
+      IJ = 0
+      MAX = MAXJ
+      DO 170 I = MINI,MAXI
+         NX = IX(I)
+         NY = IY(I)
+         NZ = IZ(I)
+         DO 160 J = MINJ,MAX
+            IJ = IJ+1
+            IJX(IJ) = NX+JX(J)
+            IJY(IJ) = NY+JY(J)
+            IJZ(IJ) = NZ+JZ(J)
+  160    CONTINUE
+  170 CONTINUE
+      DO 180 I = 1,IJ
+         DAX(I) = ZERO
+         DAY(I) = ZERO
+         DAZ(I) = ZERO
+         SSS(I) = ZERO
+  180 CONTINUE
+C
+C     ----- I PRIMITIVE
+C
+      DO 660 IG = I1,I2
+      AI = EX(IG)
+      ARRI = AI*RR
+      AXI = AI*XI
+      AYI = AI*YI
+      AZI = AI*ZI
+      CSI = CS(IG)
+      CPI = CP(IG)
+      CDI = CD(IG)
+      CFI = CF(IG)
+      CGI = CG(IG)
+C
+C     ----- J PRIMITIVE
+C
+      AJ = AUXEXP(JJ)
+      AA = AI+AJ
+      AA1 = ONE/AA
+      DUM = AJ*ARRI*AA1
+      IF (DUM .GT. TOL) GO TO 640
+      FAC = EXP(-DUM)
+      CONTJ=AUXCONT(JJ)
+      AX = (AXI+AJ*XJ)*AA1
+      AY = (AYI+AJ*YJ)*AA1
+      AZ = (AZI+AJ*ZJ)*AA1
+C
+C     ----- DENSITY FACTOR
+C
+      MAX = MAXJ
+      NN = 0
+      DO 420 I = MINI,MAXI
+C             S   PX  PY  PZ  DXX DYY DZZ DXY DXZ DYX
+C            FXXX YYY ZZZ XXY XXZ YYX YYZ ZZX ZZY XYZ
+C            GXXXX ETC....
+       GO TO (200,220,280,280,240,280,280,260,280,280,
+     *        261,280,280,262,280,280,280,280,280,263,
+     *        264,280,280,265,280,280,280,280,280,266,
+     *        280,280,267,280,280),I
+C
+  200 DUM1 = CSI*FAC
+      GO TO 280
+  220 DUM1 = CPI*FAC
+      GO TO 280
+  240 DUM1 = CDI*FAC
+      GO TO 280
+  260 DUM1 = DUM1*SQRT3
+      GO TO 280
+  261 DUM1 = CFI*FAC
+      GO TO 280
+  262 DUM1 = DUM1*SQRT5
+      GO TO 280
+  263 DUM1 = DUM1*SQRT3
+      GO TO 280
+  264 DUM1 = CGI*FAC
+      GO TO 280
+  265 DUM1 = DUM1*SQRT7
+      GO TO 280
+  266 DUM1 = DUM1*SQRT5/SQRT3
+      GO TO 280
+  267 DUM1 = DUM1*SQRT3
+      GO TO 280
+  280 CONTINUE
+C
+      DO 420 J = MINJ,MAX
+C             S   PX  PY  PZ  DXX DYY DZZ DXY DXZ DYX
+C            FXXX YYY ZZZ XXY XXZ YYX YYZ ZZX ZZY XYZ
+C             GXXXX ETC....
+       GO TO (300,340,400,400,360,400,400,380,400,400,
+     *        361,400,400,362,400,400,400,400,400,363,
+     *        364,400,400,365,400,400,400,400,400,366,
+     *        400,400,367,400,400),J
+C
+  300 DUM2 = DUM1*CONTJ
+      GO TO 400
+  340 DUM2 = DUM1*CONTJ
+      GO TO 400
+  360 DUM2 = DUM1*CONTJ
+      GO TO 400
+  380 DUM2 = DUM2*SQRT3
+      GO TO 400
+  361 DUM2 = DUM1*CONTJ
+      GO TO 400
+  362 DUM2 = DUM2*SQRT5
+      GO TO 400
+  363 DUM2 = DUM2*SQRT3
+      GO TO 400
+  364 DUM2 = DUM1*CONTJ
+      GO TO 400
+  365 DUM2 = DUM2*SQRT7
+      GO TO 400
+  366 DUM2 = DUM2*SQRT5/SQRT3
+      GO TO 400
+  367 DUM2 = DUM2*SQRT3
+      GO TO 400
+C
+  400 NN = NN+1
+C
+  420 DIJ(NN) = DUM2
+C
+C     ----- DIPOLE VELOCITY AND OVERLAP
+C
+      T = SQRT(AA1)
+      TJP = -TWO*AJ*T
+      X0 = AX
+      Y0 = AY
+      Z0 = AZ
+      IN = -5
+C
+      DO 480 I = 1,LIT
+         IN = IN+5
+         NI = I
+         DO 470 J = 1,LJT
+            JN = IN+J
+C
+C           <I/J>.
+C
+            NJ = J
+            CALL STVINT
+            XIN(JN) = XINT*T
+            YIN(JN) = YINT*T
+            ZIN(JN) = ZINT*T
+C
+C           <I/J+1>.
+C
+            NJ = J + 1
+            CALL STVINT
+            XIN(JN+25) = XINT*TJP
+            YIN(JN+25) = YINT*TJP
+            ZIN(JN+25) = ZINT*TJP
+C
+C           <I/J-1>.
+C
+            NJ = J - 1
+            IF (NJ .GT. 0) THEN
+               CALL STVINT
+               TDUM = (J-1)*T
+               XIN(JN+50) = XINT*TDUM
+               YIN(JN+50) = YINT*TDUM
+               ZIN(JN+50) = ZINT*TDUM
+            ELSE
+               XIN(JN+50) = ZERO
+               YIN(JN+50) = ZERO
+               ZIN(JN+50) = ZERO
+            END IF
+            NI = I
+  470    CONTINUE
+  480 CONTINUE
+C
+      IJD = 0
+      MAX = MAXJ
+      DO 620 I = MINI,MAXI
+         DO 600 J = MINJ,MAX
+            IJD = IJD+1
+            NX = IJX(IJD)
+            NY = IJY(IJD)
+            NZ = IJZ(IJD)
+C                      D/DX
+            DUMJMX = XIN(NX+25) + XIN(NX+50)
+            DAX(IJD) = DAX(IJD) + DIJ(IJD)*DUMJMX*YIN(NY)*ZIN(NZ)
+C                      D/DY
+            DUMJMY = YIN(NY+25) + YIN(NY+50)
+            DAY(IJD) = DAY(IJD) + DIJ(IJD)*XIN(NX)*DUMJMY*ZIN(NZ)
+C                      D/DZ
+            DUMJMZ = ZIN(NZ+25) + ZIN(NZ+50)
+            DAZ(IJD) = DAZ(IJD) + DIJ(IJD)*XIN(NX)*YIN(NY)*DUMJMZ
+C                      OVERLAP
+            SSS(IJD) = SSS(IJD) + DIJ(IJD)*XIN(NX)*YIN(NY)*ZIN(NZ)
+C
+  600    CONTINUE
+  620 CONTINUE
+C                               END OF PRIMITIVE LOOPS
+  640 CONTINUE
+  660 CONTINUE
+C
+C     ----- SET UP D/DX, D/DY, AND D/DZ MATRICES
+C
+      MAX = MAXJ
+      NN = 0
+      DO 690 I = MINI,MAXI
+         LI = LOCI+I
+         DO 680 J = MINJ,MAX
+            LJ = LOCJ+J
+            JN = LI+(LJ*(LJ-1)/2)
+            NN = NN+1
+C           USE MINUS SIGN, BECAUSE I<J IN THIS CODE (STUPID)
+            DDX(JN) = -DAX(NN)
+            DDY(JN) = -DAY(NN)
+            DDZ(JN) = -DAZ(NN)
+            S  (JN) = SSS(NN)
+  680    CONTINUE
+  690 CONTINUE
+C                               END OF SHELL LOOPS
+  700 CONTINUE
+  720 CONTINUE
+C
+      IF(DBG) THEN
+         WRITE(IW,*) 'D/DX DIPOLE VELOCITY INTEGRALS'
+         CALL PRTRI(DDX,L1)
+         WRITE(IW,*) 'D/DY DIPOLE VELOCITY INTEGRALS'
+         CALL PRTRI(DDY,L1)
+         WRITE(IW,*) 'D/DZ DIPOLE VELOCITY INTEGRALS'
+         CALL PRTRI(DDZ,L1)
+         WRITE(IW,*) 'OVERLAP              INTEGRALS'
+         CALL PRTRI(S  ,L1)
+      END IF
+C
+      RETURN
+      END
+C*MODULE DFTAUX  *DECK DFTAX4B
+      SUBROUTINE DFTAX4B(EXETYP,DDX,DDY,DDZ,S,L1,L2,IAUXATM,
+     *                IAUXTYP,AUXEXP,AUXCONT,LOCAUX,NAUXSHL)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      SAVE MINSPD,MAXSPD
+C
+      LOGICAL IANDJ,DBG,GOPARR,DSKWRK,MASWRK
+C
+      DIMENSION DDX(L2),DDY(L2),DDZ(L2),S(L2),
+     *          IAUXATM(NAUXSHL),IAUXTYP(NAUXSHL),AUXEXP(NAUXSHL),
+     *          AUXCONT(NAUXSHL),LOCAUX(NAUXSHL)
+      DIMENSION DAX(225),DAY(225),DAZ(225),DIJ(225),SSS(225),
+     *          IJX(225),IJY(225),IJZ(225),
+     *          IX(35),IY(35),IZ(35),JX(35),JY(35),JZ(35),
+     *          XIN(75),YIN(75),ZIN(75),MINSPD(5),MAXSPD(5)
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IS,IPK,IDAF,NAV,IODA(400)
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /ROOT  / XX,U(9),W(9),NROOTS
+      COMMON /STV   / XINT,YINT,ZINT,T,X0,Y0,Z0,XI,YI,ZI,XJ,YJ,ZJ,NI,NJ
+      COMMON /SYMIND/ TOL,II,JJ,LIT,LJT,MINI,MINJ,MAXI,MAXJ,IANDJ
+C
+      PARAMETER (ZERO=0.0D+00, ONE=1.0D+00, TWO=2.0D+00)
+      PARAMETER (SQRT3=1.73205080756888D+00, RLN10=2.30258D+00)
+      PARAMETER (SQRT5=2.23606797749979D+00, SQRT7=2.64575131106459D+00)
+C
+      DATA IX / 1, 6, 1, 1,11, 1, 1, 6, 6, 1,
+     *         16, 1, 1,11,11, 6, 1, 6, 1, 6,
+     *         21, 1, 1,16,16, 6, 1, 6, 1,11,
+     *         11, 1,11, 6, 6/
+      DATA IY / 1, 1, 6, 1, 1,11, 1, 6, 1, 6,
+     *          1,16, 1, 6, 1,11,11, 1, 6, 6,
+     *          1,21, 1, 6, 1,16,16, 1, 6,11,
+     *          1,11, 6,11, 6/
+      DATA IZ / 1, 1, 1, 6, 1, 1,11, 1, 6, 6,
+     *          1, 1,16, 1, 6, 1, 6,11,11, 6,
+     *          1, 1,21, 1, 6, 1, 6,16,16, 1,
+     *         11,11, 6, 6,11/
+      DATA JX / 0, 1, 0, 0, 2, 0, 0, 1, 1, 0,
+     *          3, 0, 0, 2, 2, 1, 0, 1, 0, 1,
+     *          4, 0, 0, 3, 3, 1, 0, 1, 0, 2,
+     *          2, 0, 2, 1, 1/
+      DATA JY / 0, 0, 1, 0, 0, 2, 0, 1, 0, 1,
+     *          0, 3, 0, 1, 0, 2, 2, 0, 1, 1,
+     *          0, 4, 0, 1, 0, 3, 3, 0, 1, 2,
+     *          0, 2, 1, 2, 1/
+      DATA JZ / 0, 0, 0, 1, 0, 0, 2, 0, 1, 1,
+     *          0, 0, 3, 0, 1, 0, 1, 2, 2, 1,
+     *          0, 0, 4, 0, 1, 0, 1, 3, 3, 0,
+     *          2, 2, 1, 1, 2/
+#if !defined(SPEC_CPU_NO_HOLLERITH)
+      DATA DEBUG/8HDEBUG   /, DBUGME/8HDIPVEL  /
+#else
+      CHARACTER*8 :: DEBUG_STR
+      EQUIVALENCE (DEBUG, DEBUG_STR)
+      CHARACTER*8 :: DBUGME_STR
+      EQUIVALENCE (DBUGME, DBUGME_STR)
+      DATA DEBUG_STR/"DEBUG   "/, DBUGME_STR/"DIPVEL  "/
+#endif
+      DATA MINSPD /1,2,5 ,11,21/
+      DATA MAXSPD /1,4,10,20,35/
+C
+C     ----- CALCULATE DIPOLE VELOCITY AND OVERLAP INTEGRALS. -----
+C     ----- THIS IS FOR (AUX AUX).  L1 AND L2 ARE AO+AUX
+C
+      DBG = EXETYP.EQ.DEBUG   .OR.  EXETYP.EQ.DBUGME
+     *      .AND. MASWRK
+      TOL = RLN10*ITOL
+      DUM1 = ZERO
+      DUM2 = ZERO
+C
+C     ----- I SHELL
+C
+      DO 720 II = 1,NAUXSHL
+      I = IAUXATM(II)
+      XI = C(1,I)
+      YI = C(2,I)
+      ZI = C(3,I)
+      LIT = IAUXTYP(II)
+      MINI = MINSPD(LIT)
+      MAXI = MAXSPD(LIT)
+      LOCI = LOCAUX(II)-MINI
+C
+C     ----- J SHELL
+C
+      DO 700 JJ = 1,II
+      J = IAUXATM(JJ)
+      XJ = C(1,J)
+      YJ = C(2,J)
+      ZJ = C(3,J)
+      LJT = IAUXTYP(JJ)
+      MINJ = MINSPD(LJT)
+      MAXJ = MAXSPD(LJT)
+      LOCJ = LOCAUX(JJ)-MINJ
+      NROOTS = (LIT+LJT-2)/2+1
+      RR = (XI-XJ)*(XI-XJ)+(YI-YJ)*(YI-YJ)+(ZI-ZJ)*(ZI-ZJ)
+      IANDJ = II .EQ. JJ
+C
+C     ----- PREPARE INDICES FOR PAIRS OF (I,J) FUNCTIONS
+C
+      IJ = 0
+      MAX = MAXJ
+      DO 170 I = MINI,MAXI
+         NX = IX(I)
+         NY = IY(I)
+         NZ = IZ(I)
+         IF (IANDJ) MAX = I
+         DO 160 J = MINJ,MAX
+            IJ = IJ+1
+            IJX(IJ) = NX+JX(J)
+            IJY(IJ) = NY+JY(J)
+            IJZ(IJ) = NZ+JZ(J)
+  160    CONTINUE
+  170 CONTINUE
+      DO 180 I = 1,IJ
+         DAX(I) = ZERO
+         DAY(I) = ZERO
+         DAZ(I) = ZERO
+         SSS(I) = ZERO
+  180 CONTINUE
+C
+C     ----- I PRIMITIVE
+C
+      AI = AUXEXP(II)
+      ARRI = AI*RR
+      AXI = AI*XI
+      AYI = AI*YI
+      AZI = AI*ZI
+      CONTI = AUXCONT(II)
+C
+C     ----- J PRIMITIVE
+C
+      AJ = AUXEXP(JJ)
+      AA = AI+AJ
+      AA1 = ONE/AA
+      DUM = AJ*ARRI*AA1
+      IF (DUM .GT. TOL) GO TO 640
+      FAC = EXP(-DUM)
+      CONTJ=AUXCONT(JJ)
+      AX = (AXI+AJ*XJ)*AA1
+      AY = (AYI+AJ*YJ)*AA1
+      AZ = (AZI+AJ*ZJ)*AA1
+C
+C     ----- DENSITY FACTOR
+C
+      MAX = MAXJ
+      NN = 0
+      DO 420 I = MINI,MAXI
+C             S   PX  PY  PZ  DXX DYY DZZ DXY DXZ DYX
+C            FXXX YYY ZZZ XXY XXZ YYX YYZ ZZX ZZY XYZ
+C            GXXXX ETC....
+       GO TO (200,220,280,280,240,280,280,260,280,280,
+     *        261,280,280,262,280,280,280,280,280,263,
+     *        264,280,280,265,280,280,280,280,280,266,
+     *        280,280,267,280,280),I
+C
+  200 DUM1 = CONTI*FAC
+      GO TO 280
+  220 DUM1 = CONTI*FAC
+      GO TO 280
+  240 DUM1 = CONTI*FAC
+      GO TO 280
+  260 DUM1 = DUM1*SQRT3
+      GO TO 280
+  261 DUM1 = CONTI*FAC
+      GO TO 280
+  262 DUM1 = DUM1*SQRT5
+      GO TO 280
+  263 DUM1 = DUM1*SQRT3
+      GO TO 280
+  264 DUM1 = CONTI*FAC
+      GO TO 280
+  265 DUM1 = DUM1*SQRT7
+      GO TO 280
+  266 DUM1 = DUM1*SQRT5/SQRT3
+      GO TO 280
+  267 DUM1 = DUM1*SQRT3
+      GO TO 280
+C
+  280 IF (IANDJ) MAX = I
+C
+      DO 420 J = MINJ,MAX
+C             S   PX  PY  PZ  DXX DYY DZZ DXY DXZ DYX
+C            FXXX YYY ZZZ XXY XXZ YYX YYZ ZZX ZZY XYZ
+C             GXXXX ETC....
+       GO TO (300,340,400,400,360,400,400,380,400,400,
+     *        361,400,400,362,400,400,400,400,400,363,
+     *        364,400,400,365,400,400,400,400,400,366,
+     *        400,400,367,400,400),J
+C
+  300 DUM2 = DUM1*CONTJ
+      GO TO 400
+  340 DUM2 = DUM1*CONTJ
+      GO TO 400
+  360 DUM2 = DUM1*CONTJ
+      GO TO 400
+  380 DUM2 = DUM2*SQRT3
+      GO TO 400
+  361 DUM2 = DUM1*CONTJ
+      GO TO 400
+  362 DUM2 = DUM2*SQRT5
+      GO TO 400
+  363 DUM2 = DUM2*SQRT3
+      GO TO 400
+  364 DUM2 = DUM1*CONTJ
+      GO TO 400
+  365 DUM2 = DUM2*SQRT7
+      GO TO 400
+  366 DUM2 = DUM2*SQRT5/SQRT3
+      GO TO 400
+  367 DUM2 = DUM2*SQRT3
+      GO TO 400
+C
+  400 NN = NN+1
+C
+  420 DIJ(NN) = DUM2
+C
+C     ----- DIPOLE VELOCITY AND OVERLAP
+C
+      T = SQRT(AA1)
+      TJP = -TWO*AJ*T
+      X0 = AX
+      Y0 = AY
+      Z0 = AZ
+      IN = -5
+C
+      DO 480 I = 1,LIT
+         IN = IN+5
+         NI = I
+         DO 470 J = 1,LJT
+            JN = IN+J
+C
+C           <I/J>.
+C
+            NJ = J
+            CALL STVINT
+            XIN(JN) = XINT*T
+            YIN(JN) = YINT*T
+            ZIN(JN) = ZINT*T
+C
+C           <I/J+1>.
+C
+            NJ = J + 1
+            CALL STVINT
+            XIN(JN+25) = XINT*TJP
+            YIN(JN+25) = YINT*TJP
+            ZIN(JN+25) = ZINT*TJP
+C
+C           <I/J-1>.
+C
+            NJ = J - 1
+            IF (NJ .GT. 0) THEN
+               CALL STVINT
+               TDUM = (J-1)*T
+               XIN(JN+50) = XINT*TDUM
+               YIN(JN+50) = YINT*TDUM
+               ZIN(JN+50) = ZINT*TDUM
+            ELSE
+               XIN(JN+50) = ZERO
+               YIN(JN+50) = ZERO
+               ZIN(JN+50) = ZERO
+            END IF
+            NI = I
+  470    CONTINUE
+  480 CONTINUE
+C
+      IJD = 0
+      MAX = MAXJ
+      DO 620 I = MINI,MAXI
+         IF (IANDJ) MAX = I
+         DO 600 J = MINJ,MAX
+            IJD = IJD+1
+            NX = IJX(IJD)
+            NY = IJY(IJD)
+            NZ = IJZ(IJD)
+C                      D/DX
+            DUMJMX = XIN(NX+25) + XIN(NX+50)
+            DAX(IJD) = DAX(IJD) + DIJ(IJD)*DUMJMX*YIN(NY)*ZIN(NZ)
+C                      D/DY
+            DUMJMY = YIN(NY+25) + YIN(NY+50)
+            DAY(IJD) = DAY(IJD) + DIJ(IJD)*XIN(NX)*DUMJMY*ZIN(NZ)
+C                      D/DZ
+            DUMJMZ = ZIN(NZ+25) + ZIN(NZ+50)
+            DAZ(IJD) = DAZ(IJD) + DIJ(IJD)*XIN(NX)*YIN(NY)*DUMJMZ
+C                      OVERLAP
+            SSS(IJD) = SSS(IJD) + DIJ(IJD)*XIN(NX)*YIN(NY)*ZIN(NZ)
+C
+  600    CONTINUE
+  620 CONTINUE
+C                               END OF PRIMITIVE LOOPS
+  640 CONTINUE
+C
+C     ----- SET UP D/DX, D/DY, AND D/DZ MATRICES
+C
+      MAX = MAXJ
+      NN = 0
+      DO 690 I = MINI,MAXI
+         LI = LOCI+I
+         IN = (LI*(LI-1))/2
+         IF (IANDJ) MAX = I
+         DO 680 J = MINJ,MAX
+            LJ = LOCJ+J
+            JN = LJ+IN
+            NN = NN+1
+            DDX(JN) = DAX(NN)
+            DDY(JN) = DAY(NN)
+            DDZ(JN) = DAZ(NN)
+            S  (JN) = SSS(NN)
+  680    CONTINUE
+  690 CONTINUE
+C                               END OF SHELL LOOPS
+  700 CONTINUE
+  720 CONTINUE
+C
+      IF(DBG) THEN
+         WRITE(IW,*) 'D/DX DIPOLE VELOCITY INTEGRALS'
+         CALL PRTRI(DDX,L1)
+         WRITE(IW,*) 'D/DY DIPOLE VELOCITY INTEGRALS'
+         CALL PRTRI(DDY,L1)
+         WRITE(IW,*) 'D/DZ DIPOLE VELOCITY INTEGRALS'
+         CALL PRTRI(DDZ,L1)
+         WRITE(IW,*) 'OVERLAP              INTEGRALS'
+         CALL PRTRI(S  ,L1)
+      END IF
+C
+      RETURN
+      END
+C*MODULE DFTAUX  *DECK DFTAX6
+      SUBROUTINE DFTAX6(WORK,V,S,NUM,NAUXFUN)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION V(NUM+NAUXFUN,NUM+NAUXFUN),S(NUM+NAUXFUN,NUM+NAUXFUN),
+     *          WORK(NUM+NAUXFUN)
+C
+      PARAMETER (SMALL=1.0D-05)
+C
+C    ORTHOGONALIZE AUX BASIS SET
+C
+      L4=NUM+NAUXFUN
+C
+C      I IS THE ORBITAL TO BE ORTHOGANALIZED
+C
+       DO 100 I=NUM+1,L4
+C
+        DO N=1,I-1
+          OVERLAP=0.0D+00
+          DO K=1,L4
+            OVERLAP=OVERLAP+S(I,K)*V(K,N)
+          END DO
+          WORK(N)=OVERLAP
+        END DO
+C
+C       WORK(N) IS THE OVERLAP OF MO I AND MO N
+C       AT THIS POINT MO I IS JUST AO I
+C
+        DO N=1,I-1
+          OVERLAP=WORK(N)
+          DO K=1,I
+            V(K,I)=V(K,I)-V(K,N)*OVERLAP
+          END DO
+        END DO
+C
+C       WE HAVE NOW PROJECTED OUT THE NON-ORTHOGANAL COMPONENT
+C
+        DO N=1,L4
+          OVERLAP=0.0D+00
+          DO M=1,L4
+            OVERLAP=OVERLAP+S(M,N)*V(M,I)
+          END DO
+          WORK(N)=OVERLAP
+        END DO
+C
+C       WORK(N) IS OVERLAP OF MO I AND AO N
+C
+        OVERLAP=0.0D+00
+        DO N=1,L4
+          OVERLAP=OVERLAP+WORK(N)*V(N,I)
+        END DO
+C
+C       OVERLAP IS OVERLAP OF MO I WITH ITSELF
+C
+        IF(OVERLAP .LT. SMALL .OR. OVERLAP .NE. OVERLAP) THEN
+          CALL VCLR(V(1,I),1,L4)
+        ELSE
+          ANORM=1.0D+00/SQRT(OVERLAP)
+          CALL DSCAL(L4,ANORM,V(1,I),1)
+        END IF
+C
+C       MO IS NOW NORMALIZED TOO
+C
+ 100  CONTINUE
+C
+C     MOVE BAD MO'S TO THE END
+C
+      J=NUM+1
+      DO 200 I=NUM+1,L4
+        IF(V(I,I) .EQ. 0.0D+00) GO TO 200
+        IF(I .NE. J) CALL DCOPY(I,V(1,I),1,V(1,J),1)
+        J=J+1
+ 200  CONTINUE
+      CALL VCLR(V(1,J),1,L4*(1+L4-J))
+C
+      RETURN
+      END
+C*MODULE DFTAUX  *DECK DFTAX3
+      SUBROUTINE DFTAX3(MAPAUX,IATOMS)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      PARAMETER (MXSH=1000, MXATM=500)
+C
+      DIMENSION MAPAUX(NAUXSHL,48),IATOMS(NAUXSHL)
+      DIMENSION ITEMP(MXATM+1)
+C
+      COMMON /DFTPAR/ DFTTYP(20),EXENA,EXENB,EXENC,IDFT34,NAUXFUN,
+     *                                                    NAUXSHL
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /SYMTRY/ MAPSHL(MXSH,48),MAPCTR(MXATM,48),
+     *                TT(432),INVT(48),NT
+C
+C     BUILD SYMMETRY MAPPING OF AUX BASIS SET
+C
+C     FIRST BUILD LIST OF FIRST SHELL OF EACH ATOM
+C
+      IATOM=0
+      DO 1000 ISHL=1,NAUXSHL
+         IF (IATOM .NE. IATOMS(ISHL)) THEN
+            IATOM=IATOMS(ISHL)
+            ITEMP(IATOM)=ISHL
+         END IF
+ 1000 CONTINUE
+      ITEMP(IATOM+1)=NAUXSHL+1
+C
+C     NOW MAP SHELLS
+C
+      DO 1500 I=1,48
+        DO 1600 J=1,NAUXSHL
+          MAPAUX(J,I)=0
+1600    CONTINUE
+1500  CONTINUE
+C
+      DO 2000 IATOM=1,NAT
+        DO 2100 IROT=1,NT
+          IATOM2=MAPCTR(IATOM,IROT)
+          DO 2200 ISHL=ITEMP(IATOM),ITEMP(IATOM+1)-1
+            MAPAUX(ISHL,IROT)=ISHL-ITEMP(IATOM)+ITEMP(IATOM2)
+ 2200     CONTINUE
+ 2100   CONTINUE
+ 2000 CONTINUE
+      END
+C*MODULE DFTAUX  *DECK DFTAX8B
+      SUBROUTINE DFTAX8B(F,H,MAPAUX,IAUXTYP,LOCAUX)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      SAVE MINSPD,MAXSPD
+C
+      LOGICAL IANDJ
+C
+      DIMENSION F(NUM+NAUXFUN,NUM+NAUXFUN),H(*),MAPAUX(NAUXSHL,48),
+     *          IAUXTYP(NAUXSHL),LOCAUX(NAUXSHL)
+      DIMENSION MI(48),MJ(48),MINSPD(5),MAXSPD(5)
+C
+      PARAMETER (MXSH=1000, MXATM=500)
+C
+      COMMON /DFTPAR/ DFTTYP(20),EXENA,EXENB,EXENC,IDFT34,NAUXFUN,
+     *                                                    NAUXSHL
+      COMMON /HSYM  / T(35,35),MINI,MAXI,LIT,MINJ,MAXJ,LJT,NTR
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /SYMTRY/ MAPSHL(MXSH,48),MAPCTR(MXATM,48),
+     *                TT(432),INVT(48),NT
+C
+      PARAMETER (ONE=1.0D+00)
+C
+      DATA MINSPD /1,2,5 ,11,21/
+      DATA MAXSPD /1,4,10,20,35/
+C
+C     ----- SYMMETRIZE
+C
+      IF (NT .EQ. 1) RETURN
+C
+      L2 = (NAUXFUN*NAUXFUN+NAUXFUN)/2
+      CALL VCLR(H,1,L2)
+C
+C     ----- FIND A BLOCK (I,J)
+C
+      DO 520 II = 1,NAUXSHL
+      DO 140 ITR = 1,NT
+         ISH = MAPAUX(II,ITR)
+         IF (ISH .GT. II) GO TO 520
+         MI(ITR) = ISH
+  140 CONTINUE
+      LIT =  IAUXTYP(II)
+      MINI = MINSPD(LIT)
+      MAXI = MAXSPD(LIT)
+      LOCI = LOCAUX(II)-(MINI+NUM)
+      DO 500 JJ = 1,II
+      DO 200 ITR = 1,NT
+         JSH = MAPAUX(JJ,ITR)
+         IF (JSH .GT. II) GO TO 500
+         MJ(ITR)=JSH
+         ISH = MI(ITR)
+         IF (ISH .LT. JSH) THEN
+           N = ISH
+           ISH = JSH
+           JSH = N
+         END IF
+         IF (ISH .EQ. II .AND. JSH .GT. JJ) GO TO 500
+  200 CONTINUE
+      LJT = IAUXTYP(JJ)
+      MINJ = MINSPD(LJT)
+      MAXJ = MAXSPD(LJT)
+      LOCJ = LOCAUX(JJ)-(MINJ+NUM)
+      IANDJ = II .EQ. JJ
+      JMAX = MAXJ
+C
+C     ----- FIND THE EQUIVALENT BLOCKS -----
+C     ----- TRANSFER EQUIVALENT BLOCK INTO T-MATRIX
+C     ----- COMPUTE (R) T (R)
+C     ----- PUT THE RESULT BACK INTO THE (I,J) BLOCK OF THE H-MATRIX
+C
+      DO 300 ITR = 1,NT
+      NTR = ITR
+      KK = MI(ITR)
+      LL = MJ(ITR)
+      LOCK = LOCAUX(KK)-(MINI+NUM)
+      LOCL = LOCAUX(LL)-(MINJ+NUM)
+      DO 260 K = MINI,MAXI
+      LCK = LOCK+K
+      IF (IANDJ) JMAX = K
+      DO 260 L = MINJ,JMAX
+         IF (LL .LE. KK) THEN
+           T(K,L) = F(L+LOCL+NUM,LCK+NUM)
+         ELSE
+           T(K,L) = F(LCK+NUM,L+LOCL+NUM)
+         END IF
+         IF (IANDJ) T(L,K) = T(K,L)
+  260 CONTINUE
+      CALL RHR
+      DO 280 I = MINI,MAXI
+      LCI = ((LOCI+I)*(LOCI+I)-(LOCI+I))/2+LOCJ
+      IF (IANDJ) JMAX = I
+      DO 280 J = MINJ,JMAX
+      IJ = LCI+J
+  280 H(IJ) = H(IJ)+T(I,J)
+  300 CONTINUE
+C
+C     ----- FOR EACH BLOCK (K,L) EQUIVALENT TO (I,J)
+C     ----- FIND THE TRANSFORMATION THAT MAPS (K,L) INTO (I,J)
+C     ----- COMPUTE (R) T (R)
+C     ----- PUT THE RESULT BACK INTO THE (K,L) BLOCK OF THE H-MATRIX
+C
+      DO 480 ITR = 1,NT
+      KK = MI(ITR)
+      LL = MJ(ITR)
+      IF (KK .LT. LL) THEN
+        K = LL
+        L = KK
+      ELSE
+        K = KK
+        L = LL
+      END IF
+      IF (K .EQ. II .AND. L .EQ. JJ) GO TO 480
+      NTR = ITR+1
+      DO 380 IT = NTR,NT
+      I = MI(IT)
+      J = MJ(IT)
+      IF (I .LT. J) THEN
+        IJ = I
+        I = J
+        J = IJ
+      END IF
+      IF (I .EQ. K .AND. J .EQ. L) GO TO 480
+  380 CONTINUE
+      NTR = INVT(ITR)
+      DO 420 I = MINI,MAXI
+      LCI =  ((LOCI+I)*(LOCI+I)-(LOCI+I))/2+LOCJ
+      IF (IANDJ) JMAX = I
+      DO 420 J = MINJ,JMAX
+      T(I,J) = H(LCI+J)
+      IF (IANDJ) T(J,I) = H(LCI+J)
+  420 CONTINUE
+      CALL RHR
+      LOCK = LOCAUX(KK)-(MINI+NUM)
+      LOCL = LOCAUX(LL)-(MINJ+NUM)
+      DO 460 K = MINI,MAXI
+      LCK = LOCK+K
+      IF (IANDJ) JMAX = K
+      DO 460 L = MINJ,JMAX
+      IF (LL .LE. KK) THEN
+        KL = (LCK*LCK-LCK)/2+LOCL+L
+      ELSE
+        KL = ((LOCL+L)*(LOCL+L)-(LOCL+L))/2+LCK
+      END IF
+  460 H(KL) = T(K,L)
+  480 CONTINUE
+  500 CONTINUE
+  520 CONTINUE
+      DUM = ONE/NT
+      III=0
+      DO I=NUM+1,NUM+NAUXFUN
+        DO J=NUM+1,I
+          III=III+1
+          F(J,I)=H(III)*DUM
+        END DO
+      END DO
+      RETURN
+      END
+C*MODULE DFTAUX  *DECK DFTAX8A
+      SUBROUTINE DFTAX8A(F,H,MAPAUX,IAUXTYP,LOCAUX)
+C
+      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+C
+      DIMENSION F(NUM+NAUXFUN,NUM+NAUXFUN),H(NUM,NAUXFUN),
+     *          MAPAUX(NAUXSHL,48),IAUXTYP(NAUXSHL),LOCAUX(NAUXSHL)
+      DIMENSION MI(48),MJ(48),MINSPD(5),MAXSPD(5)
+C
+      SAVE MINSPD,MAXSPD
+C
+      PARAMETER (MXSH=1000, MXGTOT=5000, MXATM=500)
+C
+      COMMON /DFTPAR/ DFTTYP(20),EXENA,EXENB,EXENC,IDFT34,NAUXFUN,
+     *                                                    NAUXSHL
+      COMMON /HSYM  / T(35,35),MINI,MAXI,LIT,MINJ,MAXJ,LJT,NTR
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /SYMTRY/ MAPSHL(MXSH,48),MAPCTR(MXATM,48),
+     *                TT(432),INVT(48),NT
+C
+      PARAMETER (ONE=1.0D+00)
+C
+      DATA MINSPD /1,2,5 ,11,21/
+      DATA MAXSPD /1,4,10,20,35/
+C
+C     ----- SYMMETRIZE
+C
+      IF (NT .EQ. 1) RETURN
+C
+      CALL VCLR(H,1,NAUXFUN*NUM)
+C
+C     ----- FIND A BLOCK (I,J)
+C
+      DO 520 II = 1,NSHELL
+      DO 140 ITR = 1,NT
+         ISH = MAPSHL(II,ITR)
+         IF (ISH .GT. II) GO TO 520
+         MI(ITR) = ISH
+  140 CONTINUE
+      LIT = KTYPE(II)
+      MINI = KMIN(II)
+      MAXI = KMAX(II)
+      LOCI = KLOC(II)-MINI
+      DO 500 JJ = 1,NAUXSHL
+      DO 200 ITR = 1,NT
+         JSH = MAPAUX(JJ,ITR)
+         ISH = MI(ITR)
+         IF (ISH .EQ. II .AND. JSH .GT. JJ) GO TO 500
+         MJ(ITR)=JSH
+  200 CONTINUE
+      LJT = IAUXTYP(JJ)
+      MINJ = MINSPD(LJT)
+      MAXJ = MAXSPD(LJT)
+      LOCJ = LOCAUX(JJ)-MINJ
+C
+C     ----- FIND THE EQUIVALENT BLOCKS -----
+C     ----- TRANSFER EQUIVALENT BLOCK INTO T-MATRIX
+C     ----- COMPUTE (R) T (R)
+C     ----- PUT THE RESULT BACK INTO THE (I,J) BLOCK OF THE H-MATRIX
+C
+      DO 300 ITR = 1,NT
+      NTR = ITR
+      KK = MI(ITR)
+      LL = MJ(ITR)
+      LOCK = KLOC(KK)-MINI
+      LOCL = LOCAUX(LL)-MINJ
+      DO 260 K = MINI,MAXI
+      DO 260 L = MINJ,MAXJ
+      T(K,L) = F(LOCK+K,LOCL+L)
+  260 CONTINUE
+      CALL RHR
+      DO 300 I = MINI,MAXI
+      DO 300 J = MINJ,MAXJ
+      H(LOCI+I,LOCJ+J-NUM) = H(LOCI+I,LOCJ+J-NUM)+T(I,J)
+  300 CONTINUE
+C
+C     ----- FOR EACH BLOCK (K,L) EQUIVALENT TO (I,J)
+C     ----- FIND THE TRANSFORMATION THAT MAPS (K,L) INTO (I,J)
+C     ----- COMPUTE (R) T (R)
+C     ----- PUT THE RESULT BACK INTO THE (K,L) BLOCK OF THE H-MATRIX
+C
+      DO 480 ITR = 1,NT
+      KK = MI(ITR)
+      LL = MJ(ITR)
+      IF (KK .EQ. II .AND. LL .EQ. JJ) GO TO 480
+      NTR = ITR+1
+      DO 380 IT = NTR,NT
+      I = MI(IT)
+      J = MJ(IT)
+      IF (KK .EQ. I  .AND. LL .EQ.  J) GO TO 480
+  380 CONTINUE
+      NTR = INVT(ITR)
+      DO 420 I = MINI,MAXI
+      DO 420 J = MINJ,MAXJ
+      T(I,J) = H(LOCI+I,LOCJ+J-NUM)
+  420 CONTINUE
+      CALL RHR
+      LOCK = KLOC(KK)-MINI
+      LOCL = LOCAUX(LL)-MINJ
+      DO 460 K = MINI,MAXI
+      DO 460 L = MINJ,MAXJ
+  460 H(LOCK+K,LOCL+L-NUM) = T(K,L)
+  480 CONTINUE
+  500 CONTINUE
+  520 CONTINUE
+      DUM = ONE/NT
+      DO I=NUM+1,NAUXFUN+NUM
+        DO J=1,NUM
+          F(J,I) = H(J,I-NUM)*DUM
+        END DO
+      END DO
+      RETURN
+      END
+C*MODULE DFTAUX  *DECK DFTAX5A
+      SUBROUTINE DFTAX5A(ADENS,BDENS,TEMPS,NAUXFUN,NAUXSHL,IAUXATM,
+     *                   IAUXTYP,AUXEXP,AUXCONT,LOCAUX,R,ROPEN,
+     *                   ANEW,BNEW,ASCREEN,HISPIN,XIIJJ,XIIAA)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      SAVE MINSPD,MAXSPD
+C
+      LOGICAL SAMECEN,HISPIN,DSKWRK,MASWRK,GOPARR
+C
+      PARAMETER (MXSH=1000, MXGTOT=5000, MXATM=500)
+C
+      COMMON /CONV  / DENTOL,EN,ETOT,EHF,EHF0,DIFF,ITER,ICALP,ICBET
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJKO,IJKT,IDAF,NAV,IODA(400)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RESTAR/ TIMLIM,IREST,NREC,INTLOC,IST,JST,KST,LST
+      COMMON /SYMTRY/ MAPSHL(MXSH,48),MAPCTR(MXATM,48),
+     *                T(432),INVT(48),NT
+C
+      DIMENSION ADENS(NUM,NUM),BDENS(NUM,NUM),TEMPS(15*15*15*15),
+     *          IAUXATM(NAUXSHL),IAUXTYP(NAUXSHL),AUXEXP(NAUXSHL),
+     *          AUXCONT(NAUXSHL),LOCAUX(NAUXSHL),
+     *          R(NUM+NAUXFUN,NUM+NAUXFUN),
+     *          ROPEN(NUM+NAUXFUN,NUM+NAUXFUN),
+     *          ANEW(NUM,NUM),BNEW(NUM,NUM),ASCREEN(NSHELL,NSHELL),
+     *          XIIJJ(*),XIIAA(NSHELL,NAUXSHL)
+      DIMENSION MINSPD(5),MAXSPD(5),MI(48),MJ(48),DFAC(0:21),
+     *          LDAT(35),MDAT(35),NDAT(35),
+     *          CONTA(35),CONTB(35),CONTC(35),CONTE(35),
+     *          XXXX(-1:4,-1:4,-1:4,-1:4),
+     *          YYYY(-1:4,-1:4,-1:4,-1:4),
+     *          ZZZZ(-1:4,-1:4,-1:4,-1:4),A21(0:4*4*4*4),IDUMMY(0:4)
+C
+      PARAMETER (PI=3.141592653589793238462643D+00,RLN10=2.30258D+00)
+C
+      DATA MINSPD /1,2,5 ,11,21/
+      DATA MAXSPD /1,4,10,20,35/
+C
+C  X,Y,Z EXPONENTS OF CARTESIAN S,PX,PY,PZ,DXX,...
+C
+      DATA LDAT/0,1,0,0,2,0,0,1,1,0,3,0,0,2,2,1,0,1,0,1,4,0,0,3,3,
+     *          1,0,1,0,2,2,0,2,1,1/
+      DATA MDAT/0,0,1,0,0,2,0,1,0,1,0,3,0,1,0,2,2,0,1,1,0,4,0,1,0,
+     *          3,3,0,1,2,0,2,1,2,1/
+      DATA NDAT/0,0,0,1,0,0,2,0,1,1,0,0,3,0,1,0,1,2,2,1,0,0,4,0,1,
+     *          0,1,3,3,0,2,2,1,1,2/
+C
+C  CALCULATES IVALUE!!
+C     WARNING DFAC(0)=-1!!,DFAC(1)=0!!,DFAC(2)=1!! ETC.
+C
+      DATA DFAC/1.0D+00,1.0D+00,1.0D+00,2.0D+00,3.0D+00,8.0D+00,
+     *          15.0D+00,48.0D+00,105.0D+00,384.0D+00,945.0D+00,
+     *          3840.0D+00,10395.0D+00,46080.0D+00,135135.0D+00,
+     *          645120.0D+00,2027025.0D+00,10321920.0D+00,
+     *          34459425.0D+00,185794560.0D+00,
+     *          654729075.0D+00,3715891200.0D+00/
+C
+C     HELPS DEAL WITH L SHELLS (SHELL THAT ENDS ON 1 MIGHT START WITH 0)
+C
+      DATA IDUMMY/0,0,2,3,4/
+C
+      L4=NUM+NAUXFUN
+      NSCHWZ=0
+C
+C   THIS ROUTINE CALCULATES THE ONE ELECTRON INTEGRAL
+C   <ABCE> FOR CARTESIAN GAUSSIANS.  (UP TO G-SHELLS)
+C      ADENS IS ACTUALLY THE CHANGE IN THE DENSITY
+C      ANEW IS IS THE REAL DENSITY
+C      ASCREEN IS SCREENING BASED ON CHANGE IN DENSITY
+C      XIIJJ,XIIAA ARE SCREENING BASED ON SCHWARZ INEQUALITIES
+C
+C
+      IF ((NORMF .EQ. 1 .OR. NORMP .EQ. 1).AND. MASWRK) THEN
+        WRITE(IW,*)' SORRY BUT THE FOUR CENTER ONE ELECTRON OVELAP'
+        WRITE(IW,*)' INTEGRALS USED FOR DFT DO NOT SUPPORT THE'
+        WRITE(IW,*)' NO NORMALIZATION OPTIONS'
+        CALL ABRT()
+      ENDIF
+C
+C
+C     GENERATE THE CHANGE IN THE DENSITY
+C
+C
+      IF (ITER .EQ. 1) THEN
+        CALL DCOPY(NUM*NUM,ANEW,1,ADENS,1)
+        IF(HISPIN) CALL DCOPY(NUM*NUM,BNEW,1,BDENS,1)
+      ELSE
+        CALL DAREAD(IDAF,IODA,ADENS,NUM*NUM,351,0)
+        DO I=1,NUM
+          DO J=1,NUM
+            ADENS(I,J)=ANEW(I,J)-ADENS(I,J)
+          END DO
+        END DO
+        IF(HISPIN) THEN
+          CALL DAREAD(IDAF,IODA,BDENS,NUM*NUM,352,0)
+          DO I=1,NUM
+            DO J=1,NUM
+              BDENS(I,J)=BNEW(I,J)-BDENS(I,J)
+            END DO
+          END DO
+        END IF
+      END IF
+C
+C     READ IN PREVIOUS MATRIX REPRESENTATION OF THE DENSITY
+C
+      IF (ITER .EQ. 1) THEN
+                   CALL VCLR(    R(1,NUM+1),1,L4*NAUXFUN)
+        IF(HISPIN) CALL VCLR(ROPEN(1,NUM+1),1,L4*NAUXFUN)
+      ELSE
+        CALL DAREAD(IDAF,IODA,    R(1,NUM+1),L4*NAUXFUN,347,0)
+        IF(HISPIN)
+     *  CALL DAREAD(IDAF,IODA,ROPEN(1,NUM+1),L4*NAUXFUN,348,0)
+      END IF
+C
+      IF(GOPARR) THEN
+            CALL DSCAL(L4*L4,1.0D+00/NPROC,    R,1)
+         IF(HISPIN)
+     *      CALL DSCAL(L4*L4,1.0D+00/NPROC,ROPEN,1)
+      END IF
+C
+      DO J=NUM+1,L4
+        DO I=1,J
+          R(J,I)=R(I,J)
+          IF(HISPIN) ROPEN(J,I)=ROPEN(I,J)
+        END DO
+      END DO
+C
+C     DOUBLE OFF-DIAGONAL ELEMENTS
+C
+      DO I=1,NUM
+        DO J=1,NUM
+          IF (I .NE. J) THEN
+                     ADENS(I,J)=ADENS(I,J)*2.0D+00
+          IF(HISPIN) BDENS(I,J)=BDENS(I,J)*2.0D+00
+          END IF
+        END DO
+      END DO
+C
+      CALL DAWRIT(IDAF,IODA,ANEW,NUM*NUM,351,0)
+      IF(HISPIN) CALL DAWRIT(IDAF,IODA,BNEW,NUM*NUM,352,0)
+C
+C     GENERATE SCREENING MATRIX
+C
+      DO I=1,NSHELL
+        IMAX=KMAX(I)
+        IMIN=KMIN(I)
+        ILOC=KLOC(I)-IMIN
+        DO J=1,NSHELL
+          JMAX=KMAX(J)
+          JMIN=KMIN(J)
+          JLOC=KLOC(J)-JMIN
+          ALPHMAX=0.0D+00
+          DO II=ILOC+IMIN,ILOC+IMAX
+            DO JJ=JLOC+JMIN,JLOC+JMAX
+            IF(ABS(ADENS(II,JJ)) .GT. ALPHMAX)ALPHMAX=ABS(ADENS(II,JJ))
+            IF(HISPIN) THEN
+            IF(ABS(BDENS(II,JJ)) .GT. ALPHMAX)ALPHMAX=ABS(BDENS(II,JJ))
+            END IF
+            END DO
+          END DO
+          ASCREEN(I,J)=ALPHMAX
+        END DO
+      END DO
+C
+C
+C     ----- INITIALIZATION FOR PARALLEL WORK -----
+C
+      IPCOUNT = ME - 1
+C
+      TOL=ITOL*RLN10
+      CALL VCLR(XXXX,1,6*6*6*6)
+      CALL VCLR(YYYY,1,6*6*6*6)
+      CALL VCLR(ZZZZ,1,6*6*6*6)
+      XXXX(0,0,0,0)=1.0D+00
+      YYYY(0,0,0,0)=1.0D+00
+      ZZZZ(0,0,0,0)=1.0D+00
+C
+C    LOOP OVER SHELLS A B C AND E FOR <AB|CE>
+C
+      DO 100 IASHL=1,NSHELL
+C
+C  TRY TO ELIMINATE A SHELL
+C
+      DO 1020 IT = 1,NT
+         ID = MAPSHL(IASHL,IT)
+         IF (ID .GT. IASHL) GO TO 100
+         MI(IT) = ID
+ 1020 CONTINUE
+      KASHL=(IASHL-1)*IASHL/2
+C
+C     ----- CHECK CPU TIME -----
+C
+      CALL TSECND(TIM)
+      IF(TIM.GE.TIMLIM) THEN
+        WRITE(IW,*)' NO TIME LEFT IN FOUR'
+        RETURN
+      END IF
+C  POSITION OF THE SHELL'S ATOM
+      IAATOM=KATOM(IASHL)
+      AX=C(1,IAATOM)
+      AY=C(2,IAATOM)
+      AZ=C(3,IAATOM)
+C  INFO ABOUT THE PRIMATIVES
+      ISTARTA=KSTART(IASHL)
+      IENDA=ISTARTA+KNG(IASHL)-1
+C  INFO ABOUT THE SUBSHELLS
+      IAMAX=KMAX(IASHL)
+      IAMIN=KMIN(IASHL)
+      LOCA =KLOC(IASHL)-IAMIN
+C
+C  FIND THE HIGHEST SPIN VALUE IN THIS SHELL
+      KATYPE=KTYPE(IASHL)-1
+      JATYPE=1+IAMAX-IAMIN
+C
+C   B SHELL
+C
+      DO 101 IBSHL=1,IASHL
+C
+      DO 200 IT = 1,NT
+      ID = MI(IT)
+      JD = MAPSHL(IBSHL,IT)
+      MJ(IT) = JD
+      IF (ID .GE. JD) GO TO 1060
+      ND = ID
+      ID = JD
+      JD = ND
+ 1060 IF (ID-IASHL) 200,1080,101
+ 1080 IF (JD-IBSHL) 200,200,101
+  200 CONTINUE
+C
+      KBSHL=(IBSHL-1)*IBSHL/2
+      IBATOM=KATOM(IBSHL)
+      BX=C(1,IBATOM)
+      BY=C(2,IBATOM)
+      BZ=C(3,IBATOM)
+      ISTARTB=KSTART(IBSHL)
+      IENDB=ISTARTB+KNG(IBSHL)-1
+      IBMAX=KMAX(IBSHL)
+      IBMIN=KMIN(IBSHL)
+      LOCB = KLOC(IBSHL)-IBMIN
+      KBTYPE=KTYPE(IBSHL)-1
+      JBTYPE=1+IBMAX-IBMIN
+      ABRR=(AX-BX)*(AX-BX)+(AY-BY)*(AY-BY)+(AZ-BZ)*(AZ-BZ)
+C
+C    C SHELL
+C
+      DO 102 ICSHL=1,IBSHL
+C
+      N4=0
+      DO 340 IT = 1,NT
+      ID = MI(IT)
+      JD = MJ(IT)
+      KD = MAPSHL(ICSHL,IT)
+  240 IF (ID .GE. JD) GO TO 260
+      ND = ID
+      ID = JD
+      JD = ND
+  260 IF (JD .GE. KD) GO TO 280
+      ND = JD
+      JD = KD
+      KD = ND
+      GO TO 240
+  280 IF (ID-IASHL) 340,300,102
+  300 IF (JD-IBSHL) 340,320,102
+  320 IF (KD-ICSHL) 340,330,102
+  330 N4=N4+1
+  340 CONTINUE
+      Q4=NT
+      Q4=Q4/N4
+C
+C     SCREEN BASED ON DENSITY MATRIX
+C
+      IF(ASCREEN(IASHL,IBSHL) .LT. 1.0D-14 .AND.
+     *   ASCREEN(IASHL,ICSHL) .LT. 1.0D-14 .AND.
+     *   ASCREEN(IBSHL,ICSHL) .LT. 1.0D-14) THEN
+        GO TO 102
+      END IF
+C
+      ICATOM=KATOM(ICSHL)
+      CX=C(1,ICATOM)
+      CY=C(2,ICATOM)
+      CZ=C(3,ICATOM)
+      ISTARTC=KSTART(ICSHL)
+      IENDC=ISTARTC+KNG(ICSHL)-1
+      ICMAX=KMAX(ICSHL)
+      ICMIN=KMIN(ICSHL)
+      LOCC = KLOC(ICSHL)-ICMIN
+      KCTYPE=KTYPE(ICSHL)-1
+      JCTYPE=1+ICMAX-ICMIN
+      ACRR=(AX-CX)*(AX-CX)+(AY-CY)*(AY-CY)+(AZ-CZ)*(AZ-CZ)
+      BCRR=(BX-CX)*(BX-CX)+(BY-CY)*(BY-CY)+(BZ-CZ)*(BZ-CZ)
+C
+C    E SHELL
+C
+      DO 103 IESHL=1,NAUXSHL
+C
+C    SCREEN BASED ON (IIJJ) TYPE INTS
+C
+      IF(XIIJJ(KASHL+IBSHL)*XIIAA(ICSHL,IESHL) .LE. 1.0D-18 .OR.
+     *   XIIJJ(KASHL+ICSHL)*XIIAA(IBSHL,IESHL) .LE. 1.0D-18 .OR.
+     *   XIIJJ(KBSHL+ICSHL)*XIIAA(IASHL,IESHL) .LE. 1.0D-18) THEN
+         NSCHWZ=NSCHWZ+1
+         GO TO 103
+      END IF
+C
+C     ----- GO PARALLEL! -----
+C
+      IF (GOPARR) THEN
+         IPCOUNT = IPCOUNT + 1
+         IF (MOD(IPCOUNT,NPROC).NE.0) GO TO 103
+      END IF
+C
+      IEATOM=IAUXATM(IESHL)
+      EXX=C(1,IEATOM)
+      EY=C(2,IEATOM)
+      EZ=C(3,IEATOM)
+      ISTARTE=IESHL
+C     IENDE=ISTARTE
+      IEMAX=MAXSPD(IAUXTYP(IESHL))
+      IEMIN=MINSPD(IAUXTYP(IESHL))
+      LOCE = LOCAUX(IESHL)-IEMIN
+      KETYPE=IAUXTYP(IESHL)-1
+      JETYPE=1+IEMAX-IEMIN
+      IEPRM=ISTARTE
+      A5=AUXEXP(IEPRM)
+      CALL DFTAX7(AUXCONT(IESHL),IAUXTYP(IESHL),CONTE)
+      AERR=(AX-EXX)*(AX-EXX)+(AY-EY)*(AY-EY)+(AZ-EZ)*(AZ-EZ)
+      BERR=(BX-EXX)*(BX-EXX)+(BY-EY)*(BY-EY)+(BZ-EZ)*(BZ-EZ)
+      CERR=(CX-EXX)*(CX-EXX)+(CY-EY)*(CY-EY)+(CZ-EZ)*(CZ-EZ)
+C
+C END OF SHELLS
+C
+C
+C    CHECK TO SEE IF THEY ARE ALL ON THE SAME CENTER
+C
+      IF(IAATOM .EQ. IBATOM .AND. IAATOM .EQ. ICATOM .AND. IAATOM
+     *    .EQ. IEATOM) THEN
+        IF(  MOD(KATYPE+KBTYPE+KCTYPE+KETYPE,2).EQ.1 .AND.
+     *       .NOT.(IAMIN.EQ.1 .AND. IAMAX.EQ.4).AND.
+     *       .NOT.(IBMIN.EQ.1 .AND. IBMAX.EQ.4).AND.
+     *       .NOT.(ICMIN.EQ.1 .AND. ICMAX.EQ.4).AND.
+     *       .NOT.(IEMIN.EQ.1 .AND. IEMAX.EQ.4)) GO TO 103
+C            NO L SHELLS TO CONFUSE THINGS, AND TOTAL
+C            MOMENTUM IS ODD, THUS INTEGRALS ARE ZERO
+        SAMECEN=.TRUE.
+      ELSE
+        SAMECEN=.FALSE.
+      ENDIF
+C
+C
+C
+C    LOOP OVER GUASSIAN PRIMATIVES WHILE READING
+C          IN EXPONENTS AND CONTRACTIONS
+C
+       CALL VCLR(TEMPS,1,JATYPE*JBTYPE*JCTYPE*JETYPE)
+       DO 110 IAPRM=ISTARTA,IENDA
+        A1=EX(IAPRM)
+        CALL FORCNT(IAPRM,IAMAX,CONTA)
+        DO 111 IBPRM=ISTARTB,IENDB
+         A2=EX(IBPRM)
+         CALL FORCNT(IBPRM,IBMAX,CONTB)
+C
+C        GET INFO ABOUT A,B,AND P
+C
+          IF(.NOT. SAMECEN) THEN
+C
+            A6=A1+A2
+            PX=((A1*AX+A2*BX)/A6)
+            PY=((A1*AY+A2*BY)/A6)
+            PZ=((A1*AZ+A2*BZ)/A6)
+            ABK=(A1*A2/A6)*ABRR
+            IF (ABK .GT. TOL) GO TO 111
+          END IF
+C
+C
+         DO 112 ICPRM=ISTARTC,IENDC
+          A3=EX(ICPRM)
+          CALL FORCNT(ICPRM,ICMAX,CONTC)
+          IF(ACRR*A1*A3/(A1+A3) .GT. TOL .OR.
+     *       BCRR*A2*A3/(A2+A3) .GT. TOL) GO TO 112
+C
+C   CALCULATE FINAL GAUSSIAN CENTER AND OTHER THINGS
+C   P=A AND B, Q=C AND E, D=FINAL CENTER
+C
+          A4=A1+A2+A3+A5
+          A4INV=1.0D+00/A4
+C
+          IF(.NOT. SAMECEN) THEN
+            IF(AERR*A1*A5/(A1+A5) .GT. TOL .OR.
+     *         BERR*A2*A5/(A2+A5) .GT. TOL .OR.
+     *         CERR*A3*A5/(A3+A5) .GT. TOL) GO TO 112
+C
+            A7=A3+A5
+            A7INV=1.0D+00/A7
+            A10=0.5D+00*A4INV
+C
+            QX=(A3*CX+A5*EXX)*A7INV
+            QY=(A3*CY+A5*EY)*A7INV
+            QZ=(A3*CZ+A5*EZ)*A7INV
+            DX=(A1*AX+A2*BX+A3*CX+A5*EXX)*A4INV
+            DY=(A1*AY+A2*BY+A3*CY+A5*EY)*A4INV
+            DZ=(A1*AZ+A2*BZ+A3*CZ+A5*EZ)*A4INV
+            DAX=DX-AX
+            DAY=DY-AY
+            DAZ=DZ-AZ
+            DBX=DX-BX
+            DBY=DY-BY
+            DBZ=DZ-BZ
+            DCX=DX-CX
+            DCY=DY-CY
+            DCZ=DZ-CZ
+            DEX=DX-EXX
+            DEY=DY-EY
+            DEZ=DZ-EZ
+            PQRR=(PX-QX)*(PX-QX)+(PY-QY)*(PY-QY)+(PZ-QZ)*(PZ-QZ)
+C
+C   CALCULATE KABC
+C
+            ABCK=((PI*A4INV)*SQRT(PI*A4INV))*EXP(-ABK
+     *                                 -((A3*A5*A7INV)*CERR)
+     *                                 -((A6*A7*A4INV)*PQRR))
+C
+C
+C   USE RECURSION TO GENERATE HIGHER ANGULAR MOMENTUM XXXX,ETC
+C
+C     RECURSION BASED ON J
+      DO 2000 J=1,KETYPE
+                  XXXX(J,0,0,0)= DEX*XXXX(J-1,0  ,0  ,0  )+A10*(
+     *                         (J-1)*XXXX(J-2,0  ,0  ,0  ))
+                  YYYY(J,0,0,0)= DEY*YYYY(J-1,0  ,0  ,0  )+A10*(
+     *                         (J-1)*YYYY(J-2,0  ,0  ,0  ))
+                  ZZZZ(J,0,0,0)= DEZ*ZZZZ(J-1,0  ,0  ,0  )+A10*(
+     *                         (J-1)*ZZZZ(J-2,0  ,0  ,0  ))
+ 2000 CONTINUE
+C      RECURSION BASED ON K
+       DO 2010 K=1,KCTYPE
+        DO 2010 J=0,KETYPE
+                  XXXX(J,K,0,0)= DCX*XXXX(J  ,K-1,0  ,0  )+A10*(
+     *                             J*XXXX(J-1,K-1,0  ,0  ) +
+     *                         (K-1)*XXXX(J  ,K-2,0  ,0  ))
+                  YYYY(J,K,0,0)= DCY*YYYY(J  ,K-1,0  ,0  )+A10*(
+     *                             J*YYYY(J-1,K-1,0  ,0  ) +
+     *                         (K-1)*YYYY(J  ,K-2,0  ,0  ))
+                  ZZZZ(J,K,0,0)= DCZ*ZZZZ(J  ,K-1,0  ,0  )+A10*(
+     *                             J*ZZZZ(J-1,K-1,0  ,0  ) +
+     *                         (K-1)*ZZZZ(J  ,K-2,0  ,0  ))
+ 2010  CONTINUE
+C       RECURSION BASED ON L
+        DO 2020 L=1,KBTYPE
+          DO 2020 K=0,KCTYPE
+            DO 2020 J=0,KETYPE
+                  XXXX(J,K,L,0)= DBX*XXXX(J  ,K  ,L-1,0  )+A10*(
+     *                             J*XXXX(J-1,K  ,L-1,0  ) +
+     *                             K*XXXX(J  ,K-1,L-1,0  ) +
+     *                         (L-1)*XXXX(J  ,K  ,L-2,0  ))
+                  YYYY(J,K,L,0)= DBY*YYYY(J  ,K  ,L-1,0  )+A10*(
+     *                             J*YYYY(J-1,K  ,L-1,0  ) +
+     *                             K*YYYY(J  ,K-1,L-1,0  ) +
+     *                         (L-1)*YYYY(J  ,K  ,L-2,0  ))
+                  ZZZZ(J,K,L,0)= DBZ*ZZZZ(J  ,K  ,L-1,0  )+A10*(
+     *                             J*ZZZZ(J-1,K  ,L-1,0  ) +
+     *                             K*ZZZZ(J  ,K-1,L-1,0  ) +
+     *                         (L-1)*ZZZZ(J  ,K  ,L-2,0  ))
+ 2020   CONTINUE
+C         RECURSION BASED ON I
+          DO 2030 I=1,KATYPE
+            DO 2030 L=0,KBTYPE
+              DO 2030 K=0,KCTYPE
+                DO 2030 J=0,KETYPE
+                  XXXX(J,K,L,I)= DAX*XXXX(J  ,K  ,L  ,I-1)+A10*(
+     *                         (I-1)*XXXX(J  ,K  ,L  ,I-2) +
+     *                             J*XXXX(J-1,K  ,L  ,I-1) +
+     *                             K*XXXX(J  ,K-1,L  ,I-1) +
+     *                             L*XXXX(J  ,K  ,L-1,I-1))
+                  YYYY(J,K,L,I)= DAY*YYYY(J  ,K  ,L  ,I-1)+A10*(
+     *                         (I-1)*YYYY(J  ,K  ,L  ,I-2) +
+     *                             J*YYYY(J-1,K  ,L  ,I-1) +
+     *                             K*YYYY(J  ,K-1,L  ,I-1) +
+     *                             L*YYYY(J  ,K  ,L-1,I-1))
+                  ZZZZ(J,K,L,I)= DAZ*ZZZZ(J  ,K  ,L  ,I-1)+A10*(
+     *                         (I-1)*ZZZZ(J  ,K  ,L  ,I-2) +
+     *                             J*ZZZZ(J-1,K  ,L  ,I-1) +
+     *                             K*ZZZZ(J  ,K-1,L  ,I-1) +
+     *                             L*ZZZZ(J  ,K  ,L-1,I-1))
+ 2030     CONTINUE
+C
+C    LOOP OVER SUBSHELLS TO GET VALUES OF THE INTEGRALS
+C
+          IMOVE=0
+          DO 120 IASUB=IAMIN,IAMAX
+C          THE X COORDINATE IN S(NUM,NUM,NUM,NUM)
+           IAPOSIT=LOCA+IASUB
+           L1=LDAT(IASUB)
+           M1=MDAT(IASUB)
+           N1=NDAT(IASUB)
+           CONTRA=ABCK*CONTA(IASUB)
+C
+           DO 121 IBSUB=IBMIN,IBMAX
+C           THE Y COORDINATE IN S(NUM,NUM,NUM,NUM)
+            IBPOSIT=LOCB+IBSUB
+            IF(IBPOSIT .GT. IAPOSIT) GO TO 120
+            L2=LDAT(IBSUB)
+            M2=MDAT(IBSUB)
+            N2=NDAT(IBSUB)
+            CONTRB=CONTRA*CONTB(IBSUB)
+C
+            DO 122 ICSUB=ICMIN,ICMAX
+C            THE Z COORDINATE IN S(NUM,NUM,NUM,NUM)
+             ICPOSIT=LOCC+ICSUB
+             IF(ICPOSIT .GT. IBPOSIT) GO TO 121
+             L3=LDAT(ICSUB)
+             M3=MDAT(ICSUB)
+             N3=NDAT(ICSUB)
+             CONTRC=CONTRB*CONTC(ICSUB)
+C
+            DO 123 IESUB=IEMIN,IEMAX
+C            THE E COORDINATE IN S(NUM,NUM,NUM,NUM)
+C             IEPOSIT=LOCE+IESUB
+C             IF(IEPOSIT .GT. ICPOSIT) GO TO 122 THIS IS AN AUX SHELL
+             L5=LDAT(IESUB)
+             M5=MDAT(IESUB)
+             N5=NDAT(IESUB)
+             CONTRE=CONTRC*CONTE(IESUB)
+             IMOVE=IMOVE+1
+C
+              TEMPS(IMOVE) = TEMPS(IMOVE)
+     *            +CONTRE*XXXX(L5,L3,L2,L1)*
+     *               YYYY(M5,M3,M2,M1)*ZZZZ(N5,N3,N2,N1)
+C
+  123       CONTINUE
+  122       CONTINUE
+  121      CONTINUE
+  120     CONTINUE
+C
+C
+C
+          ELSE
+C
+C         SPECIAL SAME CENTER CASE
+C
+          IMOVE=0
+          RADIAL=(PI*A4INV)*SQRT(PI*A4INV)
+          A20=SQRT(0.5D+00*A4INV)
+          IDUM1=IDUMMY(KATYPE)+IDUMMY(KBTYPE)+IDUMMY(KCTYPE)+
+     *         IDUMMY(KETYPE)
+          IDUM2=KATYPE+KBTYPE+KCTYPE+KETYPE
+          A21(IDUM1)=A20**IDUM1
+          DO I=IDUM1+1,IDUM2
+            A21(I)=A20*A21(I-1)
+          END DO
+          DO 220 IASUB=IAMIN,IAMAX
+C          THE X COORDINATE IN S(NUM,NUM,NUM,NUM)
+           IAPOSIT=LOCA+IASUB
+           L1=LDAT(IASUB)
+           M1=MDAT(IASUB)
+           N1=NDAT(IASUB)
+           CONTRA=CONTA(IASUB)*RADIAL
+C
+           DO 221 IBSUB=IBMIN,IBMAX
+C           THE Y COORDINATE IN S(NUM,NUM,NUM,NUM)
+            IBPOSIT=LOCB+IBSUB
+            IF(IBPOSIT .GT. IAPOSIT) GO TO 220
+            L2=L1+LDAT(IBSUB)
+            M2=M1+MDAT(IBSUB)
+            N2=N1+NDAT(IBSUB)
+            CONTRB=CONTRA*CONTB(IBSUB)
+C
+            DO 222 ICSUB=ICMIN,ICMAX
+C            THE Z COORDINATE IN S(NUM,NUM,NUM,NUM)
+             ICPOSIT=LOCC+ICSUB
+             IF(ICPOSIT .GT. IBPOSIT) GO TO 221
+             L3=L2+LDAT(ICSUB)
+             M3=M2+MDAT(ICSUB)
+             N3=N2+NDAT(ICSUB)
+             CONTRC=CONTRB*CONTC(ICSUB)
+C
+            DO 223 IESUB=IEMIN,IEMAX
+C            THE E COORDINATE IN S(NUM,NUM,NUM,NUM)
+C             IEPOSIT=LOCE+IESUB
+C             IF(IEPOSIT .GT. ICPOSIT) GO TO 222 THIS IS AN AUX SHELL
+             IMOVE=IMOVE+1
+             L5=L3+LDAT(IESUB)
+             IF(MOD(L5,2) .EQ. 1) GO TO 223
+             M5=M3+MDAT(IESUB)
+             IF(MOD(M5,2) .EQ. 1) GO TO 223
+             N5=N3+NDAT(IESUB)
+             IF(MOD(N5,2) .EQ. 1) GO TO 223
+             CONTRE=CONTRC*CONTE(IESUB)
+C
+C          THE IF MOD(N5,2) GETS RID OF ODD EXPONENTS
+C
+            XYZI=DFAC(L5)*DFAC(M5)*DFAC(N5)*CONTRE*A21(L5+N5+M5)
+            TEMPS(IMOVE)=TEMPS(IMOVE)+XYZI
+C
+  223       CONTINUE
+  222       CONTINUE
+  221      CONTINUE
+  220     CONTINUE
+C
+C
+C
+          END IF
+C
+C
+  112    CONTINUE
+  111   CONTINUE
+  110  CONTINUE
+C
+C   LOOP OVER TEMPORARY MATRIX
+C
+C
+C     LOOP OVER K,L,N,M  (STRANGE ORDER, BUT CORRECT)
+C
+         IMOVE=0
+         DO 421 K=IAMIN+LOCA,IAMAX+LOCA
+C          MIN LETS US SKIP (5611) SINCE WE DO (6511)
+           DO 422 L=IBMIN+LOCB,MIN(IBMAX+LOCB,K)
+C
+            DO 423 N=ICMIN+LOCC,MIN(ICMAX+LOCC,L)
+C
+             DO 424 M=IEMIN+LOCE,IEMAX+LOCE
+              IMOVE=IMOVE+1
+C             POSTSCREEN THE INTEGRALS
+              IF(ABS(TEMPS(IMOVE)) .GT. 1.0D-09) THEN
+C             TAKE INTO ACCOUNT SKIPPED INTERGRALS
+              A4OVKLNM=TEMPS(IMOVE)*Q4
+C             MAKE R AND ROPEN
+C
+              IF(.NOT. HISPIN) THEN
+C
+                   R(K,M)=R(K,M)+A4OVKLNM*ADENS(L,N)
+                 IF(L .NE. N) THEN
+                   R(N,M)=R(N,M)+A4OVKLNM*ADENS(K,L)
+                 ENDIF
+                 IF(L .NE. K) THEN
+                   R(L,M)=R(L,M)+A4OVKLNM*ADENS(K,N)
+                 ENDIF
+C
+              ELSE
+C
+                   R    (K,M)=R    (K,M)+A4OVKLNM*ADENS(L,N)
+                   ROPEN(K,M)=ROPEN(K,M)+A4OVKLNM*BDENS(L,N)
+                 IF(L .NE. N) THEN
+                   R    (N,M)=R    (N,M)+A4OVKLNM*ADENS(K,L)
+                   ROPEN(N,M)=ROPEN(N,M)+A4OVKLNM*BDENS(K,L)
+                 ENDIF
+                 IF(L .NE. K) THEN
+                   R    (L,M)=R    (L,M)+A4OVKLNM*ADENS(K,N)
+                   ROPEN(L,M)=ROPEN(L,M)+A4OVKLNM*BDENS(K,N)
+                 ENDIF
+C
+              ENDIF
+C
+            ENDIF
+  424     CONTINUE
+  423    CONTINUE
+  422   CONTINUE
+  421  CONTINUE
+C
+  103 CONTINUE
+  102 CONTINUE
+  101 CONTINUE
+  100 CONTINUE
+C
+C     ----- END OF SHELL LOOPS -----
+C
+      END
+C*MODULE DFTAUX  *DECK DFTAX5B
+      SUBROUTINE DFTAX5B(ADENS,BDENS,TEMPS,NAUXFUN,NAUXSHL,IAUXATM,
+     *                   IAUXTYP,AUXEXP,AUXCONT,LOCAUX,R,ROPEN,
+     *                   ASCREEN,HISPIN,XIIJJ,XIIAA,XAABB,MAPAUX,
+     *                   TMPTMP)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      SAVE MINSPD,MAXSPD
+C
+      LOGICAL SAMECEN,HISPIN,DSKWRK,MASWRK,GOPARR
+C
+      PARAMETER (MXSH=1000, MXGTOT=5000, MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /IOFILE/ IR,IW,IP,IJKO,IJKT,IDAF,NAV,IODA(400)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+      COMMON /OUTPUT/ NPRINT,ITOL,ICUT,NORMF,NORMP,NOPK
+      COMMON /PAR   / ME,MASTER,NPROC,IBTYP,IPTIM,GOPARR,DSKWRK,MASWRK
+      COMMON /RESTAR/ TIMLIM,IREST,NREC,INTLOC,IST,JST,KST,LST
+      COMMON /SYMTRY/ MAPSHL(MXSH,48),MAPCTR(MXATM,48),
+     *                T(432),INVT(48),NT
+C
+      DIMENSION ADENS(NUM,NUM),BDENS(NUM,NUM),TEMPS(15*15*15*15),
+     *          IAUXATM(NAUXSHL),IAUXTYP(NAUXSHL),AUXEXP(NAUXSHL),
+     *          AUXCONT(NAUXSHL),LOCAUX(NAUXSHL),
+     *          R(NUM+NAUXFUN,NUM+NAUXFUN),
+     *          ROPEN(NUM+NAUXFUN,NUM+NAUXFUN),ASCREEN(NSHELL,NSHELL),
+     *          XIIJJ(*),XIIAA(NSHELL,NAUXSHL),XAABB(*),MAPAUX(*),
+     *          TMPTMP(NUM+NAUXFUN,NUM+NAUXFUN)
+      DIMENSION MINSPD(5),MAXSPD(5),MI(48),DFAC(0:21),
+     *          LDAT(35),MDAT(35),NDAT(35),
+     *          CONTA(35),CONTB(35),CONTC(35),CONTE(35),
+     *          A21(0:4*4*4*4),IDUMMY(0:4),
+     *          XXXX(-1:4,-1:4,-1:4,-1:4),
+     *          YYYY(-1:4,-1:4,-1:4,-1:4),
+     *          ZZZZ(-1:4,-1:4,-1:4,-1:4)
+C
+      PARAMETER (PI=3.141592653589793238462643D+00,RLN10=2.30258D+00)
+C
+C  X,Y,Z EXPONENTS OF CARTESIAN S,PX,PY,PZ,DXX,...
+C
+      DATA LDAT/0,1,0,0,2,0,0,1,1,0,3,0,0,2,2,1,0,1,0,1,4,0,0,3,3,
+     *          1,0,1,0,2,2,0,2,1,1/
+      DATA MDAT/0,0,1,0,0,2,0,1,0,1,0,3,0,1,0,2,2,0,1,1,0,4,0,1,0,
+     *          3,3,0,1,2,0,2,1,2,1/
+      DATA NDAT/0,0,0,1,0,0,2,0,1,1,0,0,3,0,1,0,1,2,2,1,0,0,4,0,1,
+     *          0,1,3,3,0,2,2,1,1,2/
+C
+C  CALCULATES IVALUE!!  (ALMOST)
+C     WARNING DFAC(0)=-1!!,DFAC(1)=0!!,DFAC(2)=1!! ETC.
+C
+      DATA DFAC/1.0D+00,1.0D+00,1.0D+00,2.0D+00,3.0D+00,8.0D+00,
+     *          15.0D+00,48.0D+00,105.0D+00,384.0D+00,945.0D+00,
+     *          3840.0D+00,10395.0D+00,46080.0D+00,135135.0D+00,
+     *          645120.0D+00,2027025.0D+00,10321920.0D+00,
+     *          34459425.0D+00,185794560.0D+00,
+     *          654729075.0D+00,3715891200.0D+00/
+C
+C     HELPS DEAL WITH L SHELLS (SHELL THAT ENDS ON 1 MIGHT START WITH 0)
+C
+      DATA IDUMMY/0,0,2,3,4/
+      DATA MINSPD /1,2,5 ,11,21/
+      DATA MAXSPD /1,4,10,20,35/
+C
+C   THIS ROUTINE CALCULATES THE ONE ELECTRON INTEGRAL
+C   <ABCE> FOR CARTESIAN GAUSSIANS.  (UP TO G-SHELLS)
+C       ADENS IS ACTUALLY THE CHANGE IN THE DENSITY
+C       ASCREEN IS SCREENING BASED ON CHANGE IN DENSITY
+C       XIIJJ,XIIAA ARE SCREENING BASED ON SCHWARZ INEQUALITIES
+C
+      L4=NUM+NAUXFUN
+      L6 = L4*L4
+      IF ((NORMF .EQ. 1 .OR. NORMP .EQ. 1).AND. MASWRK) THEN
+        WRITE(IW,*)' SORRY BUT THE FOUR CENTER ONE ELECTRON OVELAP'
+        WRITE(IW,*)' INTEGRALS USED FOR DFT DO NOT SUPPORT THE'
+        WRITE(IW,*)' NO NORMALIZATION OPTIONS'
+        CALL ABRT()
+      ENDIF
+      NSCHWZ=0
+C
+C     GENERATE THE CHANGE IN THE DENSITY
+C     THIS COMES PRE-DONE FROM THE PREVIOUS ROUTINE
+C
+C     ----- INITIALIZATION FOR PARALLEL WORK -----
+C
+      IPCOUNT = ME - 1
+C
+      TOL=ITOL*RLN10
+      CALL VCLR(XXXX,1,6*6*6*6)
+      CALL VCLR(YYYY,1,6*6*6*6)
+      CALL VCLR(ZZZZ,1,6*6*6*6)
+      XXXX(0,0,0,0)=1.0D+00
+      YYYY(0,0,0,0)=1.0D+00
+      ZZZZ(0,0,0,0)=1.0D+00
+C
+C    LOOP OVER SHELLS A B C AND E FOR <AB|CE>
+C
+      DO 100 IASHL=1,NSHELL
+C
+C  TRY TO ELIMINATE A SHELL
+C
+      DO 1020 IT = 1,NT
+         ID = MAPSHL(IASHL,IT)
+         IF (ID .GT. IASHL) GO TO 100
+         MI(IT) = ID
+ 1020 CONTINUE
+C
+      KASHL=(IASHL-1)*IASHL/2
+C
+C     ----- CHECK CPU TIME -----
+C
+      CALL TSECND(TIM)
+      IF(TIM.GE.TIMLIM) THEN
+        WRITE(IW,*)' NO TIME LEFT IN FOUR'
+        RETURN
+      END IF
+C  POSITION OF THE SHELL'S ATOM
+      IAATOM=KATOM(IASHL)
+      AX=C(1,IAATOM)
+      AY=C(2,IAATOM)
+      AZ=C(3,IAATOM)
+C  INFO ABOUT THE PRIMATIVES
+      ISTARTA=KSTART(IASHL)
+      IENDA=ISTARTA+KNG(IASHL)-1
+C  INFO ABOUT THE SUBSHELLS
+      IAMAX=KMAX(IASHL)
+      IAMIN=KMIN(IASHL)
+      LOCA =KLOC(IASHL)-IAMIN
+C
+C  FIND THE HIGHEST SPIN VALUE IN THIS SHELL
+      KATYPE=KTYPE(IASHL)-1
+      JATYPE=1+IAMAX-IAMIN
+C
+C   B SHELL
+C
+      DO 101 IBSHL=1,IASHL
+C
+C
+      N4=0
+      DO 200 IT = 1,NT
+      ID = MI(IT)
+      JD = MAPSHL(IBSHL,IT)
+      IF (ID .GE. JD) GO TO 1060
+      ND = ID
+      ID = JD
+      JD = ND
+ 1060 IF (ID-IASHL) 200,1080,101
+ 1080 IF (JD-IBSHL) 200,210,101
+  210 N4=N4+1
+  200 CONTINUE
+      Q4=NT
+      Q4=Q4/N4
+C
+C     SCREEN BASED ON DENSITY MATRIX
+C
+      IF(ASCREEN(IASHL,IBSHL) .LT. 1.0D-14) GO TO 101
+C
+      IBATOM=KATOM(IBSHL)
+      BX=C(1,IBATOM)
+      BY=C(2,IBATOM)
+      BZ=C(3,IBATOM)
+      ISTARTB=KSTART(IBSHL)
+      IENDB=ISTARTB+KNG(IBSHL)-1
+      IBMAX=KMAX(IBSHL)
+      IBMIN=KMIN(IBSHL)
+      LOCB = KLOC(IBSHL)-IBMIN
+      KBTYPE=KTYPE(IBSHL)-1
+      JBTYPE=1+IBMAX-IBMIN
+      ABRR=(AX-BX)*(AX-BX)+(AY-BY)*(AY-BY)+(AZ-BZ)*(AZ-BZ)
+C
+C    C SHELL
+C
+      DO 102 ICSHL=1,NAUXSHL
+      KCSHL=(ICSHL-1)*ICSHL/2
+      ICATOM=IAUXATM(ICSHL)
+      CX=C(1,ICATOM)
+      CY=C(2,ICATOM)
+      CZ=C(3,ICATOM)
+C     ISTARTC=ICSHL
+C     IENDC=ISTARTC
+      ICMAX=MAXSPD(IAUXTYP(ICSHL))
+      ICMIN=MINSPD(IAUXTYP(ICSHL))
+      LOCC =LOCAUX(ICSHL)-ICMIN
+      KCTYPE=IAUXTYP(ICSHL)-1
+      JCTYPE=1+ICMAX-ICMIN
+      A3=AUXEXP(ICSHL)
+      ACRR=(AX-CX)*(AX-CX)+(AY-CY)*(AY-CY)+(AZ-CZ)*(AZ-CZ)
+      BCRR=(BX-CX)*(BX-CX)+(BY-CY)*(BY-CY)+(BZ-CZ)*(BZ-CZ)
+      CALL DFTAX7(AUXCONT(ICSHL),IAUXTYP(ICSHL),CONTC)
+C
+C    E SHELL
+C
+      DO 103 IESHL=1,ICSHL
+C
+C    SCREEN BASED ON (IIJJ) TYPE INTS
+C
+      IF(XIIJJ(KASHL+IBSHL)*XAABB(KCSHL+IESHL) .LE. 1.0D-18 .OR.
+     *   XIIAA(IASHL,ICSHL)*XIIAA(IBSHL,IESHL) .LE. 1.0D-18 .OR.
+     *   XIIAA(IASHL,IESHL)*XIIAA(IBSHL,ICSHL) .LE. 1.0D-18) THEN
+         NSCHWZ=NSCHWZ+1
+         GO TO 103
+      END IF
+C
+C     ----- GO PARALLEL! -----
+C
+      IF (GOPARR) THEN
+         IPCOUNT = IPCOUNT + 1
+         IF (MOD(IPCOUNT,NPROC).NE.0) GO TO 103
+      END IF
+C
+      IEATOM=IAUXATM(IESHL)
+      EXX=C(1,IEATOM)
+      EY=C(2,IEATOM)
+      EZ=C(3,IEATOM)
+      ISTARTE=IESHL
+C     IENDE=ISTARTE
+      IEMAX=MAXSPD(IAUXTYP(IESHL))
+      IEMIN=MINSPD(IAUXTYP(IESHL))
+      LOCE = LOCAUX(IESHL)-IEMIN
+      KETYPE=IAUXTYP(IESHL)-1
+      JETYPE=1+IEMAX-IEMIN
+      IEPRM=ISTARTE
+      A5=AUXEXP(IEPRM)
+      CALL DFTAX7(AUXCONT(IESHL),IAUXTYP(IESHL),CONTE)
+      AERR=(AX-EXX)*(AX-EXX)+(AY-EY)*(AY-EY)+(AZ-EZ)*(AZ-EZ)
+      BERR=(BX-EXX)*(BX-EXX)+(BY-EY)*(BY-EY)+(BZ-EZ)*(BZ-EZ)
+      CERR=(CX-EXX)*(CX-EXX)+(CY-EY)*(CY-EY)+(CZ-EZ)*(CZ-EZ)
+C
+C END OF SHELLS
+C
+C
+C    CHECK TO SEE IF THEY ARE ALL ON THE SAME CENTER
+C
+      IF(IAATOM .EQ. IBATOM .AND. IAATOM .EQ. ICATOM .AND. IAATOM
+     *    .EQ. IEATOM) THEN
+        IF(  MOD(KATYPE+KBTYPE+KCTYPE+KETYPE,2).EQ.1 .AND.
+     *       .NOT.(IAMIN.EQ.1 .AND. IAMAX.EQ.4).AND.
+     *       .NOT.(IBMIN.EQ.1 .AND. IBMAX.EQ.4).AND.
+     *       .NOT.(ICMIN.EQ.1 .AND. ICMAX.EQ.4).AND.
+     *       .NOT.(IEMIN.EQ.1 .AND. IEMAX.EQ.4)) GO TO 103
+C            NO L SHELLS TO CONFUSE THINGS, AND TOTAL
+C            MOMENTUM IS ODD, THUS INTEGRALS ARE ZERO
+        SAMECEN=.TRUE.
+      ELSE
+        SAMECEN=.FALSE.
+      ENDIF
+C
+C    LOOP OVER GUASSIAN PRIMATIVES WHILE READING
+C          IN EXPONENTS AND CONTRACTIONS
+C
+       CALL VCLR(TEMPS,1,JATYPE*JBTYPE*JCTYPE*JETYPE)
+       DO 110 IAPRM=ISTARTA,IENDA
+        A1=EX(IAPRM)
+        CALL FORCNT(IAPRM,IAMAX,CONTA)
+        DO 111 IBPRM=ISTARTB,IENDB
+         A2=EX(IBPRM)
+         CALL FORCNT(IBPRM,IBMAX,CONTB)
+C
+C        GET INFO ABOUT A,B,AND P
+C
+          IF(.NOT. SAMECEN) THEN
+C
+            A6=A1+A2
+            PX=((A1*AX+A2*BX)/A6)
+            PY=((A1*AY+A2*BY)/A6)
+            PZ=((A1*AZ+A2*BZ)/A6)
+            ABK=(A1*A2/A6)*ABRR
+            IF (ABK .GT. TOL) GO TO 111
+          END IF
+          IF(ACRR*A1*A3/(A1+A3) .GT. TOL .OR.
+     *       BCRR*A2*A3/(A2+A3) .GT. TOL) GO TO 111
+C
+C
+C
+C   CALCULATE FINAL GAUSSIAN CENTER AND OTHER THINGS
+C   P=A AND B, Q=C AND E, D=FINAL CENTER
+C
+          A4=A1+A2+A3+A5
+          A4INV=1.0D+00/A4
+C
+          IF(.NOT. SAMECEN) THEN
+            IF(AERR*A1*A5/(A1+A5) .GT. TOL .OR.
+     *         BERR*A2*A5/(A2+A5) .GT. TOL .OR.
+     *         CERR*A3*A5/(A3+A5) .GT. TOL) GO TO 111
+C
+            A7=A3+A5
+            A7INV=1.0D+00/A7
+            A10=0.5D+00*A4INV
+C
+            QX=((A3*CX+A5*EXX)*A7INV)
+            QY=((A3*CY+A5*EY)*A7INV)
+            QZ=((A3*CZ+A5*EZ)*A7INV)
+            DX=(A1*AX+A2*BX+A3*CX+A5*EXX)*A4INV
+            DY=(A1*AY+A2*BY+A3*CY+A5*EY)*A4INV
+            DZ=(A1*AZ+A2*BZ+A3*CZ+A5*EZ)*A4INV
+            DAX=DX-AX
+            DAY=DY-AY
+            DAZ=DZ-AZ
+            DBX=DX-BX
+            DBY=DY-BY
+            DBZ=DZ-BZ
+            DCX=DX-CX
+            DCY=DY-CY
+            DCZ=DZ-CZ
+            DEX=DX-EXX
+            DEY=DY-EY
+            DEZ=DZ-EZ
+            PQRR=(PX-QX)*(PX-QX)+(PY-QY)*(PY-QY)+(PZ-QZ)*(PZ-QZ)
+C
+C   CALCULATE KABC
+C
+            ABCK=((PI*A4INV)*SQRT(PI*A4INV))*EXP(-ABK
+     *                                 -((A3*A5*A7INV)*CERR)
+     *                                 -((A6*A7*A4INV)*PQRR))
+C
+C
+C   USE RECURSION TO GENERATE HIGHER ANGULAR MOMENTUM XXXX,ETC
+C
+C     RECURSION BASED ON J
+      DO 2000 J=1,KETYPE
+                  XXXX(J,0,0,0)= DEX*XXXX(J-1,0  ,0  ,0  )+A10*(
+     *                         (J-1)*XXXX(J-2,0  ,0  ,0  ))
+                  YYYY(J,0,0,0)= DEY*YYYY(J-1,0  ,0  ,0  )+A10*(
+     *                         (J-1)*YYYY(J-2,0  ,0  ,0  ))
+                  ZZZZ(J,0,0,0)= DEZ*ZZZZ(J-1,0  ,0  ,0  )+A10*(
+     *                         (J-1)*ZZZZ(J-2,0  ,0  ,0  ))
+ 2000 CONTINUE
+C      RECURSION BASED ON K
+       DO 2010 K=1,KCTYPE
+        DO 2010 J=0,KETYPE
+                  XXXX(J,K,0,0)= DCX*XXXX(J  ,K-1,0  ,0  )+A10*(
+     *                             J*XXXX(J-1,K-1,0  ,0  ) +
+     *                         (K-1)*XXXX(J  ,K-2,0  ,0  ))
+                  YYYY(J,K,0,0)= DCY*YYYY(J  ,K-1,0  ,0  )+A10*(
+     *                             J*YYYY(J-1,K-1,0  ,0  ) +
+     *                         (K-1)*YYYY(J  ,K-2,0  ,0  ))
+                  ZZZZ(J,K,0,0)= DCZ*ZZZZ(J  ,K-1,0  ,0  )+A10*(
+     *                             J*ZZZZ(J-1,K-1,0  ,0  ) +
+     *                         (K-1)*ZZZZ(J  ,K-2,0  ,0  ))
+ 2010  CONTINUE
+C       RECURSION BASED ON L
+        DO 2020 L=1,KBTYPE
+          DO 2020 K=0,KCTYPE
+            DO 2020 J=0,KETYPE
+                  XXXX(J,K,L,0)= DBX*XXXX(J  ,K  ,L-1,0  )+A10*(
+     *                             J*XXXX(J-1,K  ,L-1,0  ) +
+     *                             K*XXXX(J  ,K-1,L-1,0  ) +
+     *                         (L-1)*XXXX(J  ,K  ,L-2,0  ))
+                  YYYY(J,K,L,0)= DBY*YYYY(J  ,K  ,L-1,0  )+A10*(
+     *                             J*YYYY(J-1,K  ,L-1,0  ) +
+     *                             K*YYYY(J  ,K-1,L-1,0  ) +
+     *                         (L-1)*YYYY(J  ,K  ,L-2,0  ))
+                  ZZZZ(J,K,L,0)= DBZ*ZZZZ(J  ,K  ,L-1,0  )+A10*(
+     *                             J*ZZZZ(J-1,K  ,L-1,0  ) +
+     *                             K*ZZZZ(J  ,K-1,L-1,0  ) +
+     *                         (L-1)*ZZZZ(J  ,K  ,L-2,0  ))
+ 2020   CONTINUE
+C         RECURSION BASED ON I
+          DO 2030 I=1,KATYPE
+            DO 2030 L=0,KBTYPE
+              DO 2030 K=0,KCTYPE
+                DO 2030 J=0,KETYPE
+                  XXXX(J,K,L,I)= DAX*XXXX(J  ,K  ,L  ,I-1)+A10*(
+     *                         (I-1)*XXXX(J  ,K  ,L  ,I-2) +
+     *                             J*XXXX(J-1,K  ,L  ,I-1) +
+     *                             K*XXXX(J  ,K-1,L  ,I-1) +
+     *                             L*XXXX(J  ,K  ,L-1,I-1))
+                  YYYY(J,K,L,I)= DAY*YYYY(J  ,K  ,L  ,I-1)+A10*(
+     *                         (I-1)*YYYY(J  ,K  ,L  ,I-2) +
+     *                             J*YYYY(J-1,K  ,L  ,I-1) +
+     *                             K*YYYY(J  ,K-1,L  ,I-1) +
+     *                             L*YYYY(J  ,K  ,L-1,I-1))
+                  ZZZZ(J,K,L,I)= DAZ*ZZZZ(J  ,K  ,L  ,I-1)+A10*(
+     *                         (I-1)*ZZZZ(J  ,K  ,L  ,I-2) +
+     *                             J*ZZZZ(J-1,K  ,L  ,I-1) +
+     *                             K*ZZZZ(J  ,K-1,L  ,I-1) +
+     *                             L*ZZZZ(J  ,K  ,L-1,I-1))
+ 2030     CONTINUE
+C
+C    LOOP OVER SUBSHELLS TO GET VALUES OF THE INTEGRALS
+C
+          IMOVE=0
+          DO 120 IASUB=IAMIN,IAMAX
+C          THE X COORDINATE IN S(NUM,NUM,NUM,NUM)
+           IAPOSIT=LOCA+IASUB
+           L1=LDAT(IASUB)
+           M1=MDAT(IASUB)
+           N1=NDAT(IASUB)
+           CONTRA=ABCK*CONTA(IASUB)
+C
+           DO 121 IBSUB=IBMIN,IBMAX
+C           THE Y COORDINATE IN S(NUM,NUM,NUM,NUM)
+            IBPOSIT=LOCB+IBSUB
+            IF(IBPOSIT .GT. IAPOSIT) GO TO 120
+            L2=LDAT(IBSUB)
+            M2=MDAT(IBSUB)
+            N2=NDAT(IBSUB)
+            CONTRB=CONTRA*CONTB(IBSUB)
+C
+            DO 122 ICSUB=ICMIN,ICMAX
+C            THE Z COORDINATE IN S(NUM,NUM,NUM,NUM)
+             ICPOSIT=LOCC+ICSUB
+C             IF(ICPOSIT .GT. IBPOSIT) GO TO 121 THIS IS AN AUX SHELL
+             L3=LDAT(ICSUB)
+             M3=MDAT(ICSUB)
+             N3=NDAT(ICSUB)
+             CONTRC=CONTRB*CONTC(ICSUB)
+C
+            DO 123 IESUB=IEMIN,IEMAX
+C            THE E COORDINATE IN S(NUM,NUM,NUM,NUM)
+             IEPOSIT=LOCE+IESUB
+             IF(IEPOSIT .GT. ICPOSIT) GO TO 122
+             L5=LDAT(IESUB)
+             M5=MDAT(IESUB)
+             N5=NDAT(IESUB)
+             CONTRE=CONTRC*CONTE(IESUB)
+             IMOVE=IMOVE+1
+C
+              TEMPS(IMOVE) = TEMPS(IMOVE)
+     *            +CONTRE*XXXX(L5,L3,L2,L1)*
+     *               YYYY(M5,M3,M2,M1)*ZZZZ(N5,N3,N2,N1)
+C
+  123       CONTINUE
+  122       CONTINUE
+  121      CONTINUE
+  120     CONTINUE
+C
+C
+          ELSE
+C
+C         SPECIAL SAME CENTER CASE
+C
+          IMOVE=0
+          RADIAL=(PI*A4INV)*SQRT(PI*A4INV)
+          A20=SQRT(0.5D+00*A4INV)
+          IDUM1=IDUMMY(KATYPE)+IDUMMY(KBTYPE)+IDUMMY(KCTYPE)+
+     *         IDUMMY(KETYPE)
+          IDUM2=KATYPE+KBTYPE+KCTYPE+KETYPE
+          A21(IDUM1)=A20**IDUM1
+          DO  I=IDUM1+1,IDUM2
+            A21(I)=A21(I-1)*A20
+          END DO
+          DO 220 IASUB=IAMIN,IAMAX
+C          THE X COORDINATE IN S(NUM,NUM,NUM,NUM)
+           IAPOSIT=LOCA+IASUB
+           L1=LDAT(IASUB)
+           M1=MDAT(IASUB)
+           N1=NDAT(IASUB)
+           CONTRA=CONTA(IASUB)*RADIAL
+C
+           DO 221 IBSUB=IBMIN,IBMAX
+C           THE Y COORDINATE IN S(NUM,NUM,NUM,NUM)
+            IBPOSIT=LOCB+IBSUB
+            IF(IBPOSIT .GT. IAPOSIT) GO TO 220
+            L2=L1+LDAT(IBSUB)
+            M2=M1+MDAT(IBSUB)
+            N2=N1+NDAT(IBSUB)
+            CONTRB=CONTRA*CONTB(IBSUB)
+C
+            DO 222 ICSUB=ICMIN,ICMAX
+C            THE Z COORDINATE IN S(NUM,NUM,NUM,NUM)
+             ICPOSIT=LOCC+ICSUB
+C             IF(ICPOSIT .GT. IBPOSIT) GO TO 221 THIS IS AN AUX SHELL
+             L3=L2+LDAT(ICSUB)
+             M3=M2+MDAT(ICSUB)
+             N3=N2+NDAT(ICSUB)
+             CONTRC=CONTRB*CONTC(ICSUB)
+C
+            DO 223 IESUB=IEMIN,IEMAX
+C            THE E COORDINATE IN S(NUM,NUM,NUM,NUM)
+             IEPOSIT=LOCE+IESUB
+             IF(IEPOSIT .GT. ICPOSIT) GO TO 222
+             IMOVE=IMOVE+1
+             L5=L3+LDAT(IESUB)
+             IF(MOD(L5,2) .EQ. 1) GO TO 223
+             M5=M3+MDAT(IESUB)
+             IF(MOD(M5,2) .EQ. 1) GO TO 223
+             N5=N3+NDAT(IESUB)
+             IF(MOD(N5,2) .EQ. 1) GO TO 223
+             CONTRE=CONTRC*CONTE(IESUB)
+C
+C          THE IF MOD(N5,2) GETS RID OF ODD EXPONENTS
+C
+            XYZI=DFAC(L5)*DFAC(M5)*DFAC(N5)*CONTRE*A21(L5+N5+M5)
+            TEMPS(IMOVE)=TEMPS(IMOVE)+XYZI
+C
+  223       CONTINUE
+  222       CONTINUE
+  221      CONTINUE
+  220     CONTINUE
+C
+C
+C
+          END IF
+C
+C
+  111   CONTINUE
+  110  CONTINUE
+C
+C   LOOP OVER TEMPORARY MATRIX
+C
+C
+C     LOOP OVER K,L,N,M  (STRANGE ORDER, BUT CORRECT)
+C
+         IMOVE=0
+         DO 421 K=IAMIN+LOCA,IAMAX+LOCA
+C          MIN LETS US SKIP (5611) SINCE WE DO (6511)
+           DO 422 L=IBMIN+LOCB,MIN(IBMAX+LOCB,K)
+C
+            DO 423 N=ICMIN+LOCC,ICMAX+LOCC
+C
+             DO 424 M=IEMIN+LOCE,MIN(IEMAX+LOCE,N)
+              IMOVE=IMOVE+1
+C             POSTSCREEN THE INTEGRALS
+              IF(ABS(TEMPS(IMOVE)) .GT. 1.0D-09) THEN
+C             TAKE INTO ACCOUNT SKIPPED INTERGRALS
+              A4OVKLNM=TEMPS(IMOVE)*Q4
+C             MAKE R AND ROPEN
+C
+              IF(.NOT. HISPIN) THEN
+                 R(M,N)=R(M,N)+A4OVKLNM*ADENS(K,L)
+C
+              ELSE
+C
+                 R    (M,N)=R    (M,N)+A4OVKLNM*ADENS(K,L)
+                 ROPEN(M,N)=ROPEN(M,N)+A4OVKLNM*BDENS(K,L)
+C
+              ENDIF
+C
+            ENDIF
+  424     CONTINUE
+  423    CONTINUE
+  422   CONTINUE
+  421  CONTINUE
+C
+  103 CONTINUE
+  102 CONTINUE
+  101 CONTINUE
+  100 CONTINUE
+C
+C     ----- END OF SHELL LOOPS -----
+C
+C
+C    DO SYMMETRY
+C
+      CALL DFTAX8B(R,TMPTMP,MAPAUX,IAUXTYP,LOCAUX)
+      CALL DFTAX8A(R,TMPTMP,MAPAUX,IAUXTYP,LOCAUX)
+      IF(HISPIN) THEN
+         CALL DFTAX8B(ROPEN,TMPTMP,MAPAUX,IAUXTYP,LOCAUX)
+         CALL DFTAX8A(ROPEN,TMPTMP,MAPAUX,IAUXTYP,LOCAUX)
+      END IF
+C
+C     FILL OUT SQUARE AND SAVE TO DISK AUX PART
+C
+      DO J=1,L4
+        DO I=J,L4
+          R(I,J)=R(J,I)
+          IF(HISPIN) ROPEN(I,J)=ROPEN(J,I)
+        END DO
+      END DO
+C
+      IF(GOPARR) THEN
+         CALL DDI_GSUMF(1040,R,L6)
+         IF(HISPIN) CALL DDI_GSUMF(1041,ROPEN,L6)
+      END IF
+C
+      CALL DAWRIT(IDAF,IODA,R(1,NUM+1),L4*NAUXFUN,347,0)
+      IF(HISPIN)
+     *   CALL DAWRIT(IDAF,IODA,ROPEN(1,NUM+1),L4*NAUXFUN,348,0)
+      RETURN
+      END
+C*MODULE DFTAUX  *DECK DFTAX7
+      SUBROUTINE DFTAX7(ANORM,ITYPE,DATA)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION DATA(35)
+C
+C  NORMALIZATION FACTORS FOR CARTESIAN S, PX,PY,PZ,DXX,DYY,...
+C
+      PARAMETER (SQRT3=1.73205080756888D+00,
+     *           SQRT5=2.23606797749979D+00,
+     *           SQRT7=2.64575131106459D+00,
+     *           SQRT35=5.916079783099616D+00,
+     *           SQRT353=3.415650255319866D+00,
+     *           SQRT15=3.872983346207417D+00)
+C
+      GO TO (10,20,50,110,210) ITYPE
+C
+C  1 S
+ 10   DATA(1)=ANORM
+      RETURN
+C  3 P
+ 20   DATA(2)=ANORM
+      DATA(3)=ANORM
+      DATA(4)=ANORM
+      RETURN
+C  6 D
+ 50   DATA(5)=ANORM
+      DATA(6)=ANORM
+      DATA(7)=ANORM
+      DATA(8)=ANORM*SQRT3
+      DATA(9)=ANORM*SQRT3
+      DATA(10)=ANORM*SQRT3
+      RETURN
+C 10 F
+ 110  DATA(11)=ANORM
+      DATA(12)=ANORM
+      DATA(13)=ANORM
+      DATA(14)=ANORM*SQRT5
+      DATA(15)=ANORM*SQRT5
+      DATA(16)=ANORM*SQRT5
+      DATA(17)=ANORM*SQRT5
+      DATA(18)=ANORM*SQRT5
+      DATA(19)=ANORM*SQRT5
+      DATA(20)=ANORM*SQRT15
+      RETURN
+C 15 G
+ 210  DATA(21)=ANORM
+      DATA(22)=ANORM
+      DATA(23)=ANORM
+      DATA(24)=ANORM*SQRT7
+      DATA(25)=ANORM*SQRT7
+      DATA(26)=ANORM*SQRT7
+      DATA(27)=ANORM*SQRT7
+      DATA(28)=ANORM*SQRT7
+      DATA(29)=ANORM*SQRT7
+      DATA(30)=ANORM*SQRT353
+      DATA(31)=ANORM*SQRT353
+      DATA(32)=ANORM*SQRT353
+      DATA(33)=ANORM*SQRT35
+      DATA(34)=ANORM*SQRT35
+      DATA(35)=ANORM*SQRT35
+      RETURN
+      END
+C*MODULE DFTAUX  *DECK DFTAX9A
+      SUBROUTINE DFTAX9A(NAUXSHL,IAUXATM,IAUXTYP,AUXEXP,AUXCONT,ASCREEN)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION IAUXATM(NAUXSHL),IAUXTYP(NAUXSHL),AUXEXP(NAUXSHL),
+     *          AUXCONT(NAUXSHL),ASCREEN(NSHELL,NAUXSHL)
+      DIMENSION TEMPS(0:4*5),XXXX(-1:4*5)
+C
+      PARAMETER (MXSH=1000, MXGTOT=5000, MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+      COMMON /NSHEL / EX(MXGTOT),CS(MXGTOT),CP(MXGTOT),CD(MXGTOT),
+     *                CF(MXGTOT),CG(MXGTOT),
+     *                KSTART(MXSH),KATOM(MXSH),KTYPE(MXSH),KNG(MXSH),
+     *                KLOC(MXSH),KMIN(MXSH),KMAX(MXSH),NSHELL
+C
+      PARAMETER (PI=3.141592653589793238462643D+00)
+C
+C    LOOP OVER SHELLS A AND E FOR <AA|EE>, DO <SSSS> THEN <2M+2N SSS>
+C                 THEN DO <2M S 2N S>
+C
+      DO 100 IASHL=1,NSHELL
+C  POSITION OF THE SHELL'S ATOM
+      IAATOM=KATOM(IASHL)
+      AX=C(1,IAATOM)
+      AY=C(2,IAATOM)
+      AZ=C(3,IAATOM)
+C  INFO ABOUT THE PRIMATIVES
+      ISTARTA=KSTART(IASHL)
+      IENDA=ISTARTA+KNG(IASHL)-1
+C
+C  FIND THE HIGHEST SPIN VALUE IN THIS SHELL
+C  WE ONLY USE P FOR L SHELLS
+C  IT'S AN APPROXIMATION, WE ASSUME IT OVERLAPS BETTER THAN S
+C
+      KATYPE=KTYPE(IASHL)-1
+C
+C    E SHELL
+C
+      DO 103 IESHL=1,NAUXSHL
+C
+      IEATOM=IAUXATM(IESHL)
+      EXX=C(1,IEATOM)
+      EY=C(2,IEATOM)
+      EZ=C(3,IEATOM)
+      KETYPE=IAUXTYP(IESHL)-1
+      A5=AUXEXP(IESHL)
+C
+C     ALWAYS ALONG X AXIS, SO DON'T WORRY ABOUT
+C     XY BEING DIFFERENT THAN XX
+C
+      CONTRE=AUXCONT(IESHL)
+C
+C  PROJECT ALL ANGULAR MOMENTUM TO ONE INDEX
+C  TRANSFORM TO X-AXIS
+C  WE ONLY DO THE ORBITALS THAT RUN ALONG THE X-AXIS,
+C  SINCE THEY ARE THE LARGEST.
+C
+      CX=SQRT((AX-EXX)*(AX-EXX)+(AY-EY)*(AY-EY)+(AZ-EZ)*(AZ-EZ))
+C
+C    LOOP OVER GUASSIAN PRIMATIVES WHILE READING
+C          IN EXPONENTS AND CONTRACTIONS
+C
+       DO 350 I=0,KATYPE+KATYPE+KETYPE+KETYPE
+          TEMPS(I)=0.0D+00
+ 350   CONTINUE
+       DO 810 IAPRM=ISTARTA,IENDA
+        A1=EX(IAPRM)
+        DO 811 IBPRM=ISTARTA,IENDA
+         A2=EX(IBPRM)
+         IF     (KATYPE .EQ. 0) THEN
+           CONTR=CONTRE*CONTRE*CS(IAPRM)*CS(IBPRM)
+         ELSE IF(KATYPE .EQ. 1) THEN
+           CONTR=CONTRE*CONTRE*CP(IAPRM)*CP(IBPRM)
+         ELSE IF(KATYPE .EQ. 2) THEN
+           CONTR=CONTRE*CONTRE*CD(IAPRM)*CD(IBPRM)
+         ELSE IF(KATYPE .EQ. 3) THEN
+           CONTR=CONTRE*CONTRE*CF(IAPRM)*CF(IBPRM)
+         ELSE IF(KATYPE .EQ. 4) THEN
+           CONTR=CONTRE*CONTRE*CG(IAPRM)*CG(IBPRM)
+         END IF
+C
+C       A AND B ARE BY DEFINITION AT 0,0,0
+C
+C       C AND E ARE BY DEFINITION THE SAME BECAUSE THEY ARE UNCONTRACTED
+C
+C       C AND E ARE BY DEFINITION AT CX,0,0
+C
+C       NO C AND E LOOPING BECAUSE THEY ARE UNCONTRACTED
+C
+          A4=A1+A2+A5+A5
+          A4INV=1.0D+00/A4
+          A6=A1+A2
+          A7=A5+A5
+C
+C   CALCULATE  <SSSS>
+C
+         EXPVAL = CX*CX*A6*A7*A4INV
+         SSSS=CONTR*(PI*A4INV)*SQRT(PI*A4INV)*EXP(-EXPVAL)
+C
+C   USE RECURSION TO GENERATE HIGHER ANGULAR MOMENTUM
+C   (S,S,S,S),(X,S,S,S),(XX,S,S,S),(XXX,S,S,S),(XXXX,S,S,S)..........
+C
+            XXXX(-1)=0.0D+00
+            XXXX( 0)=SSSS
+            DO 300 I=1,KATYPE+KATYPE+KETYPE+KETYPE
+              XXXX(I)=(A7*CX*A4INV)*XXXX(I-1)+
+     *                 (0.5D+00*(I-1)*A4INV)*XXXX(I-2)
+ 300        CONTINUE
+C
+C    COPY THIS OVER TO SUM UP OVER CONTRACTIONS
+C
+            DO 400 I=0,KATYPE+KATYPE+KETYPE+KETYPE
+              TEMPS(I)=XXXX(I) + TEMPS(I)
+ 400        CONTINUE
+C
+  811   CONTINUE
+  810  CONTINUE
+C
+C   PROJECT ONTO OTHER CENTER AS NEEDED.
+C   THESE USE A RECURSIVE FORMULA.
+C   WE ARE NOT AS GOOD AS WE COULD BE SINCE WE ALWAYS PROJECT FROM AO
+C   INDEX OVER TO AUX INDEX, AND IF WE HAVE (S S S XXXXXX) THEN WE
+C   ARE NOT EFFICIENT, BUT WE ARE N2 WORK, SO WHO CARES.
+C
+C   (3 S S 0)
+C   (2 S S 0)  ---->  (2 S S 1)
+C   (1 S S 0)         (1 S S 1)  ---->  (1 S S 2)
+C   (0 S S 0)         (0 S S 1)         (0 S S 2)  ---->  (0 S S 3)
+C
+      DO 360 I=1,KETYPE+KETYPE
+        DO 365 J=KATYPE+KATYPE,KATYPE+KATYPE+KETYPE+KETYPE-I
+          TEMPS(J)=TEMPS(J+1)-TEMPS(J)*CX
+ 365    CONTINUE
+ 360  CONTINUE
+      ASCREEN(IASHL,IESHL)=TEMPS(KATYPE+KATYPE)
+C
+  103 CONTINUE
+  100 CONTINUE
+C
+C     ----- END OF SHELL LOOPS -----
+C
+      END
+C*MODULE DFTAUX  *DECK DFTAX9B
+      SUBROUTINE DFTAX9B(NAUXSHL,IAUXATM,IAUXTYP,AUXEXP,AUXCONT,ASCREEN)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION IAUXATM(NAUXSHL),IAUXTYP(NAUXSHL),
+     *          AUXEXP(NAUXSHL),AUXCONT(NAUXSHL),
+     *          ASCREEN((NAUXSHL*NAUXSHL+NAUXSHL)/2)
+      DIMENSION XXXX(-1:4*5)
+C
+      PARAMETER (MXATM=500)
+C
+      COMMON /INFOA / NAT,ICH,MUL,NUM,NQMT,NE,NA,NB,
+     *                ZAN(MXATM),C(3,MXATM)
+C
+      PARAMETER (PI=3.141592653589793238462643D+00)
+C
+C    LOOP OVER SHELLS A AND E FOR <AA|EE>, DO <SSSS> THEN <2M+2N SSS>
+C                 THEN DO <2M S 2N S>
+C
+      DO 100 IASHL=1,NAUXSHL
+C
+C  POSITION OF THE SHELL'S ATOM
+C
+      IAATOM=IAUXATM(IASHL)
+      AX=C(1,IAATOM)
+      AY=C(2,IAATOM)
+      AZ=C(3,IAATOM)
+      KATYPE=IAUXTYP(IASHL)-1
+      A1=AUXEXP(IASHL)
+C
+C     ALWAYS ALONG X AXIS, SO DON'T WORRY ABOUT
+C     XY BEING DIFFERENT THAN XX
+C
+      CONTRA=AUXCONT(IASHL)
+C
+C    E SHELL
+C
+      DO 103 IESHL=1,IASHL
+C
+      IEATOM=IAUXATM(IESHL)
+      EXX=C(1,IEATOM)
+      EY=C(2,IEATOM)
+      EZ=C(3,IEATOM)
+      KETYPE=IAUXTYP(IESHL)-1
+      A5=AUXEXP(IESHL)
+      CONTRE=AUXCONT(IESHL)
+C
+C END OF SHELLS
+C
+C
+C  PROJECT ALL ANGULAR MOMENTUM TO ONE INDEX
+C  TRANSFORM TO X-AXIS
+C  WE ONLY DO THE ORBITALS THAT RUN ALONG THE X-AXIS,
+C  SINCE THEY ARE THE LARGEST.
+C
+       CX=SQRT((AX-EXX)*(AX-EXX)+(AY-EY)*(AY-EY)+(AZ-EZ)*(AZ-EZ))
+C
+C    LOOP OVER GUASSIAN PRIMATIVES WHILE READING
+C          IN EXPONENTS AND CONTRACTIONS
+C
+C       A AND B ARE BY DEFINITION AT 0,0,0
+C
+C       C AND E ARE BY DEFINITION AT CX,0,0
+C
+C       NO LOOPING BECAUSE THEY ARE UNCONTRACTED
+C
+          A4=A1+A1+A5+A5
+          A4INV=1.0D+00/A4
+          A6=A1+A1
+          A7=A5+A5
+          CONTR=CONTRA*CONTRE
+C
+C   CALCULATE  <SSSS>
+C
+          EXPVAL = CX*CX*A6*A7*A4INV
+          SSSS=CONTR*((PI*A4INV)*SQRT(PI*A4INV))*EXP(-EXPVAL)
+C
+C   USE RECURSION TO GENERATE HIGHER ANGULAR MOMENTUM
+C   (S,S,S,S),(X,S,S,S),(XX,S,S,S),(XXX,S,S,S),(XXXX,S,S,S)..........
+C
+            XXXX(-1)=0.0D+00
+            XXXX( 0)=SSSS
+            DO 300 I=1,KATYPE+KATYPE+KETYPE+KETYPE
+              XXXX(I)=(A7*CX*A4INV)*XXXX(I-1) +
+     *                (0.5D+00*(I-1)*A4INV)*XXXX(I-2)
+ 300        CONTINUE
+C
+C   PROJECT ONTO OTHER CENTER AS NEEDED.
+C   THESE USE A RECURSIVE FORMULA.
+C   WE ARE NOT AS GOOD AS WE COULD BE SINCE WE ALWAYS PROJECT FROM
+C   THE FIRST INDEX OVER TO 2ND INDEX, AND IF WE HAVE (S S S XXXXXX)
+C   THEN WE ARE NOT EFFICIENT, BUT WE ARE N2 WORK, SO WHO CARES.
+C
+C   (3 S S 0)
+C   (2 S S 0)  ---->  (2 S S 1)
+C   (1 S S 0)         (1 S S 1)  ---->  (1 S S 2)
+C   (0 S S 0)         (0 S S 1)         (0 S S 2)  ---->  (0 S S 3)
+C
+      DO 360 I=1,KETYPE+KETYPE
+        DO 365 J=KATYPE+KATYPE,KATYPE+KATYPE+KETYPE+KETYPE-I
+          XXXX(J)=XXXX(J+1)-XXXX(J)*CX
+ 365    CONTINUE
+ 360  CONTINUE
+      ASCREEN(IESHL+IASHL*(IASHL-1)/2)=XXXX(KATYPE+KATYPE)
+C
+C
+  103 CONTINUE
+  100 CONTINUE
+C
+C     ----- END OF SHELL LOOPS -----
+C
+      END
+C*MODULE DFTAUX  *DECK DFTRN4
+      SUBROUTINE DFTRN4(WORK,V,NUM,NAUXFUN)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION WORK(NUM,NUM),V(NUM+NAUXFUN,NUM+NAUXFUN)
+C
+C   MOVE WORK(AO,MO) TO THE LARGER V THAT INCLUDES AUX BASIS
+C
+      DO 100 I=1,NUM
+        DO 200 J=1,NUM
+          V(J,I)=WORK(J,I)
+ 200    CONTINUE
+        DO 300 J=NUM+1,NUM+NAUXFUN
+          V(J,I)=0.0D+00
+ 300    CONTINUE
+ 100  CONTINUE
+      DO 400 I=NUM+1,NUM+NAUXFUN
+        DO 500 J=1,NUM+NAUXFUN
+          V(J,I)=0.0D+00
+ 500    CONTINUE
+ 400  CONTINUE
+      END
+C*MODULE DFTAUX  *DECK DFTTRN3
+      SUBROUTINE DFTTRN3(WORK,V,NUM,NAUXFUN)
+C
+      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
+C
+      DIMENSION WORK(NUM,NUM),V(NUM+NAUXFUN,NUM+NAUXFUN)
+C
+C   THIS ROUTINE MOVES WORK(AO,MO) TO THE LARGER V THAT INCLUDES
+C   AUX BASIS. IT THEN PUTS ONES ON THE DIAGONAL OF THE LOWER PART
+C
+      DO 100 I=1,NUM
+        DO 200 J=1,NUM
+          V(J,I)=WORK(J,I)
+ 200    CONTINUE
+        DO 300 J=NUM+1,NUM+NAUXFUN
+          V(J,I)=0.0D+00
+ 300    CONTINUE
+ 100  CONTINUE
+      DO 400 I=NUM+1,NUM+NAUXFUN
+        DO 500 J=1,NUM+NAUXFUN
+          V(J,I)=0.0D+00
+ 500    CONTINUE
+ 400  CONTINUE
+      DO 600 I=NUM+1,NUM+NAUXFUN
+          V(I,I)=1.0D+00
+ 600    CONTINUE
+      END
+C

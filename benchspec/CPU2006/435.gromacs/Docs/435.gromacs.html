@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>435.gromacs: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>435.gromacs<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>435.gromacs</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Erik Lindahl &lt;lindahl &#x5b;at&#x5d; gromacs.org&gt;<br />
+Department of Structural Biology<br />
+Stockholm Bioinformatics Centre<br />
+Stockholm<br />
+Sweden</p>
+
+<p>David van der Spoel &lt;spoel &#x5b;at&#x5d; gromacs.org&gt;<br />
+Department of Biochemistry<br />
+Uppsala University<br />
+Box 576, 751 23 Uppsala<br />
+SWEDEN</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Chemistry / Molecular Dynamics</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>435.gromacs is derived from GROMACS, a versatile package that performs molecular dynamics,
+i.e. simulation of the Newtonian equations of motion for systems with
+hundreds to millions of particles.</p>
+
+<p>Although it is primarily designed for
+biochemical molecules such as proteins and lipids that have many
+complicated bonded interactions, GROMACS is also extremely
+fast at calculating the nonbonded interactions (that usually
+dominate the simulation cost).  Therefore,  many groups are also using it for
+research on non-biological systems, such as polymers.</p>
+
+<p>The benchmark version performs a simulation of the protein Lysozyme in
+a solution of water and ions. The structure of a protein is
+normally determined by experimental techniques such as X-ray
+crystallography of NMR spectroscopy. By simulating the atomic
+motions of these structures, one can gain significant understanding
+of protein dynamics and function, and, in some cases, it might even
+be possible to predict the structure of new proteins.</p>
+
+<p>A dodecahedron-shaped box is used to reduce the amount of solvent
+water, but there are still 23179 atoms in the system. The
+simulation time is completely dominated by the inner loops where
+the nonbonded Lennard-Jones and Coulomb interactions are calculated
+between atoms that are closer than 1.4 nm in space.</p>
+
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>There are three different run input files with identical setup,
+but a different number of steps taken.</p>
+
+<ul>
+<li>test 1500 steps</li>
+
+<li>train 3000 steps</li>
+
+<li>ref 6000 steps</li>
+</ul>
+
+<p>Once the code is compiled the SPEC harness invokes the 
+benchmark with a command such as:</p>
+
+<pre>
+gromacs -nice 0 -deffnm gromacs -silent
+</pre>
+
+<p>The <tt>-deffnm</tt> option uses the name provided for the base of all
+input and output files (in this case "gromacs"):  <tt>gromacs.tpr</tt> is the input file and
+<tt>gromacs.out</tt> is the output file.
+The <tt>nice</tt> flag has no effect
+on Windows, but on Unix the program defaults to <tt>nice 19</tt> if it is
+not given. The <tt>-silent</tt> option turns off producing a log file.</p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>For validation a couple of energy terms are written in clear
+text to the file <tt>gromacs.out</tt>. These are the average potential energy,
+the average system temperature, and the number of floating point
+operations performed.</p>
+
+<p>Molecular dynamics is by definition a chaotic process.
+Normally, quite agressive compiler optimizations are used to compile the code,
+hence slight variations are
+quite normal. The <tt>gromacs.out</tt> results shouldn't differ by more than 1.25%
+from the reference values.</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>C and Fortran. The only Fortran code is the inner loops
+(<tt>innerf.f</tt>). The inner loops typically account for more than 95% of
+the runtime, so all the computationally intensive parts use Fortran.
+</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>If a Fortran compiler does not append an underscore to
+external names, the flag 
+<span style="font-family:monospace; white-space:nowrap;">-DSPEC_CPU_APPEND_UNDERSCORE</span> 
+can be used to 
+change the name mangling macro in config.h.</p>
+
+<p>SPEC has chosen some settings in config.h to select 
+whether one's C compiler supports strdup(),
+strcasecmp(), popen()/pclose(), or if it lacks some ANSI C keywords
+like 'const'. None of these will affect performance, but it makes
+the benchmark compatible with standard Gromacs input/output
+files.  If a compiler should come along that is incompatible
+with SPEC's settings in config.h, SPEC should be notified (see
+<a href="http://www.spec.org/auto/cpu2006/Docs/techsupport.html">techsupport.html</a>).
+</p>
+
+<hr />
+
+<h2>References</h2>
+
+<p>You can find more information and documentation at <a 
+href="http://www.gromacs.org">http://www.gromacs.org</a></p>
+
+<hr />
+
+<p>Last updated: 26 June 2006</p>
+</body>
+</html>

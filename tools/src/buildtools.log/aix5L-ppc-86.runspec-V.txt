@@ -1,0 +1,32 @@
+mixit: runspec -V
+runspec v3496 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'unknown' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 86pre
+ Benchmarks version: 86pre
+      Tools version: 86pre
+    runspec version: 3496 ($Id: runspec 3496 2005-12-16 21:11:52Z cloyce $)
+
+Tools information:
+ Tools package installed: unknown
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 0     | 116   |  195488 | 20-Dec-2005 21:51:45 | specmake
+0755 | 0     | 116   | 1910205 | 20-Dec-2005 21:51:45 | specperl
+0755 | 0     | 116   |   20029 | 20-Dec-2005 21:52:05 | specinvoke
+0755 | 0     | 116   |   22701 | 20-Dec-2005 21:52:05 | specinvoke_pm
+0775 | 0     | 116   |  100596 | 20-Dec-2005 21:51:45 | specbzip2
+0755 | 0     | 116   |   26642 | 20-Dec-2005 21:52:05 | specmd5sum
+0755 | 0     | 116   |    7597 | 20-Dec-2005 21:52:07 | specdiff
+0755 | 0     | 116   |   85730 | 20-Dec-2005 21:52:07 | specpp
+0755 | 0     | 116   |   75049 | 20-Dec-2005 21:52:07 | runspec
+0775 | 22631 | 116   |    1520 | 31-Aug-2005 15:31:57 | runspec.bat
+
+Version info for specinvoke (/spec/cpu2006/kit85/bin/specinvoke): Version: 3478
+Version info for specmake (/spec/cpu2006/kit85/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/spec/cpu2006/kit85/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/spec/cpu2006/kit85/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/spec/cpu2006/kit85/bin/specperl): This is specperl, v5.8.7 built for aix
+                           For more detail on specperl, say 'specperl -V'

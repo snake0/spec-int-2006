@@ -1,0 +1,390 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags1.dtd">
+
+<!-- This file defines flags that appear in the sources for 454.calculix.
+
+  Copyright (C) 2005 Standard Performance Evaluation Corporation
+
+  $Revision: 4111 $
+  $Date: 2006-04-06 12:39:38 -0400 (Thu, 06 Apr 2006) $
+-->
+<flagsdescription>
+
+<!-- Normal flags file should suggest a name for themselves -->
+<filename>454.calculix.flags</filename>
+
+<title>454.calculix Flags</title>
+
+<header>
+<![CDATA[
+<p>These are flags that appear in the benchmark sources, categorized as to
+whether they are portability candidates, mandatory, or forbidden.
+</p>
+]]>
+</header>
+
+<flag name="includes" class="mandatory" regexp="-ISPOOLES\b">
+<example>-ISPOOLES</example>
+This flag is used to ensure that include files in the SPOOLES directory may
+be used.  It is included automatically by object.pm.
+</flag>
+
+<flag name="DARCH" class="forbidden">
+ARCH was the program's original method of selecting options for 
+appending underscores to routine names.  When running in the 
+context of SPEC_CPU, instead use SPEC_CPU_APPEND_UNDERSCORE or 
+SPEC_CPU_NO_APPEND_UNDERSCORE 
+</flag>
+
+<flag name="DBE_CAUTIOUS" class="forbidden">
+BE_CAUTIOUS may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</flag>
+
+<flag name="DDEBUG" class="forbidden">
+DEBUG may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</flag>
+
+<flag name="DLinux" class="forbidden">
+See the description of ARCH.
+</flag>
+
+<flag name="DSPEC_CPU_WINDOWS" class="mandatory">
+SPEC_CPU_WINDOWS helps us decide whether to, by default, append an underscore.
+</flag>
+
+
+<flag name="DMEMORY_DEBUG" class="forbidden">
+MEMORY_DEBUG may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded define that 
+normally sets it to zero.
+
+</flag>
+
+<flag name="DMYDEBUG" class="forbidden">
+MYDEBUG 
+may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</flag>
+
+<flag name="DMYTRACE" class="forbidden">
+MYTRACE 
+may be useful in debugging, but is not used in 
+benchmarking.  If you want to use it, notice that you'll have 
+to edit the sources to remove the hard-coded defines that 
+normally set it to zero.
+</flag>
+
+<flag name="DSPEC_CPU" class="mandatory">
+SPEC_CPU indicates that we are being built within the SPEC CPU harness.
+</flag>
+
+<flag name="DSPEC_CPU_APPEND_UNDERSCORE" class="portability">
+SPEC_CPU_APPEND_UNDERSCORE indicates that when calling Fortran 
+routines from C, an underscore needs to be appended to the 
+routine name.  This is the default on all but Windows.
+</flag>
+
+<flag name="DSPEC_CPU_NO_APPEND_UNDERSCORE" class="portability">
+Does what you think it does.  Or what you think it does after 
+you read the description of DSPEC_CPU_APPEND_UNDERSCORE.  It's 
+the default on Windows.
+</flag>
+
+<flag name="DSPEC_CPU_NAGF95" class="portability">
+SPEC_CPU_NAGF95 causes character string lengths to be appended 
+in calls, as NAG requires.
+</flag>
+
+<flag name="DSPEC_CPU_NOZMODIFIER" class="portability">
+SPEC_CPU_NOZMODIFIER can be used if your compiler does not implement
+the C99 standard printf length modifier "z".  You'll know you need
+this flag if validation fails with the file SPECtestformatmodifier_z.txt
+</flag>
+
+
+<flag name="DTHREAD_TYPE" class="forbidden">
+THREAD_TYPE 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</flag>
+
+<flag name="DTT_NONE" class="forbidden">
+TT_NONE 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</flag>
+
+<flag name="DTT_POSIX" class="forbidden">
+TT_POSIX 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</flag>
+
+<flag name="DTT_SOLARIS" class="forbidden">
+TT_SOLARIS 
+is a SPOOLES concept for multi-threaded execution.  
+It is not used in SPEC CPU benchmarking.
+</flag>
+
+<flag name="D_A2_" class="forbidden">
+_A2_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_BKL_" class="forbidden">
+_BKL_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_BPG_" class="forbidden">
+_BPG_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_ChvList_" class="forbidden">
+_ChvList_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_ChvManager_" class="forbidden">
+_ChvManager_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Chv_" class="forbidden">
+_Chv_ 
+is set automatically when the relevant header file is 
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Coords_" class="forbidden">
+_Coords_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_DDsepInfo_" class="forbidden">
+_DDsepInfo_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_DLIST_" class="forbidden">
+_DLIST_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_DSTree_" class="forbidden">
+_DSTree_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_DV_" class="forbidden">
+_DV_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_DenseMtx_" class="forbidden">
+_DenseMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Drand_" class="forbidden">
+_Drand_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_ETree_" class="forbidden">
+_ETree_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_FrontMtx_" class="forbidden">
+_FrontMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_GPart_" class="forbidden">
+_GPart_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Graph_" class="forbidden">
+_Graph_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_I2Ohash_" class="forbidden">
+_I2Ohash_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_IIheap_" class="forbidden">
+_IIheap_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_IVL_" class="forbidden">
+_IVL_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_IV_" class="forbidden">
+_IV_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Ideq_" class="forbidden">
+_Ideq_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_InpMtx_" class="forbidden">
+_InpMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Lock_" class="forbidden">
+_Lock_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_MSMD_" class="forbidden">
+_MSMD_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Network_" class="forbidden">
+_Network_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_PatchAndGoInfo_" class="forbidden">
+_PatchAndGoInfo_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Pencil_" class="forbidden">
+_Pencil_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_SPOOLES_" class="forbidden">
+_SPOOLES_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_SP_base" class="forbidden">
+_SP_base 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_SolveMap_" class="forbidden">
+_SolveMap_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_SubMtxList_" class="forbidden">
+_SubMtxList_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_SubMtxManager_" class="forbidden">
+_SubMtxManager_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_SubMtx_" class="forbidden">
+_SubMtx_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_SymbFac_" class="forbidden">
+_SymbFac_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_TIMINGS_" class="forbidden">
+_TIMINGS_ is not used with SPEC CPU.
+</flag>
+
+<flag name="D_Tree_" class="forbidden">
+_Tree_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_UTILITIES_" class="forbidden">
+_UTILITIES_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_Utilities_" class="forbidden">
+_Utilities_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_ZV_" class="forbidden">
+_ZV_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_cFILES_" class="forbidden">
+_cFILES_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+<flag name="D_misc_" class="forbidden">
+_misc_ 
+is set automatically when the relevant header file is
+included.  It should not be set by the compile command.
+</flag>
+
+
+</flagsdescription>

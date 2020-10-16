@@ -1,0 +1,23 @@
+1..6
+
+1: Construction
+1: ok 1
+
+2: print FH ARGS
+2:   S: "Hello, world!\n"
+2: ok 2
+
+3: FH->print(ARGS)
+3:   S: "Hello, world!\nHello, world!\n"
+3: ok 3
+
+4: FH->seek(0,0)
+4: ok 4
+
+5: array = <FH>
+5: ok 5
+
+6: FH->sref
+6: ok 6
+
+# END

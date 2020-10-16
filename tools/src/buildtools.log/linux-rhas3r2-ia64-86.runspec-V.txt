@@ -1,0 +1,31 @@
+runspec v3400 - Copyright 1999-2005 Standard Performance Evaluation Corporation
+Using 'linux-rhas3r2-ia64' tools
+                 This is the SPEC CPU2006 benchmark tools suite.
+
+Version summary:
+    CPU2006 version: 85
+ Benchmarks version: 85
+      Tools version: 85
+    runspec version: 3400 ($Id: runspec 3400 2005-11-23 20:25:56Z cloyce $)
+
+Tools information:
+ Tools package installed: linux-rhas3r2-ia64
+ File locking method: LockFileEx (network-safe)
+Mode |  UID  |  GID  |   Size  |    Modified Date   | Name
+0755 | 531   | 534   |  485376 | 11-Jan-2006 00:33:45 | specmake
+0755 | 531   | 534   | 4170400 | 11-Jan-2006 00:33:45 | specperl
+0755 | 531   | 534   |   50520 | 11-Jan-2006 00:33:47 | specinvoke
+0755 | 531   | 534   |   57720 | 11-Jan-2006 00:33:47 | specinvoke_pm
+0755 | 531   | 534   |  332736 | 11-Jan-2006 00:33:45 | specbzip2
+0755 | 531   | 534   |   62248 | 11-Jan-2006 00:33:47 | specmd5sum
+0755 | 531   | 534   |    7611 | 11-Jan-2006 00:46:49 | specdiff
+0755 | 531   | 534   |   85744 | 11-Jan-2006 00:46:49 | specpp
+0755 | 531   | 534   |   73640 | 11-Jan-2006 00:46:49 | runspec
+0775 | 531   | 534   |    1520 | 31-Aug-2005 15:31:57 | runspec.bat
+
+Version info for specinvoke (/home1/relarson/kit85-test/bin/specinvoke): Version: 3478
+Version info for specmake (/home1/relarson/kit85-test/bin/specmake): GNU Make 3.80spec
+Version info for specbzip2 (/home1/relarson/kit85-test/bin/specbzip2): bzip2 v1.0.3, 15-Feb-2005
+Version info for specpp (/home1/relarson/kit85-test/bin/specperl): filepp version 1.7.1SPEC
+Version info for specperl (/home1/relarson/kit85-test/bin/specperl): This is specperl, v5.8.7 built for ia64-linux
+                           For more detail on specperl, say 'specperl -V'

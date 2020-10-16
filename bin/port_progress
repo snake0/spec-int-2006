@@ -1,0 +1,319 @@
+#!/var/services/homes/spparmar/spec2006/bin/specperl
+#!/var/services/homes/spparmar/spec2006/bin/specperl -d
+#!/usr/bin/perl
+# Summarize benchmark successes & failures, help start the 
+# preparation of SPEC porter's progress reports
+# 
+# Copyright(C) 2004-2006 Standard Performance Evaluation Corporation
+#  All Rights Reserved
+#
+#  Author: John Henning
+#
+# $Id: port_progress 4032 2006-03-25 16:25:35Z cloyce $
+#
+# Usage: port_progress [-c config] *log
+#   If -c config is specified, then only files that match that 
+#   config name will be accepted.  Note that an exact match is 
+#   not required: "mar01" matches "mar01.cfg" and "mar01b.cfg"
+#
+# -q reduces verbosity
+#
+# History:
+# J. Henning 25 Nov 2002
+# update 6-Dec: pick up additional dir info
+# update 19-Apr: accept kit52 format of build error message; 
+#                get list of benchmarks from bset.
+# update 10 Mar 2005: add ability to search by config file
+# cds 16 Apr 2005: modified to work with new and old rundir format
+#                  formatted directory lists more nicely
+#                  made strict clean
+#                  made less CPU-centric
+#                  eliminated use of backticks
+#                  other misc. meddling & performance improvement
+# jh/cds 2 Jun 2005: Allow for multiple suites/multiple benchsets
+# jh 22 mar 2006: add -q; adjust a regexp for reportable runs
+##################################################################
+
+use strict;
+use File::Basename;
+use Data::Dumper;
+
+my $year = 2006;
+my $suite = 'CPU'.$year;
+
+# The variables that we use...
+our ($config, $desired_config, @benchmarks, %runspec, $curr_log_num,
+     %error_logs, %bmarks_seen, %ext_seen, %detail,
+     %error_dir,  %bad, %success, %run_error,
+     $detail_key, $comparing_dir, $output, $quiet);
+
+# Get list of benchmarks
+my @bsets = <$ENV{SPEC}/benchspec/[CMO]*/*.bset>;
+my %benchmarklist;
+foreach my $bset (@bsets) {
+    $output = 0;
+    do "$bset";
+    next unless $output;
+    map { $benchmarklist{$_}++ } @benchmarks;
+}
+@benchmarks = sort keys %benchmarklist;
+
+$quiet = 0;
+while ($ARGV[0] =~ /^-[cq]$/) {
+   if ($ARGV[0] eq "-c") {
+      shift;
+      $desired_config = shift;
+   }
+   if ($ARGV[0] eq "-q") {
+      shift;
+      $quiet = 1;
+   }
+}
+
+if (!@ARGV) {
+    die "Usage: $0 <log> <log> <...>\n";
+}
+
+my ($build_dir, $bmark);
+while (<>) {
+
+   # Tuck away runspec lines
+
+   if (/^runspec:/o) {
+      $config = "none";
+      if (/-c\S*\s+(\S+)/o) {
+         $config = $1;
+      }
+      if (defined $desired_config && !($config =~ /$desired_config/o)) {
+         close ARGV;
+         next;
+      }
+      ($curr_log_num = $ARGV) =~ s/$suite\.(\d+(?:\.\d+)?)\.log$/$1/o;
+      $runspec{$curr_log_num} = $_;
+   }
+
+   
+   # If about to compare something, notice directory
+
+   elsif (m|^comparing files in \'.*/run/([^\']+)\'$|o) {
+       $comparing_dir = $1;
+   }
+
+   
+   # Are we running something?  If so, get ready to record details
+   #   Running 483.xalancbmk train base mar17c default
+   #   Running (#1) 483.xalancbmk ref base mar17c default
+
+   elsif (/^  Running (?:\(#\d+\) )?(\d{3}\.\S+) (\S+) (\S+) (\S+)/o) {
+      my ($bench, $size, $tune, $ext) = ($1, $2, $3, $4);
+      $bmark = $bench;
+      $ext_seen{$ext} = 1;
+      $detail_key = $bmark . "/" . $ext . "/" . $tune . "/" . $size;
+   }
+   
+
+   # At this point, we now care only about the bottom line -- lines such as:
+   #    Error 403.gcc ratio=464.20, runtime=236.966379
+   #    Success 405.gzip ratio=277.99, runtime=503.613766
+   
+   elsif (/^ (Error|Success) (\d{3}\.\S+) \S+ \S+ ratio/o) {
+       my ($what, $bmark) = ($1, $2);
+       $bmarks_seen{$bmark} = 1;
+       if ($what eq 'Error') {
+	   $bad{$bmark}             = 1;
+	   push @{$error_logs{$bmark}->{'run'}}, $curr_log_num;
+	   $detail{$detail_key}     = 'r? ';
+	   $run_error{$bmark}++;
+       } elsif ($what eq 'Success') {
+	   $success{$bmark}++;
+	   $detail{$detail_key}     = 'S  ';
+       }
+   }
+   
+
+   # If we are building, notice the name of the directory
+
+   elsif (m{^Wrote to makefile.*/run/(\S+)/Makefile}o) {
+      $build_dir = $1;
+   }
+   
+   
+   # If there are miscompares or compare cmd failures, save the directories
+
+   elsif (/^(?:\*\*\* Miscompare|Compare command returned)/o) {
+      my $dirkey = $bmark . '/' . $curr_log_num;
+      $error_dir{$dirkey}->{'run'}->{$comparing_dir}++;
+   }
+
+   
+   # If build errors, save the log file # and the directory name
+
+   elsif (/^\*\*\* Error.* build.*(\d{3}\.\S+)/o) {
+      $bmark                     = $1;
+      $bmarks_seen{$bmark}       = 1;
+      $bad{$bmark}               = 1;
+      push @{$error_logs{$bmark}->{'build'}}, $curr_log_num;
+      my $dirkey                 = $bmark . "/" . $curr_log_num;
+      $error_dir{$dirkey}->{'build'}->{$build_dir}++;
+   }
+}
+
+# All log files have been read.  Ready to start the report
+
+print "SPEC $suite ".basename($ENV{'SPEC'})."\n";
+                                       # assumes you name it "kitNN"!
+print "Tester: ".getlogin."\n";       # replace with pseudonym if you wish
+
+print "\n".(' ' x 15);
+foreach my $ext (sort keys %ext_seen) {
+   printf "%-22s", $ext;
+}
+print "\n";
+my $exts = (keys %ext_seen) + 0;
+print ' '.(' ' x 14).("Base      Peak        " x $exts)."\n";
+print ' '.(' ' x 14).("Te Tr Ref Te Tr Ref   " x $exts)."\n";
+
+foreach my $bmark (@benchmarks) {
+   printf "%-15s", $bmark;
+   foreach my $ext (sort keys %ext_seen) {
+      foreach my $tune (qw(base peak)) {
+         foreach my $size (qw(test train ref)) {
+            $detail_key = $bmark . "/" . $ext . "/" . $tune . "/" . $size;
+            if (defined $detail{$detail_key}) {
+               print $detail{$detail_key};
+            }
+            else {
+               print "b? "if defined $bmarks_seen{$bmark};
+            }
+         }
+         print ' ';
+      }
+      print '  ';
+   }
+   print "\n";
+}
+
+my $all_extensions = join (' ', sort keys %ext_seen);
+if (!$quiet) {
+   print <<EOT
+
+In the report above, please replace the user name
+with either your real name or a disguise.  Please
+replace the extensions ($all_extensions) with 
+something more meaningful (e.g. "64-bit with 
+Big Optimizations").
+
+Please replace:
+   "r?" by the appropriate run-time error code 
+        (such as RE, VE, RM, VM, etc)
+   "b?" by the appropriate build-time error code 
+        (such as CE, FE, CM, FM, etc)
+See codes list at
+  http://pro.spec.org/private/osg/cpu/cpu2006/Failure_guidelines.html
+
+In the report section below, please replace the 
+references to log file numbers with an approriate 
+excerpt from the logfile to show the "fingerprint".
+
+Thanks!
+EOT
+   ;
+}
+
+# Summarize which logs had the failures
+foreach my $bmark (sort keys %bad) {
+   print "\n";
+   foreach my $type (qw(build run)) {
+       if (ref($error_logs{$bmark}->{$type}) eq 'ARRAY') {
+	   print "$bmark $type failures in logs: \n";
+	   foreach my $log (@{$error_logs{$bmark}->{$type}}) {
+	       my $dirkey = $bmark . '/' . $log;
+	       my @dirs = sort keys %{$error_dir{$dirkey}->{$type}};
+	       my $dirline = pluralize('  Dir', @dirs + 0).': ';
+	       my $newline = print_simplified_runspec_line($log, $runspec{$log}, $dirline.join(', ', @dirs));
+	       if ($newline) {
+		   print_wrapped($dirline, 12, ', ', @dirs);
+	       } else {
+		   print $dirline.join(', ', @dirs)."\n";
+	       }
+	   }
+       }
+   }
+}
+
+
+# Subroutine to chop out everything EXCEPT the essential switches
+# in the runspec command line.  Do this by removing the first part,
+# which usually looks like this:
+#    /export/home/john/cpu2006/kit29/bin/runspec
+# and by removing the names of the things that we are running
+# and switches that we don't care about
+# and finally by chopping it down to just the first 72 characters
+
+sub print_simplified_runspec_line {
+  my ($log, $simplified, $next_header) = @_;
+
+  chomp $simplified;
+  $simplified =~ s@.*runspec @@;   #chop off beginning of line
+  $simplified =~ s/-I//g;          #and switches we don't care about
+  $simplified =~ s/-n 1//g;
+  $simplified =~ s/-o \S+//g;
+  $simplified =~ s/--loose//g;
+  $simplified =~ s/-l//g;
+  $simplified =~ s/--nobuild//g;
+  foreach my $bmark (keys %bmarks_seen) {
+     $simplified =~ s/$bmark//;    # don't need to mention bmark name
+     my $justname = $bmark;
+     $justname =~ s/^\d{3}\.//;
+     $simplified =~ s/\b$justname\b//;
+  }
+  $simplified =~ tr/ / /s;  # reduce multiple spaces to 1
+  $simplified =~ s/ +$//;    # and chop any off end
+  $simplified = substr $simplified,0,72;
+  my $line = "   $log  $simplified";
+  print $line;
+  if (length($line.$next_header) > 80) {
+      print "\n";
+      return 1;
+  }
+  return 0;
+}
+
+# Given a header item, an indent count, and a list of things, print a nice
+# list of them that fits in 80 columns
+sub print_wrapped {
+    my ($header, $indent, $sep, @items) = @_;
+    #print "\n|---------".('|---------' x 6)."|--------|\n";
+    printf "%*s%s", $indent, ' ', $header;
+    $indent += length($header);
+
+    my $currlen = $indent;
+    my $next = shift(@items);
+    $next .= $sep if (@items);
+    my $newlen = $currlen + length($next);
+    while(@items || $next ne '') {
+	while ($newlen < 80) {
+	    print $next;
+	    $currlen += length($next);
+	    $next = shift(@items);
+	    last unless defined($next);
+	    $next .= $sep if (@items);
+	    $newlen = $currlen + length($next);
+	}
+	if (defined($next) && ($next ne '')) {
+	    printf "\n%*s", $indent, ' ' if ($currlen != $indent);
+	    $currlen = $indent;
+	    $newlen = $currlen + length($next);
+	}
+    }
+    print "\n";
+}
+
+# Save some space by eliminating the parentheses on items that may or may not
+# be plural.
+sub pluralize {
+    my ($txt, $num) = @_;
+    $txt .= ($num == 1) ? '' : 's';
+
+    return $txt;
+}

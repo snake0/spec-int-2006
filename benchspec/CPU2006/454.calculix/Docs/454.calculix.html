@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>454.calculix: SPEC CPU2006 Benchmark Description</title>
+</head>
+<body>
+<div style="text-align: center">
+<h1>454.calculix<br />
+SPEC CPU2006 Benchmark Description</h1>
+</div>
+
+<h2>Benchmark Name</h2>
+
+<p>454.calculix</p>
+
+<hr />
+
+<h2>Benchmark Author</h2>
+
+<p>Guido D.C. Dhondt &lt;dhondt &#x5b;at&#x5d; t-online.de&gt;</p>
+
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+
+<p>Structural Mechanics</p>
+
+<hr />
+
+<h2>Benchmark Description</h2>
+
+<p>454.calculix is based on CalculiX, which is a free software 
+finite element code for linear and
+nonlinear three-dimensional structural applications. It uses the
+classical theory of finite elements described in books such as the
+work by O.C. Zienkiewicz and R.L. Taylor, "The Finite Element
+Method", Fourth Edition, McGraw Hill, 1989. CalculiX can be used to
+solve a variety of problems such as static problems (bridge and
+building design), buckling, dynamic applications (crash,
+earthquake resistance) and eigenmode analysis (resonance
+phenomena).</p>
+
+<p>CalculiX consists of two parts: CalculiX GraphiX, used for
+generating an input file interactively and for visualization of the
+results, and CalculiX CrunchiX, which sets up the finite element
+equations and solves them. The module submitted as benchmark 454.calculix is
+CalculiX CrunchiX.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+
+<p>The input basically consists of a mesh
+describing the geometry of the structure, material properties,
+geometric boundary conditions and natural boundary conditions. The
+mesh is made up of elements containing nodes in which the solution
+is to be determined. The material properties describe the type of
+material the structure is made of. Examples of material behavior
+are linear elastic (e.g. steel at low stress), hyperelastic (rubber
+materials) and elastoplastic behavior (steel at high stress). The
+geometric boundary conditions specify which parts of the structure
+are constrained. For instance, a cantilever beam is fixed at one
+end. This fixation is described by specifying that the
+displacements at that end are zero. Finally, the natural boundary
+conditions are the loads applied to the structure such as pressure
+loads, centrifugal loading, temperature loading etc.</p>
+
+<p>For the input, several keyword lines are provided. For instance,
+the description of the nodes is started by the <tt>*NODE</tt> keyword line,
+followed on the next line by the node number and the node's
+coordinates in three-dimensional Euclidean space. The element
+topology is started by an <tt>*ELEMENT</tt> keyword line, etc. For a
+detailed description of the keyword lines the reader is referred to
+the extensive documentation of CalculiX CrunchiX available in
+454.calculix/Docs/calculix.pdf; or updated versions of documents
+available for download at <a href=
+"http://www.dhondt.de">www.dhondt.de</a></p>
+
+<p>Usually, the geometry, the material description and the zero
+geometric boundary conditions are put at the top of the file. Then
+follow one or more steps containing the nonzero geometric boundary
+conditions and the natural boundary conditions.</p>
+
+<p>The reference example (input file: <tt>hyperviscoplastic.inp</tt>)
+provided with the benchmark describes the deformation of a
+compressor disk due to centrifugal load, i.e. the compressor disk
+is rotated at high speed and the deformation and stresses in the
+disk are analyzed. Only a segment describing one seventh of the
+disk was modelled. The other six seventh are taken into account by
+cyclic symmetry conditions. The material of the disk is a
+combination of linear elastic, viscoelastic, Ogden-type and
+Ramberg-Osgood-type material. Target of the calculation is the
+displacement and stress field at full speed.</p>
+
+<hr />
+
+<h2>Output Description</h2>
+
+<p>The output consists of variable fields
+across the structure, usually the displacements and the stresses.
+Output can be requested with the keyword lines <tt>*NODE PRINT</tt> and <tt>*EL
+PRINT</tt> in the input file, in which case the results are stored in
+the <tt>.dat</tt> file, or with <tt>*NODE FILE</tt> and <tt>*EL FILE</tt> lines. In the latter
+case the results are stored in the <tt>.frd</tt> file for visualization with
+CalculiX GraphiX. </p>
+
+<p>The displacement results in the <tt>.dat</tt> file are
+preceded by the line "<tt>displacements (vx,vy,vz)</tt>" and consist of a
+list of nodes and the components of the displacement vector in
+Euclidean space, one node per line.</p>
+
+<p>The stresses (heading: <tt>stresses
+(elem, integ.pnt.,sxx,syy,szz,sxy,sxz,syz)</tt>) are listed in the
+integration points of the elements. To explain the concept of
+integration points, note that an element can be visualized as a
+deformed cube. The finite element method involves integration over
+this cube, which is numerically performed by function evaluation in
+so-called integration points. Stresses are most accurately
+evaluated at these integration points. The stress results in the
+<tt>.dat</tt> file consist of the element number, the integration point
+number and the six stress components (the stress is a second-order
+tensor).</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+
+<p>454.calculix is written in a mixture of Fortran 90 and C.
+The Fortran parts do not use all capabilities of Fortran 90. Indeed,
+they are more like Fortran 77 with some extra features such as
+"exit" and "cycle" of Fortran 90. The Fortran used in CalculiX
+CrunchiX is compatible with the GNU Fortran compiler. The
+programming language C is used for dynamic allocation.</p>
+
+<p>The idea of a pure C-language program was rejected because of
+the large Fortran experiences of the author. A pure
+Fortran 90 language program was rejected because no good free
+Fortran 90 compiler existed. So, that's how the mix came into
+being.</p>
+
+<p>SPOOLES, the mathematical code to solve the set of linear
+equations generated by CalculiX CrunchiX, is written entirely in
+C.</p>
+
+<hr />
+
+<h2>Known portability issues</h2>
+
+<p>By default, 454.calculix expects that your compiler supports
+the C99 format <kbd>%zd</kbd>. If yours does not, you will notice that the file
+<tt>SPECtestformatmodifier_z.txt</tt> will not validate. In such
+cases, please try compiling with
+<kbd>-DSPEC_CPU_NOZMODIFIER</kbd></p>
+
+<hr />
+
+<h2>References</h2>
+
+<ul>
+<li><a href="http://www.calculix.de">www.calculix.de</a>
+</li>
+
+<li><a href="http://www.dhondt.de">www.dhondt.de</a>
+</li>
+
+<li>Dhondt, G., "The Finite Element Method for Three-Dimensional
+Thermomechanical Applications", Wiley, 2004.</li>
+
+<li>Zienkiewicz, O.C. and Taylor, R.L., "The Finite Element
+Method", Fourth Edition, McGraw Hill, 1989</li>
+
+<li>Belytschko, T., Liu, W.K.L. and Moran, B., "Nonlinear Finite
+Elements for Continua and Structures", Wiley, 2000.</li>
+
+<li>Hughes, T.J.R., "The Finite Element Method", Dover, 2000.</li>
+
+<li><a href=
+"http://netlib.bell-labs.com/netlib/linalg/spooles/spooles.2.2.html">
+netlib.bell-labs.com/netlib/linalg/spooles/spooles.2.2.html</a></li>
+</ul>
+
+<hr />
+<p>Last updated: 29 June 2006</p>
+</body>
+</html>

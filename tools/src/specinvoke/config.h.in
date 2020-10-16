@@ -1,0 +1,30 @@
+/* Copyright (C) 1997-2005 Standard Performance Evaluation Corporation */
+/* $Id: config.h.in 2867 2005-06-13 20:19:21Z cloyce $ */
+
+/* 
+ * These defines are just to determine which header files exist.
+ */
+#undef HAVE_ERRNO_H
+#undef HAVE_FCNTL_H
+#undef HAVE_GETOPT_H
+#undef HAVE_SYS_TIMEB_H
+#undef HAVE_SYS_TIME_H
+#undef HAVE_SYS_TYPES_H
+#undef HAVE_SYS_WAIT_H
+#undef HAVE_STRING_H
+#undef HAVE_UNISTD_H
+
+/*
+ * Check for certain functions
+ */
+#undef HAVE_WAITPID
+#undef HAVE_GETOPT
+#undef HAVE_STRERROR
+#undef HAVE_NANOSLEEP
+#undef HAVE_USLEEP
+#undef HAVE_SELECT
+
+/*
+ * Define if <time.h> and <sys/time.h> may be included together
+ */
+#undef TIME_WITH_SYS_TIME

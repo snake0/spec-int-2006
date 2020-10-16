@@ -1,0 +1,1657 @@
+                                              (10 Dec 2003)
+
+              ******************************
+              *                            *
+              * Section 3 - Input Examples *
+              *                            *
+              ******************************
+ 
+    The distribution of GAMESS contains a number of short
+examples, named EXAM*.INP.  You should run all of these
+tests to be sure you have installed GAMESS correctly.  The
+correct answers are shown in the comments preceeding each
+of the short input tests.  The "correct" answers were
+obtained on a RS/6000 computer, other machines may differ
+in the last energy digit, or the last couple of gradient
+digits.
+ 
+    The examples are listed in the rest of this section,
+and serve a secondary purpose as a useful tutorial about 
+GAMESS input files.
+ 
+    Example           Description
+    -------           -----------
+       1          CH2 RHF geometry optimization
+       2          CH2 UHF + gradient
+       3          CH2 ROHF + gradient
+       4          CH2 GVB + gradient
+       5          CH2 RHF + CI gradient
+       6          CH2 MCSCF geometry optimization
+       7          HPO RHF + gradient
+       8          H2O RHF + MP2 gradient
+       9          H2O MCSCF + MCQDPT energy correction
+      10          H2O RHF + hessian
+      11          HCN RHF IRC
+      12         HCCH closed shell DFT geometry opt.
+      13          H2O RHF properties
+      14          H2O CI transition moment
+      15          C2- GVB/ROHF on 2-pi-u state
+      16           Si GVB/ROHF on 3-P state
+      17          CH2 GVB/ROHF + hessian
+      18           P2 RHF + hessian, effective core pot.
+      19           NH spin-orbit coupling
+      20           I- exponent TRUDGE optimization
+      21          CH3 OS-TCSCF hessian
+      22         H3CN UHF + UMP2 gradient
+      23        SiH3- PM3 geometry optimization
+      24          H2O SCRF test case
+      25            ? internal coordinate example
+      26         H3PO localized orbital test
+      27          NH3 DRC example
+      28      H2O-NH3 Morokuma decomposition
+      29       FNH2OH surface scan
+      30 HCONH2(H2O)3 effective fragment solvation
+      31          H2O PCM test case
+      32          HNO coupled cluster test
+      33          HCN ORMAS-MCSCF illustration
+      34         H2CO CIS optimization
+      35           As relativity via Douglas-Kroll
+ 
+
+
+
+! EXAM01.
+!    1-A-1 CH2    RHF geometry optimization using GAMESS.
+!
+!    Although internal coordinates are used (COORD=ZMAT),
+!    the optimization is done in Cartesian space (NZVAR=0).
+!    This run uses a criterion (OPTTOL) on the gradient
+!    which is tighter than is normally used.
+!
+!    This job tests the sp integral module, the RHF module,
+!    and the geometry optimization module.
+!
+!    Using the default search METHOD=STANDARD,
+!    FINAL E= -37.2322678015, 8 iters, RMS grad= .0264308
+!    FINAL E= -37.2308175316, 7 iters, RMS grad= .0320881
+!    FINAL E= -37.2375723414, 7 iters, RMS grad= .0056557
+!    FINAL E= -37.2379944431, 6 iters, RMS grad= .0017901
+!    FINAL E= -37.2380387832, 8 iters, RMS grad= .0003391
+!    FINAL E= -37.2380397692, 6 iters, RMS grad= .0000030
+!
+ $CONTRL SCFTYP=RHF RUNTYP=OPTIMIZE COORD=ZMT NZVAR=0 $END
+ $SYSTEM TIMLIM=2 MEMORY=100000 $END
+ $STATPT OPTTOL=1.0E-5  $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Methylene...1-A-1 state...RHF/STO-2G
+Cnv  2
+
+C
+H  1 rCH
+H  1 rCH  2 aHCH
+
+rCH=1.09
+aHCH=110.0
+ $END
+ 
+
+
+
+! EXAM02.
+!    3-B-1 CH2    UHF calculation on methylene ground state.
+!
+!    This test uses the default choice, COORD=UNIQUE, to
+!    enter the molecule.  Only the symmetry unique atoms
+!    are given, and they must be given in the orientation
+!    which GAMESS expects.
+!
+!    This job tests the UHF energy and the UHF gradient.
+!    In addition, the orbitals are localized.
+!
+!    The initial energy is -37.228465066.
+!    The FINAL energy is -37.2810867258 after 11 iterations.
+!    The unrestricted wavefunction has <S**2> = 2.013.
+!    Mulliken, Lowdin charges on C are -0.020584, 0.018720.
+!    The spin density at Hydrogen is -0.0167104.
+!    The dipole moment is 0.016188.
+!    The RMS gradient is 0.027589766.
+!    FINAL localization sums are 30.57 and 25.14 Debye**2.
+!
+ $CONTRL SCFTYP=UHF MULT=3 RUNTYP=GRADIENT LOCAL=BOYS $END
+ $SYSTEM TIMLIM=1 MEMORY=100000 $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Methylene...3-B-1 state...UHF/STO-2G
+Cnv  2
+
+Carbon     6.0
+Hydrogen   1.0    0.0      0.82884      0.7079
+ $END
+ 
+
+
+
+! EXAM03.
+!    3-B-1 CH2  ROHF calculation on methylene ground state.
+!    The wavefunction is a pure triplet state (<S**2> = 2),
+!    and so has a higher energy than the second example.
+!
+!    For COORD=CART, all atoms must be given, and as in the
+!    present case, these may be in an unoriented geometry.
+!    GAMESS deduces which atoms are unique, and orients
+!    the molecule appropriately.  The geometry here is thus
+!    identical to the second example.
+!
+!    This job tests the ROHF wavefunction and gradient code.
+!    It also tests the direct SCF procedure.
+!
+!    The initial energy is -37.228465066.
+!    The FINAL energy is -37.2778767089 after 7 iterations.
+!    Mulliken, Lowdin charges on C are -0.020346, 0.019470.
+!    The Hydrogen atom spin density is 0.0129735.
+!    The dipole moment is 0.025099 Debye.
+!    The RMS gradient is 0.027505548
+!
+ $CONTRL SCFTYP=ROHF MULT=3 RUNTYP=GRADIENT COORD=CART $END
+ $SYSTEM TIMLIM=1 MEMORY=100000 $END
+ $SCF    DIRSCF=.TRUE. $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Methylene...3-B-1 state...ROHF/STO-2G
+Cnv  2
+
+Hydrogen   1.0    0.82884     0.7079   0.0
+Carbon     6.0
+Hydrogen   1.0   -0.82884     0.7079   0.0
+ $END
+ 
+
+
+
+! EXAM04.
+!    1-A-1 CH2    TCSCF calculation on methylene.
+!    The wavefunction has two configurations, exciting
+!    the carbon sigma lone pair into the out of plane p.
+!
+!    Note that the Z-matrix used to input the molecule
+!    can include identifying integers after the element
+!    symbol, and that the connectivity can then be given
+!    using these labels rather than integers.
+!
+!    This job tests the GVB wavefunction and gradient.
+!
+!    The initial GVB-PP(1) energy is -37.187342653.
+!    The FINAL energy is -37.2562020559 after 10 iters.
+!    The GVB CI coefs are 0.977505 and -0.210911, giving
+!    a pair overlap of 0.64506.
+!    Mulliken, Lowdin charges for C are 0.020810, 0.055203.
+!    The dipole moment is 1.249835.
+!    The RMS gradient = 0.019618475.
+!
+ $CONTRL SCFTYP=GVB  RUNTYP=GRADIENT  COORD=ZMT  $END
+ $SYSTEM TIMLIM=1 MEMORY=100000 $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $SCF    NCO=3  NSETO=0  NPAIR=1  $END
+ $DATA
+Methylene...1-A-1 state...GVB...one geminal pair...STO-2G
+Cnv  2
+
+C1
+H1  C1 rCH
+H2  C1 rCH  H1 aHCH
+
+rCH=1.09
+aHCH=99.0
+ $END
+! normally a GVB-PP calculation will use GUESS=MOREAD
+ $GUESS  GUESS=HUCKEL  $END
+ 
+
+
+! EXAM05
+!    CH2    CI calculation.
+!    The wavefunction is RHF + CI-SD, within the minimal
+!    basis, containing 55 configurations.  Two CI roots
+!    are found, and the gradient of the higher state is
+!    then computed.
+!
+!    Note that CI gradients have several restrictions,
+!    which are further described in the $LAGRAN group.
+!
+!    FINAL energy of RHF = -38.3704885128 after 10 iters.
+!    State 1 EIGENvalue = -38.4270674136, c(1)  = 0.970224
+!    State 2 EIGENvalue = -38.3130036824, c(29) = 0.990865
+!    The upper state dipole moment is 0.708275 Debye.
+!    The upper state has RMS gradient 0.032264079
+!
+ $CONTRL SCFTYP=RHF CITYP=GUGA RUNTYP=GRADIENT $END
+ $SYSTEM TIMLIM=3 MEMORY=300000 $END
+ $BASIS  GBASIS=STO NGAUSS=3 $END
+ $GUESS  GUESS=HUCKEL $END
+!    look at all state symmetries, by using C1 symmetry
+ $CIDRT  GROUP=C1 IEXCIT=2 NFZC=1 NDOC=3 NVAL=3 $END
+!    ground state is 1-A-1, 1st excited state is 1-B-1
+ $GUGDIA NSTATE=2 $END
+!    compute properties of the 1-B-1 state
+ $GUGDM  NFLGDM(1)=1,1 IROOT=2 $END
+!    compute gradient of the 1-B-1 state
+ $GUGDM2 WSTATE(1)=0.0,1.0 $END
+ $DATA
+Methylene...CI...STO-3G basis
+Cnv   2
+
+Carbon    6.0
+Hydrogen  1.0      0.0       0.82884        0.7079
+ $END
+ 
+
+
+
+! EXAM06.
+!    1-A-1 CH2    MCSCF methylene geometry optimization.
+!    The two configuration ansatz is the same as used in
+!    the fourth example.
+!
+!    The optimization is done in internal coordinates,
+!    as NZVAR is non-zero.   Since a explicit $ZMAT is
+!    given, these are used for the internal coordinates,
+!    rather than those used to enter the molecule in
+!    the $DATA.  (Careful examination of this trivial
+!    triatomic's input shows that $ZMAT is equivalent
+!    to $DATA in this case.  You would normally give
+!    $ZMAT only if it is somehow different.)
+!    This job tests the MCSCF wavefunction and gradient.
+!    At the initial geometry:
+!    The initial energy is -37.187342653,
+!    the FINAL E= -37.2562020559 after 14 iterations,
+!    the RMS gradient is 0.0256396.
+!    After 4 steps,
+!    FINAL E= -37.2581791686, RMS gradient=0.0000013,
+!    r(CH)=1.1243359, ang(HCH)=98.8171674
+$CONTRL SCFTYP=MCSCF RUNTYP=OPTIMIZE NZVAR=3 COORD=ZMT $END
+ $SYSTEM TIMLIM=5 MEMORY=300000 $END
+ $BASIS  GBASIS=STO NGAUSS=2 $END
+ $DATA
+Methylene...1-A-1 state...MCSCF/STO-2G
+Cnv  2
+
+C
+H 1 rCH
+H 1 rCH 2 aHOH
+
+rCH=1.09
+aHOH=99.0
+ $END
+ $ZMAT   IZMAT(1)=1,1,2,   1,1,3,   2,2,1,3  $END
+! Normally one starts a MCSCF run with converged SCF
+! orbitals, as Huckel orbitals normally do not converge.
+! Even if they do converge, the extra iterations are
+! very expensive, so use MOREAD for your runs!
+!
+ $GUESS  GUESS=HUCKEL $END
+!
+! two active electrons in two active orbitals.
+! must find at least two roots since ground state is 3-B-1
+!
+ $DET    NCORE=3 NACT=2 NELS=2 NSTATE=2 $END
+ 
+
+! EXAM07.
+!    1-A' HPO    RHF calculation using GAMESS.
+!    This job tests the HONDO integral & gradient packages,
+!    due to the d function on phosphorus.  The input also
+!    illustrates the use of a more flexible basis set than
+!    the methylene examples.
+!    Although HUCKEL would be better, HCORE is tested.
+!
+!    The initial energy is -397.591192627,
+!    the FINAL E= -414.0945320854 after 18 iterations,
+!    The dipole moment is 2.535169.
+!    The RMS gradient is 0.023723942.
+!
+ $CONTRL SCFTYP=RHF RUNTYP=GRADIENT $END
+ $SYSTEM TIMLIM=20 MEMORY=300000 $END
+ $GUESS  GUESS=HCORE $END
+ $DATA
+HP=O ... 3-21G+* RHF calculation at STO-2G* geometry
+Cs
+ 
+Phosphorus 15.0
+    N21 3
+    L    1
+    1    0.039             1.0              1.0
+    D    1
+    1     0.55         1.0
+ 
+Oxygen    8.0       1.439
+    N21  3
+ 
+Hydrogen  1.0      -0.3527854           1.36412
+    N21 3
+ 
+ $END
+ 
+
+
+
+! EXAM08.
+!    1-A-1 H2O    RHF + MP2 gradient calculation.
+!    This job generates RHF orbitals which should be saved
+!    for use with EXAM9.  This run, together with EXAM9,
+!    shows a much more typical MCSCF calculation, which
+!    should always be started with some sort of SCF MOs.
+!    This job also tests the 2nd order Moller-Plesset code.
+!
+!    The FINAL E is -75.5854099058 after 10 iterations.
+!    E(MP2) is -75.7060361996, RMS grad=0.017449524
+!    dipole moments are SCF=2.435689, MP2=2.329368
+!
+ $CONTRL SCFTYP=RHF MPLEVL=2 RUNTYP=GRADIENT $END
+ $SYSTEM TIMLIM=2 MEMORY=100000 memddi=1 parall=.true. $END
+ $BASIS  GBASIS=N21 NGAUSS=3 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Water...RHF/3-21G...exp.geom...R(OH)=0.95781,A(HOH)=104.4776
+Cnv      2
+
+OXYGEN     8.0
+HYDROGEN   1.0   0.0     0.7572157    0.5865358
+ $END
+ 
+
+
+! EXAM09.
+!    1-A-1 H2O    2nd order MC-QDPT calculation
+!    This job finds the Full Optimized Reaction Space
+!    MCSCF (or CAS-SCF) wavefunction for water.  Its
+!    initial RHF orbitals are taken from EXAM8. 
+!    The MCSCF wavefunction contains 225 determinants,
+!    which includes 105 singlet configurations.
+!    The second order perturbation theory correction
+!    to the MCSCF energy is then obtained, using the 
+!    slower code that produces information about
+!    what weight percent the MCSCF comprises in the
+!    first order wavefunction.
+!
+!    MCSCF:
+!    On the 1st iteration, the energy is -75.601726235.
+!    The FINAL E= -75.6386218833 after 13 iterations,
+!    with c(1) = 0.988446 and dipole moment = 2.301626
+!
+!    MC-QDPT:
+!    E(MCSCF)= -75.6386218833, E(MP2)= -75.7109706204
+!    the 2nd order correction has 2 terms, semi-internal
+!    is -0.03446957 and external -0.03787916 Hartree,
+!    and the MCSCF reference weight is 98.4%.
+!
+ $CONTRL SCFTYP=MCSCF MPLEVL=2 $END
+ $SYSTEM TIMLIM=8 MEMORY=300000 $END
+ $BASIS  GBASIS=N21 NGAUSS=3 $END
+---- EXPERIMENTAL GEOM, R(OH)=0.95781A, HOH=104.4776 DEG.
+ $DATA
+WATER...3-21G BASIS...FORS-MCSCF...EXPERIMENTAL GEOMETRY
+Cnv 2
+
+Oxygen     8.0
+Hydrogen   1.0   0.0   0.7572157   0.5865358
+ $END
+ $GUESS  GUESS=MOREAD  NORB=13 $END
+ $DET    NCORE=1 NACT=6 NELS=8 $END
+ $MCQDPT NSTATE=1 ISTSYM=1 INORB=0 REFWGT=.TRUE. $END
+---- CONVERGED 3-21G WATER VECTORS, E=-75.585409913 - - -
+ $VEC
+ 1  1 0.98323195E+00 0.95883436E-01 0.00000000E+00 ...
+ ... vectors deleted to save paper ...
+13  3 0.35961579E+00 0.28728587E+00 0.35961579E+00
+ $END
+ 
+
+
+! EXAM 10.
+!   This run duplicates the first column of table 6 in
+!   Y.Yamaguchi, M.Frisch, J.Gaw, H.F.Schaefer, and
+!   J.S.Binkley   J.Chem. Phys. 1986, 84, 2262-2278.
+!
+!   FINAL energy at the VIB 0 geometry is -74.9659012159.
+!
+!   If run with METHOD=ANALYTIC,
+!   the FREQuencies are 2170.05, 4140.00, and 4391.07
+!   the INTENSities are 0.17129, 1.04807, and 0.70930
+!   the mean POLARIZABILITY is 0.40079
+!
+!   If run with METHOD=NUMERIC, NVIB=2,
+!   the FREQuencies are 2170.14, 4140.18, and 4391.12
+!   the INTENSities are 0.17169, 1.04703, and 0.70909
+!
+ $CONTRL SCFTYP=RHF RUNTYP=HESSIAN UNITS=BOHR NZVAR=3 $END
+ $SYSTEM TIMLIM=4 MEMORY=100000 $END
+ $FORCE  METHOD=ANALYTIC   $END
+ $CPHF   POLAR=.TRUE. $END
+ $BASIS  GBASIS=STO NGAUSS=3 $END
+ $DATA
+Water at the RHF/STO-3G equilibrium geometry
+CNV      2
+
+OXYGEN       8.   0.0   0.0            0.0702816679
+HYDROGEN     1.   0.0   1.4325665478  -1.1312080153
+ $END
+ $ZMAT   IZMAT(1)=1,1,2,   1,1,3,   2,2,1,3  $END
+ $GUESS  GUESS=HUCKEL   $END
+ 
+
+
+
+! EXAM 11.
+!   1A' HCN       RHF Intrinsic Reaction Coordinate
+!   This job tests the reaction path finder.  The reaction
+!   is followed back to the HNC isomer.  Four points on the
+!   IRC (counting the saddle point) are found,
+!  Pt.   R(N-C)   R(N-H)   A(HNC)     Energy   distance
+!  T.S.  1.22136  1.43764  52.993  -91.5648510  0.0
+!   1    1.22533  1.33296  58.476  -91.5673097  0.29994
+!   2    1.22802  1.23827  64.747  -91.5735346  0.59986
+!   3    1.22974  1.16350  72.039  -91.5814775  0.89968
+!
+ $CONTRL SCFTYP=RHF RUNTYP=IRC NZVAR=3 $END
+ $SYSTEM TIMLIM=5 MEMORY=400000 $END
+ $IRC    PACE=GS2 SADDLE=.TRUE. TSENGY=.TRUE. 
+         FORWRD=.FALSE. NPOINT=3 $END
+ $GUESS  GUESS=HUCKEL $END
+ $ZMAT   IZMAT(1)=1,1,2  1,1,3  2,2,1,3 $END
+ $BASIS  GBASIS=STO NGAUSS=3 $END
+ $DATA
+HYDROGEN CYANIDE...STO-3G...INTRINSIC REACTION COORDINATE
+CS
+
+NITROGEN    7.0   -.0004620071    .0002821165    .0000000000
+CARBON      6.0   1.2208931990   -.0003427488    .0000000000
+HYDROGEN    1.0    .8654562191   1.1478852258    .0000000000
+ $END
+ $HESS
+ENERGY IS      -91.5648510307 E(NUC) IS       23.4154954113
+ 1  1 1.10665682E+00 1.58946320E-02 0.00000000E+00...
+... 2nd derivatives deleted to save paper ...
+ 9  2-8.04548379E-09 0.00000000E+00 0.00000000E+00-
+1.42096449E-08
+ $END
+ 
+
+
+
+! EXAM 12.
+!   This job illustrates linear bends, for acetylene, and
+!   tests the closed shell LDA density functional program.
+!
+!   At the input geometry,
+!   the FINAL E= -76.5352218424 after 12 iterations,
+!   and the RMS gradient is 0.0944646.
+!
+!   At the final geometry, 5 steps later,
+!   the FINAL E= -76.5841366158, RMS gradient=0.0000007,
+!   R(CC)=1.2119150 and R(CH)=1.0779838.
+!
+ $CONTRL SCFTYP=RHF RUNTYP=OPTIMIZE NZVAR=5 $END
+ $SYSTEM TIMLIM=20 MEMORY=500000 $END
+ $DFT    DFTTYP=SVWN $END
+ $BASIS  GBASIS=N31 NGAUSS=6 NDFUNC=1 $END
+ $GUESS  GUESS=HUCKEL $END
+ $STATPT OPTTOL=0.00001 $END
+ $DATA
+Acetylene geometry optimization in internal coordinates
+Dnh      4
+
+CARBON      6.0    0.0  0.0  0.70
+HYDROGEN    1.0    0.0  0.0  1.78
+ $END
+ $ZMAT  IZMAT(1)=1,1,2,   1,1,3,   1,2,4,
+                 5,1,2,4,    5,2,1,3  $END
+------- XZ is 1st plane for both bends -------
+ $LIBE  APTS(1)=1.0,0.0,0.0,1.0,0.0,0.0 $END
+
+
+
+
+
+! EXAM 13.
+!  This run duplicates the POLYATOM calculation of
+!  D.Neumann + J.W.Moskowitz, J.Chem.Phys. 49,2056(1968)
+!  SCF convergence is a bit better today, so some of the
+!  results are not precisely the same.
+!
+!    V(NE) = -199.1343264099
+!    V(EE) =   37.8955167210   T     =   75.9557584991
+!    V(NN) =    9.2390200836   E(TOT)=  -76.0440311061
+!  Mulliken charge(O)=-0.647397   Bond Order=0.905
+!  Density:  O=286.491824    H=0.404989
+!  Moments:  DZ= 2.093290
+!    QXX=-2.388658   QYY= 2.495388   QZZ=-0.106730
+!   OXXZ=-0.890362  OYYZ= 2.186853  OZZZ=-1.296490
+!  Electric field/gradient:   H(YZ)=+/-0.365168
+!   O(Z)=-0.060033  H(Y)=+/-0.006572  H(Z)=0.001233
+!   O(XX)=1.904867  O(YY)=-1.735891   O(ZZ)=-0.168977
+!   H(XX)=0.301208  H(YY)=-0.258153  H(ZZ)=-0.043055
+!  Potential:  V(O)=-22.330374    V(H)=-1.006648
+!
+ $CONTRL SCFTYP=RHF RUNTYP=ENERGY UNITS=BOHR ISPHER=1 $END
+ $SYSTEM TIMLIM=15 MEMORY=300000 $END
+ $GUESS  GUESS=HUCKEL $END
+ $ELMOM  IEMOM=3 $END
+ $ELFLDG IEFLD=2 $END
+ $ELPOT  IEPOT=1 $END
+ $ELDENS IEDEN=1 $END
+ $DATA
+Water...properties test...(10,5,2/4,1)/[5,3,2/2,1] basis
+Cnv      2
+ 
+Oxygen     8.0
+  S    2
+    1   31.3166          0.243991
+    2   76.232           0.152763
+  S    3
+    1  290.785           0.904785
+    2 1424.0643          0.121603
+    3 4643.4485          0.029225
+  S    2
+    1    4.6037          0.264438
+    2   12.8607          0.458240
+  S    2
+    1    0.9311          1.051534
+    2    9.7044         -0.140314
+  S    1
+    1    0.2825          1.0
+  P    3
+    1    7.90403         0.124190
+    2   35.1832          0.019580
+    3    2.30512         0.394730
+  P    1
+    1    0.21373         1.0
+  P    1
+    1    0.71706         1.0
+  D    1
+    1    1.5             1.0
+  D    1
+    1    0.5             1.0
+ 
+Hydrogen   1.0      0.0  1.428036   1.0957706
+  S    3
+    1   0.65341          0.817238
+    2   2.89915          0.231208
+    3  19.2406           0.032828
+  S    1
+    1   0.17758          1.0
+  P    1
+    1   1.0              1.0
+ 
+ $END
+
+
+
+
+! EXAM 14.
+!  CI transition moments.  Water, using RHF/STO-3G MOs.
+!  All orbitals are occupied, transition is 1-1A1 to 2-1A1.
+!
+!  E(STATE 1)= -75.0101113548, E(STATE 2)= -74.3945819375
+!  Dipole LENGTH is <Q>=0.392614
+!  Dipole VELOCITY is <d/dQ>=0.368205
+!
+ $CONTRL SCFTYP=NONE CITYP=GUGA RUNTYP=TRANSITN UNITS=BOHR 
+$END
+ $SYSTEM TIMLIM=1 MEMORY=100000 $END
+ $BASIS  GBASIS=STO  NGAUSS=3 $END
+!            standard SD-CI calculation
+ $DRT1   GROUP=C2V IEXCIT=2 NFZC=1 NDOC=4 NVAL=2 $END
+ $TRANST NFZC=1 IROOTS(1)=2 $END
+ $DATA
+WATER MOLECULE...STO-3G...TRANSITION MOMENT
+CNV      2
+
+OXYGEN      8.0   0.0   0.0      0.0
+HYDROGEN    1.0   0.0   1.428   -1.096
+ $END
+
+--- RHF ORBITALS --- GENERATED AT 09:24:04    18-FEB-88
+WATER MOLECULE...STO-3G...TRANSITION MOMENT
+E(RHF)=  -74.9620539825, E(NUC)=    9.2384802989,    8 ITERS
+ $VEC1
+ 1  1 9.94117078E-01 2.66680164E-02 0.00000000E+00 ...
+... vectors deleted to save paper ...
+ 7  2-8.42653177E-01 8.42653177E-01
+ $END
+ 
+
+
+
+! EXAM 15.
+!    C2- diatom, in the electronic state doublet-pi-u.
+!    This illustrates a open shell SCF calculation, using
+!    fed in coupling coefficients, and the GVB/ROHF code.
+!
+!    The FINAL energy is -75.5579181071 after 8 iterations.
+!
+ $CONTRL SCFTYP=GVB  MULT=2  ICHARG=-1  UNITS=BOHR  $END
+ $SYSTEM TIMLIM=15 MEMORY=300000 $END
+ $BASIS  GBASIS=DH NDFUNC=1 POLAR=DUNNING $END
+ $DATA
+C2-...DOUBLET-PI-UNGERADE...OPEN SHELL SCF
+DNH      4
+ 
+CARBON      6.0     0.0  0.0  -1.233
+ $END
+ $GUESS  GUESS=MOREAD NORB=30
+         NORDER=1  IORDER(5)=7,5,6  $END
+ $SCF    NCO=5  NSETO=1  NO=2  COUPLE=.TRUE.
+           F(1)=1.0, 0.75
+       ALPHA(1)=2.0, 1.5, 1.00
+        BETA(1)=-1., -.75, -0.5    $END
+ 
+--- RHF ORBITALS --- GENERATED AT 14:05:16THU MAR 24/88
+ CC  R(C-C) = 2 * 1.233 BOHR   BAS=831+1D
+E(RHF)=  -75.3856001855, E(NUC)=   14.5985401460,   18 ITERS
+ $VEC
+ 1  1-7.06500288E-01-1.39103044E-03-3.57452331E-04 ...
+... vectors deleted to save paper ...
+ $END
+ 
+
+
+
+! EXAM 16.
+!  ROHF/GVB on Si 3-P state, using Gordon's 6-31G basis.
+!
+!  The purpose of this example is two-fold, namely to
+!  show off the open shell capabilities of the GVB code,
+!  and to emphasize that the 6-31G basis for Si in GAMESS
+!  is Mark Gordon's version.  The basis stored in GAMESS is
+!  completely optimized, whereas Pople's uses the core from
+!  from a 6-21G set, reoptimizing only the -31G part.
+!  The energy from Pople's basis would be only -288.828405.
+!
+!  Jacobi diagonalization is intrinsically slow, but
+!  results in pure subspecies in degenerate p irreps.
+!  In fact, these may be labeled in the highest Abelian
+!  subgroup of the atomic point group Kh.
+!
+!  The FINAL energy is -288.8285729745 after 7 iterations.
+!
+ $CONTRL SCFTYP=GVB MULT=3 $END
+ $SYSTEM TIMLIM=2 MEMORY=100000 KDIAG=3 $END
+ $BASIS  GBASIS=N31 NGAUSS=6 $END
+ $DATA
+Si...3-P term...ROHF in full Kh symmetry
+Dnh 2
+
+Silicon     14.
+ $END
+ $GUESS  GUESS=HUCKEL $END
+ $SCF    NCO=6  NSETO=1  NO=3   COUPLE=.TRUE.
+         F(1)=1.0, 0.333333333333333
+         ALPHA(1)=2.0,  0.66666666666667,  0.16666666666667
+         BETA(1)=-1.0, -0.33333333333333, -0.16666666666667
+ $END
+ 
+
+
+
+! EXAM 17.
+!  Analytic hessian for an open shell SCF function.
+!  Methylene's 1-B-1 excited state.
+!  FINAL energy=  -38.3334724780 after 8 iterations.
+!  The FREQuencies are 1224.19, 3563.44, 3896.23
+!  The INTENSities are 0.13317, 0.21652, 0.14589
+!  The mean POLARIZABILITY is 0.53018
+!
+ $CONTRL SCFTYP=GVB  MULT=1  RUNTYP=HESSIAN  UNITS=BOHR $END
+ $SYSTEM TIMLIM=4 MEMORY=100000 $END
+ $CPHF   POLAR=.TRUE. $END
+ $BASIS  GBASIS=STO NGAUSS=3 $END
+ $SCF    NCO=3  NSETO=2  NO(1)=1,1  NPAIR=0 $END
+ $ZMAT   IZMAT(1)=1,1,2,   1,1,3,   2,2,1,3   $END
+ $GUESS  GUESS=HUCKEL  $END
+ $DATA
+METHYLENE...1-B-1 STATE...ROHF...STO-3G BASIS
+CNV      2
+
+CARBON      6.0    0.0   0.0            0.0041647278
+HYDROGEN    1.0    0.0   1.8913952563   0.7563907037
+ $END
+ 
+
+
+
+! EXAM 18.
+!  effective core potential...diatomic P2...RHF/CEP-31G*
+!  See Stevens,Basch,Krauss, J.Chem.Phys. 81,6026-33(1984).
+!  GAMESS FINAL E= -12.6956518702, FREQ=913.17
+!  A separate run gives E(P)= -6.32635 so De=26.95 kcal/mol
+!
+ $CONTRL SCFTYP=RHF RUNTYP=HESSIAN ECP=SBKJC NZVAR=1 $END
+ $SYSTEM TIMLIM=15 MEMORY=900000 $END
+ $GUESS  GUESS=HUCKEL $END
+ $ZMAT   IZMAT(1)=1,1,2 $END
+ $DATA
+diatomic phosphorous
+Dnh 4
+ 
+PHOSPHORUS 15.0   0.0000000000   0.0000000000   0.9393077548
+   SBKJC
+   D 1
+     1 0.45 1.0
+ 
+ $END
+ 
+
+
+
+! EXAM 19.
+! Spin-orbit coupling example.
+! This run duplicates the results shown in Table 3 of
+! T.R.Furlani, H.F.King, J.Chem.Phys. 82, 5577-83(1985),
+! GAMESS 1e-= 114.3851, 2e-= -49.4168, lit=114.38,-49.42
+!
+! Energies for the singlet CI are
+!   State=   1 Energy =   -54.868531216 (1-delta)
+!   State=   2 Energy =   -54.868531216 (1-delta)
+!   State=   3 Energy =   -54.798836731 (1-sigma-plus)
+! Energies for the triplet CI are
+!   State=   1 Energy =   -54.938225701 (3-sigma-minus)
+! Final energy of all 6 levels in the pi**2 configuration,
+! after diagonalization of the spin-orbit Hamiltonian, are
+!   BREIT RELATIVE E= -15296.570, -15296.432, -15296.432,
+!   BREIT RELATIVE E= 0.0, 0.0, and +15296.570 wavenumbers.
+! If run as OPERAT=HSO1, with ZEFF taken as true atomic Z,
+! then inclusion of only the 1e- operator is 114.3851, and
+!   ZEFF RELATIVE E= -15296.859, -15296.432, -15296.432,
+!   ZEFF RELATIVE E= 0.0, 0.0, and +15296.859 wavenumbers.
+!
+! Why are there six levels? The singlet-delta is two roots,
+! the singlet-sigma-plus is a third.  During the CI, the
+! spatial triplet-sigma-minus is one CSF, with alpha/alpha
+! spin, hence IROOTS=3,1.  The final spin-orbit Hamiltonian
+! includes all three triplet spin states, namely adding the
+! ab+ba and beta/beta triplets.  So, 2+1+3=6 levels.  You
+! can work out for yourself these have the quantum number
+! omega=0,0,1,2.  Only the omega=0 states can interact,
+! raising the triplet's degeneracy and slightly affecting
+! the singlet-sigma-plus state's position.
+!
+! Note that the lower multiplicity DRT1 is done in C1
+! symmetry to generate both components of the delta state.
+!
+ $CONTRL SCFTYP=NONE MULT=3 CITYP=GUGA RUNTYP=TRANSITN
+         UNITS=BOHR $END
+ $SYSTEM TIMLIM=2 MEMORY=900000 $END
+ $BASIS  GBASIS=N31 NGAUSS=6 $END
+ $TRANST OPERAT=HSO2 NFZC=3 NOCC=5 NUMVEC=1 NUMCI=2
+         IROOTS(1)=3,1 $END
+ $DRT1   GROUP=C1  IEXCIT=2 NFZC=3 NDOC=1 NVAL=1 $END
+ $DRT2   GROUP=C4V IEXCIT=2 NFZC=3 NALP=2 $END
+ $DATA
+Imidogen radical
+Cnv 4
+
+Nitrogen    7.0
+Hydrogen    1.0     0.0   0.0   1.9748
+ $END
+--- ROHF ORBITALS --- GENERATED AT 12:04:18 29 MAR 90 ( 88)
+IMIDOGEN RADICAL
+E(ROHF)= -54.9382257007, E(NUC)=    3.5446627507,    8 ITERS
+ $VEC1
+...orbitals omitted to save space...
+ $END
+
+
+
+
+! EXAM 20.
+!  Optimize an orbital exponent.
+!  The SBKJC basis for I consists of 5 gaussians, in a -41
+!  type split.  The exponent of a diffuse L shell for 
+!  iodide ion is optimized (6th exponent overall).  The
+!  optimal exponent turns out to be 0.036713, with a
+!  corresponding FINAL energy of -11.3010023066
+!
+ $CONTRL SCFTYP=RHF RUNTYP=TRUDGE ICHARG=-1 ECP=SBKJC $END
+ $SYSTEM TIMLIM=30 MEMORY=300000 $END
+ $TRUDGE OPTMIZ=BASIS NPAR=1 IEX(1)=6 $end
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+I- ion
+Dnh 2
+
+Iodine 53.0
+   SBKJC
+   L 1
+     1 0.02 1.0
+
+ $END
+ 
+
+
+! EXAM 21.
+!   Open shell two configuration SCF analytic hessian.
+!      M.Duran, Y.Yamaguchi, H.F.Schaefer III
+!         J.Phys.Chem. 1988, 92, 3070-3075.
+!   Least motion insertion of CH into H2, which leads to
+!   a 3rd order hypersaddle point on the 2-B-1 surface.
+!
+!   Literature values are
+!      FINAL E=-39.25104,      C1=0.801,    C2=-0.598
+!      FREQ= 4805i, 1793i, 1317i, 989, 2914, 3216
+!      mean POLARIZABILITY=2.05
+!   GAMESS obtains
+!      FINAL E=-39.2510351249, C1=0.801141, C2=-0.598476
+!      FREQ= 4805.53i, 1793.00i, 1317.43i,
+!      FREQ=  988.81, 2913.52, 3216.42
+!    INTENS= 4.54563, 0.09731, 0.00768
+!      mean POLARIZABILITY=2.04655
+!
+ $CONTRL SCFTYP=GVB MULT=2 RUNTYP=HESSIAN $END
+ $SYSTEM TIMLIM=25 MEMORY=100000 $END
+ $CPHF   POLAR=.TRUE. $END
+ $GUESS  GUESS=MOREAD NORB=16 NORDER=1 IORDER(4)=6,4,5 $END
+ $SCF    NCO=3 NSETO=1 NO=1 NPAIR=1 CICOEF(1)=0.7,-0.7 $END
+ $DATA
+Insertion of CH into H2...OS-TCSCF ansatz...DZ basis
+CNV 2
+
+CARBON   6.0   0.0000000000   0.0000000000  -0.0001357549
+  S  6
+    1 4232.61    0.002029
+    2  634.882   0.015535
+    3  146.097   0.075411
+    4   42.4974  0.257121
+    5   14.1892  0.596555
+    6    1.9666  0.242517
+  S  1
+    1    5.1477  1.0
+  S  1
+    1    0.4962  1.0
+  S  1
+    1    0.1533  1.0
+  P  4
+    1   18.1557  0.018534
+    2    3.9864  0.115442
+    3    1.1429  0.386206
+    4    0.3594  0.640089
+  P  1
+    1    0.1146  1.0
+
+HYDROGEN  1.0   0.0000000000   0.0000000000   1.0922959062
+  DH  0  1.2 1.2
+
+HYDROGEN  1.0   0.0000000000   0.4152229538  -1.4824967459
+  DH  0  1.2 1.2
+
+ $END
+--- these are 2-A1 ROHF vectors ---
+--- ROHF ORBITALS --- GENERATED AT 08:23:42 27 JUN 90 (178)
+INSERTION OF CH INTO H2...OS-TCSCF ANSATZ...DZ BASIS
+E(ROHF)= -39.2316245004, E(NUC)= 8.0760320442, 12 ITERS
+ $VEC
+ 1  1 6.01223299E-01 4.37813104E-01 ...
+... vectors deleted to save paper ...
+16  4-2.12429766E-02
+ $END
+ 
+
+
+
+! EXAM22.
+!
+!   3-A-2 H3CN   UMP2/6-31G*//UHF/6-31G*
+!
+!   The FINAL UHF energy= -94.0039683697 after 14 iters.
+!   E(MP2)= -94.2315757668, with RMS grad=0.003359454
+!   Dipoles for HF and MP2 are 2.049391 and 2.098487 D.
+!
+ $CONTRL SCFTYP=UHF MULT=3 RUNTYP=GRADIENT MPLEVL=2
+         COORD=ZMT $END
+ $SYSTEM TIMLIM=5 MWORDS=1 MEMDDI=1 PARALL=.TRUE. $END
+ $BASIS  GBASIS=N31 NGAUSS=6 NDFUNC=1 NPFUNC=0 $END
+ $GUESS  GUESS=HUCKEL $END
+ $DATA
+Methylnitrene...UHF/6-31G* structure
+Cnv 3
+
+N
+C  1  rCN
+H  2  rCH  1  aHCN
+H  2  rCH  1  aHCN  3  120.0
+H  2  rCH  1  aHCN  3 -120.0
+
+rCN=1.4329216
+rCH=1.0876477
+aHCN=110.21928
+ $END
+ 
+
+
+! EXAM23.
+!   semiempirical calculation, using the MOPAC/GAMESS combo
+!   AM1 gets the geometry disasterously wrong!
+!
+!   initial geometry,         MNDO       AM1         PM3
+!   FINAL HEAT OF FORMATION 105.14088   93.45997   46.89387
+!   RMS gradient            0.0818157  0.1008587  0.0366232
+!   final geometry (# steps),      8         11         10
+!   FINAL HEAT OF FORMATION  46.45649   -1.81716   -2.79647
+!   RMS gradient            0.0000246  0.0000294  0.0000015
+!   r(SiH)                    1.42117    1.45813    1.52104
+!   a(HSiH)                   101.962    120.000     96.280
+!
+!   At the final PM3 geometry, the charge on Si is -.4681,
+!   and the dipole moment is 2.345322 Debye.
+!
+ $CONTRL SCFTYP=RHF RUNTYP=OPTIMIZE COORD=ZMT ICHARG=-1 $END
+ $SYSTEM TIMLIM=5 MEMORY=200000 $END
+ $BASIS  GBASIS=PM3 $END
+ $DATA
+Silyl anion...comparison of semiempirical models
+Cnv 3
+
+Si
+H  1  rSiH
+H  1  rSiH  2 aHSiH
+H  1  rSiH  2 aHSiH  3   aHSiH  -1
+
+rSiH=1.15
+aHSiH=110.0
+ $END
+ 
+
+
+! EXAM24.
+!  Self-consistent reaction field test, of water in water.
+!  Cavity radius is calculated from the 1.00 g/cm**3 density.
+!  FINAL energy is -74.9666740755 after 12 iterations
+!  Induced dipole= -0.03663, RMS gradient= 0.033467686
+!
+ $contrl scftyp=rhf runtyp=gradient coord=zmt $end
+ $system memory=300000 $end
+ $basis  gbasis=sto ngauss=3 $end
+ $guess  guess=huckel $end
+ $scrf   radius=1.93 dielec=80.0 $end
+ $data
+water in water, arbitrary geometry
+Cnv 2
+
+O
+H 1 rOH
+H 1 rOH 2 aHOH 
+
+rOH = 0.95
+aHOH = 104.5
+ $end
+ 
+
+
+! EXAM25.
+!   Illustration of coordinate systems for geometry searches.
+!   Arbitrary molecule, chosen to illustrate ring, methyl on
+!   ring, methine H10, imino in ring, methylene in ring.
+!
+!      H8 H9
+!        \|
+!      H7-C6  O1---O5   H13
+!          \ /       \ /
+!           C2       C4
+!          /  \     /  \
+!         H10    N3     H12
+!                |
+!                H11
+!                       
+!    The initial AM1 energy is -48.6594935
+!                   initial RMS  final E    final RMS  #steps
+!   Cartesians       0.0200113 -48.7022520  0.0000304    50
+!   dangling Z-mat   0.0600637 ... OO bond crashes on 1st 
+step
+!   good Z-matrix    0.0232915 -48.7022510  0.0000285    21
+!   deloc. coords.   0.0176452 -48.7022537  0.0000267    22
+!   nat. internals   0.0209442 -48.7022570  0.0000183    15
+!
+ $contrl scftyp=rhf runtyp=optimize coord=zmt $end
+ $system memory=300000 $end
+ $statpt hess=guess nstep=100 nprt=-1 npun=-2 $end
+ $basis  gbasis=am1 $end
+ $guess  guess=huckel $end
+ $data
+Illustration of coordinate systems
+C1
+O
+C 1 rCOa
+N 2 rCNa 1 aNCO
+C 3 rCNb 2 aCNC  1 wCNCO
+O 4 rCOb 3 aOCN  2 wOCNC
+C 2 rCC  1 aCCO  5 wCCOO
+H 6 rCH1 2 aHCC1 1 wHCCO1
+H 6 rCH2 2 aHCC2 1 wHCCO2
+H 6 rCH3 2 aHCC3 1 wHCCO3
+H 2 rCHa 1 aHCOa 5 wHCOOa
+H 3 rNH  2 aHNC  1 wHNCO
+H 4 rCHb 5 aHCOb 1 wHCOOb
+H 4 rCHc 5 aHCOc 1 wHCOOc
+
+rCOa=1.43
+rCNa=1.47
+rCNb=1.47
+rCOb=1.43
+aNCO=106.0
+aCNC=104.0
+aOCN=106.0
+wCNCO=30.0
+wOCNC=-30.0
+rCC=1.54
+aCCO=110.0
+wCCOO=-150.0
+rCH1=1.09
+rCH2=1.09
+rCH3=1.09
+aHCC1=109.0
+aHCC2=109.0
+aHCC3=109.0
+wHCCO1=60.0
+wHCCO2=-60.0
+wHCCO3=180.0
+rCHa=1.09
+aHCOa=110.0
+wHCOOa=100.0
+rNH=1.01
+aHNC=110.0
+wHNCO=170.0
+rCHb=1.09
+rCHc=1.09
+aHCOb=110.0
+aHCOc=110.0
+wHCOOb=150.0
+wHCOOc=-100.0
+ $end
+
+To use Cartesian coordinates:
+--- $contrl nzvar=0 $end
+
+To use conventional Z-matrix, with a dangling O-O bond:
+--- $contrl nzvar=33 $end
+
+To use well chosen internals, with all 5 ring bonds defined:
+--- $contrl nzvar=33 $end
+--- $zmat   izmat(1)=1,1,2,  1,2,3,  1,3,4,  1,4,5,  1,5,1,
+     2,1,2,3,  2,5,4,3,  3,5,1,2,3,  3,1,5,4,3,
+     1,6,2,  2,6,2,1,  3,6,2,1,5,  
+     1,6,7,  1,6,8,  1,6,9,  2,7,6,2,  2,8,6,2,  2,9,6,2,  
+     3,7,6,2,1,  3,8,6,2,1,  3,9,6,2,1,
+     1,10,2,  2,10,2,1,  3,10,2,1,5,
+     1,11,3,  2,11,3,2,  3,11,3,2,1,
+     1,12,4,  2,12,4,5,  3,12,4,5,1,  
+     1,13,4,  2,13,4,5,  3,13,4,5,1 $end
+
+To use delocalized coordinates:
+--- $contrl nzvar=33 $end
+--- $zmat   dlc=.true. auto=.true. $end
+
+To use natural internal coordinates:
+ $contrl nzvar=44 $end
+ $zmat   izmat(1)=1,1,2, 1,2,3, 1,3,4, 1,4,5, 1,5,1, ! ring !
+     2,5,1,2,   2,1,2,3,   2,2,3,4,   2,3,4,5,   2,4,5,1,
+     3,5,1,2,3, 3,1,2,3,4, 3,2,3,4,5, 3,3,4,5,1, 3,4,5,1,2,
+        1,2,6,  2,6,2,1,  2,6,2,3,  4,6,2,1,3,   ! methyl C !
+     1,6,7,  1,6,8,  1,6,9,                     ! methyl Hs !
+     2,7,6,8,  2,8,6,9,  2,9,6,7,  2,9,6,2,  2,7,6,2,
+     2,8,6,2,  3,7,6,2,1,
+     1,10,2,  2,10,2,1,  2,10,2,3,  2,10,2,6,   ! methine !
+     1,11,3,  2,11,3,2,  2,11,3,4,  4,11,3,2,4, ! imino !
+     1,12,4,  1,13,4,                     ! methylene !
+     2,12,4,13,  2,12,4,3,  2,13,4,3,  2,12,4,5,  2,13,4,5
+
+        ijS(1)=1,1,  2,2,  3,3,  4,4,  5,5,     ! ring !
+          6,6, 7,6, 8,6, 9,6,10,6,
+               7,7, 8,7, 9,7,10,7,
+         11,8,12,8,13,8,14,8,15,8,
+         11,9,12,9,     14,9,15,9,
+               16,10,   17,11,18,11,   19,12,   ! methyl C !
+         20,13,  21,14,  22,15,                ! methyl Hs !
+         23,16, 24,16, 25,16, 26,16, 27,16, 28,16,
+         23,17, 24,17, 25,17,
+                24,18, 25,18,
+                              26,19, 27,19, 28,19,
+                                     27,20, 28,20,
+         29,21,
+            30,22,    31,23,32,23,33,23,   32,24,33,24,  ! 
+methine !
+            34,25,  35,26,36,26,  37,27,      ! imino !
+         38,28,  39,29,                    ! methylene !
+         40,30, 41,30, 42,30, 43,30, 44,30,
+                41,31, 42,31, 43,31, 44,31,
+                41,32, 42,32, 43,32, 44,32,
+                41,33, 42,33, 43,33, 44,33
+
+        Sij(1)=1.0, 1.0, 1.0, 1.0, 1.0,         ! ring !
+            1.0, -0.8090, 0.3090,  0.3090, -0.8090,
+                 -1.1180, 1.8090, -1.8090, 1.1180,
+            0.3090, -0.8090, 1.0, -0.8090, 0.3090,
+            -1.8090, 1.1180,      -1.1180, 1.8090,
+                    1.0,   1.0,-1.0,   1.0, ! methyl C !
+         1.0,   1.0,   1.0,                 ! methyl Hs !
+         1.0, 1.0, 1.0,-1.0,-1.0,-1.0,
+         2.0,-1.0,-1.0,
+              1.0,-1.0,
+                        2.0,-1.0,-1.0,
+                             1.0,-1.0,
+         1.0,
+            1.0,   2.0,-1.0,-1.0,  1.0,-1.0,  ! methine !
+            1.0,   1.0,-1.0,    1.0,         ! imino !
+         1.0,  1.0,                      ! methylene !
+         4.0, 1.0, 1.0, 1.0, 1.0,
+              1.0,-1.0, 1.0,-1.0,
+              1.0, 1.0,-1.0,-1.0,
+              1.0,-1.0,-1.0, 1.0    $end
+
+
+
+! EXAM26
+!  Localized orbital test...Phys.Chem. 1984, 88, 382-389
+!
+!  FINAL Energy= -415.2660357363 in 11 iters
+!
+!  If you localize only the valence orbitals, by commenting
+!  out the $LOCAL group below, the
+!        Boys localization sum is 204.693589
+!  Ruedenberg localization sum is   5.081667
+!  population localization sum is   4.610528
+!
+!  The SCF localized charge decomposition forces all MOs
+!  to be localized, so the final diagonal sum is 28.389125.
+!  The nuclear charge assigned to oxygen "lone pairs" is
+!  redistributed so the total nuclear P and O charges are
+!  correct.  The energies for the PO bond, PH bonds,
+!  and O lone pairs are -37.273022, -27.364212, -26.363865.
+!  The corresponding dipoles are 2.041, 3.484, and 3.465.
+!
+!  To analyze MP2 valence contributions, choose MPLEVL=2,
+!  and turn EDCOMP and DIPDCM off.  The results should be
+!  E(MP2)=-415.4952200908, and contributions of PO bond,
+!  PH bonds, and O lone pairs to the correlation energy are
+!  -0.0442096, -0.0237793, and -0.0378790, respectively.
+!
+ $contrl scftyp=rhf runtyp=energy local=ruednbrg mplevl=0 
+$end
+ $system memory=750000 $end
+ $mp2    lmomp2=.true. $end
+ $local  edcomp=.true.  moidon=.true. dipdcm=.true.
+         ijmo(1)= 1,11, 2,11, 1,12, 2,12, 1,13, 2,13
+         
+zij(1)=1.666666667,0.333333333,1.6666666667,0.333333333,
+                1.666666667,0.333333333
+         moij(1)= 2,1,  2,1,  2,1
+         nnucmo(11)=2,2,2  $end
+ $basis  gbasis=n21 ngauss=3 ndfunc=1 $end
+ $data
+phosphine oxide...3-21G* basis...localized orbital test
+Cnv 3
+
+P 15.0
+O  8.0  0.0000000000  0.0   1.4701
+H  1.0  1.2335928631  0.0  -0.6421021244
+ $end
+ 
+
+
+! EXAM27.
+!    NH3   semi-empirical DRC calculation
+!
+!    The dynamic reaction coordinate is initiated at the
+!    planar inversion transition state, with a velocity
+!    parallel to the mode with imaginary frequency.  The
+!    reactive trajectory is given one kcal/mole energy in
+!    excess of the amount needed to traverse the barrier.
+!    The trajectory is analyzed in terms of the equilibrium
+!    geometry's coordinates and normal modes.  Because
+!    this is a test run, the trajectory is stopped after
+!    a much too short time interval.
+!
+!    The last point on the trajectory has
+!    T=0.00163, V=-9.12874, E=-9.12710,
+!    q(L6)=-0.153112, p(L6)=-0.014313,
+!    velocity(H,z)=0.028857623667
+ $CONTRL SCFTYP=RHF RUNTYP=DRC $END
+ $SYSTEM MEMORY=300000 $END
+ $BASIS  GBASIS=AM1 $END
+ $DATA
+ammonia...DRC starting from the planar transition state
+C1
+NITROGEN    7.0   0.0000000000   0.0000000000   0.0000000000
+HYDROGEN    1.0  -0.4882960784   0.8457536168   0.0000000000
+HYDROGEN    1.0  -0.4882960784  -0.8457536168   0.0000000000
+HYDROGEN    1.0   0.9765921567   0.0000000000   0.0000000000
+ $END
+ $DRC NPRTSM=1 NSTEP=10 DELTAT=0.1 NMANAL=.TRUE. EKIN=1.0 
+      VEL(1)=0.0 0.0 -0.1128,  
+             0.0 0.0 0.5213, 
+             0.0 0.0 0.5213,
+             0.0 0.0 0.5213
+      C0(1)=0.0000000000   0.0000000000   0.0291576578
+           -0.4692651161   0.8127910232  -0.3097192193
+           -0.4692651161  -0.8127910232  -0.3097192193
+            0.9385302321   0.0000000000  -0.3097192193 $END
+ $HESS
+ENERGY IS       -9.1354556210 E(NUC) IS        6.8369847904
+ 1  1 6.16231432E-01 3.45452916E-11-1.03923982E-05 ...
+... 2nd derivatives deleted to save paper ...
+12  3 1.38181166E-10 5.72335505E-02
+ $END
+
+
+
+! EXAM28.  Morokuma energy decomposition.
+! This run duplicates a result from Table 16 of 
+! H.Umeyama, K.Morokuma, J.Am.Chem.Soc. 99,1316(1977)
+!
+!             GAMESS   literature
+!       ES=   -14.02     -14.0
+!       EX=     8.98       9.0
+!       PL=    -1.12      -1.1
+!       CT=    -2.37      -2.4
+!      MIX=    -0.43      -0.4
+!     total    -8.96      -9.0
+!
+ $contrl scftyp=rhf runtyp=morokuma coord=zmt $end
+ $system memory=300000 timlim=5 $end
+ $basis  gbasis=n31 ngauss=4 $end
+ $guess  guess=huckel $end
+ $morokm iatm(1)=3 $end
+ $data
+water-ammonia dimer
+Cs
+
+H
+O 1 rOH
+H 2 rOH 1 aHOH
+N 2  R  1 aHOH    3    0.0
+H 4 rNH 3 aHNaxis 1  180.0
+H 4 rNH 3 aHNaxis 5 +120.0
+H 4 rNH 3 aHNaxis 5 -120.0
+
+rOH=0.956
+aHOH=105.2
+rNH=1.0124
+aHNaxis=112.1451  ! makes HNH=106.67
+R=2.93
+ $end
+ 
+
+
+! EXAM29.  surface scan
+!  The scan is done over a 3x3 grid centered on the SCF
+!  transition state for the SN2 type reaction 
+!      F- + NH2OH -> F-NH2-OH anion -> FNH2 + OH-
+!
+!  Groups 1 and 2 are F and OH, and their distance from
+!  the N is varied antisymmetrically, which is more or
+!  less what the IRC should be like.  The results seem to
+!  indicate that the MP2/3-21G saddle point would shift
+!  further into the product channel, since the higher
+!  MP2 energies occur at shorter r(NF) and longer r(NO):
+!
+!  FINAL E=   -229.0368324615, E(MP2)=   -229.3873302375
+!  FINAL E=   -229.0356378402, E(MP2)=   -229.3866642673
+!  FINAL E=   -229.0309266321, E(MP2)=   -229.3822094777
+!  FINAL E=   -229.0372146702, E(MP2)=   -229.3923234074
+!  FINAL E=   -229.0385440296, E(MP2)=   -229.3936486644
+!  FINAL E=   -229.0367369562, E(MP2)=   -229.3913683073
+!  FINAL E=   -229.0328601144, E(MP2)=   -229.3918932009
+!  FINAL E=   -229.0364643934, E(MP2)=   -229.3948325500
+!  FINAL E=   -229.0372478250, E(MP2)=   -229.3943498144
+!
+!  A more conclusive way to tell this would be to compute
+!  single point MP2 energies along the SCF IRC, since the
+!  true reaction path always curves, and thus does not lie
+!  along rectangular grid points.
+!
+ $contrl scftyp=rhf runtyp=surface
+         icharg=-1 coord=zmt mplevl=2 $end
+ $system memory=500000 timlim=30 memddi=2 $end
+ $surf   ivec1(1)=2,1 igrp1=1       
+         ivec2(1)=2,5 igrp2(1)=5,6  
+         disp1= 0.10 ndisp1=3 orig1=-0.10
+         disp2=-0.10 ndisp2=3 orig2= 0.10 $end
+ $basis  gbasis=n21 ngauss=3 $end
+ $guess  guess=huckel $end
+ $data
+F-NH2-OH exchange (inspired by J.Phys.Chem. 1994,98,7942-4)
+Cs
+
+F
+N 1 rNF
+H 2 rNH   1  aFNH 
+H 2 rNH   1  aFNH   3 aHNH  +1
+O 2 rNO   3  aONH   4 aONH  -1
+H 5 rOH   2  aHON   1 180.0
+
+rNF=1.7125469
+rNH=0.9966981
+rNO=1.9359887
+rOH=0.9828978
+aFNH=90.18493
+aONH=79.34339
+aHON=100.78851
+aHNH=108.57000
+ $end
+ 
+
+!   EXAM30
+!   Test of water EFP ... formamide/three water complex
+!   FINAL E= -169.0085352303 after 12 iterations
+!   RMS gradient=0.008099469
+!   The geometry below combines a computed gas phase
+!   structure for formamide, with three waters located
+!   in a cylic fashion whose positions approximate the
+!   minimum structure of W.Chen and M.S.Gordon.  This
+!   approximate structure lies about 11 mHartee above 
+!   the actual minimum.
+ $contrl scftyp=rhf runtyp=gradient coord=zmt $end
+ $system memory=300000 $end
+ $basis  gbasis=dh npfunc=1 ndfunc=1 $end
+ $data
+formamide with three effective fragment waters
+C1
+C
+O 1 rCO
+N 1 rCN  2 aNCO
+H 3 rNHa 1 aCNHa 2 0.0
+H 3 rNHb 1 aCNHb 2 180.0
+H 1 rCH  2 aHCO  4 180.0
+
+rCO=1.1962565
+rCN=1.3534065
+rNHa=0.9948420
+rNHb=0.9921367
+rCH=1.0918368
+aNCO=124.93384
+aCNHa=119.16000
+aCNHb=121.22477
+aHCO=122.30822
+ $end
+ $efrag
+coord=int
+fragname=H2Oef2
+O1  4 1.926      3 175.0     1 180.0
+H2  7 0.9438636  4 117.4     3 -175.0
+H3  7 0.9438636  8 106.70327 4 95.0
+fragname=H2Oef2
+O1  8 1.901      7 175.0     4 0.0
+H2 10 0.9438636  8 110.0     4 -5.0
+H3 10 0.9438636 11 106.70327 8 -95.0
+fragname=H2Oef2
+H2  2 1.951      1 150.0     3 0.0
+O1 13 0.9438636  2 177.0     3 0.0
+H3 14 0.9438636 13 106.70327 3 140.0
+ $end
+ 
+
+
+! EXAM31.
+!
+!  Water in PCM water...RHF geometry optimization
+!  FINAL E= -74.9673640167,11 iters, RMS GRAD =  .0327344
+!  FINAL E= -74.9480609436, 8 iters, RMS GRAD =  .0658892
+!  FINAL E= -74.9685681840, 7 iters, RMS GRAD =  .0245623
+!  FINAL E= -74.9709296076, 7 iters, RMS GRAD =  .0086413
+!  FINAL E= -74.9712066750, 8 iters, RMS GRAD =  .0007902
+!  FINAL E= -74.9712091914, 6 iters, RMS GRAD =  .0002542
+!  FINAL E= -74.9712098250, 6 iters, RMS GRAD =  .0007388
+!  FINAL E= -74.9712093881, 5 iters, RMS GRAD =  .0000474
+!  The final geometry is not symmetric,
+!        O
+!        H      1    .9875121
+!        H      1    .9875026  2   100.0259677
+!  
+!          ----------------------------------------------
+!          -------   RESULTS OF PCM CALCULATION   -------
+!          ----------------------------------------------
+!  
+!  FREE ENERGY IN SOLVENT        =      -74.9712093866 A.U.
+!  INTERNAL ENERGY IN SOLVENT    =      -74.9656127297 A.U.
+!  DELTA INTERNAL ENERGY         =         .0000000000 A.U.
+!  ELECTROSTATIC INTERACTION     =        -.0055966569 A.U.
+!  PIEROTTI CAVITATION ENERGY    =         .0000000000 A.U.
+!  DISPERSION FREE ENERGY        =         .0000000000 A.U.
+!  REPULSION FREE ENERGY         =         .0000000000 A.U.
+!  TOTAL INTERACTION             =        -.0055966569 A.U.
+!  TOTAL FREE ENERGY IN SOLVENT  =      -74.9712093866 A.U.
+!  ----------------------------------------------------------
+---
+!  If run as water in COSMO water...RHF geometry optimization
+!  TOTAL ENERGY = -74.9668641013, GRADIENT = 0.0328762
+!  TOTAL ENERGY = -74.9473469405, GRADIENT = 0.0661387
+!  TOTAL ENERGY = -74.9680516495, GRADIENT = 0.0246706
+!  TOTAL ENERGY = -74.9704460745, GRADIENT = 0.0087527
+!  TOTAL ENERGY = -74.9707087625, GRADIENT = 0.0007898
+!  TOTAL ENERGY = -74.9707113433, GRADIENT = 0.0000221
+!
+ $contrl scftyp=rhf runtyp=optimize coord=zmt $end
+ $system memory=300000 $end
+!     new PCM won't get gradient closer to zero...
+ $statpt opttol=2d-4 $end
+ $basis  gbasis=sto ngauss=3 $end
+ $guess  guess=huckel $end
+ $pcm    solvnt=water $end
+--- $cosgms epsi=80.0 $end
+ $data
+a water molecule solvated by water
+Cnv 2
+
+O
+H 1 rOH
+H 1 rOH 2 aHOH 
+
+rOH=0.95
+aHOH=104.5
+ $end
+ 
+
+
+! EXAM32.
+!  Test of Coupled-Cluster energy for HNO
+!  The basis set used is 6-31G(d,p), with 35 AOs.
+!  The two chemical core orbitals are not correlated.
+!
+!  RHF FINAL E= -129.7891059393 after 13 iters
+!  Highest level result is E(CR-CCSD(T))= -130.1486914386
+!
+!  Other results are
+!  19 CCSD iterations needed to converge T1 and T2.
+!  E(MBPT(2)) = -130.1278985212, aka MP2 energy
+!  E(CCSD)    = -130.1398314376
+!  E(CCSD(T)) = -130.1508271127
+!  The T1 diagnostic is 0.01448788, and the largest T2
+!  amplitude is for the pi->pi* double, namely -0.146352.
+!  The R-CCSD(T) denominator is 1.126.
+!
+ $contrl scftyp=rhf cctyp=cr-cc runtyp=energy nzvar=3 $end
+ $system mwords=2 $end
+ $guess  guess=huckel $end
+ $basis  gbasis=n31 ngauss=6 ndfunc=1 npfunc=1 $end
+ $zmat   izmat(1)=1,1,2,  1,2,3,  2,1,2,3  $end
+ $data
+HNO...CR-CCSD(T) computation in small DZP basis
+Cs
+
+H 1.0  -0.3153213523   0.9784305023   0.0
+N 7.0   0.0188021294   0.0012704060   0.0
+O 8.0   1.1940439356   0.0007180427   0.0
+ $end
+ 
+
+
+! EXAM 33.
+!   This job illustrates occupation restricted multiple 
+!   active space MCSCF, for HCN.
+!
+!   The multiple active spaces are sigma, pi-x, and pi-y.
+!   The excitation level between these three spaces can be
+!   limited to 0, 1, or 2.  The number of determinants in
+!   each such ORMAS-MCSCF are
+!    excitation  MINE    MAXE   # dets    energy   gradient
+!        0      6,2,2   6,2,2    2,610  -93.014905  0.04395
+!        1      5,1,1   7,3,3   11,290  -93.014905  0.04395
+!        2      4,0,0   8,4,4   15,410  -93.022394  0.04509
+!     full CI   2,0,0  10,4,4   15,876  -93.022407  0.04510
+!   Full CI of 10 valence electrons in 9 valence orbitals
+!   is well within the capabilities of CISTEP=ALDET, but
+!   this example is meant to illustrate using occupational
+!   restrictions to limit the number of determinants.
+!   Note the singles between spaces don't contribute any
+!   energy because in this case the singles determinants
+!   all have the wrong total space symmetry.
+!   FINAL E= -93.0223942007, 11 iters, RMS grad=0.045100021
+ $contrl scftyp=mcscf runtyp=gradient nzvar=3 $end
+ $system mwords=5 memddi=1 $end
+ $basis  gbasis=n31 ngauss=6 ndfunc=1 npfunc=1 $end
+ $zmat   izmat(1)=1,1,2,  1,2,3,  5,1,2,3 $end
+ $libe   apts(1)=1.0,0.0,0.0 $end
+!  reordering is sigma before pi-x before pi-y before empty
+ $guess  guess=moread norb=35 norder=1
+         iorder(3)=3,4,5,10,14,  6,9,  7,8,  11,12,13 $end
+ $mcscf  soscf=.true. cistep=ormas $end
+ $det    ncore=2 nact=9 nels=10 $end
+ $ormas  nspace=3 mstart(1)=3,8,10  mine(1)=4,0,0
+                                    maxe(1)=8,4,4 $end
+ $data
+HCN...6-31G(d,p) MCSCF using ORMAS...RHF geometry
+Cnv 4
+
+H  1.0  0.0 0.0 -1.0589956
+C  6.0  0.0 0.0  0.0
+N  7.0  0.0 0.0  1.1327718
+ $end
+
+--- CLOSED SHELL MO's --- GENERATED Mon, Jan 13, 2003
+E(RHF)= -92.8771381048, with MVOQ=4 used to make virtuals.
+ $VEC
+...orbitals deleted...
+ $END
+ 
+
+
+! EXAM34.
+!   CIS treatment of excited state of formaldehyde,
+!   geometry optimization of the singlet n->pi* state
+!
+!   This reproduces the fourth line of Table III in 
+!   Foresman et al. J.Phys.Chem. 96, 135-149(1992),
+!   using no frozen core orbitals in order to do so.
+!   Since it is well known that the geometry of this
+!   state lies within Cs symmetry, the initial geometry
+!   is very slightly bent into Cs.  The final geometry
+!   is r(CO)=1.2553, r(CH)=1.0854, a(HCO)= 117.74, with
+!   carbon pyramidalization= 24.88.
+!
+!   nserch= 0: EXCITED STATE e=-113.7017742427, RMS=0.0290049
+!   nserch=18: EXCITED STATE e=-113.7053625375, RMS=0.0000224
+!
+ $contrl scftyp=rhf cityp=cis runtyp=optimize nzvar=6 $end
+ $system mwords=1 $end
+ $basis  gbasis=n31 ngauss=6 ndfunc=1 diffsp=.t. $end
+ $guess  guess=huckel $end
+ $cis    hamtyp=saps mult=1 nacore=0 nstate=1 istate=1 $end
+ $zmat   izmat(1)=1,1,2,  1,2,3,  1,2,4, 
+                  2,1,2,3,  2,1,2,4,  4,1,2,4,3 $end
+ $data
+Formaldehyde CIS/6-31+G(d) 1(n->pi*) state optimization
+Cs
+
+O   8.0    .01  -.8669736159  .0
+C   6.0    .0    .3455497481  .0
+H   1.0  -0.01   .9295804473  .9376713430
+ $end
+
+
+
+! EXAM35.
+!   As atom...Test of relativistic energy correction,
+!   by the Douglas-Kroll transformation to 3rd order.
+!
+!   the FINAL DK3 energy is -2259.0955118230
+!   web page says           -2259.095511826
+!
+!   convergence of the DK transformation is typical,
+!      0th order -2234.2372862734 (non-relativistic)
+!      1st order -2264.6131852344
+!      2nd order -2258.9450216276
+!      3rd order -2259.0955118230
+!   in that 1st order way undershoots, 2nd order comes
+!   back close, and 3rd order is not insubstantial.
+!   Compare with -2259.456841 which is the point
+!   nucleus Dirac-Coulomb numerical Hartree-Fock from
+!   L.Visscher, K.G.Dyall
+!   At.Data Nucl.Data Tables 67, 207-224(1997)
+!
+!   The uncontracted 20s15p9d basis set below is from 
+!       T.Tsuchiya, M.Abe, T.Nakajima, K.Hirao
+!          J.Chem.Phys. 115, 4463-4472(2001)
+!   using exponents downloaded from the web page of
+!   this group at the University of Tokyo.  A general
+!   contraction of this basis can easily be obtained,
+!   by manipulating the $VEC coefs produced by this run.
+!   The semicolon divides two lines of input that happen
+!   to be given on a single physical line of the file.
+!
+ $contrl scftyp=rohf mult=4 relwfn=dk ispher=1 $end
+ $system mwords=2 $end
+ $relwfn norder=3 $end
+ $guess  guess=huckel $end
+ $data
+illustration of 3rd order Douglas-Kroll for As
+Dnh 2
+
+Arsenic 33.0
+   S 1 ; 1 7.2421890D+07 1.0
+   S 1 ; 1 7.7040750D+06 1.0
+   S 1 ; 1 1.3365730D+06 1.0
+   S 1 ; 1 3.0394350D+05 1.0
+   S 1 ; 1 8.3289250D+04 1.0
+   S 1 ; 1 2.5994450D+04 1.0
+   S 1 ; 1 8.9795770D+03 1.0
+   S 1 ; 1 3.3667950D+03 1.0
+   S 1 ; 1 1.3464700D+03 1.0
+   S 1 ; 1 5.6774580D+02 1.0
+   S 1 ; 1 2.4923080D+02 1.0
+   S 1 ; 1 1.1199520D+02 1.0
+   S 1 ; 1 4.6328140D+01 1.0
+   S 1 ; 1 2.2611220D+01 1.0
+   S 1 ; 1 1.0910110D+01 1.0
+   S 1 ; 1 4.5498340D+00 1.0
+   S 1 ; 1 2.1494630D+00 1.0
+   S 1 ; 1 1.0337510D+00 1.0
+   S 1 ; 1 3.0892460D-01 1.0
+   S 1 ; 1 1.1206710D-01 1.0
+   P 1 ; 1 4.9515580D+04 1.0
+   P 1 ; 1 8.4637830D+03 1.0
+   P 1 ; 1 2.2908560D+03 1.0
+   P 1 ; 1 7.7965970D+02 1.0
+   P 1 ; 1 3.0545690D+02 1.0
+   P 1 ; 1 1.3097990D+02 1.0
+   P 1 ; 1 5.9698960D+01 1.0
+   P 1 ; 1 2.8408790D+01 1.0
+   P 1 ; 1 1.3883000D+01 1.0
+   P 1 ; 1 6.6102210D+00 1.0
+   P 1 ; 1 3.0821260D+00 1.0
+   P 1 ; 1 1.3919830D+00 1.0
+   P 1 ; 1 4.8254700D-01 1.0
+   P 1 ; 1 1.9228260D-01 1.0
+   P 1 ; 1 7.2849660D-02 1.0
+   D 1 ; 1 7.1896480D+02 1.0
+   D 1 ; 1 2.0798400D+02 1.0
+   D 1 ; 1 7.9590850D+01 1.0
+   D 1 ; 1 3.4514110D+01 1.0
+   D 1 ; 1 1.5730540D+01 1.0
+   D 1 ; 1 7.2805600D+00 1.0
+   D 1 ; 1 3.3000700D+00 1.0
+   D 1 ; 1 1.4173160D+00 1.0
+   D 1 ; 1 5.4472730D-01 1.0
+ 
+ $end
